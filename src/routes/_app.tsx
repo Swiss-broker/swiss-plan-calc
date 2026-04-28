@@ -85,10 +85,10 @@ function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
             to={item.to}
             onClick={onNavigate}
             className={cn(
-              "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+              "group relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200",
               active
-                ? "bg-sidebar-accent text-sidebar-accent-foreground"
-                : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+                ? "bg-gradient-to-r from-primary/15 to-primary/5 text-foreground shadow-[inset_0_1px_0_0_color-mix(in_oklab,white_40%,transparent),0_4px_12px_-4px_color-mix(in_oklab,var(--primary)_25%,transparent)] ring-1 ring-primary/20"
+                : "text-sidebar-foreground/70 hover:bg-sidebar-accent/60 hover:text-sidebar-accent-foreground hover:translate-x-0.5",
             )}
           >
             <item.icon className="h-4 w-4" />
@@ -123,7 +123,7 @@ function UserFooter({ email, onSignOut }: { email: string; onSignOut: () => Prom
 
 function DesktopSidebar({ onSignOut, email }: { onSignOut: () => Promise<void>; email: string }) {
   return (
-    <aside className="hidden w-64 shrink-0 border-r border-border bg-sidebar lg:flex lg:flex-col">
+    <aside className="hidden w-64 shrink-0 border-r border-sidebar-border/60 bg-sidebar/70 backdrop-blur-xl lg:flex lg:flex-col shadow-[inset_-1px_0_0_0_color-mix(in_oklab,white_30%,transparent)]">
       <div className="flex h-16 items-center gap-2 border-b border-sidebar-border px-5">
         <BrandMark />
       </div>
