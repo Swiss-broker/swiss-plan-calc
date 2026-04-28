@@ -25,6 +25,7 @@ import { formatCHF } from "@/lib/format";
 import type { IncomeTaxInput } from "@/lib/tax/income";
 import { ExportPdfButton } from "@/components/calculators/ExportPdfButton";
 import { exportLppPdf } from "@/lib/pdf/reports";
+import { SaveSimulationButton } from "@/components/calculators/SaveSimulationButton";
 import { useAuth } from "@/contexts/AuthContext";
 
 export const Route = createFileRoute("/_app/calculators/lpp")({
@@ -211,7 +212,21 @@ function LppCalc() {
         </div>
       </div>
 
-      <div className="flex justify-end">
+      <div className="flex flex-wrap justify-end gap-2">
+        <SaveSimulationButton
+          kind="lpp"
+          inputs={form}
+          summary={{
+            projectedBalance: projection.projectedBalance,
+            projectedBalanceNoYield: projection.projectedBalanceNoYield,
+            annualPension: projection.annualPension,
+            monthlyPension: projection.monthlyPension,
+            totalFees: projection.totalFees,
+            totalBuybacks: projection.totalBuybacks,
+            totalTaxSavings: buybackPlan.totalTaxSavings,
+          }}
+          defaultTitle={`LPP ${form.currentAge}→${form.retirementAge} ans — ${form.canton}`}
+        />
         <ExportPdfButton onClick={handleExport} />
       </div>
     </div>

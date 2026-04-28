@@ -25,6 +25,7 @@ import { CalcCard } from "@/components/calculators/CalcUI";
 import { formatCHF } from "@/lib/format";
 import { ExportPdfButton } from "@/components/calculators/ExportPdfButton";
 import { exportCantonComparePdf } from "@/lib/pdf/reports";
+import { SaveSimulationButton } from "@/components/calculators/SaveSimulationButton";
 import { useAuth } from "@/contexts/AuthContext";
 
 export const Route = createFileRoute("/_app/calculators/canton-compare")({
@@ -147,7 +148,19 @@ function CantonCompareCalc() {
         </div>
       </CalcCard>
 
-      <div className="flex justify-end">
+      <div className="flex flex-wrap justify-end gap-2">
+        <SaveSimulationButton
+          kind="canton_compare"
+          inputs={form}
+          summary={{
+            cheapestCanton: data[0]?.code,
+            cheapestTax: data[0]?.total,
+            referenceCanton: form.referenceCanton,
+            referenceTax,
+            maxSavings: Math.max(0, referenceTax - (data[0]?.total ?? 0)),
+          }}
+          defaultTitle={`Comparateur 26 cantons — réf ${form.referenceCanton}`}
+        />
         <ExportPdfButton onClick={handleExport} />
       </div>
     </div>

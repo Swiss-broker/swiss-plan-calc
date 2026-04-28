@@ -14,6 +14,7 @@ import { annuityVsLumpSum, capitalWithdrawalTax } from "@/lib/lpp";
 import { CalcCard, MoneyTile, Row } from "@/components/calculators/CalcUI";
 import { ExportPdfButton } from "@/components/calculators/ExportPdfButton";
 import { exportRetirementPdf } from "@/lib/pdf/reports";
+import { SaveSimulationButton } from "@/components/calculators/SaveSimulationButton";
 import { useAuth } from "@/contexts/AuthContext";
 
 export const Route = createFileRoute("/_app/calculators/retirement")({
@@ -139,7 +140,18 @@ function RetirementCalc() {
         <p className="mt-1 text-sm">{reco}</p>
       </div>
 
-      <div className="flex justify-end">
+      <div className="flex flex-wrap justify-end gap-2">
+        <SaveSimulationButton
+          kind="retirement"
+          inputs={form}
+          summary={{
+            netAnnuity: compare.netAnnuity,
+            netLumpSum: compare.netLumpSum,
+            lumpTaxTotal: lumpTax.total,
+            recommendation: compare.recommendation,
+          }}
+          defaultTitle={`Retraite ${form.canton} — capital ${form.capital}`}
+        />
         <ExportPdfButton onClick={handleExport} />
       </div>
     </div>

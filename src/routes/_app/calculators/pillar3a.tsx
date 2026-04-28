@@ -21,6 +21,7 @@ import { CalcCard, MoneyTile, Row } from "@/components/calculators/CalcUI";
 import type { IncomeTaxInput } from "@/lib/tax/income";
 import { ExportPdfButton } from "@/components/calculators/ExportPdfButton";
 import { exportPillar3aPdf } from "@/lib/pdf/reports";
+import { SaveSimulationButton } from "@/components/calculators/SaveSimulationButton";
 import { useAuth } from "@/contexts/AuthContext";
 
 export const Route = createFileRoute("/_app/calculators/pillar3a")({
@@ -180,7 +181,21 @@ function Pillar3aCalc() {
           </div>
         </CalcCard>
       </div>
-      <div className="flex justify-end">
+      <div className="flex flex-wrap justify-end gap-2">
+        <SaveSimulationButton
+          kind="pillar3a"
+          inputs={form}
+          summary={{
+            taxSavings: savings.taxSavings,
+            effectiveCost: savings.effectiveCost,
+            marginalRate: savings.marginalRate,
+            finalBalance: projection.finalBalance,
+            totalContributions: projection.totalContributions,
+            totalReturns: projection.totalReturns,
+            staggeredSavings: stag.savings,
+          }}
+          defaultTitle={`3a ${form.canton} — ${form.contribution} CHF/an`}
+        />
         <ExportPdfButton onClick={handleExport} />
       </div>
     </div>
