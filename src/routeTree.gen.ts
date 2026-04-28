@@ -13,10 +13,11 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AppRouteImport } from './routes/_app'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AppDashboardRouteImport } from './routes/_app/dashboard'
-import { Route as AppClientsRouteImport } from './routes/_app/clients'
 import { Route as AppCalculatorsRouteImport } from './routes/_app/calculators'
 import { Route as AppAccountRouteImport } from './routes/_app/account'
 import { Route as AppClientsIndexRouteImport } from './routes/_app/clients/index'
+import { Route as AppClientsNewRouteImport } from './routes/_app/clients/new'
+import { Route as AppClientsClientIdEditRouteImport } from './routes/_app/clients/$clientId.edit'
 
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
@@ -37,11 +38,6 @@ const AppDashboardRoute = AppDashboardRouteImport.update({
   path: '/dashboard',
   getParentRoute: () => AppRoute,
 } as any)
-const AppClientsRoute = AppClientsRouteImport.update({
-  id: '/clients',
-  path: '/clients',
-  getParentRoute: () => AppRoute,
-} as any)
 const AppCalculatorsRoute = AppCalculatorsRouteImport.update({
   id: '/calculators',
   path: '/calculators',
@@ -53,9 +49,19 @@ const AppAccountRoute = AppAccountRouteImport.update({
   getParentRoute: () => AppRoute,
 } as any)
 const AppClientsIndexRoute = AppClientsIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => AppClientsRoute,
+  id: '/clients/',
+  path: '/clients/',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppClientsNewRoute = AppClientsNewRouteImport.update({
+  id: '/clients/new',
+  path: '/clients/new',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppClientsClientIdEditRoute = AppClientsClientIdEditRouteImport.update({
+  id: '/clients/$clientId/edit',
+  path: '/clients/$clientId/edit',
+  getParentRoute: () => AppRoute,
 } as any)
 
 export interface FileRoutesByFullPath {
@@ -63,9 +69,10 @@ export interface FileRoutesByFullPath {
   '/auth': typeof AuthRoute
   '/account': typeof AppAccountRoute
   '/calculators': typeof AppCalculatorsRoute
-  '/clients': typeof AppClientsRouteWithChildren
   '/dashboard': typeof AppDashboardRoute
+  '/clients/new': typeof AppClientsNewRoute
   '/clients/': typeof AppClientsIndexRoute
+  '/clients/$clientId/edit': typeof AppClientsClientIdEditRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -73,7 +80,9 @@ export interface FileRoutesByTo {
   '/account': typeof AppAccountRoute
   '/calculators': typeof AppCalculatorsRoute
   '/dashboard': typeof AppDashboardRoute
+  '/clients/new': typeof AppClientsNewRoute
   '/clients': typeof AppClientsIndexRoute
+  '/clients/$clientId/edit': typeof AppClientsClientIdEditRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -82,9 +91,10 @@ export interface FileRoutesById {
   '/auth': typeof AuthRoute
   '/_app/account': typeof AppAccountRoute
   '/_app/calculators': typeof AppCalculatorsRoute
-  '/_app/clients': typeof AppClientsRouteWithChildren
   '/_app/dashboard': typeof AppDashboardRoute
+  '/_app/clients/new': typeof AppClientsNewRoute
   '/_app/clients/': typeof AppClientsIndexRoute
+  '/_app/clients/$clientId/edit': typeof AppClientsClientIdEditRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -93,11 +103,20 @@ export interface FileRouteTypes {
     | '/auth'
     | '/account'
     | '/calculators'
-    | '/clients'
     | '/dashboard'
+    | '/clients/new'
     | '/clients/'
+    | '/clients/$clientId/edit'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/auth' | '/account' | '/calculators' | '/dashboard' | '/clients'
+  to:
+    | '/'
+    | '/auth'
+    | '/account'
+    | '/calculators'
+    | '/dashboard'
+    | '/clients/new'
+    | '/clients'
+    | '/clients/$clientId/edit'
   id:
     | '__root__'
     | '/'
@@ -105,9 +124,10 @@ export interface FileRouteTypes {
     | '/auth'
     | '/_app/account'
     | '/_app/calculators'
-    | '/_app/clients'
     | '/_app/dashboard'
+    | '/_app/clients/new'
     | '/_app/clients/'
+    | '/_app/clients/$clientId/edit'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -146,13 +166,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppDashboardRouteImport
       parentRoute: typeof AppRoute
     }
-    '/_app/clients': {
-      id: '/_app/clients'
-      path: '/clients'
-      fullPath: '/clients'
-      preLoaderRoute: typeof AppClientsRouteImport
-      parentRoute: typeof AppRoute
-    }
     '/_app/calculators': {
       id: '/_app/calculators'
       path: '/calculators'
@@ -169,38 +182,44 @@ declare module '@tanstack/react-router' {
     }
     '/_app/clients/': {
       id: '/_app/clients/'
-      path: '/'
+      path: '/clients'
       fullPath: '/clients/'
       preLoaderRoute: typeof AppClientsIndexRouteImport
-      parentRoute: typeof AppClientsRoute
+      parentRoute: typeof AppRoute
+    }
+    '/_app/clients/new': {
+      id: '/_app/clients/new'
+      path: '/clients/new'
+      fullPath: '/clients/new'
+      preLoaderRoute: typeof AppClientsNewRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/clients/$clientId/edit': {
+      id: '/_app/clients/$clientId/edit'
+      path: '/clients/$clientId/edit'
+      fullPath: '/clients/$clientId/edit'
+      preLoaderRoute: typeof AppClientsClientIdEditRouteImport
+      parentRoute: typeof AppRoute
     }
   }
 }
 
-interface AppClientsRouteChildren {
-  AppClientsIndexRoute: typeof AppClientsIndexRoute
-}
-
-const AppClientsRouteChildren: AppClientsRouteChildren = {
-  AppClientsIndexRoute: AppClientsIndexRoute,
-}
-
-const AppClientsRouteWithChildren = AppClientsRoute._addFileChildren(
-  AppClientsRouteChildren,
-)
-
 interface AppRouteChildren {
   AppAccountRoute: typeof AppAccountRoute
   AppCalculatorsRoute: typeof AppCalculatorsRoute
-  AppClientsRoute: typeof AppClientsRouteWithChildren
   AppDashboardRoute: typeof AppDashboardRoute
+  AppClientsNewRoute: typeof AppClientsNewRoute
+  AppClientsIndexRoute: typeof AppClientsIndexRoute
+  AppClientsClientIdEditRoute: typeof AppClientsClientIdEditRoute
 }
 
 const AppRouteChildren: AppRouteChildren = {
   AppAccountRoute: AppAccountRoute,
   AppCalculatorsRoute: AppCalculatorsRoute,
-  AppClientsRoute: AppClientsRouteWithChildren,
   AppDashboardRoute: AppDashboardRoute,
+  AppClientsNewRoute: AppClientsNewRoute,
+  AppClientsIndexRoute: AppClientsIndexRoute,
+  AppClientsClientIdEditRoute: AppClientsClientIdEditRoute,
 }
 
 const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
@@ -213,3 +232,12 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { createStart } from '@tanstack/react-start'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+  }
+}
