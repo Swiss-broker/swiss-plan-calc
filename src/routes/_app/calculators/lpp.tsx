@@ -18,7 +18,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { CANTONS } from "@/lib/swiss/cantons";
+import { getSelectableCantons } from "@/lib/swiss/cantons";
 import { projectLPP, simulateBuybackPlan } from "@/lib/lpp";
 import { CalcCard, MoneyTile, Row } from "@/components/calculators/CalcUI";
 import { formatCHF } from "@/lib/format";
@@ -165,7 +165,7 @@ function LppCalc() {
                 <Select value={form.canton} onValueChange={(v) => set("canton", v)}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    {CANTONS.map((c) => (
+                    {getSelectableCantons().map((c) => (
                       <SelectItem key={c.code} value={c.code}>{c.code} · {c.name}</SelectItem>
                     ))}
                   </SelectContent>

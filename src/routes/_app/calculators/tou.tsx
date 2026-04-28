@@ -13,7 +13,7 @@ import { Switch } from "@/components/ui/switch";
 import { Info, CheckCircle2, AlertCircle, Scale } from "lucide-react";
 import { CalcCard, MoneyTile, PctTile, Row } from "@/components/calculators/CalcUI";
 import { ExportPdfButton } from "@/components/calculators/ExportPdfButton";
-import { CANTONS } from "@/lib/swiss/cantons";
+import { getSelectableCantons } from "@/lib/swiss/cantons";
 import { checkQuasiResident, compareTOUvsSource } from "@/lib/tax/tou";
 import type { IncomeTaxInput } from "@/lib/tax/income";
 import { exportTouPdf } from "@/lib/pdf/reports";
@@ -127,7 +127,7 @@ function TOUCalc() {
               <Select value={form.canton} onValueChange={(v) => set("canton", v)}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  {CANTONS.map((c) => (
+                  {getSelectableCantons().map((c) => (
                     <SelectItem key={c.code} value={c.code}>
                       {c.code} · {c.name}
                     </SelectItem>

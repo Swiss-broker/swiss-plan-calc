@@ -20,7 +20,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
-import { CANTONS } from "@/lib/swiss/cantons";
+import { getSelectableCantons, isSelectableCanton, CANTON_BY_CODE } from "@/lib/swiss/cantons";
 import {
   CIVIL_STATUS_LABELS,
   CONFESSION_LABELS,
@@ -520,17 +520,31 @@ function StepFiscal({ form, update, errors }: StepProps) {
           placeholder="CH / FR / DE / IT"
         />
       </Field>
-      <Field label="Canton de travail" error={errors?.canton}>
+      <Field
+        label="Canton de travail"
+        error={errors?.canton}
+        hint={
+          form.canton && !isSelectableCanton(form.canton)
+            ? `⚠ Le canton "${form.canton}" n'est pas disponible en v1 (Suisse romande). Sélectionnez un canton romand pour activer les calculs.`
+            : undefined
+        }
+      >
         <Select value={form.canton} onValueChange={(v) => update("canton", v)}>
           <SelectTrigger>
             <SelectValue placeholder="Sélectionner un canton" />
           </SelectTrigger>
           <SelectContent>
-            {CANTONS.map((c) => (
+            {getSelectableCantons().map((c) => (
               <SelectItem key={c.code} value={c.code}>
                 {c.code} · {c.name}
               </SelectItem>
             ))}
+            {form.canton && !isSelectableCanton(form.canton) && (
+              <SelectItem value={form.canton} disabled>
+                {form.canton} ·{" "}
+                {CANTON_BY_CODE[form.canton]?.name ?? form.canton} (hors scope v1)
+              </SelectItem>
+            )}
           </SelectContent>
         </Select>
       </Field>

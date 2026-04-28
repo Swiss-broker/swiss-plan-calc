@@ -9,7 +9,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { CANTONS } from "@/lib/swiss/cantons";
+import { getSelectableCantons } from "@/lib/swiss/cantons";
 import { annuityVsLumpSum, capitalWithdrawalTax } from "@/lib/lpp";
 import { CalcCard, MoneyTile, Row } from "@/components/calculators/CalcUI";
 import { ExportPdfButton } from "@/components/calculators/ExportPdfButton";
@@ -83,7 +83,7 @@ function RetirementCalc() {
                 <Select value={form.canton} onValueChange={(v) => set("canton", v)}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    {CANTONS.map((c) => (
+                    {getSelectableCantons().map((c) => (
                       <SelectItem key={c.code} value={c.code}>{c.code} · {c.name}</SelectItem>
                     ))}
                   </SelectContent>

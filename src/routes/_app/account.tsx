@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { CANTONS } from "@/lib/swiss/cantons";
+import { getSelectableCantons, isSelectableCanton, CANTON_BY_CODE } from "@/lib/swiss/cantons";
 
 export const Route = createFileRoute("/_app/account")({
   head: () => ({ meta: [{ title: "Mon profil · SwissBroker Pro" }] }),
@@ -123,12 +123,26 @@ function AccountPage() {
               className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
             >
               <option value="">aucun</option>
-              {CANTONS.map((c) => (
+              {getSelectableCantons().map((c) => (
                 <option key={c.code} value={c.code}>
                   {c.code} · {c.name}
                 </option>
               ))}
+              {profile.default_canton &&
+                !isSelectableCanton(profile.default_canton) && (
+                  <option value={profile.default_canton}>
+                    {profile.default_canton} ·{" "}
+                    {CANTON_BY_CODE[profile.default_canton]?.name ?? profile.default_canton}{" "}
+                    (hors scope v1)
+                  </option>
+                )}
             </select>
+            {profile.default_canton &&
+              !isSelectableCanton(profile.default_canton) && (
+                <p className="text-xs text-amber-600 dark:text-amber-400">
+                  Ce canton n'est pas disponible en v1 (Suisse romande). Sélectionnez un canton romand pour activer les calculs.
+                </p>
+              )}
           </div>
         </div>
         <div className="flex justify-end">

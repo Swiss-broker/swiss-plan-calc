@@ -9,7 +9,7 @@ import {
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { CANTONS } from "@/lib/swiss/cantons";
+import { getSelectableCantons } from "@/lib/swiss/cantons";
 import { computeIncomeTax, type IncomeTaxInput } from "@/lib/tax/income";
 import { CalcCard, MoneyTile, PctTile, Row } from "@/components/calculators/CalcUI";
 import { formatCHF } from "@/lib/format";
@@ -77,7 +77,7 @@ function IncomeTaxCalculator() {
               <Select value={form.canton} onValueChange={(v) => setField("canton", v)}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  {CANTONS.map((c) => (
+                  {getSelectableCantons().map((c) => (
                     <SelectItem key={c.code} value={c.code}>
                       {c.code} · {c.name}
                     </SelectItem>

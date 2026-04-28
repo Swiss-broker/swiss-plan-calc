@@ -10,7 +10,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { CANTONS, CROSS_BORDER_FR_CANTONS } from "@/lib/swiss/cantons";
+import { getSelectableCantons, CROSS_BORDER_FR_CANTONS } from "@/lib/swiss/cantons";
 import { computeSourceTax, type SourceScale } from "@/lib/tax/source";
 import { CalcCard, MoneyTile, PctTile, Row } from "@/components/calculators/CalcUI";
 import { Info } from "lucide-react";
@@ -59,7 +59,7 @@ function SourceTaxCalc() {
               <Select value={form.canton} onValueChange={(v) => set("canton", v)}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  {CANTONS.map((c) => (
+                  {getSelectableCantons().map((c) => (
                     <SelectItem key={c.code} value={c.code}>
                       {c.code} · {c.name}
                     </SelectItem>
