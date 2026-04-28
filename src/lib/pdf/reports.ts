@@ -549,3 +549,287 @@ export function exportCantonComparePdf(args: {
 
   pdf.save(makeFilename("comparateur_cantons"));
 }
+
+// ============================================================================
+// FRONTALIERS · CROSS-BORDER
+// ============================================================================
+import type { CrossBorderInput, CrossBorderResult } from "@/lib/tax/cross-border";
+import type { QuasiResidentResult, TOUComparisonResult } from "@/lib/tax/tou";
+import type { VestedProjectionResult } from "@/lib/lpp/vested";
+
+export function exportCrossBorderPdf(args: {
+  header?: Partial<PdfHeaderInfo>;
+  input: CrossBorderInput;
+  result: CrossBorderResult;
+}) {
+  const { input, result } = args;
+  const pdf = new ReportPdf({
+    title: "Frontalier · Simulation fiscale transfrontalière",
+    subtitle: result.regimeLabel,
+    ...args.header,
+  } as PdfHeaderInfo);
+
+  pdf.section("Synthèse");
+  pdf.paragraph(
+    `Cette simulation détermine automatiquement le régime fiscal frontalier applicable selon le canton de travail (${cantonName(input.workCanton)}) ` +
+      `et estime la charge fiscale combinée Suisse + pays de résidence. Trois régimes sont supportés : l'accord franco-suisse de 1983 (retenue 4,5 % ` +
+      `dans 8 cantons), le régime spécial genevois (IS genevoise + rétrocession 3,5 % à la France), et l'accord italo-suisse 2023 pour le Tessin.`,
+  );
+  pdf.metricsGrid([
+    { label: "Net annuel", value: result.netAnnual, tone: "success" },
+    { label: "Charge totale", value: formatPct(result.totalRate), tone: "primary" },
+    { label: "Retenue Suisse", value: result.swissTax },
+    { label: "Impôt résident", value: result.foreignTax },
+  ]);
+
+  pdf.section("Hypothèses retenues");
+  pdf.kvTable([
+    ["Canton de travail", `${input.workCanton} · ${cantonName(input.workCanton)}`],
+    ["Régime appliqué", result.regimeLabel],
+    ["Salaire annuel brut (CHF)", formatCHF(input.grossAnnualSalary)],
+    ["Situation civile", input.status === "single" ? "Célibataire" : "Marié·e / pacsé·e"],
+    ["Enfants à charge", String(input.children ?? 0)],
+    ...(input.spouseGrossSalary
+      ? [["Salaire conjoint (CHF)", formatCHF(input.spouseGrossSalary)] as [string, string]]
+      : []),
+    ["Taux EUR/CHF retenu", String(input.eurChfRate ?? 0.95)],
+  ]);
+
+  pdf.section("Décomposition fiscale");
+  pdf.table(
+    ["Poste", "Taux", "Montant CHF"],
+    [
+      ["Retenue Suisse", `${result.swissRate}%`, formatCHF(result.swissTax)],
+      ["Impôt pays de résidence", `${result.foreignRate}%`, formatCHF(result.foreignTax)],
+      ["TOTAL charge fiscale", `${result.totalRate}%`, formatCHF(result.totalTax)],
+      ["Net après impôts", "—", formatCHF(result.netAnnual)],
+    ],
+    { highlightLast: true },
+  );
+
+  if (result.alternative) {
+    pdf.section("Comparatif régime alternatif");
+    pdf.callout(
+      `${result.alternative.label} · Total : ${formatCHF(result.alternative.totalTax)} · Net : ${formatCHF(result.alternative.netAnnual)}. ` +
+        (result.alternative.delta > 0
+          ? `Le régime actuel est plus avantageux de ${formatCHF(result.alternative.delta)}.`
+          : `Le régime alternatif coûterait ${formatCHF(Math.abs(result.alternative.delta))} de moins (à étudier).`),
+      result.alternative.delta > 0 ? "success" : "warning",
+    );
+  }
+
+  pdf.section("Notes du régime");
+  result.notes.forEach((n) => pdf.paragraph(`• ${n}`));
+
+  pdf.section("Méthodologie & avertissements");
+  pdf.paragraph(
+    "L'estimation de l'impôt français applique le barème progressif 2025 (DGFiP) avec abattement forfaitaire 10 % et quotient familial. " +
+      "L'IRPEF italien intègre les addizionali régionale/communale moyennes (~2,5 %) et la franchise frontalière de 10 000 EUR (loi 83/2023). " +
+      "Le résultat est indicatif : la déclaration définitive doit être établie par un fiscaliste agréé dans le pays de résidence.",
+    { italic: true, muted: true },
+  );
+
+  pdf.save(makeFilename("frontalier", input.workCanton));
+}
+
+// ============================================================================
+// TOU / QUASI-RÉSIDENT
+// ============================================================================
+
+export function exportTouPdf(args: {
+  header?: Partial<PdfHeaderInfo>;
+  input: {
+    canton: string;
+    grossSalary: number;
+    bonus: number;
+    sourceTaxAnnual: number;
+    worldwideIncome: number;
+    isEUEFTAResident: boolean;
+    pillar3aContributions: number;
+    lppBuyback: number;
+    mortgageInterest: number;
+    realEstateMaintenance: number;
+    healthInsurancePremiums: number;
+  };
+  eligibility: QuasiResidentResult;
+  comparison: TOUComparisonResult;
+}) {
+  const { input, eligibility, comparison } = args;
+  const pdf = new ReportPdf({
+    title: "TOU · Taxation Ordinaire Ultérieure",
+    subtitle: `Quasi-résident · ${cantonName(input.canton)}`,
+    ...args.header,
+  } as PdfHeaderInfo);
+
+  pdf.section("Synthèse");
+  pdf.paragraph(
+    "La Taxation Ordinaire Ultérieure (TOU) permet aux contribuables imposés à la source et résidant dans l'UE/AELE de demander " +
+      "une taxation ordinaire dès lors qu'ils réalisent au moins 90 % de leur revenu mondial en Suisse (statut quasi-résident, art. 99a/b LIFD). " +
+      "Cette procédure permet de faire valoir les déductions effectives (3a, rachats LPP, intérêts hypothécaires, entretien immobilier) " +
+      "qui ne sont pas prises en compte dans les barèmes forfaitaires de l'impôt à la source.",
+  );
+
+  pdf.metricsGrid([
+    { label: "Part revenu CH", value: `${eligibility.swissShare}%`, tone: eligibility.eligibleForTOU ? "success" : "warning" },
+    { label: "IS retenue", value: comparison.sourceTax },
+    { label: "TOU calculée", value: comparison.ordinaryTax, tone: "primary" },
+    {
+      label: comparison.delta < 0 ? "Économie TOU" : "Surcoût TOU",
+      value: Math.abs(comparison.delta),
+      tone: comparison.delta < 0 ? "success" : "warning",
+    },
+  ]);
+
+  pdf.section("Éligibilité quasi-résident");
+  pdf.kvTable([
+    ["Revenu mondial annuel", formatCHF(input.worldwideIncome)],
+    ["Revenu suisse", formatCHF(input.grossSalary + input.bonus)],
+    ["Part suisse / mondiale", `${eligibility.swissShare} %`],
+    ["Seuil légal (90 %)", eligibility.meetsThreshold ? "Atteint" : "Non atteint"],
+    ["Résidence UE / AELE", input.isEUEFTAResident ? "Oui" : "Non"],
+    ["Éligible à la TOU", eligibility.eligibleForTOU ? "OUI" : "NON"],
+  ]);
+  pdf.callout(eligibility.recommendation, eligibility.eligibleForTOU ? "success" : "warning");
+
+  pdf.section("Comparatif IS vs TOU");
+  pdf.table(
+    ["Régime", "Impôt annuel", "Taux effectif"],
+    [
+      ["Impôt à la source (actuel)", formatCHF(comparison.sourceTax), `${comparison.effectiveRateIS} %`],
+      ["TOU (taxation ordinaire)", formatCHF(comparison.ordinaryTax), `${comparison.effectiveRateTOU} %`],
+      [
+        comparison.delta < 0 ? "ÉCONOMIE TOU" : "SURCOÛT TOU",
+        formatCHF(Math.abs(comparison.delta)),
+        `Marginal ${comparison.marginalRate} %`,
+      ],
+    ],
+    { highlightLast: true },
+  );
+
+  pdf.section("Déductions effectives valorisées");
+  pdf.kvTable([
+    ["Cotisations 3e pilier A", formatCHF(input.pillar3aContributions)],
+    ["Rachat LPP", formatCHF(input.lppBuyback)],
+    ["Intérêts hypothécaires", formatCHF(input.mortgageInterest)],
+    ["Entretien immobilier", formatCHF(input.realEstateMaintenance)],
+    ["Primes maladie / LCA", formatCHF(input.healthInsurancePremiums)],
+  ]);
+  pdf.paragraph(comparison.potentialDeductionsImpact);
+
+  pdf.section("Recommandation");
+  pdf.callout(
+    comparison.recommendationText,
+    comparison.recommendation === "tou" ? "success" : comparison.recommendation === "source" ? "info" : "warning",
+  );
+
+  pdf.section("Procédure & délais");
+  eligibility.notes.forEach((n) => pdf.paragraph(`• ${n}`));
+  pdf.callout(
+    "La demande de TOU doit être déposée par écrit auprès de l'administration fiscale cantonale au plus tard le 31 mars de l'année suivant " +
+      "l'année fiscale concernée. Une fois acceptée, elle s'applique aux années suivantes jusqu'à fin de l'assujettissement à la source.",
+    "info",
+  );
+
+  pdf.save(makeFilename("tou_quasi_resident", input.canton));
+}
+
+// ============================================================================
+// LIBRE PASSAGE · VESTED BENEFITS
+// ============================================================================
+
+export function exportVestedBenefitsPdf(args: {
+  header?: Partial<PdfHeaderInfo>;
+  input: {
+    initialBalance: number;
+    yearsToRetirement: number;
+    withdrawalCanton: string;
+  };
+  projections: VestedProjectionResult[];
+  recommended: string;
+}) {
+  const { input, projections, recommended } = args;
+  const pdf = new ReportPdf({
+    title: "Libre passage · Stratégies de placement",
+    subtitle: `Capital ${formatCHF(input.initialBalance)} · horizon ${input.yearsToRetirement} ans · ${cantonName(input.withdrawalCanton)}`,
+    ...args.header,
+  } as PdfHeaderInfo);
+
+  pdf.section("Synthèse");
+  pdf.paragraph(
+    "Un compte de libre passage est ouvert lors d'une interruption d'affiliation à une caisse de pension (départ à l'étranger, indépendance, " +
+      "période sans emploi). L'avoir reste bloqué jusqu'à 5 ans avant l'âge AVS, sauf cas particuliers (achat immobilier, départ définitif hors UE/AELE). " +
+      "Trois profils d'investissement sont proposés ici, calibrés selon l'allocation actions/obligations et les frais de gestion (TER + frais administratifs).",
+  );
+
+  const reco = projections.find((p) => p.strategy.id === recommended);
+  if (reco) {
+    pdf.metricsGrid([
+      { label: "Stratégie conseillée", value: reco.strategy.label, tone: "primary" },
+      { label: "Capital final projeté", value: reco.finalBalance, tone: "success" },
+      { label: "Gains nets", value: reco.totalGains, tone: "success" },
+      ...(reco.estimatedExitTax !== undefined
+        ? [{ label: "Net après impôt sortie", value: reco.finalBalance - reco.estimatedExitTax, tone: "primary" as const }]
+        : []),
+    ]);
+  }
+
+  pdf.section("Hypothèses");
+  pdf.kvTable([
+    ["Capital libre passage actuel", formatCHF(input.initialBalance)],
+    ["Horizon avant retrait", `${input.yearsToRetirement} ans`],
+    ["Canton de retrait", `${input.withdrawalCanton} · ${cantonName(input.withdrawalCanton)}`],
+    ["Stratégie recommandée (selon horizon)", projections.find((p) => p.strategy.id === recommended)?.strategy.label ?? "—"],
+  ]);
+
+  pdf.section("Comparatif des 3 stratégies");
+  pdf.table(
+    ["Stratégie", "Rdt net annualisé", "Capital final", "Fourchette ±1σ", "Impôt sortie", "Net après impôt"],
+    projections.map((p) => [
+      p.strategy.label,
+      `${p.netReturn} %`,
+      formatCHF(p.finalBalance),
+      `${formatCHF(p.finalLow)} → ${formatCHF(p.finalHigh)}`,
+      p.estimatedExitTax !== undefined ? formatCHF(p.estimatedExitTax) : "—",
+      p.estimatedExitTax !== undefined ? formatCHF(p.finalBalance - p.estimatedExitTax) : formatCHF(p.finalBalance),
+    ]),
+  );
+
+  projections.forEach((p) => {
+    pdf.section(`Stratégie · ${p.strategy.label}`);
+    pdf.paragraph(p.strategy.description);
+    pdf.kvTable([
+      ["Allocation actions cible", `${Math.round(p.strategy.equityAllocation * 100)} %`],
+      ["Rendement brut espéré", `${p.strategy.expectedReturn} %`],
+      ["Frais annuels totaux", `${p.strategy.totalFees} %`],
+      ["Volatilité (écart-type)", `${p.strategy.volatility} %`],
+      ["Rendement net annualisé", `${p.netReturn} %`],
+      ["Capital final projeté", formatCHF(p.finalBalance)],
+      ["Fourchette basse (-1σ)", formatCHF(p.finalLow)],
+      ["Fourchette haute (+1σ)", formatCHF(p.finalHigh)],
+      ["Gains nets cumulés", formatCHF(p.totalGains)],
+      ...(p.estimatedExitTax !== undefined
+        ? ([
+            ["Impôt sortie estimé", formatCHF(p.estimatedExitTax)],
+            ["Net après impôt sortie", formatCHF(p.finalBalance - p.estimatedExitTax)],
+          ] as Array<[string, string]>)
+        : []),
+    ]);
+  });
+
+  pdf.section("Optimisation fiscale du retrait");
+  pdf.callout(
+    "Fragmentez vos avoirs sur 2 ou 3 comptes de libre passage et échelonnez les retraits sur plusieurs années fiscales (≥ 1 an d'écart) pour " +
+      "casser la progressivité de l'impôt sur les prestations en capital. Combiné à un retrait 3a étalé, l'économie peut dépasser 20 % de la charge totale.",
+    "success",
+  );
+
+  pdf.section("Avertissements");
+  pdf.paragraph(
+    "Les rendements espérés sont des moyennes long terme nettes de frais ; les fourchettes ±1σ couvrent ~68 % des scénarios statistiquement probables. " +
+      "Performance passée non garantie. L'impôt sur prestation en capital est estimé à partir des barèmes cantonaux 2026 et de l'IFD séparé (1/5 du barème ordinaire) ; " +
+      "il varie selon la commune, l'état civil et la confession.",
+    { italic: true, muted: true },
+  );
+
+  pdf.save(makeFilename("libre_passage", input.withdrawalCanton));
+}
