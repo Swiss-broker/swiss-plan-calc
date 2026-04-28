@@ -1,23 +1,30 @@
 // Petits composants réutilisables pour les calculateurs.
-import type { ReactNode } from "react";
+import { useRef, type ReactNode } from "react";
 import { cn } from "@/lib/utils";
 import { formatCHF, formatPct } from "@/lib/format";
+import { useParallaxTilt } from "@/hooks/useParallaxTilt";
 
 export function CalcCard({
   title,
   description,
   children,
   className,
+  tilt = false,
 }: {
   title?: string;
   description?: string;
   children: ReactNode;
   className?: string;
+  tilt?: boolean;
 }) {
+  const tiltRef = useParallaxTilt<HTMLDivElement>({ max: 3, scale: 1.004 });
+  const fallbackRef = useRef<HTMLDivElement>(null);
   return (
     <div
+      ref={tilt ? tiltRef : fallbackRef}
       className={cn(
-        "rounded-2xl border border-border bg-card p-5 shadow-sm sm:p-6",
+        "rounded-2xl border border-border bg-card bg-gradient-surface p-5 shadow-3d sm:p-6",
+        tilt ? "tilt-3d" : "hover-lift",
         className,
       )}
     >
@@ -56,11 +63,22 @@ export function StatTile({
           ? "border-warning/30 bg-warning/5"
           : "border-border bg-muted/40";
   return (
-    <div className={cn("rounded-xl border p-4", toneCls)}>
-      <div className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+    <div
+      key={value}
+      className={cn(
+        "group rounded-xl border p-4 hover-lift kpi-pop",
+        toneCls,
+      )}
+    >
+      <div className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground transition-colors group-hover:text-foreground/80">
         {label}
       </div>
-      <div className={cn("mt-1 font-semibold tabular-nums", big ? "text-2xl" : "text-xl")}>
+      <div
+        className={cn(
+          "mt-1 font-semibold tabular-nums transition-transform duration-300 group-hover:translate-y-[-1px]",
+          big ? "text-2xl" : "text-xl",
+        )}
+      >
         {value}
       </div>
       {hint ? <div className="mt-0.5 text-xs text-muted-foreground">{hint}</div> : null}
