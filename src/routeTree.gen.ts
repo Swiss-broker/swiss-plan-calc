@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AppRouteImport } from './routes/_app'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as SharedTokenRouteImport } from './routes/shared.$token'
 import { Route as AppHistoryRouteImport } from './routes/_app/history'
 import { Route as AppDashboardRouteImport } from './routes/_app/dashboard'
 import { Route as AppCalculatorsRouteImport } from './routes/_app/calculators'
@@ -40,6 +41,11 @@ const AppRoute = AppRouteImport.update({
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SharedTokenRoute = SharedTokenRouteImport.update({
+  id: '/shared/$token',
+  path: '/shared/$token',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AppHistoryRoute = AppHistoryRouteImport.update({
@@ -127,6 +133,7 @@ export interface FileRoutesByFullPath {
   '/calculators': typeof AppCalculatorsRouteWithChildren
   '/dashboard': typeof AppDashboardRoute
   '/history': typeof AppHistoryRoute
+  '/shared/$token': typeof SharedTokenRoute
   '/calculators/canton-compare': typeof AppCalculatorsCantonCompareRoute
   '/calculators/income-tax': typeof AppCalculatorsIncomeTaxRoute
   '/calculators/lpp': typeof AppCalculatorsLppRoute
@@ -145,6 +152,7 @@ export interface FileRoutesByTo {
   '/account': typeof AppAccountRoute
   '/dashboard': typeof AppDashboardRoute
   '/history': typeof AppHistoryRoute
+  '/shared/$token': typeof SharedTokenRoute
   '/calculators/canton-compare': typeof AppCalculatorsCantonCompareRoute
   '/calculators/income-tax': typeof AppCalculatorsIncomeTaxRoute
   '/calculators/lpp': typeof AppCalculatorsLppRoute
@@ -166,6 +174,7 @@ export interface FileRoutesById {
   '/_app/calculators': typeof AppCalculatorsRouteWithChildren
   '/_app/dashboard': typeof AppDashboardRoute
   '/_app/history': typeof AppHistoryRoute
+  '/shared/$token': typeof SharedTokenRoute
   '/_app/calculators/canton-compare': typeof AppCalculatorsCantonCompareRoute
   '/_app/calculators/income-tax': typeof AppCalculatorsIncomeTaxRoute
   '/_app/calculators/lpp': typeof AppCalculatorsLppRoute
@@ -187,6 +196,7 @@ export interface FileRouteTypes {
     | '/calculators'
     | '/dashboard'
     | '/history'
+    | '/shared/$token'
     | '/calculators/canton-compare'
     | '/calculators/income-tax'
     | '/calculators/lpp'
@@ -205,6 +215,7 @@ export interface FileRouteTypes {
     | '/account'
     | '/dashboard'
     | '/history'
+    | '/shared/$token'
     | '/calculators/canton-compare'
     | '/calculators/income-tax'
     | '/calculators/lpp'
@@ -225,6 +236,7 @@ export interface FileRouteTypes {
     | '/_app/calculators'
     | '/_app/dashboard'
     | '/_app/history'
+    | '/shared/$token'
     | '/_app/calculators/canton-compare'
     | '/_app/calculators/income-tax'
     | '/_app/calculators/lpp'
@@ -242,6 +254,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AppRoute: typeof AppRouteWithChildren
   AuthRoute: typeof AuthRoute
+  SharedTokenRoute: typeof SharedTokenRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -265,6 +278,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/shared/$token': {
+      id: '/shared/$token'
+      path: '/shared/$token'
+      fullPath: '/shared/$token'
+      preLoaderRoute: typeof SharedTokenRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_app/history': {
@@ -436,6 +456,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AppRoute: AppRouteWithChildren,
   AuthRoute: AuthRoute,
+  SharedTokenRoute: SharedTokenRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

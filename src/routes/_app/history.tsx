@@ -56,6 +56,7 @@ import {
   type SimulationKind,
 } from "@/lib/history/types";
 import { extractKpis, regeneratePdf } from "@/lib/history/registry";
+import { ShareSimulationButton } from "@/components/calculators/ShareSimulationButton";
 import { formatCHF } from "@/lib/format";
 
 export const Route = createFileRoute("/_app/history")({
@@ -343,6 +344,7 @@ function HistoryPage() {
                             >
                               <FileDown className="h-4 w-4" />
                             </Button>
+                            <ShareSimulationButton simulationId={e.id} />
                             <Button
                               size="sm"
                               variant="ghost"
