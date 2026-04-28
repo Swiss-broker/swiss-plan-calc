@@ -16,13 +16,13 @@ export const Route = createFileRoute("/_app/calculators")({
 });
 
 const TABS = [
-  { to: "/calculators", label: "Vue d'ensemble", icon: Calculator, exact: true },
-  { to: "/calculators/income-tax", label: "Impôt revenu & fortune", icon: Coins },
-  { to: "/calculators/source-tax", label: "Impôt à la source", icon: Wallet },
-  { to: "/calculators/lpp", label: "LPP & rachats", icon: Landmark },
-  { to: "/calculators/pillar3a", label: "Pilier 3a", icon: PiggyBank },
-  { to: "/calculators/canton-compare", label: "Comparateur cantonal", icon: Map },
-  { to: "/calculators/retirement", label: "Rente vs capital", icon: TrendingUp },
+  { to: "/calculators", label: "Vue d'ensemble", icon: Calculator, exact: true as boolean },
+  { to: "/calculators/income-tax", label: "Impôt revenu & fortune", icon: Coins, exact: false as boolean },
+  { to: "/calculators/source-tax", label: "Impôt à la source", icon: Wallet, exact: false as boolean },
+  { to: "/calculators/lpp", label: "LPP & rachats", icon: Landmark, exact: false as boolean },
+  { to: "/calculators/pillar3a", label: "Pilier 3a", icon: PiggyBank, exact: false as boolean },
+  { to: "/calculators/canton-compare", label: "Comparateur cantonal", icon: Map, exact: false as boolean },
+  { to: "/calculators/retirement", label: "Rente vs capital", icon: TrendingUp, exact: false as boolean },
 ] as const;
 
 function CalculatorsLayout() {
