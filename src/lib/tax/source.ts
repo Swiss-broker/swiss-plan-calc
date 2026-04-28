@@ -1,5 +1,11 @@
-// Impôt à la source 2026 · barèmes A/B/C/H + frontaliers
+// Impôt à la source 2026 · barèmes A/B/C/H + L (quasi-résident).
 // Source : Circulaire AFC n°45 + barèmes cantonaux 2026.
+//
+// === SCOPE V1 — Suisse romande ===
+//
+// Cantons couverts : GE, VD, VS, FR, NE, JU.
+// Barème F (frontaliers TI) retiré (TI hors scope v1).
+// Barème L (quasi-résidents) géré côté logique TOU (src/lib/tax/tou.ts).
 //
 // Les barèmes officiels sont des grilles mensuelles en CHF par canton.
 // Nous proposons ici une approximation polynomiale calibrée sur les
@@ -18,9 +24,13 @@ export interface SourceTaxOptions {
   scale: SourceScale;
   /** Nombre d'enfants à charge (uniquement A, B, C, H impactés) */
   children?: number;
-  /** Confession affecte certains cantons (GE, ZH...) */
+  /** Confession affecte certains cantons (GE notamment) */
   church?: boolean;
-  /** Frontalier français bénéficiant de l'accord 4.5% (BE,BL,BS,JU,NE,SO,VD,VS) */
+  /**
+   * Frontalier français bénéficiant de l'accord 4.5%.
+   * Cantons romands concernés en v1 : VD, VS, NE, JU, FR.
+   * (BE, BL, BS, SO également visés par l'accord fédéral mais hors scope v1.)
+   */
   isCrossBorderFR?: boolean;
 }
 
@@ -38,33 +48,17 @@ export interface SourceTaxResult {
 /**
  * Coefficient cantonal moyen pour l'impôt à la source.
  * Calibré pour reproduire les grilles 2025/2026.
+ *
+ * Scope v1 : seuls les 6 cantons romands selectable. Toute demande pour
+ * un canton hors scope retourne un coefficient neutre (1.0) pour éviter
+ * les crashes mais ne devrait jamais arriver via l'UI (sélecteurs filtrés).
  */
 const CANTON_SOURCE_COEF: Record<string, number> = {
-  ZH: 1.0,
-  BE: 1.05,
-  LU: 0.93,
-  UR: 0.85,
-  SZ: 0.8,
-  OW: 0.88,
-  NW: 0.82,
-  GL: 0.97,
-  ZG: 0.78,
-  FR: 1.04,
-  SO: 1.02,
-  BS: 1.1,
-  BL: 1.04,
-  SH: 1.0,
-  AR: 0.92,
-  AI: 0.88,
-  SG: 1.0,
-  GR: 0.96,
-  AG: 0.97,
-  TG: 0.99,
-  TI: 1.08,
+  GE: 1.15,
   VD: 1.06,
   VS: 1.02,
+  FR: 1.04,
   NE: 1.12,
-  GE: 1.15,
   JU: 1.1,
 };
 
@@ -128,7 +122,7 @@ export function computeSourceTax(opts: SourceTaxOptions): SourceTaxResult {
   const childReduction =
     (opts.children ?? 0) * (opts.scale === "A" ? 0.4 : opts.scale === "H" ? 0.85 : 0.65);
 
-  // Surtaxe paroissiale (~1% pour ZH/GE/BE etc.)
+  // Surtaxe paroissiale (~1% pour GE etc.)
   const churchAddition = opts.church ? 0.6 : 0;
 
   let rate = Math.max(0, baseRate * cantonCoef - childReduction + churchAddition);

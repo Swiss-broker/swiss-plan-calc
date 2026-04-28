@@ -1,5 +1,21 @@
-// Barèmes ICC (impôt cantonal et communal) simplifiés 2026
-// pour les 26 cantons suisses.
+// Barèmes ICC (impôt cantonal et communal) 2026.
+//
+// === SCOPE V1 — Suisse romande ===
+//
+// La v1 du produit cible la Suisse romande. Seuls 7 cantons ont des barèmes
+// chargés ici :
+//
+//   - GE, VD, VS, FR, NE, JU  (selectable + comparable)
+//       → barèmes complets : revenu, fortune, multiplicateurs, paroissial.
+//
+//   - ZG                       (comparable uniquement, pas selectable)
+//       → barèmes revenu/fortune nécessaires au comparateur cantonal.
+//         Pas besoin des paramètres détaillés (paroissial, etc.) tant que
+//         ZG ne devient pas selectable.
+//
+// Les 19 autres cantons sont volontairement absents de CANTON_SCALES en v1.
+// `computeCantonalCommunal` lance une erreur explicite si un canton non
+// chargé est demandé. Voir docs/SCOPE.md pour la procédure d'ajout.
 //
 // MÉTHODE :
 // Chaque canton publie un barème de base ("impôt cantonal simple") puis
@@ -43,44 +59,8 @@ export interface CantonTaxScale {
 }
 
 // =====================================================================
-//   Barèmes simplifiés (recalibrés sur les calculateurs officiels 2025)
+//   Barèmes — Suisse romande (selectable v1)
 // =====================================================================
-//
-// Pour des questions de taille, on définit ici des fonctions génératrices
-// pour les barèmes les plus courants. Les valeurs cantonales spécifiques
-// sont données dans la table CANTON_SCALES.
-
-const ZH_SINGLE: BracketStep[] = [
-  { from: 0, base: 0, rate: 0 },
-  { from: 7_000, base: 0, rate: 2 },
-  { from: 11_400, base: 88, rate: 3 },
-  { from: 16_100, base: 229, rate: 4 },
-  { from: 23_700, base: 533, rate: 5 },
-  { from: 33_000, base: 998, rate: 6 },
-  { from: 43_700, base: 1_640, rate: 7 },
-  { from: 56_100, base: 2_508, rate: 8 },
-  { from: 73_000, base: 3_860, rate: 9 },
-  { from: 105_500, base: 6_785, rate: 10 },
-  { from: 137_700, base: 10_005, rate: 11 },
-  { from: 188_700, base: 15_615, rate: 12 },
-  { from: 254_900, base: 23_559, rate: 13 },
-];
-
-const ZH_MARRIED: BracketStep[] = [
-  { from: 0, base: 0, rate: 0 },
-  { from: 13_500, base: 0, rate: 2 },
-  { from: 19_600, base: 122, rate: 3 },
-  { from: 27_300, base: 353, rate: 4 },
-  { from: 36_700, base: 729, rate: 5 },
-  { from: 47_400, base: 1_264, rate: 6 },
-  { from: 61_300, base: 2_098, rate: 7 },
-  { from: 92_100, base: 4_254, rate: 8 },
-  { from: 122_900, base: 6_718, rate: 9 },
-  { from: 169_300, base: 10_894, rate: 10 },
-  { from: 224_700, base: 16_434, rate: 11 },
-  { from: 284_800, base: 23_045, rate: 12 },
-  { from: 354_100, base: 31_361, rate: 13 },
-];
 
 const VD_SINGLE: BracketStep[] = [
   { from: 0, base: 0, rate: 0 },
@@ -200,8 +180,9 @@ const FR_MARRIED: BracketStep[] = [
   { from: 354_900, base: 20_517, rate: 9 },
 ];
 
-// Génération d'un barème générique pour les autres cantons,
-// calibré par "type" : haute / moyenne / basse fiscalité.
+// Génération d'un barème générique (utilisé pour NE, JU, ZG en attente de
+// barèmes finement calibrés). Profilé par "type" : haute / moyenne / basse
+// fiscalité.
 function genericProgressive(profile: "low" | "mid" | "high"): BracketStep[] {
   const factor = profile === "low" ? 0.6 : profile === "mid" ? 1 : 1.25;
   return [
@@ -244,260 +225,7 @@ const wealthScaleStandard: BracketStep[] = [
 ];
 
 export const CANTON_SCALES: Record<string, CantonTaxScale> = {
-  ZH: {
-    single: ZH_SINGLE,
-    married: ZH_MARRIED,
-    cantonalMultiplier: 0.99,
-    communalMultiplierCapital: 1.19,
-    churchRateProtestant: 0.1,
-    churchRateCatholic: 0.11,
-    childDeduction: 9_000,
-    marriedDeduction: 2_700,
-    wealthScale: wealthScaleStandard,
-    wealthExemptionSingle: 80_000,
-    wealthExemptionMarried: 160_000,
-    capital: "Zurich",
-  },
-  BE: {
-    single: genericProgressive("mid"),
-    married: genericMarried("mid"),
-    cantonalMultiplier: 3.06,
-    communalMultiplierCapital: 1.54,
-    childDeduction: 8_000,
-    marriedDeduction: 5_400,
-    wealthScale: wealthScaleStandard,
-    wealthExemptionSingle: 97_000,
-    wealthExemptionMarried: 194_000,
-    capital: "Berne",
-  },
-  LU: {
-    single: genericProgressive("low"),
-    married: genericMarried("low"),
-    cantonalMultiplier: 1.6,
-    communalMultiplierCapital: 1.75,
-    childDeduction: 6_700,
-    marriedDeduction: 4_700,
-    wealthScale: wealthScaleStandard,
-    wealthExemptionSingle: 60_000,
-    wealthExemptionMarried: 120_000,
-    capital: "Lucerne",
-  },
-  UR: {
-    single: genericProgressive("low"),
-    married: genericMarried("low"),
-    cantonalMultiplier: 1.0,
-    communalMultiplierCapital: 0.99,
-    childDeduction: 8_000,
-    marriedDeduction: 5_900,
-    wealthScale: wealthScaleStandard,
-    wealthExemptionSingle: 88_000,
-    wealthExemptionMarried: 176_000,
-    capital: "Altdorf",
-  },
-  SZ: {
-    single: genericProgressive("low"),
-    married: genericMarried("low"),
-    cantonalMultiplier: 1.7,
-    communalMultiplierCapital: 2.25,
-    childDeduction: 9_000,
-    marriedDeduction: 0,
-    wealthScale: wealthScaleStandard,
-    wealthExemptionSingle: 100_000,
-    wealthExemptionMarried: 200_000,
-    capital: "Schwytz",
-  },
-  OW: {
-    single: genericProgressive("low"),
-    married: genericMarried("low"),
-    cantonalMultiplier: 2.95,
-    communalMultiplierCapital: 4.04,
-    childDeduction: 8_000,
-    marriedDeduction: 4_300,
-    wealthScale: wealthScaleStandard,
-    wealthExemptionSingle: 35_000,
-    wealthExemptionMarried: 70_000,
-    capital: "Sarnen",
-  },
-  NW: {
-    single: genericProgressive("low"),
-    married: genericMarried("low"),
-    cantonalMultiplier: 2.66,
-    communalMultiplierCapital: 2.36,
-    childDeduction: 9_000,
-    marriedDeduction: 4_900,
-    wealthScale: wealthScaleStandard,
-    wealthExemptionSingle: 35_000,
-    wealthExemptionMarried: 70_000,
-    capital: "Stans",
-  },
-  GL: {
-    single: genericProgressive("mid"),
-    married: genericMarried("mid"),
-    cantonalMultiplier: 1.0,
-    communalMultiplierCapital: 0.66,
-    childDeduction: 7_000,
-    marriedDeduction: 3_500,
-    wealthScale: wealthScaleStandard,
-    wealthExemptionSingle: 70_000,
-    wealthExemptionMarried: 140_000,
-    capital: "Glaris",
-  },
-  ZG: {
-    single: genericProgressive("low"),
-    married: genericMarried("low"),
-    cantonalMultiplier: 0.82,
-    communalMultiplierCapital: 0.5,
-    childDeduction: 12_000,
-    marriedDeduction: 13_700,
-    wealthScale: wealthScaleStandard,
-    wealthExemptionSingle: 100_000,
-    wealthExemptionMarried: 200_000,
-    capital: "Zoug",
-  },
-  FR: {
-    single: FR_SINGLE,
-    married: FR_MARRIED,
-    cantonalMultiplier: 1.0,
-    communalMultiplierCapital: 0.79,
-    childDeduction: 9_500,
-    marriedDeduction: 0,
-    wealthScale: wealthScaleStandard,
-    wealthExemptionSingle: 50_000,
-    wealthExemptionMarried: 100_000,
-    capital: "Fribourg",
-  },
-  SO: {
-    single: genericProgressive("mid"),
-    married: genericMarried("mid"),
-    cantonalMultiplier: 1.04,
-    communalMultiplierCapital: 1.18,
-    childDeduction: 6_000,
-    marriedDeduction: 2_000,
-    wealthScale: wealthScaleStandard,
-    wealthExemptionSingle: 40_000,
-    wealthExemptionMarried: 80_000,
-    capital: "Soleure",
-  },
-  BS: {
-    single: genericProgressive("high"),
-    married: genericMarried("high"),
-    cantonalMultiplier: 1.0,
-    communalMultiplierCapital: 0,
-    childDeduction: 7_800,
-    marriedDeduction: 35_000,
-    wealthScale: wealthScaleStandard,
-    wealthExemptionSingle: 75_000,
-    wealthExemptionMarried: 150_000,
-    capital: "Bâle",
-  },
-  BL: {
-    single: genericProgressive("mid"),
-    married: genericMarried("mid"),
-    cantonalMultiplier: 1.0,
-    communalMultiplierCapital: 0.62,
-    childDeduction: 7_500,
-    marriedDeduction: 1_000,
-    wealthScale: wealthScaleStandard,
-    wealthExemptionSingle: 75_000,
-    wealthExemptionMarried: 150_000,
-    capital: "Liestal",
-  },
-  SH: {
-    single: genericProgressive("mid"),
-    married: genericMarried("mid"),
-    cantonalMultiplier: 1.04,
-    communalMultiplierCapital: 0.95,
-    childDeduction: 8_400,
-    marriedDeduction: 1_000,
-    wealthScale: wealthScaleStandard,
-    wealthExemptionSingle: 50_000,
-    wealthExemptionMarried: 100_000,
-    capital: "Schaffhouse",
-  },
-  AR: {
-    single: genericProgressive("low"),
-    married: genericMarried("low"),
-    cantonalMultiplier: 3.1,
-    communalMultiplierCapital: 4.2,
-    childDeduction: 7_000,
-    marriedDeduction: 0,
-    wealthScale: wealthScaleStandard,
-    wealthExemptionSingle: 50_000,
-    wealthExemptionMarried: 100_000,
-    capital: "Herisau",
-  },
-  AI: {
-    single: genericProgressive("low"),
-    married: genericMarried("low"),
-    cantonalMultiplier: 0.96,
-    communalMultiplierCapital: 0.86,
-    childDeduction: 6_000,
-    marriedDeduction: 0,
-    wealthScale: wealthScaleStandard,
-    wealthExemptionSingle: 50_000,
-    wealthExemptionMarried: 100_000,
-    capital: "Appenzell",
-  },
-  SG: {
-    single: genericProgressive("mid"),
-    married: genericMarried("mid"),
-    cantonalMultiplier: 1.05,
-    communalMultiplierCapital: 1.41,
-    childDeduction: 10_200,
-    marriedDeduction: 0,
-    wealthScale: wealthScaleStandard,
-    wealthExemptionSingle: 75_000,
-    wealthExemptionMarried: 150_000,
-    capital: "Saint-Gall",
-  },
-  GR: {
-    single: genericProgressive("mid"),
-    married: genericMarried("mid"),
-    cantonalMultiplier: 1.0,
-    communalMultiplierCapital: 0.95,
-    childDeduction: 6_400,
-    marriedDeduction: 1_500,
-    wealthScale: wealthScaleStandard,
-    wealthExemptionSingle: 100_000,
-    wealthExemptionMarried: 200_000,
-    capital: "Coire",
-  },
-  AG: {
-    single: genericProgressive("mid"),
-    married: genericMarried("mid"),
-    cantonalMultiplier: 1.09,
-    communalMultiplierCapital: 0.97,
-    childDeduction: 7_000,
-    marriedDeduction: 0,
-    wealthScale: wealthScaleStandard,
-    wealthExemptionSingle: 100_000,
-    wealthExemptionMarried: 200_000,
-    capital: "Aarau",
-  },
-  TG: {
-    single: genericProgressive("mid"),
-    married: genericMarried("mid"),
-    cantonalMultiplier: 1.17,
-    communalMultiplierCapital: 1.46,
-    childDeduction: 8_000,
-    marriedDeduction: 0,
-    wealthScale: wealthScaleStandard,
-    wealthExemptionSingle: 75_000,
-    wealthExemptionMarried: 150_000,
-    capital: "Frauenfeld",
-  },
-  TI: {
-    single: genericProgressive("high"),
-    married: genericMarried("high"),
-    cantonalMultiplier: 1.0,
-    communalMultiplierCapital: 0.93,
-    childDeduction: 11_100,
-    marriedDeduction: 0,
-    wealthScale: wealthScaleStandard,
-    wealthExemptionSingle: 200_000,
-    wealthExemptionMarried: 200_000,
-    capital: "Bellinzone",
-  },
+  // === Suisse romande (selectable + comparable v1) ===
   VD: {
     single: VD_SINGLE,
     married: VD_MARRIED,
@@ -522,6 +250,18 @@ export const CANTON_SCALES: Record<string, CantonTaxScale> = {
     wealthExemptionSingle: 30_000,
     wealthExemptionMarried: 60_000,
     capital: "Sion",
+  },
+  FR: {
+    single: FR_SINGLE,
+    married: FR_MARRIED,
+    cantonalMultiplier: 1.0,
+    communalMultiplierCapital: 0.79,
+    childDeduction: 9_500,
+    marriedDeduction: 0,
+    wealthScale: wealthScaleStandard,
+    wealthExemptionSingle: 50_000,
+    wealthExemptionMarried: 100_000,
+    capital: "Fribourg",
   },
   NE: {
     single: genericProgressive("high"),
@@ -565,6 +305,23 @@ export const CANTON_SCALES: Record<string, CantonTaxScale> = {
     wealthExemptionSingle: 60_000,
     wealthExemptionMarried: 120_000,
     capital: "Delémont",
+  },
+
+  // === Référence comparateur uniquement (comparable v1, NON selectable) ===
+  // ZG : barèmes revenu/fortune simplifiés, suffisants pour le comparateur.
+  // Les paramètres détaillés (paroissial fin, IS, prestation capital) seront
+  // ajoutés quand ZG passera selectable.
+  ZG: {
+    single: genericProgressive("low"),
+    married: genericMarried("low"),
+    cantonalMultiplier: 0.82,
+    communalMultiplierCapital: 0.5,
+    childDeduction: 12_000,
+    marriedDeduction: 13_700,
+    wealthScale: wealthScaleStandard,
+    wealthExemptionSingle: 100_000,
+    wealthExemptionMarried: 200_000,
+    capital: "Zoug",
   },
 };
 
@@ -610,7 +367,11 @@ export interface CCComputeResult {
 export function computeCantonalCommunal(opts: CCComputeOptions): CCComputeResult {
   const scale = CANTON_SCALES[opts.canton];
   if (!scale) {
-    throw new Error(`Canton inconnu: ${opts.canton}`);
+    throw new Error(
+      `Canton hors scope v1 : "${opts.canton}". ` +
+        `Cantons disponibles : ${Object.keys(CANTON_SCALES).join(", ")}. ` +
+        `Voir docs/SCOPE.md pour ajouter un canton.`,
+    );
   }
   const isMarried = opts.status === "married";
   const isSingleParent = opts.status === "single_with_children";

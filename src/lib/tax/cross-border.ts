@@ -1,17 +1,27 @@
-// Module frontaliers · régimes France-Suisse et Italie-Tessin
-// Sources : Convention fiscale FR-CH 1966, Accord 1983 (4.5%), accord italo-suisse 2020.
+// Module frontaliers · régime France-Suisse (Suisse romande v1).
+// Sources : Convention fiscale FR-CH 1966, Accord 1983 (4.5%).
+//
+// === SCOPE V1 — Suisse romande ===
+//
+// Régimes couverts :
+//   - "fr_accord_45" : VD, VS, NE, JU, FR
+//                      (la liste fédérale complète est BE, BL, BS, JU, NE,
+//                      SO, VD, VS — BE/BL/BS/SO hors scope v1)
+//   - "fr_geneva"    : GE (IS genevoise classique + rétrocession 3.5 %)
+//
+// Régime "it_ticino" (accord italo-suisse 2023) RETIRÉ en v1 puisque le
+// Tessin est hors scope. Sera réintégré quand TI deviendra selectable.
 
 export type CrossBorderRegime =
-  | "fr_accord_45" // 8 cantons : BE, BL, BS, JU, NE, SO, VD, VS
-  | "fr_geneva" // GE : imposition à la source genevoise + rétrocession
-  | "it_ticino"; // TI : nouvel accord 2023 (résidents italiens travaillant TI)
+  | "fr_accord_45" // VD, VS, NE, JU, FR (v1, sous-ensemble romand de l'accord fédéral)
+  | "fr_geneva"; // GE : imposition à la source genevoise + rétrocession
 
 export interface CrossBorderInput {
   /** Canton de travail */
   workCanton: string;
   /** Salaire annuel brut (CHF) */
   grossAnnualSalary: number;
-  /** Statut civil pour barème français/italien estimé */
+  /** Statut civil pour barème français estimé */
   status: "single" | "married";
   /** Nombre d'enfants à charge (impact fiscalité du pays de résidence) */
   children?: number;
@@ -44,8 +54,12 @@ export interface CrossBorderResult {
   };
 }
 
-// Cantons appliquant l'accord franco-suisse 1983 (retenue 4.5% rétrocédée à FR)
-export const FR_ACCORD_CANTONS = ["BE", "BL", "BS", "JU", "NE", "SO", "VD", "VS"] as const;
+/**
+ * Cantons romands appliquant l'accord franco-suisse 1983 (retenue 4.5%
+ * rétrocédée à FR). Sous-ensemble romand de la liste fédérale complète
+ * ["BE","BL","BS","JU","NE","SO","VD","VS"]. Hors scope v1 : BE, BL, BS, SO.
+ */
+export const FR_ACCORD_CANTONS = ["JU", "NE", "VD", "VS", "FR"] as const;
 
 export function isFrAccordCanton(canton: string): boolean {
   return (FR_ACCORD_CANTONS as readonly string[]).includes(canton);
@@ -83,35 +97,6 @@ function frenchIncomeTax(taxableEur: number, status: "single" | "married", child
   return Math.max(0, tax * parts);
 }
 
-/**
- * Estimation IRPEF Italie 2026 (résident italien, travaille au Tessin)
- * Barèmes IRPEF 2024-2026 + addizionali régionale/communale moyennes (~2%).
- */
-function italianIncomeTax(taxableEur: number, children: number): number {
-  // Barème IRPEF 2024 (3 tranches)
-  const brackets = [
-    { upTo: 28_000, rate: 0.23 },
-    { upTo: 50_000, rate: 0.35 },
-    { upTo: Infinity, rate: 0.43 },
-  ];
-  let tax = 0;
-  let prev = 0;
-  for (const b of brackets) {
-    if (taxableEur > b.upTo) {
-      tax += (b.upTo - prev) * b.rate;
-      prev = b.upTo;
-    } else {
-      tax += (taxableEur - prev) * b.rate;
-      break;
-    }
-  }
-  // Addizionali régionale + communale (Lombardie ~1.7% + 0.8%)
-  tax += taxableEur * 0.025;
-  // Détraction enfants à charge (~950 EUR par enfant)
-  tax = Math.max(0, tax - children * 950);
-  return tax;
-}
-
 /** Approximation impôt à la source GE pour résidents français */
 function genevaSourceTax(grossAnnual: number, status: "single" | "married", children: number): number {
   // GE est l'un des cantons à fiscalité élevée à la source.
@@ -144,7 +129,7 @@ export function computeCrossBorder(input: CrossBorderInput): CrossBorderResult {
   // Abattement forfaitaire 10% (frais professionnels FR)
   const taxableFR = (grossEur + spouseEur) * 0.9;
 
-  // ===== Régime 1 : Accord 4.5% (8 cantons) =====
+  // ===== Régime 1 : Accord 4.5% (cantons romands sauf GE) =====
   if (isFrAccordCanton(input.workCanton)) {
     const swissTax = input.grossAnnualSalary * 0.045;
     const frTax = frenchIncomeTax(taxableFR, input.status, children);
@@ -205,47 +190,10 @@ export function computeCrossBorder(input: CrossBorderInput): CrossBorderResult {
     };
   }
 
-  // ===== Régime 3 : Tessin · accord italo-suisse 2023 =====
-  if (input.workCanton === "TI") {
-    // Nouveaux frontaliers (à partir du 17.07.2023) : imposés en CH (max 80 % de l'IS)
-    // ET en Italie (avec crédit d'impôt). Anciens frontaliers : imposés uniquement en CH.
-    const monthly = input.grossAnnualSalary / 12;
-    let rate = 0;
-    if (monthly < 4_000) rate = 6;
-    else if (monthly < 8_000) rate = 6 + ((monthly - 4_000) / 4_000) * 6;
-    else if (monthly < 14_000) rate = 12 + ((monthly - 8_000) / 6_000) * 6;
-    else rate = 18;
-    rate -= children * 0.8;
-    rate = Math.max(0, rate * 0.8); // accord : retenue limitée à 80 % de l'IS standard
-    const swissTax = (input.grossAnnualSalary * rate) / 100;
-    const itTax = italianIncomeTax(grossEur, children);
-    const itTaxChf = itTax / eur;
-    // Crédit d'impôt italien ~ impôt CH (méthode imputation)
-    const itResidual = Math.max(0, itTaxChf - swissTax);
-    const total = swissTax + itResidual;
-    return {
-      regime: "it_ticino",
-      regimeLabel: "Tessin · accord italo-suisse 2023",
-      swissTax: Math.round(swissTax),
-      swissRate: Math.round(rate * 10) / 10,
-      foreignTax: Math.round(itResidual),
-      foreignRate: Math.round((itResidual / input.grossAnnualSalary) * 1000) / 10,
-      totalTax: Math.round(total),
-      totalRate: Math.round((total / input.grossAnnualSalary) * 1000) / 10,
-      netAnnual: Math.round(input.grossAnnualSalary - total),
-      notes: [
-        "Nouveaux frontaliers (depuis 17.07.2023) : imposition partagée CH/IT, retenue suisse plafonnée à 80 % de l'IS standard.",
-        "Anciens frontaliers : imposition exclusive en Suisse (régime transitoire).",
-        "L'Italie accorde un crédit d'impôt pour l'impôt déjà payé en CH (méthode d'imputation).",
-        "Franchise IRPEF de 10 000 EUR pour les frontaliers (loi 83/2023).",
-      ],
-    };
-  }
-
-  // ===== Hors régime spécifique =====
+  // ===== Hors scope v1 =====
   return {
     regime: "fr_accord_45",
-    regimeLabel: `Canton ${input.workCanton} · pas d'accord frontalier spécifique`,
+    regimeLabel: `Canton ${input.workCanton} · hors scope v1`,
     swissTax: 0,
     swissRate: 0,
     foreignTax: 0,
@@ -254,8 +202,8 @@ export function computeCrossBorder(input: CrossBorderInput): CrossBorderResult {
     totalRate: 0,
     netAnnual: input.grossAnnualSalary,
     notes: [
-      `Le canton ${input.workCanton} n'a pas d'accord frontalier France-Suisse.`,
-      "Régime applicable à étudier au cas par cas (frontaliers DE pour BS/BL/SH/ZH/TG/AG ; AT pour SG/GR).",
+      `Le canton ${input.workCanton} n'est pas couvert en v1 (Suisse romande uniquement).`,
+      "Cantons disponibles v1 : GE, VD, VS, FR, NE, JU.",
     ],
   };
 }
