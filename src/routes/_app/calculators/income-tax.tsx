@@ -15,6 +15,9 @@ import { CalcCard, MoneyTile, PctTile, Row } from "@/components/calculators/Calc
 import { formatCHF } from "@/lib/format";
 import { runOptimizer } from "@/lib/optimizer";
 import { OptimizationsPanel } from "@/components/optimizer/OptimizationsPanel";
+import { ExportPdfButton } from "@/components/calculators/ExportPdfButton";
+import { exportIncomeTaxPdf } from "@/lib/pdf/reports";
+import { useAuth } from "@/contexts/AuthContext";
 
 export const Route = createFileRoute("/_app/calculators/income-tax")({
   head: () => ({ meta: [{ title: "Impôt revenu & fortune — SwissBroker Pro" }] }),
@@ -43,6 +46,7 @@ function IncomeTaxCalculator() {
   const setField = <K extends keyof typeof form>(k: K, v: (typeof form)[K]) =>
     setForm((f) => ({ ...f, [k]: v }));
 
+  const { user } = useAuth();
   const result = useMemo(() => computeIncomeTax(form), [form]);
   const optimizations = useMemo(
     () =>
@@ -55,6 +59,13 @@ function IncomeTaxCalculator() {
       }),
     [form],
   );
+
+  const handleExport = () =>
+    exportIncomeTaxPdf({
+      header: { brokerEmail: user?.email ?? undefined },
+      input: form,
+      result,
+    });
 
   return (
     <div className="grid grid-cols-1 gap-6 lg:grid-cols-5">
