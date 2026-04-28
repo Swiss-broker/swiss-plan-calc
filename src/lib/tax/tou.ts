@@ -88,8 +88,8 @@ export function compareTOUvsSource(input: TOUComparisonInput): TOUComparisonResu
   const ordinary = computeIncomeTax(input.taxInput);
   const grossIncome = ordinary.grossIncome;
 
-  const delta = ordinary.totalTax - input.sourceTax;
-  const eRateIS = grossIncome > 0 ? Math.round((input.sourceTax / grossIncome) * 1000) / 10 : 0;
+  const delta = ordinary.totalTax - input.sourceTaxAnnual;
+  const eRateIS = grossIncome > 0 ? Math.round((input.sourceTaxAnnual / grossIncome) * 1000) / 10 : 0;
   const eRateTOU = grossIncome > 0 ? Math.round((ordinary.totalTax / grossIncome) * 1000) / 10 : 0;
 
   let recommendation: "tou" | "source" | "neutral";
@@ -120,7 +120,7 @@ export function compareTOUvsSource(input: TOUComparisonInput): TOUComparisonResu
       : "Peu de déductions à faire valoir : la TOU n'apporte pas de gain significatif sans intérêts d'emprunt, rachat LPP ou 3a important.";
 
   return {
-    sourceTax: input.sourceTax,
+    sourceTax: input.sourceTaxAnnual,
     ordinaryTax: ordinary.totalTax,
     delta,
     recommendation,
