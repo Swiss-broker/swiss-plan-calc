@@ -20,7 +20,7 @@ export const Route = createFileRoute("/auth")({
   validateSearch: (s) => authSearchSchema.parse(s),
   head: () => ({
     meta: [
-      { title: "Connexion — SwissBroker Pro" },
+      { title: "Connexion · SwissBroker Pro" },
       { name: "description", content: "Accédez à votre espace courtier SwissBroker Pro." },
     ],
   }),
@@ -133,7 +133,7 @@ function GoogleButton() {
       return;
     }
     if (result.redirected) return;
-    // Tokens received — onAuthStateChange will redirect via the auth route effect.
+    // Tokens received · onAuthStateChange will redirect via the auth route effect.
   };
   return (
     <Button

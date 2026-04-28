@@ -1,4 +1,4 @@
-// Wizard partagé (création + édition) — 5 étapes.
+// Wizard partagé (création + édition) · 5 étapes.
 import { useMemo, useState } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
@@ -339,7 +339,7 @@ export function ClientWizard({ initial, mode, clientId }: ClientWizardProps) {
             {mode === "edit" ? "Modifier le client" : "Nouveau client"}
           </h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Étape {step} sur {STEPS.length} — {current.title}
+            Étape {step} sur {STEPS.length} · {current.title}
             <span className="text-muted-foreground/70"> · {current.desc}</span>
           </p>
         </div>
@@ -528,7 +528,7 @@ function StepFiscal({ form, update, errors }: StepProps) {
           <SelectContent>
             {CANTONS.map((c) => (
               <SelectItem key={c.code} value={c.code}>
-                {c.code} — {c.name}
+                {c.code} · {c.name}
               </SelectItem>
             ))}
           </SelectContent>
@@ -775,7 +775,7 @@ function StepFamily({
         </div>
         {form.children.length === 0 ? (
           <p className="mt-3 text-sm text-muted-foreground">
-            Aucun enfant — ajoutez les enfants à charge pour ajuster les déductions fiscales.
+            Aucun enfant · ajoutez les enfants à charge pour ajuster les déductions fiscales.
           </p>
         ) : (
           <div className="mt-3 space-y-3">

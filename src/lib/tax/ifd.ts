@@ -1,4 +1,4 @@
-// Impôt fédéral direct (IFD) — Barèmes 2026
+// Impôt fédéral direct (IFD) · Barèmes 2026
 // Source: Administration fédérale des contributions (AFC)
 // Barème post-numerando, base annuelle CHF
 // https://www.estv.admin.ch
@@ -12,7 +12,7 @@ export interface BracketStep {
   base: number;
   /** Taux marginal au-delà de `from` (en %) */
   rate: number;
-  /** Pas (palier) en CHF — si défini, l'impôt grimpe par incréments */
+  /** Pas (palier) en CHF · si défini, l'impôt grimpe par incréments */
   step?: number;
   /** Montant ajouté par `step` franchi */
   perStep?: number;
@@ -57,7 +57,7 @@ export const IFD_MARRIED_2026: BracketStep[] = [
   { from: 942_700, base: 108_311.0, rate: 11.5 },
 ];
 
-/** Déduction sociale pour enfant — IFD 2026 */
+/** Déduction sociale pour enfant · IFD 2026 */
 export const IFD_CHILD_DEDUCTION_2026 = 6_700;
 
 /**

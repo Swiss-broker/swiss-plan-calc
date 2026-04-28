@@ -41,7 +41,7 @@ export class ReportPdf {
     doc.text("SwissBroker Pro", margin, 12);
     doc.setFontSize(10);
     doc.setFont("helvetica", "normal");
-    doc.text("Simulation fiscale & prévoyance — Barèmes 2026", margin, 18);
+    doc.text("Simulation fiscale & prévoyance · Barèmes 2026", margin, 18);
     doc.setFontSize(9);
     doc.text(
       new Date().toLocaleDateString("fr-CH", {
@@ -232,7 +232,7 @@ export class ReportPdf {
     doc.setFontSize(8);
     doc.setTextColor(...muted);
     doc.text(
-      "Document à valeur indicative — ne constitue pas un conseil fiscal contraignant.",
+      "Document à valeur indicative · ne constitue pas un conseil fiscal contraignant.",
       margin,
       pageHeight - 7,
     );

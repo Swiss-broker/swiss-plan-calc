@@ -47,7 +47,7 @@ export function runOptimizer(input: OptimizerInput): Optimization[] {
   const baseline = computeIncomeTax(input.taxInput);
   const status = input.taxInput.status;
 
-  // 1) RACHAT LPP — si capacité disponible
+  // 1) RACHAT LPP · si capacité disponible
   if ((input.lppBuybackCapacity ?? 0) > 5_000) {
     const capacity = input.lppBuybackCapacity!;
     // Échelonner sur 3 ans pour maximiser l'effet progressif
@@ -100,7 +100,7 @@ export function runOptimizer(input: OptimizerInput): Optimization[] {
     }
   }
 
-  // 3) RETRAIT 3A ÉTALÉ — si capital significatif
+  // 3) RETRAIT 3A ÉTALÉ · si capital significatif
   if ((input.pillar3aBalance ?? 0) > 80_000) {
     const stag = stagged3a({
       totalCapital: input.pillar3aBalance!,
@@ -126,7 +126,7 @@ export function runOptimizer(input: OptimizerInput): Optimization[] {
     }
   }
 
-  // 4) COMPARATIF CANTONAL — si revenu élevé
+  // 4) COMPARATIF CANTONAL · si revenu élevé
   if (baseline.taxableIncomeCC > 100_000) {
     const otherCantons = ["ZG", "SZ", "NW", "OW"];
     let bestSavings = 0;
@@ -162,7 +162,7 @@ export function runOptimizer(input: OptimizerInput): Optimization[] {
       id: "lpp-pre-retirement",
       category: "lpp",
       title: "Fenêtre rachat LPP pré-retraite",
-      description: `À ${input.age} ans, dernière fenêtre pour effectuer des rachats LPP. Le délai de blocage de 3 ans concerne uniquement le retrait en capital — la rente reste possible. Capacité disponible : CHF ${input.lppBuybackCapacity!.toLocaleString("fr-CH")}.`,
+      description: `À ${input.age} ans, dernière fenêtre pour effectuer des rachats LPP. Le délai de blocage de 3 ans concerne uniquement le retrait en capital · la rente reste possible. Capacité disponible : CHF ${input.lppBuybackCapacity!.toLocaleString("fr-CH")}.`,
       estimatedSavings: Math.round((input.lppBuybackCapacity ?? 0) * (baseline.marginalRate / 100)),
       priority: "high",
     });

@@ -41,7 +41,7 @@ const supabase = _supabase as any;
 
 export const Route = createFileRoute("/shared/$token")({
   head: () => ({
-    meta: [{ title: "Simulation partagée — SwissBroker Pro" }],
+    meta: [{ title: "Simulation partagée · SwissBroker Pro" }],
   }),
   component: SharedSimulationPage,
 });
@@ -221,7 +221,7 @@ function SharedSimulationPage() {
         <div className="mx-auto flex max-w-4xl items-center justify-between gap-3 px-4 py-4">
           <div className="flex items-center gap-2">
             <ShieldCheck className="h-5 w-5 text-primary" />
-            <span className="font-semibold">SwissBroker Pro — Lien partagé</span>
+            <span className="font-semibold">SwissBroker Pro · Lien partagé</span>
           </div>
           <Button onClick={handlePdf} variant="outline" size="sm" className="gap-1.5">
             <FileDown className="h-4 w-4" /> Télécharger le PDF
@@ -284,7 +284,7 @@ function SharedSimulationPage() {
         </Card>
 
         <p className="text-center text-xs text-muted-foreground">
-          Lien sécurisé — les données sont régénérées à partir des paramètres
+          Lien sécurisé · les données sont régénérées à partir des paramètres
           sauvegardés. Calculs basés sur la fiscalité suisse 2026.
         </p>
       </main>

@@ -112,7 +112,7 @@ export function SaveSimulationButton({
             <Input
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder={defaultTitle ?? "Ex: M. Dupont — variante 3a max"}
+              placeholder={defaultTitle ?? "Ex: M. Dupont · variante 3a max"}
             />
           </div>
           <div className="space-y-1.5">
@@ -132,7 +132,7 @@ export function SaveSimulationButton({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="none">— Aucun —</SelectItem>
+                  <SelectItem value="none">Aucun</SelectItem>
                   {clients.map((c) => (
                     <SelectItem key={c.id} value={c.id}>
                       {c.last_name} {c.first_name}

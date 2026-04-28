@@ -54,7 +54,7 @@ import { OptimizationsPanel } from "@/components/optimizer/OptimizationsPanel";
 import type { IncomeTaxInput } from "@/lib/tax/income";
 
 export const Route = createFileRoute("/_app/clients/$clientId")({
-  head: () => ({ meta: [{ title: "Fiche client — SwissBroker Pro" }] }),
+  head: () => ({ meta: [{ title: "Fiche client · SwissBroker Pro" }] }),
   component: ClientDetailPage,
 });
 
@@ -235,7 +235,7 @@ function ClientDetailPage() {
             {cantonInfo && (
               <span className="inline-flex items-center gap-1">
                 <MapPin className="h-3.5 w-3.5" />
-                {cantonInfo.code} — {cantonInfo.name}
+                {cantonInfo.code} · {cantonInfo.name}
               </span>
             )}
           </div>
@@ -337,7 +337,7 @@ function ClientDetailPage() {
               <Row label="Pays" value={client.country_of_residence ?? "—"} />
               <Row
                 label="Canton"
-                value={cantonInfo ? `${cantonInfo.code} — ${cantonInfo.name}` : "—"}
+                value={cantonInfo ? `${cantonInfo.code} · ${cantonInfo.name}` : "—"}
               />
               <Row label="Commune" value={client.commune ?? "—"} />
               <Row label="NPA" value={client.postal_code ?? "—"} />

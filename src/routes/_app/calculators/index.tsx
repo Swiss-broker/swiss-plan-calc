@@ -3,7 +3,7 @@ import { Coins, Wallet, Landmark, PiggyBank, Map, TrendingUp, ArrowRight } from 
 import { CalcCard } from "@/components/calculators/CalcUI";
 
 export const Route = createFileRoute("/_app/calculators/")({
-  head: () => ({ meta: [{ title: "Calculateurs — SwissBroker Pro" }] }),
+  head: () => ({ meta: [{ title: "Calculateurs · SwissBroker Pro" }] }),
   component: CalculatorsIndex,
 });
 

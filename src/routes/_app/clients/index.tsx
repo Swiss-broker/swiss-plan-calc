@@ -49,7 +49,7 @@ import { ageFromDob, type Client } from "@/lib/clients/types";
 import { formatCHF } from "@/lib/format";
 
 export const Route = createFileRoute("/_app/clients/")({
-  head: () => ({ meta: [{ title: "Clients — SwissBroker Pro" }] }),
+  head: () => ({ meta: [{ title: "Clients · SwissBroker Pro" }] }),
   component: ClientsListPage,
 });
 
@@ -189,7 +189,7 @@ function ClientsListPage() {
                       {CIVIL_STATUS_LABELS[c.civil_status]}
                     </TableCell>
                     <TableCell className="hidden lg:table-cell text-sm text-muted-foreground">
-                      {c.canton ? `${c.canton} — ${CANTON_BY_CODE[c.canton]?.name ?? ""}` : "—"}
+                      {c.canton ? `${c.canton} · ${CANTON_BY_CODE[c.canton]?.name ?? ""}` : "—"}
                       {c.commune ? <div className="text-xs">{c.commune}</div> : null}
                     </TableCell>
                     <TableCell className="hidden md:table-cell">

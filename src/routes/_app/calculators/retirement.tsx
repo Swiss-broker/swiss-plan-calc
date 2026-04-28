@@ -18,7 +18,7 @@ import { SaveSimulationButton } from "@/components/calculators/SaveSimulationBut
 import { useAuth } from "@/contexts/AuthContext";
 
 export const Route = createFileRoute("/_app/calculators/retirement")({
-  head: () => ({ meta: [{ title: "Rente vs capital — SwissBroker Pro" }] }),
+  head: () => ({ meta: [{ title: "Rente vs capital · SwissBroker Pro" }] }),
   component: RetirementCalc,
 });
 
@@ -84,7 +84,7 @@ function RetirementCalc() {
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
                     {CANTONS.map((c) => (
-                      <SelectItem key={c.code} value={c.code}>{c.code} — {c.name}</SelectItem>
+                      <SelectItem key={c.code} value={c.code}>{c.code} · {c.name}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -150,7 +150,7 @@ function RetirementCalc() {
             lumpTaxTotal: lumpTax.total,
             recommendation: compare.recommendation,
           }}
-          defaultTitle={`Retraite ${form.canton} — capital ${form.capital}`}
+          defaultTitle={`Retraite ${form.canton} · capital ${form.capital}`}
         />
         <ExportPdfButton onClick={handleExport} />
       </div>

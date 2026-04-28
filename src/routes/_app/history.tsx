@@ -60,7 +60,7 @@ import { ShareSimulationButton } from "@/components/calculators/ShareSimulationB
 import { formatCHF } from "@/lib/format";
 
 export const Route = createFileRoute("/_app/history")({
-  head: () => ({ meta: [{ title: "Historique des simulations — SwissBroker Pro" }] }),
+  head: () => ({ meta: [{ title: "Historique des simulations · SwissBroker Pro" }] }),
   component: HistoryPage,
 });
 
@@ -426,7 +426,7 @@ function ComparisonPanel({
       <CardHeader>
         <CardTitle className="flex items-center gap-2 text-base">
           <GitCompare className="h-5 w-5 text-primary" />
-          Comparaison — {KIND_LABELS[kind]}
+          Comparaison · {KIND_LABELS[kind]}
         </CardTitle>
         <CardDescription>
           Les variations sont calculées par rapport à la 1<sup>re</sup> simulation sélectionnée.

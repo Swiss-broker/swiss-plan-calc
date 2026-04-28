@@ -20,7 +20,7 @@ import { SaveSimulationButton } from "@/components/calculators/SaveSimulationBut
 import { useAuth } from "@/contexts/AuthContext";
 
 export const Route = createFileRoute("/_app/calculators/source-tax")({
-  head: () => ({ meta: [{ title: "Impôt à la source — SwissBroker Pro" }] }),
+  head: () => ({ meta: [{ title: "Impôt à la source · SwissBroker Pro" }] }),
   component: SourceTaxCalc,
 });
 
@@ -51,7 +51,7 @@ function SourceTaxCalc() {
       <div className="lg:col-span-3">
         <CalcCard
           title="Situation salariée"
-          description="Barèmes A / B / C / H 2026 — accord franco-suisse pris en compte."
+          description="Barèmes A / B / C / H 2026 · accord franco-suisse pris en compte."
         >
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className="space-y-1.5">
@@ -61,7 +61,7 @@ function SourceTaxCalc() {
                 <SelectContent>
                   {CANTONS.map((c) => (
                     <SelectItem key={c.code} value={c.code}>
-                      {c.code} — {c.name}
+                      {c.code} · {c.name}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -72,10 +72,10 @@ function SourceTaxCalc() {
               <Select value={form.scale} onValueChange={(v) => set("scale", v as SourceScale)}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="A">A — Célibataire</SelectItem>
-                  <SelectItem value="B">B — Marié monoactif</SelectItem>
-                  <SelectItem value="C">C — Marié biactif</SelectItem>
-                  <SelectItem value="H">H — Famille monoparentale</SelectItem>
+                  <SelectItem value="A">A · Célibataire</SelectItem>
+                  <SelectItem value="B">B · Marié monoactif</SelectItem>
+                  <SelectItem value="C">C · Marié biactif</SelectItem>
+                  <SelectItem value="H">H · Famille monoparentale</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -145,7 +145,7 @@ function SourceTaxCalc() {
               monthlyTax: result.monthlyTax,
               annualTax: result.annualTax,
             }}
-            defaultTitle={`Source ${form.canton} ${form.scale} — ${form.monthlyGross}/mois`}
+            defaultTitle={`Source ${form.canton} ${form.scale} · ${form.monthlyGross}/mois`}
           />
           <ExportPdfButton onClick={handleExport} />
         </div>

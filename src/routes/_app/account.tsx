@@ -10,7 +10,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { CANTONS } from "@/lib/swiss/cantons";
 
 export const Route = createFileRoute("/_app/account")({
-  head: () => ({ meta: [{ title: "Mon profil — SwissBroker Pro" }] }),
+  head: () => ({ meta: [{ title: "Mon profil · SwissBroker Pro" }] }),
   component: AccountPage,
 });
 
@@ -122,10 +122,10 @@ function AccountPage() {
               }
               className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
             >
-              <option value="">— aucun —</option>
+              <option value="">aucun</option>
               {CANTONS.map((c) => (
                 <option key={c.code} value={c.code}>
-                  {c.code} — {c.name}
+                  {c.code} · {c.name}
                 </option>
               ))}
             </select>

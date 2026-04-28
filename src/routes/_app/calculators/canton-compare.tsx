@@ -29,7 +29,7 @@ import { SaveSimulationButton } from "@/components/calculators/SaveSimulationBut
 import { useAuth } from "@/contexts/AuthContext";
 
 export const Route = createFileRoute("/_app/calculators/canton-compare")({
-  head: () => ({ meta: [{ title: "Comparateur cantonal — SwissBroker Pro" }] }),
+  head: () => ({ meta: [{ title: "Comparateur cantonal · SwissBroker Pro" }] }),
   component: CantonCompareCalc,
 });
 
@@ -98,7 +98,7 @@ function CantonCompareCalc() {
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
                 {CANTONS.map((c) => (
-                  <SelectItem key={c.code} value={c.code}>{c.code} — {c.name}</SelectItem>
+                  <SelectItem key={c.code} value={c.code}>{c.code} · {c.name}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -121,7 +121,7 @@ function CantonCompareCalc() {
                 }}
                 formatter={(v: number, _: string, props) => [
                   formatCHF(v),
-                  `${props.payload.name} — ${props.payload.effective}%`,
+                  `${props.payload.name} · ${props.payload.effective}%`,
                 ]}
               />
               <Bar dataKey="total" radius={[0, 6, 6, 0]}>
@@ -159,7 +159,7 @@ function CantonCompareCalc() {
             referenceTax,
             maxSavings: Math.max(0, referenceTax - (data[0]?.total ?? 0)),
           }}
-          defaultTitle={`Comparateur 26 cantons — réf ${form.referenceCanton}`}
+          defaultTitle={`Comparateur 26 cantons · réf ${form.referenceCanton}`}
         />
         <ExportPdfButton onClick={handleExport} />
       </div>

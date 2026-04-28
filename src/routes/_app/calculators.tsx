@@ -18,7 +18,7 @@ import {
 } from "@/components/ui/select";
 
 export const Route = createFileRoute("/_app/calculators")({
-  head: () => ({ meta: [{ title: "Calculateurs — SwissBroker Pro" }] }),
+  head: () => ({ meta: [{ title: "Calculateurs · SwissBroker Pro" }] }),
   component: CalculatorsLayout,
 });
 
@@ -43,7 +43,7 @@ function CalculatorsLayout() {
       <div className="mb-6">
         <h1 className="text-3xl font-bold tracking-tight">Calculateurs</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Simulations rapides — barèmes 2026 — IFD, ICC, source, LPP, 3a, comparateur cantonal.
+          Simulations rapides · barèmes 2026 · IFD, ICC, source, LPP, 3a, comparateur cantonal.
         </p>
       </div>
 

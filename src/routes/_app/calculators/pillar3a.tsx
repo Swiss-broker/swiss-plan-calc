@@ -25,7 +25,7 @@ import { SaveSimulationButton } from "@/components/calculators/SaveSimulationBut
 import { useAuth } from "@/contexts/AuthContext";
 
 export const Route = createFileRoute("/_app/calculators/pillar3a")({
-  head: () => ({ meta: [{ title: "Pilier 3a — SwissBroker Pro" }] }),
+  head: () => ({ meta: [{ title: "Pilier 3a · SwissBroker Pro" }] }),
   component: Pillar3aCalc,
 });
 
@@ -121,7 +121,7 @@ function Pillar3aCalc() {
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
                     {CANTONS.map((c) => (
-                      <SelectItem key={c.code} value={c.code}>{c.code} — {c.name}</SelectItem>
+                      <SelectItem key={c.code} value={c.code}>{c.code} · {c.name}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -194,7 +194,7 @@ function Pillar3aCalc() {
             totalReturns: projection.totalReturns,
             staggeredSavings: stag.savings,
           }}
-          defaultTitle={`3a ${form.canton} — ${form.contribution} CHF/an`}
+          defaultTitle={`3a ${form.canton} · ${form.contribution} CHF/an`}
         />
         <ExportPdfButton onClick={handleExport} />
       </div>

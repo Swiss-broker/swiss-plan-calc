@@ -49,7 +49,7 @@ export interface IncomeTaxInput {
   realEstateMaintenance?: number;
   /** Primes d'assurance maladie + LCA */
   healthInsurancePremiums?: number;
-  /** Frais de garde (CHF) — par enfant ouvert au max légal */
+  /** Frais de garde (CHF) · par enfant ouvert au max légal */
   childCareCosts?: number;
   /** Donations à but utilité publique */
   donations?: number;
@@ -65,7 +65,7 @@ export interface IncomeTaxBreakdown {
   totalDeductions: number;
   /** Revenu net imposable (ICC) */
   taxableIncomeCC: number;
-  /** Revenu net imposable (IFD) — souvent identique mais peut différer */
+  /** Revenu net imposable (IFD) · souvent identique mais peut différer */
   taxableIncomeIFD: number;
   /** Détails déductions */
   deductions: {

@@ -10,7 +10,7 @@ import {
 import { Button } from "@/components/ui/button";
 
 export const Route = createFileRoute("/_app/dashboard")({
-  head: () => ({ meta: [{ title: "Tableau de bord — SwissBroker Pro" }] }),
+  head: () => ({ meta: [{ title: "Tableau de bord · SwissBroker Pro" }] }),
   component: Dashboard,
 });
 
@@ -50,7 +50,7 @@ function Dashboard() {
         <ActionCard
           to="/calculators"
           title="Calculateurs rapides"
-          desc="Impôts, rachat LPP, économie 3a, comparateur cantonal — sans créer de dossier client."
+          desc="Impôts, rachat LPP, économie 3a, comparateur cantonal · sans créer de dossier client."
           cta="Ouvrir les calculateurs"
         />
       </div>

@@ -1,4 +1,4 @@
-// Impôt à la source 2026 — barèmes A/B/C/H + frontaliers
+// Impôt à la source 2026 · barèmes A/B/C/H + frontaliers
 // Source : Circulaire AFC n°45 + barèmes cantonaux 2026.
 //
 // Les barèmes officiels sont des grilles mensuelles en CHF par canton.
@@ -77,7 +77,7 @@ function sourceRateBase(monthlyGross: number, scale: SourceScale): number {
   if (g <= 0) return 0;
 
   // Courbes calibrées par régression sur les grilles cantonales 2025
-  // Barème A — célibataire sans enfant
+  // Barème A · célibataire sans enfant
   if (scale === "A") {
     if (g < 3_500) return 0;
     if (g < 5_000) return 1 + (g - 3_500) * 0.0015;
@@ -88,7 +88,7 @@ function sourceRateBase(monthlyGross: number, scale: SourceScale): number {
     return Math.min(40, 38.15 + (g - 18_000) * 0.0006);
   }
 
-  // Barème B — marié monoactif
+  // Barème B · marié monoactif
   if (scale === "B") {
     if (g < 4_500) return 0;
     if (g < 7_000) return 0.5 + (g - 4_500) * 0.0011;
@@ -98,7 +98,7 @@ function sourceRateBase(monthlyGross: number, scale: SourceScale): number {
     return Math.min(35, 22.35 + (g - 16_000) * 0.001);
   }
 
-  // Barème C — marié biactif (taux plus élevé : addition revenus)
+  // Barème C · marié biactif (taux plus élevé : addition revenus)
   if (scale === "C") {
     if (g < 4_000) return 0;
     if (g < 6_500) return 1.5 + (g - 4_000) * 0.0014;
@@ -108,7 +108,7 @@ function sourceRateBase(monthlyGross: number, scale: SourceScale): number {
     return Math.min(38, 26.9 + (g - 15_000) * 0.001);
   }
 
-  // Barème H — famille monoparentale
+  // Barème H · famille monoparentale
   if (scale === "H") {
     if (g < 5_000) return 0;
     if (g < 8_000) return 0.7 + (g - 5_000) * 0.0013;

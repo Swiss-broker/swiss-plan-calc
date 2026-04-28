@@ -1,4 +1,4 @@
-// Pilier 3a — calculs cotisations max, économies fiscales, projections, retraits étalés.
+// Pilier 3a · calculs cotisations max, économies fiscales, projections, retraits étalés.
 import { computeIncomeTax, type IncomeTaxInput } from "../tax/income";
 import { capitalWithdrawalTax } from "../lpp";
 

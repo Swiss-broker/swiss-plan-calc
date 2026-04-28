@@ -29,7 +29,7 @@ import { SaveSimulationButton } from "@/components/calculators/SaveSimulationBut
 import { useAuth } from "@/contexts/AuthContext";
 
 export const Route = createFileRoute("/_app/calculators/lpp")({
-  head: () => ({ meta: [{ title: "LPP & rachats — SwissBroker Pro" }] }),
+  head: () => ({ meta: [{ title: "LPP & rachats · SwissBroker Pro" }] }),
   component: LppCalc,
 });
 
@@ -166,7 +166,7 @@ function LppCalc() {
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
                     {CANTONS.map((c) => (
-                      <SelectItem key={c.code} value={c.code}>{c.code} — {c.name}</SelectItem>
+                      <SelectItem key={c.code} value={c.code}>{c.code} · {c.name}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -225,7 +225,7 @@ function LppCalc() {
             totalBuybacks: projection.totalBuybacks,
             totalTaxSavings: buybackPlan.totalTaxSavings,
           }}
-          defaultTitle={`LPP ${form.currentAge}→${form.retirementAge} ans — ${form.canton}`}
+          defaultTitle={`LPP ${form.currentAge}→${form.retirementAge} ans · ${form.canton}`}
         />
         <ExportPdfButton onClick={handleExport} />
       </div>

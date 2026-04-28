@@ -122,7 +122,7 @@ export function OptimizationsPanel({
 
       <p className="flex items-start gap-2 text-[11px] text-muted-foreground">
         <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-        Estimations indicatives basées sur les barèmes 2026 — confirmez avec une simulation
+        Estimations indicatives basées sur les barèmes 2026 · confirmez avec une simulation
         détaillée avant d'agir.
       </p>
     </div>

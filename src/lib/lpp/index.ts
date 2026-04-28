@@ -1,4 +1,4 @@
-// Calculs LPP (2e pilier) — rachats, retraits, conversion en rente, projections.
+// Calculs LPP (2e pilier) · rachats, retraits, conversion en rente, projections.
 // Bases : LPP / OPP2 valables 2026.
 
 import { computeIncomeTax, type IncomeTaxInput } from "../tax/income";
@@ -10,7 +10,7 @@ export const LPP_MIN_ANNUAL_SALARY_2026 = 22_680;
 export const LPP_CONVERSION_RATE_2026 = 6.8; // taux légal LPP
 export const LPP_INTEREST_MIN_2026 = 1.25; // taux minimal LPP 2026
 
-/** Bonifications de vieillesse LPP — barème légal */
+/** Bonifications de vieillesse LPP · barème légal */
 export const LPP_AGE_CREDITS: Record<string, number> = {
   // Tranches d'âge → % du salaire coordonné
   "25-34": 0.07,

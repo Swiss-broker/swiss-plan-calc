@@ -14,7 +14,7 @@ import {
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "SwissBroker Pro — Calculateur prévoyance & fiscalité suisse" },
+      { title: "SwissBroker Pro · Calculateur prévoyance & fiscalité suisse" },
       {
         name: "description",
         content:
@@ -143,7 +143,7 @@ function Features() {
     {
       icon: TrendingUp,
       title: "Projections temps réel",
-      desc: "Capital LPP, économie 3a, rendement composé, comparatif rente vs capital — résultats instantanés.",
+      desc: "Capital LPP, économie 3a, rendement composé, comparatif rente vs capital · résultats instantanés.",
     },
     {
       icon: Sparkles,
@@ -164,7 +164,7 @@ function Features() {
             Précision suisse, design 2026
           </h2>
           <p className="mt-4 text-muted-foreground">
-            Un outil pensé pour les rendez-vous client : rapide, lisible, responsive — du
+            Un outil pensé pour les rendez-vous client : rapide, lisible, responsive · du
             smartphone au grand écran.
           </p>
         </div>
@@ -201,7 +201,7 @@ function Modules() {
     },
     {
       tag: "2e pilier",
-      title: "LPP — rachats, retraite, libre passage",
+      title: "LPP · rachats, retraite, libre passage",
       desc: "Lacune de prévoyance, étalement optimal des rachats, comparatif rente / capital / mixte, impôt sur prestation en capital, projection libre passage.",
     },
     {
@@ -212,7 +212,7 @@ function Modules() {
     {
       tag: "Scénarios",
       title: "Avant / après changement de vie",
-      desc: "Mariage, naissance, déménagement intercantonal, achat immobilier, départ retraite — comparatif chiffré côte à côte.",
+      desc: "Mariage, naissance, déménagement intercantonal, achat immobilier, départ retraite · comparatif chiffré côte à côte.",
     },
     {
       tag: "Comparateur",
@@ -265,7 +265,7 @@ function Optimization() {
             </h2>
             <p className="mt-4 text-muted-foreground">
               L'outil analyse automatiquement la situation du client et affiche les actions à
-              valeur ajoutée — chiffrées, justifiées, prêtes à présenter.
+              valeur ajoutée · chiffrées, justifiées, prêtes à présenter.
             </p>
             <ul className="mt-6 space-y-3 text-sm">
               <Bullet>

@@ -17,7 +17,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { supabase as _supabase } from "@/integrations/supabase/client";
-// Table not yet in generated types — use a loose alias.
+// Table not yet in generated types · use a loose alias.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const supabase = _supabase as any;
 import { useAuth } from "@/contexts/AuthContext";

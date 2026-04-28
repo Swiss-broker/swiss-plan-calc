@@ -6,7 +6,7 @@ import { ClientWizard } from "@/components/clients/ClientWizard";
 import type { Client, ClientPension, ClientAssets } from "@/lib/clients/types";
 
 export const Route = createFileRoute("/_app/clients/$clientId/edit")({
-  head: () => ({ meta: [{ title: "Modifier client — SwissBroker Pro" }] }),
+  head: () => ({ meta: [{ title: "Modifier client · SwissBroker Pro" }] }),
   component: EditClientPage,
 });
 

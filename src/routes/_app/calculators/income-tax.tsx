@@ -21,7 +21,7 @@ import { SaveSimulationButton } from "@/components/calculators/SaveSimulationBut
 import { useAuth } from "@/contexts/AuthContext";
 
 export const Route = createFileRoute("/_app/calculators/income-tax")({
-  head: () => ({ meta: [{ title: "Impôt revenu & fortune — SwissBroker Pro" }] }),
+  head: () => ({ meta: [{ title: "Impôt revenu & fortune · SwissBroker Pro" }] }),
   component: IncomeTaxCalculator,
 });
 
@@ -79,7 +79,7 @@ function IncomeTaxCalculator() {
                 <SelectContent>
                   {CANTONS.map((c) => (
                     <SelectItem key={c.code} value={c.code}>
-                      {c.code} — {c.name}
+                      {c.code} · {c.name}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -223,7 +223,7 @@ function IncomeTaxCalculator() {
             cantonal: result.cantonal,
             communal: result.communal,
           }}
-          defaultTitle={`Impôt ${form.canton} — ${formatCHF(form.grossSalary)}`}
+          defaultTitle={`Impôt ${form.canton} · ${formatCHF(form.grossSalary)}`}
         />
         <ExportPdfButton onClick={handleExport} />
       </div>

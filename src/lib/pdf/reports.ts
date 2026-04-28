@@ -27,7 +27,7 @@ export function exportIncomeTaxPdf(args: {
   const { input, result } = args;
   const pdf = new ReportPdf({
     title: "Rapport d'imposition revenu & fortune",
-    subtitle: `Canton de ${cantonName(input.canton)} — barèmes 2026`,
+    subtitle: `Canton de ${cantonName(input.canton)} · barèmes 2026`,
     ...args.header,
   } as PdfHeaderInfo);
 
@@ -126,7 +126,7 @@ export function exportIncomeTaxPdf(args: {
   if (result.marginalRate > 30) {
     tips.push(
       `Votre taux marginal dépasse 30 %. Toute déduction supplémentaire produit un effet de levier fiscal majeur. ` +
-        `Étudiez prioritairement le 3a, les rachats LPP, et — si votre situation le permet — un changement de commune à coefficient plus bas.`,
+        `Étudiez prioritairement le 3a, les rachats LPP, et · si votre situation le permet · un changement de commune à coefficient plus bas.`,
     );
   }
   if (tips.length === 0)
@@ -163,8 +163,8 @@ export function exportSourceTaxPdf(args: {
 }) {
   const { input, result } = args;
   const pdf = new ReportPdf({
-    title: "Impôt à la source — simulation",
-    subtitle: `Canton de ${cantonName(input.canton)} — barème ${input.scale}`,
+    title: "Impôt à la source · simulation",
+    subtitle: `Canton de ${cantonName(input.canton)} · barème ${input.scale}`,
     ...args.header,
   } as PdfHeaderInfo);
 
@@ -222,7 +222,7 @@ export function exportSourceTaxPdf(args: {
 }
 
 // ============================================================================
-// LPP — PROJECTION & RACHATS
+// LPP · PROJECTION & RACHATS
 // ============================================================================
 
 export function exportLppPdf(args: {
@@ -243,8 +243,8 @@ export function exportLppPdf(args: {
 }) {
   const { input, projection, buybackPlan } = args;
   const pdf = new ReportPdf({
-    title: "Prévoyance professionnelle (LPP) — Projection complète",
-    subtitle: `Capital et rachats — horizon ${input.retirementAge} ans`,
+    title: "Prévoyance professionnelle (LPP) · Projection complète",
+    subtitle: `Capital et rachats · horizon ${input.retirementAge} ans`,
     ...args.header,
   } as PdfHeaderInfo);
 
@@ -340,8 +340,8 @@ export function exportPillar3aPdf(args: {
 }) {
   const { input, taxSavings, projection, staggered } = args;
   const pdf = new ReportPdf({
-    title: "Pilier 3a — Stratégie complète",
-    subtitle: `Cotisation, projection et retrait étalé — ${cantonName(input.canton)}`,
+    title: "Pilier 3a · Stratégie complète",
+    subtitle: `Cotisation, projection et retrait étalé · ${cantonName(input.canton)}`,
     ...args.header,
   } as PdfHeaderInfo);
 
@@ -418,8 +418,8 @@ export function exportRetirementPdf(args: {
 }) {
   const { input, lumpTax, compare, reco } = args;
   const pdf = new ReportPdf({
-    title: "Rente ou capital ? — Décision retraite",
-    subtitle: `Capital LPP de ${formatCHF(input.capital)} — ${cantonName(input.canton)}`,
+    title: "Rente ou capital ? · Décision retraite",
+    subtitle: `Capital LPP de ${formatCHF(input.capital)} · ${cantonName(input.canton)}`,
     ...args.header,
   } as PdfHeaderInfo);
 
@@ -455,9 +455,9 @@ export function exportRetirementPdf(args: {
 
   pdf.section("Comparaison des scénarios");
   pdf.metricsGrid([
-    { label: "Rente — Total brut", value: compare.totalRente },
-    { label: "Rente — Net après impôts", value: compare.netAnnuity, tone: "primary" },
-    { label: "Capital — Net projeté", value: compare.netLumpSum, tone: "primary" },
+    { label: "Rente · Total brut", value: compare.totalRente },
+    { label: "Rente · Net après impôts", value: compare.netAnnuity, tone: "primary" },
+    { label: "Capital · Net projeté", value: compare.netLumpSum, tone: "primary" },
     { label: "Différence", value: compare.netLumpSum - compare.netAnnuity },
   ]);
 
@@ -493,7 +493,7 @@ export function exportCantonComparePdf(args: {
 }) {
   const { input, rows } = args;
   const pdf = new ReportPdf({
-    title: "Comparateur cantonal — Charge fiscale 2026",
+    title: "Comparateur cantonal · Charge fiscale 2026",
     subtitle: `Profil : ${formatCHF(input.grossSalary)} brut, ${STATUS_LABEL[input.status] ?? input.status}`,
     ...args.header,
   } as PdfHeaderInfo);
@@ -533,7 +533,7 @@ export function exportCantonComparePdf(args: {
     ["Rang", "Canton", "Impôt total", "Taux effectif"],
     rows.map((r, i) => [
       String(i + 1),
-      `${r.code} — ${r.name}`,
+      `${r.code} · ${r.name}`,
       formatCHF(r.total),
       `${r.effective.toFixed(2)} %`,
     ]),
