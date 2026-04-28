@@ -65,7 +65,7 @@ const ITEMS = [
     to: "/calculators/canton-compare" as const,
     icon: Map,
     title: "Comparateur cantonal",
-    desc: "Compare votre charge fiscale dans les 26 cantons en un clic.",
+    desc: "Compare votre charge fiscale dans les 6 cantons romands (+ Zoug en référence) en un clic.",
   },
   {
     to: "/calculators/retirement" as const,
