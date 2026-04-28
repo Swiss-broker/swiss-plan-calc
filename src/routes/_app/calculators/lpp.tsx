@@ -1,0 +1,207 @@
+import { createFileRoute } from "@tanstack/react-router";
+import { useMemo, useState } from "react";
+import {
+  LineChart,
+  Line as RLine,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ResponsiveContainer,
+  CartesianGrid,
+} from "recharts";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { CANTONS } from "@/lib/swiss/cantons";
+import { projectLPP, simulateBuybackPlan } from "@/lib/lpp";
+import { CalcCard, MoneyTile, Row } from "@/components/calculators/CalcUI";
+import { formatCHF } from "@/lib/format";
+import type { IncomeTaxInput } from "@/lib/tax/income";
+
+export const Route = createFileRoute("/_app/calculators/lpp")({
+  head: () => ({ meta: [{ title: "LPP & rachats — SwissBroker Pro" }] }),
+  component: LppCalc,
+});
+
+function LppCalc() {
+  const [form, setForm] = useState({
+    currentAge: 40,
+    retirementAge: 65,
+    currentBalance: 250_000,
+    insuredSalary: 95_000,
+    expectedReturnRate: 1.5,
+    salaryGrowthRate: 1,
+    conversionRate: 6.0,
+    extraCreditRate: 0,
+    // rachat
+    canton: "VD",
+    status: "single" as IncomeTaxInput["status"],
+    grossSalary: 120_000,
+    children: 0,
+    buybackCapacity: 60_000,
+    buybackYears: 3,
+  });
+
+  const set = <K extends keyof typeof form>(k: K, v: (typeof form)[K]) =>
+    setForm((f) => ({ ...f, [k]: v }));
+
+  const projection = useMemo(() => projectLPP(form), [form]);
+  const buybackPlan = useMemo(
+    () =>
+      simulateBuybackPlan({
+        buybackCapacity: form.buybackCapacity,
+        years: Math.max(1, form.buybackYears),
+        taxInput: {
+          canton: form.canton,
+          status: form.status,
+          grossSalary: form.grossSalary,
+          children: form.children,
+        },
+      }),
+    [form],
+  );
+
+  return (
+    <div className="space-y-6">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-5">
+        <div className="lg:col-span-3">
+          <CalcCard title="Projection capital LPP" description="Bonifications légales + intérêts.">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <NumField label="Âge actuel" value={form.currentAge} onChange={(v) => set("currentAge", v)} />
+              <NumField label="Âge retraite" value={form.retirementAge} onChange={(v) => set("retirementAge", v)} />
+              <NumField label="Avoir LPP actuel (CHF)" value={form.currentBalance} onChange={(v) => set("currentBalance", v)} />
+              <NumField label="Salaire assuré (CHF)" value={form.insuredSalary} onChange={(v) => set("insuredSalary", v)} />
+              <NumField label="Rendement caisse (%/an)" value={form.expectedReturnRate} onChange={(v) => set("expectedReturnRate", v)} step={0.1} />
+              <NumField label="Croissance salariale (%/an)" value={form.salaryGrowthRate} onChange={(v) => set("salaryGrowthRate", v)} step={0.1} />
+              <NumField label="Taux conversion à la retraite (%)" value={form.conversionRate} onChange={(v) => set("conversionRate", v)} step={0.05} />
+              <NumField label="Bonifications surobligatoires (%)" value={form.extraCreditRate} onChange={(v) => set("extraCreditRate", v)} step={0.5} />
+            </div>
+          </CalcCard>
+        </div>
+        <div className="space-y-4 lg:col-span-2">
+          <CalcCard title="Résultat retraite">
+            <Row>
+              <MoneyTile label="Capital projeté" value={projection.projectedBalance} tone="primary" big />
+              <MoneyTile label="Rente annuelle" value={projection.annualPension} tone="success" />
+            </Row>
+            <div className="mt-3">
+              <MoneyTile label="Rente mensuelle" value={projection.monthlyPension} tone="default" />
+            </div>
+          </CalcCard>
+        </div>
+      </div>
+
+      <CalcCard title="Évolution du capital LPP">
+        <div className="h-72 w-full">
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart data={projection.yearly}>
+              <CartesianGrid stroke="hsl(var(--border))" strokeOpacity={0.3} />
+              <XAxis dataKey="age" tick={{ fontSize: 12 }} />
+              <YAxis
+                tick={{ fontSize: 12 }}
+                tickFormatter={(v) => `${Math.round(v / 1000)}k`}
+              />
+              <Tooltip
+                contentStyle={{
+                  background: "var(--card)",
+                  border: "1px solid var(--border)",
+                  borderRadius: 8,
+                }}
+                formatter={(v: number) => formatCHF(v)}
+              />
+              <RLine type="monotone" dataKey="balance" stroke="var(--primary)" strokeWidth={2.5} dot={false} name="Capital" />
+              <RLine type="monotone" dataKey="credit" stroke="var(--chart-2)" strokeWidth={1.5} dot={false} name="Bonification" />
+              <RLine type="monotone" dataKey="interest" stroke="var(--chart-3)" strokeWidth={1.5} dot={false} name="Intérêts" />
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+      </CalcCard>
+
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-5">
+        <div className="lg:col-span-3">
+          <CalcCard title="Plan de rachat LPP" description="Étalez vos rachats pour maximiser l'effet progressif.">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div className="space-y-1.5">
+                <Label className="text-xs font-medium text-muted-foreground">Canton</Label>
+                <Select value={form.canton} onValueChange={(v) => set("canton", v)}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {CANTONS.map((c) => (
+                      <SelectItem key={c.code} value={c.code}>{c.code} — {c.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs font-medium text-muted-foreground">Situation civile</Label>
+                <Select value={form.status} onValueChange={(v) => set("status", v as IncomeTaxInput["status"])}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="single">Célibataire</SelectItem>
+                    <SelectItem value="married">Marié·e</SelectItem>
+                    <SelectItem value="single_with_children">Famille monoparentale</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <NumField label="Salaire brut annuel (CHF)" value={form.grossSalary} onChange={(v) => set("grossSalary", v)} />
+              <NumField label="Nombre d'enfants" value={form.children} onChange={(v) => set("children", v)} />
+              <NumField label="Capacité de rachat (CHF)" value={form.buybackCapacity} onChange={(v) => set("buybackCapacity", v)} />
+              <NumField label="Étaler sur (années)" value={form.buybackYears} onChange={(v) => set("buybackYears", v)} />
+            </div>
+          </CalcCard>
+        </div>
+        <div className="space-y-4 lg:col-span-2">
+          <CalcCard title="Économie fiscale">
+            <Row>
+              <MoneyTile label="Économie totale" value={buybackPlan.totalTaxSavings} tone="success" big />
+              <MoneyTile label="Versement / an" value={buybackPlan.yearlyAmount} />
+            </Row>
+            <p className="mt-2 text-xs text-muted-foreground">
+              Retour fiscal moyen : <strong>{buybackPlan.averageReturn}%</strong> du capital racheté.
+            </p>
+            <div className="mt-4 space-y-2 text-sm">
+              {buybackPlan.yearly.map((y) => (
+                <div key={y.year} className="flex items-center justify-between border-t border-border/50 pt-2 first:border-t-0 first:pt-0">
+                  <span className="text-muted-foreground">Année {y.year}</span>
+                  <span className="tabular-nums text-success-foreground">
+                    {formatCHF(y.taxSavings)}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </CalcCard>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function NumField({
+  label,
+  value,
+  onChange,
+  step = 1,
+}: {
+  label: string;
+  value: number;
+  onChange: (v: number) => void;
+  step?: number;
+}) {
+  return (
+    <div className="space-y-1.5">
+      <Label className="text-xs font-medium text-muted-foreground">{label}</Label>
+      <Input
+        type="number"
+        step={step}
+        value={value}
+        onChange={(e) => onChange(Number(e.target.value) || 0)}
+      />
+    </div>
+  );
+}
