@@ -121,7 +121,7 @@ function UserFooter({ email, onSignOut }: { email: string; onSignOut: () => Prom
 
 function DesktopSidebar({ onSignOut, email }: { onSignOut: () => Promise<void>; email: string }) {
   return (
-    <aside className="hidden w-64 shrink-0 border-r border-border bg-sidebar md:flex md:flex-col">
+    <aside className="hidden w-64 shrink-0 border-r border-border bg-sidebar lg:flex lg:flex-col">
       <div className="flex h-16 items-center gap-2 border-b border-sidebar-border px-5">
         <BrandMark />
       </div>
@@ -134,7 +134,7 @@ function DesktopSidebar({ onSignOut, email }: { onSignOut: () => Promise<void>; 
 function MobileHeader({ onSignOut, email }: { onSignOut: () => Promise<void>; email: string }) {
   const [open, setOpen] = useState(false);
   return (
-    <header className="sticky top-0 z-40 flex h-14 items-center justify-between gap-2 border-b border-border bg-background/80 px-4 backdrop-blur md:hidden">
+    <header className="sticky top-0 z-40 flex h-14 items-center justify-between gap-2 border-b border-border bg-background/80 px-4 backdrop-blur lg:hidden">
       <BrandMark />
       <Sheet open={open} onOpenChange={setOpen}>
         <SheetTrigger asChild>
