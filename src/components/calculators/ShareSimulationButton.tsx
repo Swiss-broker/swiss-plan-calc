@@ -169,7 +169,7 @@ export function ShareSimulationButton({
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant={variant} size={size} title="Partager">
+        <Button variant={variant} size={size} title="Partager" className="shine">
           <Share2 className="h-4 w-4" />
           {showLabel && <span className="ml-1.5">Partager</span>}
         </Button>
