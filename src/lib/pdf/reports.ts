@@ -528,7 +528,7 @@ export function exportCantonComparePdf(args: {
     );
   }
 
-  pdf.section("Classement des 26 cantons");
+  pdf.section("Classement des cantons romands (+ Zoug en référence)");
   pdf.table(
     ["Rang", "Canton", "Impôt total", "Taux effectif"],
     rows.map((r, i) => [
