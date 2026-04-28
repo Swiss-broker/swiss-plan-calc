@@ -130,7 +130,7 @@ function LppCalc() {
       </div>
 
       <CalcCard title="Évolution du capital LPP" description="Capital net (rendement − frais), capital sans rendement, et part des intérêts.">
-        <div className="h-72 w-full">
+        <div className="h-72 w-full chart-rise">
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={projection.yearly}>
               <CartesianGrid stroke="var(--border)" strokeOpacity={0.5} />

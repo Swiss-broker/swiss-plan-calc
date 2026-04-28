@@ -107,7 +107,7 @@ function CantonCompareCalc() {
       </CalcCard>
 
       <CalcCard title="Classement par charge fiscale totale">
-        <div className="h-[520px] w-full">
+        <div className="h-[520px] w-full chart-rise">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={data} layout="vertical" margin={{ left: 12, right: 32 }}>
               <CartesianGrid stroke="var(--border)" strokeOpacity={0.5} horizontal={false} />
