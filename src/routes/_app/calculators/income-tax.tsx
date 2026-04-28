@@ -36,12 +36,25 @@ function IncomeTaxCalculator() {
     mortgageInterest: 0,
     realEstateMaintenance: 0,
     netWealth: 0,
+    lppBuybackCapacity: 0,
+    pillar3aBalance: 0,
   });
 
   const setField = <K extends keyof typeof form>(k: K, v: (typeof form)[K]) =>
     setForm((f) => ({ ...f, [k]: v }));
 
   const result = useMemo(() => computeIncomeTax(form), [form]);
+  const optimizations = useMemo(
+    () =>
+      runOptimizer({
+        taxInput: form,
+        lppBuybackCapacity: form.lppBuybackCapacity,
+        pillar3aCurrent: form.pillar3aContributions,
+        pillar3aBalance: form.pillar3aBalance,
+        hasLPP: true,
+      }),
+    [form],
+  );
 
   return (
     <div className="grid grid-cols-1 gap-6 lg:grid-cols-5">
