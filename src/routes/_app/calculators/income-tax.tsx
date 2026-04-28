@@ -13,6 +13,8 @@ import { CANTONS } from "@/lib/swiss/cantons";
 import { computeIncomeTax, type IncomeTaxInput } from "@/lib/tax/income";
 import { CalcCard, MoneyTile, PctTile, Row } from "@/components/calculators/CalcUI";
 import { formatCHF } from "@/lib/format";
+import { runOptimizer } from "@/lib/optimizer";
+import { OptimizationsPanel } from "@/components/optimizer/OptimizationsPanel";
 
 export const Route = createFileRoute("/_app/calculators/income-tax")({
   head: () => ({ meta: [{ title: "Impôt revenu & fortune — SwissBroker Pro" }] }),
