@@ -1,18 +1,36 @@
 import * as React from "react";
 
 import { cn } from "@/lib/utils";
+import { useParallaxTilt } from "@/hooks/useParallaxTilt";
 
-const Card = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
-  ({ className, ...props }, ref) => (
-    <div
-      ref={ref}
-      className={cn(
-        "rounded-2xl border bg-card text-card-foreground bg-gradient-surface shadow-3d transition-all duration-300",
-        className,
-      )}
-      {...props}
-    />
-  ),
+type CardProps = React.HTMLAttributes<HTMLDivElement> & {
+  /** Active un léger effet parallax 3D au survol (desktop uniquement). */
+  tilt?: boolean;
+};
+
+const Card = React.forwardRef<HTMLDivElement, CardProps>(
+  ({ className, tilt = false, ...props }, ref) => {
+    const tiltRef = useParallaxTilt<HTMLDivElement>({ max: 4, scale: 1.005 });
+    const setRefs = React.useCallback(
+      (node: HTMLDivElement | null) => {
+        if (tilt) (tiltRef as React.MutableRefObject<HTMLDivElement | null>).current = node;
+        if (typeof ref === "function") ref(node);
+        else if (ref) (ref as React.MutableRefObject<HTMLDivElement | null>).current = node;
+      },
+      [ref, tilt, tiltRef],
+    );
+    return (
+      <div
+        ref={setRefs}
+        className={cn(
+          "rounded-2xl border bg-card text-card-foreground bg-gradient-surface shadow-3d transition-all duration-300",
+          tilt ? "tilt-3d" : "hover-lift",
+          className,
+        )}
+        {...props}
+      />
+    );
+  },
 );
 Card.displayName = "Card";
 
