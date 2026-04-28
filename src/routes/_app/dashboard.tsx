@@ -60,7 +60,7 @@ function Dashboard() {
         <h3 className="mt-3 text-lg font-semibold">Le moteur de calcul fiscal arrive</h3>
         <p className="mx-auto mt-2 max-w-xl text-sm text-muted-foreground">
           La fondation est en place : authentification, design system, base de données
-          sécurisée pour les 26 cantons. Les modules de calcul (IFD, ICC, LPP, 3a,
+          sécurisée pour la Suisse romande. Les modules de calcul (IFD, ICC, LPP, 3a,
           frontaliers) et le moteur d'optimisation arrivent dans les prochaines itérations.
         </p>
       </div>
