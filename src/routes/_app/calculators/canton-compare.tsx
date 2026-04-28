@@ -98,7 +98,7 @@ function CantonCompareCalc() {
         <div className="h-[520px] w-full">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={data} layout="vertical" margin={{ left: 12, right: 32 }}>
-              <CartesianGrid stroke="hsl(var(--border))" strokeOpacity={0.3} horizontal={false} />
+              <CartesianGrid stroke="var(--border)" strokeOpacity={0.5} horizontal={false} />
               <XAxis type="number" tickFormatter={(v) => `${Math.round(v / 1000)}k`} />
               <YAxis type="category" dataKey="code" width={40} tick={{ fontSize: 11 }} />
               <Tooltip

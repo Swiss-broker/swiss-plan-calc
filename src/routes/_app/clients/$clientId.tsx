@@ -9,7 +9,6 @@ import {
   Loader2,
   Plus,
   StickyNote,
-  Calculator,
   Mail,
   Phone,
   MapPin,
@@ -50,6 +49,9 @@ import {
 } from "@/lib/swiss/enums";
 import { ageFromDob, parseChildren, type Client, type ClientPension, type ClientAssets, type ClientNote } from "@/lib/clients/types";
 import { formatCHF, formatPct } from "@/lib/format";
+import { runOptimizer } from "@/lib/optimizer";
+import { OptimizationsPanel } from "@/components/optimizer/OptimizationsPanel";
+import type { IncomeTaxInput } from "@/lib/tax/income";
 
 export const Route = createFileRoute("/_app/clients/$clientId")({
   head: () => ({ meta: [{ title: "Fiche client — SwissBroker Pro" }] }),
@@ -172,6 +174,42 @@ function ClientDetailPage() {
     (Number(assets?.mortgage_debt ?? 0));
   const children = parseChildren(client.children);
 
+  const taxInput: IncomeTaxInput = {
+    canton: client.canton ?? "VD",
+    status:
+      client.civil_status === "married" || client.civil_status === "registered_partnership"
+        ? "married"
+        : children.length > 0
+          ? "single_with_children"
+          : "single",
+    confession:
+      client.confession === "roman_catholic" || client.confession === "christian_catholic"
+        ? "catholic"
+        : client.confession === "protestant"
+          ? "protestant"
+          : client.confession === "none"
+            ? "none"
+            : "other",
+    children: children.length,
+    grossSalary: Number(client.gross_annual_salary ?? 0),
+    spouseGrossSalary: Number(client.spouse_gross_annual_salary ?? 0),
+    bonus: Number(client.bonus ?? 0),
+    otherIncome: Number(client.other_income ?? 0),
+    pillar3aContributions: Number(pension?.pillar_3a_annual_contribution ?? 0),
+    mortgageInterest: Number(assets?.mortgage_interest ?? 0),
+    realEstateMaintenance: Number(assets?.real_estate_maintenance ?? 0),
+    netWealth: fortune,
+  };
+  const optimizations = runOptimizer({
+    taxInput,
+    lppBuybackCapacity: Number(pension?.lpp_max_buyback ?? 0),
+    pillar3aCurrent: Number(pension?.pillar_3a_annual_contribution ?? 0),
+    pillar3aBalance: Number(pension?.pillar_3a_accounts && Array.isArray(pension.pillar_3a_accounts) ? 0 : 0),
+    hasLPP: Number(pension?.lpp_current_balance ?? 0) > 0,
+    age: age ?? undefined,
+    lppBalance: Number(pension?.lpp_current_balance ?? 0),
+  });
+
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
       <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -263,13 +301,28 @@ function ClientDetailPage() {
       <Tabs defaultValue="overview" className="mt-8">
         <TabsList className="flex h-auto w-full flex-wrap justify-start gap-1 bg-muted p-1">
           <TabsTrigger value="overview">Synthèse</TabsTrigger>
+          <TabsTrigger value="optimizations">
+            Optimisations
+            {optimizations.length > 0 && (
+              <Badge variant="secondary" className="ml-2 h-5 px-1.5 text-[10px]">
+                {optimizations.length}
+              </Badge>
+            )}
+          </TabsTrigger>
           <TabsTrigger value="fiscal">Fiscalité</TabsTrigger>
           <TabsTrigger value="pension">Prévoyance</TabsTrigger>
           <TabsTrigger value="patrimoine">Patrimoine</TabsTrigger>
           <TabsTrigger value="family">Famille</TabsTrigger>
           <TabsTrigger value="notes">Notes</TabsTrigger>
-          <TabsTrigger value="scenarios">Scénarios</TabsTrigger>
         </TabsList>
+
+        <TabsContent value="optimizations" className="mt-4">
+          <OptimizationsPanel
+            optimizations={optimizations}
+            title={`Optimisations pour ${client.first_name}`}
+            emptyHint="Complétez la fiche (canton, salaire, LPP, 3a, fortune) pour générer des recommandations chiffrées."
+          />
+        </TabsContent>
 
         <TabsContent value="overview" className="mt-4">
           <div className="grid gap-4 lg:grid-cols-2">
@@ -468,18 +521,6 @@ function ClientDetailPage() {
           </Card>
         </TabsContent>
 
-        <TabsContent value="scenarios" className="mt-4">
-          <Card title="Scénarios & simulations">
-            <div className="rounded-lg border border-dashed border-border bg-muted/20 p-8 text-center">
-              <Calculator className="mx-auto h-8 w-8 text-primary" />
-              <h3 className="mt-3 text-base font-semibold">Moteur de simulations — bientôt</h3>
-              <p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground">
-                Les calculs d'impôts (IFD/ICC tous cantons), le 2e pilier, le 3a et les
-                scénarios "avant/après" arrivent dans la prochaine itération.
-              </p>
-            </div>
-          </Card>
-        </TabsContent>
       </Tabs>
     </div>
   );

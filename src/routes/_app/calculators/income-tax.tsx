@@ -13,6 +13,8 @@ import { CANTONS } from "@/lib/swiss/cantons";
 import { computeIncomeTax, type IncomeTaxInput } from "@/lib/tax/income";
 import { CalcCard, MoneyTile, PctTile, Row } from "@/components/calculators/CalcUI";
 import { formatCHF } from "@/lib/format";
+import { runOptimizer } from "@/lib/optimizer";
+import { OptimizationsPanel } from "@/components/optimizer/OptimizationsPanel";
 
 export const Route = createFileRoute("/_app/calculators/income-tax")({
   head: () => ({ meta: [{ title: "Impôt revenu & fortune — SwissBroker Pro" }] }),
@@ -34,12 +36,25 @@ function IncomeTaxCalculator() {
     mortgageInterest: 0,
     realEstateMaintenance: 0,
     netWealth: 0,
+    lppBuybackCapacity: 0,
+    pillar3aBalance: 0,
   });
 
   const setField = <K extends keyof typeof form>(k: K, v: (typeof form)[K]) =>
     setForm((f) => ({ ...f, [k]: v }));
 
   const result = useMemo(() => computeIncomeTax(form), [form]);
+  const optimizations = useMemo(
+    () =>
+      runOptimizer({
+        taxInput: form,
+        lppBuybackCapacity: form.lppBuybackCapacity,
+        pillar3aCurrent: form.pillar3aContributions,
+        pillar3aBalance: form.pillar3aBalance,
+        hasLPP: true,
+      }),
+    [form],
+  );
 
   return (
     <div className="grid grid-cols-1 gap-6 lg:grid-cols-5">
@@ -133,6 +148,16 @@ function IncomeTaxCalculator() {
               value={form.netWealth}
               onChange={(v) => setField("netWealth", v)}
             />
+            <NumField
+              label="Capacité de rachat LPP (CHF)"
+              value={form.lppBuybackCapacity}
+              onChange={(v) => setField("lppBuybackCapacity", v)}
+            />
+            <NumField
+              label="Capital 3a accumulé (CHF)"
+              value={form.pillar3aBalance}
+              onChange={(v) => setField("pillar3aBalance", v)}
+            />
           </div>
         </CalcCard>
       </div>
@@ -167,6 +192,10 @@ function IncomeTaxCalculator() {
             <Line label="Revenu imposable" value={formatCHF(result.taxableIncomeCC)} bold />
           </dl>
         </CalcCard>
+      </div>
+
+      <div className="lg:col-span-5">
+        <OptimizationsPanel optimizations={optimizations} />
       </div>
     </div>
   );

@@ -101,7 +101,7 @@ function LppCalc() {
         <div className="h-72 w-full">
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={projection.yearly}>
-              <CartesianGrid stroke="hsl(var(--border))" strokeOpacity={0.3} />
+              <CartesianGrid stroke="var(--border)" strokeOpacity={0.5} />
               <XAxis dataKey="age" tick={{ fontSize: 12 }} />
               <YAxis
                 tick={{ fontSize: 12 }}
