@@ -21,11 +21,14 @@ import { Route as AppClientsIndexRouteImport } from './routes/_app/clients/index
 import { Route as AppCalculatorsIndexRouteImport } from './routes/_app/calculators/index'
 import { Route as AppClientsNewRouteImport } from './routes/_app/clients/new'
 import { Route as AppClientsClientIdRouteImport } from './routes/_app/clients/$clientId'
+import { Route as AppCalculatorsVestedBenefitsRouteImport } from './routes/_app/calculators/vested-benefits'
+import { Route as AppCalculatorsTouRouteImport } from './routes/_app/calculators/tou'
 import { Route as AppCalculatorsSourceTaxRouteImport } from './routes/_app/calculators/source-tax'
 import { Route as AppCalculatorsRetirementRouteImport } from './routes/_app/calculators/retirement'
 import { Route as AppCalculatorsPillar3aRouteImport } from './routes/_app/calculators/pillar3a'
 import { Route as AppCalculatorsLppRouteImport } from './routes/_app/calculators/lpp'
 import { Route as AppCalculatorsIncomeTaxRouteImport } from './routes/_app/calculators/income-tax'
+import { Route as AppCalculatorsCrossBorderRouteImport } from './routes/_app/calculators/cross-border'
 import { Route as AppCalculatorsCantonCompareRouteImport } from './routes/_app/calculators/canton-compare'
 import { Route as AppClientsClientIdScenariosRouteImport } from './routes/_app/clients/$clientId.scenarios'
 import { Route as AppClientsClientIdEditRouteImport } from './routes/_app/clients/$clientId.edit'
@@ -89,6 +92,17 @@ const AppClientsClientIdRoute = AppClientsClientIdRouteImport.update({
   path: '/clients/$clientId',
   getParentRoute: () => AppRoute,
 } as any)
+const AppCalculatorsVestedBenefitsRoute =
+  AppCalculatorsVestedBenefitsRouteImport.update({
+    id: '/vested-benefits',
+    path: '/vested-benefits',
+    getParentRoute: () => AppCalculatorsRoute,
+  } as any)
+const AppCalculatorsTouRoute = AppCalculatorsTouRouteImport.update({
+  id: '/tou',
+  path: '/tou',
+  getParentRoute: () => AppCalculatorsRoute,
+} as any)
 const AppCalculatorsSourceTaxRoute = AppCalculatorsSourceTaxRouteImport.update({
   id: '/source-tax',
   path: '/source-tax',
@@ -115,6 +129,12 @@ const AppCalculatorsIncomeTaxRoute = AppCalculatorsIncomeTaxRouteImport.update({
   path: '/income-tax',
   getParentRoute: () => AppCalculatorsRoute,
 } as any)
+const AppCalculatorsCrossBorderRoute =
+  AppCalculatorsCrossBorderRouteImport.update({
+    id: '/cross-border',
+    path: '/cross-border',
+    getParentRoute: () => AppCalculatorsRoute,
+  } as any)
 const AppCalculatorsCantonCompareRoute =
   AppCalculatorsCantonCompareRouteImport.update({
     id: '/canton-compare',
@@ -142,11 +162,14 @@ export interface FileRoutesByFullPath {
   '/history': typeof AppHistoryRoute
   '/shared/$token': typeof SharedTokenRoute
   '/calculators/canton-compare': typeof AppCalculatorsCantonCompareRoute
+  '/calculators/cross-border': typeof AppCalculatorsCrossBorderRoute
   '/calculators/income-tax': typeof AppCalculatorsIncomeTaxRoute
   '/calculators/lpp': typeof AppCalculatorsLppRoute
   '/calculators/pillar3a': typeof AppCalculatorsPillar3aRoute
   '/calculators/retirement': typeof AppCalculatorsRetirementRoute
   '/calculators/source-tax': typeof AppCalculatorsSourceTaxRoute
+  '/calculators/tou': typeof AppCalculatorsTouRoute
+  '/calculators/vested-benefits': typeof AppCalculatorsVestedBenefitsRoute
   '/clients/$clientId': typeof AppClientsClientIdRouteWithChildren
   '/clients/new': typeof AppClientsNewRoute
   '/calculators/': typeof AppCalculatorsIndexRoute
@@ -162,11 +185,14 @@ export interface FileRoutesByTo {
   '/history': typeof AppHistoryRoute
   '/shared/$token': typeof SharedTokenRoute
   '/calculators/canton-compare': typeof AppCalculatorsCantonCompareRoute
+  '/calculators/cross-border': typeof AppCalculatorsCrossBorderRoute
   '/calculators/income-tax': typeof AppCalculatorsIncomeTaxRoute
   '/calculators/lpp': typeof AppCalculatorsLppRoute
   '/calculators/pillar3a': typeof AppCalculatorsPillar3aRoute
   '/calculators/retirement': typeof AppCalculatorsRetirementRoute
   '/calculators/source-tax': typeof AppCalculatorsSourceTaxRoute
+  '/calculators/tou': typeof AppCalculatorsTouRoute
+  '/calculators/vested-benefits': typeof AppCalculatorsVestedBenefitsRoute
   '/clients/$clientId': typeof AppClientsClientIdRouteWithChildren
   '/clients/new': typeof AppClientsNewRoute
   '/calculators': typeof AppCalculatorsIndexRoute
@@ -185,11 +211,14 @@ export interface FileRoutesById {
   '/_app/history': typeof AppHistoryRoute
   '/shared/$token': typeof SharedTokenRoute
   '/_app/calculators/canton-compare': typeof AppCalculatorsCantonCompareRoute
+  '/_app/calculators/cross-border': typeof AppCalculatorsCrossBorderRoute
   '/_app/calculators/income-tax': typeof AppCalculatorsIncomeTaxRoute
   '/_app/calculators/lpp': typeof AppCalculatorsLppRoute
   '/_app/calculators/pillar3a': typeof AppCalculatorsPillar3aRoute
   '/_app/calculators/retirement': typeof AppCalculatorsRetirementRoute
   '/_app/calculators/source-tax': typeof AppCalculatorsSourceTaxRoute
+  '/_app/calculators/tou': typeof AppCalculatorsTouRoute
+  '/_app/calculators/vested-benefits': typeof AppCalculatorsVestedBenefitsRoute
   '/_app/clients/$clientId': typeof AppClientsClientIdRouteWithChildren
   '/_app/clients/new': typeof AppClientsNewRoute
   '/_app/calculators/': typeof AppCalculatorsIndexRoute
@@ -208,11 +237,14 @@ export interface FileRouteTypes {
     | '/history'
     | '/shared/$token'
     | '/calculators/canton-compare'
+    | '/calculators/cross-border'
     | '/calculators/income-tax'
     | '/calculators/lpp'
     | '/calculators/pillar3a'
     | '/calculators/retirement'
     | '/calculators/source-tax'
+    | '/calculators/tou'
+    | '/calculators/vested-benefits'
     | '/clients/$clientId'
     | '/clients/new'
     | '/calculators/'
@@ -228,11 +260,14 @@ export interface FileRouteTypes {
     | '/history'
     | '/shared/$token'
     | '/calculators/canton-compare'
+    | '/calculators/cross-border'
     | '/calculators/income-tax'
     | '/calculators/lpp'
     | '/calculators/pillar3a'
     | '/calculators/retirement'
     | '/calculators/source-tax'
+    | '/calculators/tou'
+    | '/calculators/vested-benefits'
     | '/clients/$clientId'
     | '/clients/new'
     | '/calculators'
@@ -250,11 +285,14 @@ export interface FileRouteTypes {
     | '/_app/history'
     | '/shared/$token'
     | '/_app/calculators/canton-compare'
+    | '/_app/calculators/cross-border'
     | '/_app/calculators/income-tax'
     | '/_app/calculators/lpp'
     | '/_app/calculators/pillar3a'
     | '/_app/calculators/retirement'
     | '/_app/calculators/source-tax'
+    | '/_app/calculators/tou'
+    | '/_app/calculators/vested-benefits'
     | '/_app/clients/$clientId'
     | '/_app/clients/new'
     | '/_app/calculators/'
@@ -356,6 +394,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppClientsClientIdRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/calculators/vested-benefits': {
+      id: '/_app/calculators/vested-benefits'
+      path: '/vested-benefits'
+      fullPath: '/calculators/vested-benefits'
+      preLoaderRoute: typeof AppCalculatorsVestedBenefitsRouteImport
+      parentRoute: typeof AppCalculatorsRoute
+    }
+    '/_app/calculators/tou': {
+      id: '/_app/calculators/tou'
+      path: '/tou'
+      fullPath: '/calculators/tou'
+      preLoaderRoute: typeof AppCalculatorsTouRouteImport
+      parentRoute: typeof AppCalculatorsRoute
+    }
     '/_app/calculators/source-tax': {
       id: '/_app/calculators/source-tax'
       path: '/source-tax'
@@ -391,6 +443,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppCalculatorsIncomeTaxRouteImport
       parentRoute: typeof AppCalculatorsRoute
     }
+    '/_app/calculators/cross-border': {
+      id: '/_app/calculators/cross-border'
+      path: '/cross-border'
+      fullPath: '/calculators/cross-border'
+      preLoaderRoute: typeof AppCalculatorsCrossBorderRouteImport
+      parentRoute: typeof AppCalculatorsRoute
+    }
     '/_app/calculators/canton-compare': {
       id: '/_app/calculators/canton-compare'
       path: '/canton-compare'
@@ -417,21 +476,27 @@ declare module '@tanstack/react-router' {
 
 interface AppCalculatorsRouteChildren {
   AppCalculatorsCantonCompareRoute: typeof AppCalculatorsCantonCompareRoute
+  AppCalculatorsCrossBorderRoute: typeof AppCalculatorsCrossBorderRoute
   AppCalculatorsIncomeTaxRoute: typeof AppCalculatorsIncomeTaxRoute
   AppCalculatorsLppRoute: typeof AppCalculatorsLppRoute
   AppCalculatorsPillar3aRoute: typeof AppCalculatorsPillar3aRoute
   AppCalculatorsRetirementRoute: typeof AppCalculatorsRetirementRoute
   AppCalculatorsSourceTaxRoute: typeof AppCalculatorsSourceTaxRoute
+  AppCalculatorsTouRoute: typeof AppCalculatorsTouRoute
+  AppCalculatorsVestedBenefitsRoute: typeof AppCalculatorsVestedBenefitsRoute
   AppCalculatorsIndexRoute: typeof AppCalculatorsIndexRoute
 }
 
 const AppCalculatorsRouteChildren: AppCalculatorsRouteChildren = {
   AppCalculatorsCantonCompareRoute: AppCalculatorsCantonCompareRoute,
+  AppCalculatorsCrossBorderRoute: AppCalculatorsCrossBorderRoute,
   AppCalculatorsIncomeTaxRoute: AppCalculatorsIncomeTaxRoute,
   AppCalculatorsLppRoute: AppCalculatorsLppRoute,
   AppCalculatorsPillar3aRoute: AppCalculatorsPillar3aRoute,
   AppCalculatorsRetirementRoute: AppCalculatorsRetirementRoute,
   AppCalculatorsSourceTaxRoute: AppCalculatorsSourceTaxRoute,
+  AppCalculatorsTouRoute: AppCalculatorsTouRoute,
+  AppCalculatorsVestedBenefitsRoute: AppCalculatorsVestedBenefitsRoute,
   AppCalculatorsIndexRoute: AppCalculatorsIndexRoute,
 }
 

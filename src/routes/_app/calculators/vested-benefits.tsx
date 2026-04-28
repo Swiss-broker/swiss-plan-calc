@@ -11,7 +11,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Sparkles, ShieldCheck, TrendingUp, Activity } from "lucide-react";
 import {
-  LineChart,
   Line,
   ResponsiveContainer,
   Tooltip,
@@ -19,7 +18,6 @@ import {
   YAxis,
   Legend,
   CartesianGrid,
-  Area,
   ComposedChart,
 } from "recharts";
 import { CalcCard, MoneyTile, Row } from "@/components/calculators/CalcUI";
