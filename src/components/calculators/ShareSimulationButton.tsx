@@ -71,7 +71,7 @@ export function ShareSimulationButton({
     enabled: !!user && open,
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("simulation_shares" as never)
+        .from("simulation_shares")
         .select("*")
         .eq("simulation_id", simulationId)
         .order("created_at", { ascending: false });
@@ -91,7 +91,7 @@ export function ShareSimulationButton({
       const max_views = useMaxViews && maxViews > 0 ? maxViews : null;
 
       const { data: inserted, error } = await supabase
-        .from("simulation_shares" as never)
+        .from("simulation_shares")
         .insert({
           broker_id: user.id,
           simulation_id: simulationId,
@@ -106,12 +106,12 @@ export function ShareSimulationButton({
 
       if (usePassword && password.trim().length > 0) {
         const { data: hash, error: hashErr } = await supabase.rpc(
-          "hash_share_password" as never,
-          { _share_id: row.id, _password: password } as never,
+          "hash_share_password",
+          { _share_id: row.id, _password: password },
         );
         if (hashErr) throw hashErr;
         const { error: updErr } = await supabase
-          .from("simulation_shares" as never)
+          .from("simulation_shares")
           .update({ password_hash: hash as unknown as string })
           .eq("id", row.id);
         if (updErr) throw updErr;
@@ -131,7 +131,7 @@ export function ShareSimulationButton({
   const revoke = useMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabase
-        .from("simulation_shares" as never)
+        .from("simulation_shares")
         .update({ revoked: true })
         .eq("id", id);
       if (error) throw error;
@@ -146,7 +146,7 @@ export function ShareSimulationButton({
   const remove = useMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabase
-        .from("simulation_shares" as never)
+        .from("simulation_shares")
         .delete()
         .eq("id", id);
       if (error) throw error;
