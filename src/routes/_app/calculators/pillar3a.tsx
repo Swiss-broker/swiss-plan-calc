@@ -87,6 +87,16 @@ function Pillar3aCalc() {
     [form],
   );
 
+  const { user } = useAuth();
+  const handleExport = () =>
+    exportPillar3aPdf({
+      header: { brokerEmail: user?.email ?? undefined },
+      input: form,
+      taxSavings: savings,
+      projection,
+      staggered: stag,
+    });
+
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-5">
@@ -169,6 +179,9 @@ function Pillar3aCalc() {
             <MoneyTile label="Par compte" value={stag.perAccount} />
           </div>
         </CalcCard>
+      </div>
+      <div className="flex justify-end">
+        <ExportPdfButton onClick={handleExport} />
       </div>
     </div>
   );
