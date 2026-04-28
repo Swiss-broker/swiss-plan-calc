@@ -180,11 +180,11 @@ function ClientDetailPage() {
     status:
       client.civil_status === "married" || client.civil_status === "registered_partnership"
         ? "married"
-        : children.length > 0 && client.civil_status !== "married"
+        : children.length > 0
           ? "single_with_children"
           : "single",
     confession:
-      client.confession === "catholic_roman"
+      client.confession === "roman_catholic" || client.confession === "christian_catholic"
         ? "catholic"
         : client.confession === "protestant"
           ? "protestant"
