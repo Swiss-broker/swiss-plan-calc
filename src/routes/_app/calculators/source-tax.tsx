@@ -136,7 +136,19 @@ function SourceTaxCalc() {
             <p className="mt-3 text-xs text-muted-foreground">{result.crossBorderNote}</p>
           )}
         </CalcCard>
-        <ExportPdfButton onClick={handleExport} />
+        <div className="flex flex-wrap justify-end gap-2">
+          <SaveSimulationButton
+            kind="source_tax"
+            inputs={form}
+            summary={{
+              rate: result.rate,
+              monthlyTax: result.monthlyTax,
+              annualTax: result.annualTax,
+            }}
+            defaultTitle={`Source ${form.canton} ${form.scale} — ${form.monthlyGross}/mois`}
+          />
+          <ExportPdfButton onClick={handleExport} />
+        </div>
       </div>
     </div>
   );
