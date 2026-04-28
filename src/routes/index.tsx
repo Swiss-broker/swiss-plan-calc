@@ -388,7 +388,7 @@ function Footer() {
         </div>
         <div className="flex items-center gap-2 text-xs text-muted-foreground">
           <Globe2 className="h-3.5 w-3.5" />
-          26 cantons · Frontaliers FR / IT / DE / AT
+          Suisse romande · Frontaliers FR / IT / DE / AT
         </div>
       </div>
     </footer>
