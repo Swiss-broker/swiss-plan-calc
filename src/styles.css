@@ -6,7 +6,8 @@
 
 /*
  * SwissBroker Pro · Design system 2026
- * Style: ultra-moderne, sobre, "Swiss precision".
+ * Style: ultra-moderne, sobre, B2B prévoyance & fiscalité.
+ * Palette: Teal moderne (primary) + Green (success) + Amber (accent/warning) + Red (destructive only).
  * Tokens en oklch uniquement.
  */
 
@@ -28,6 +29,8 @@
   --color-primary: var(--primary);
   --color-primary-foreground: var(--primary-foreground);
   --color-primary-glow: var(--primary-glow);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-light: var(--primary-light);
   --color-secondary: var(--secondary);
   --color-secondary-foreground: var(--secondary-foreground);
   --color-muted: var(--muted);
@@ -36,10 +39,13 @@
   --color-accent-foreground: var(--accent-foreground);
   --color-destructive: var(--destructive);
   --color-destructive-foreground: var(--destructive-foreground);
+  --color-destructive-light: var(--destructive-light);
   --color-success: var(--success);
   --color-success-foreground: var(--success-foreground);
+  --color-success-light: var(--success-light);
   --color-warning: var(--warning);
   --color-warning-foreground: var(--warning-foreground);
+  --color-warning-light: var(--warning-light);
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
@@ -75,10 +81,12 @@
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.18 0.02 260);
 
-  /* Primary: Swiss red, refined for screens */
-  --primary: oklch(0.55 0.21 25);
+  /* Primary: Teal modern — couleur de marque B2B */
+  --primary: oklch(0.58 0.11 185);
   --primary-foreground: oklch(0.99 0.003 250);
-  --primary-glow: oklch(0.66 0.22 25);
+  --primary-glow: oklch(0.7 0.12 185);
+  --primary-hover: oklch(0.52 0.11 185);
+  --primary-light: oklch(0.95 0.04 180);
 
   --secondary: oklch(0.96 0.005 250);
   --secondary-foreground: oklch(0.22 0.02 260);
@@ -86,36 +94,43 @@
   --muted: oklch(0.96 0.005 250);
   --muted-foreground: oklch(0.5 0.02 260);
 
-  --accent: oklch(0.95 0.02 245);
-  --accent-foreground: oklch(0.22 0.02 260);
+  /* Accent: Amber — highlights ponctuels */
+  --accent: oklch(0.78 0.16 70);
+  --accent-foreground: oklch(0.99 0.003 250);
 
+  /* Destructive: Red — UNIQUEMENT alertes/erreurs/suppressions */
   --destructive: oklch(0.58 0.23 27);
   --destructive-foreground: oklch(0.99 0.003 250);
+  --destructive-light: oklch(0.94 0.04 25);
 
-  --success: oklch(0.62 0.16 152);
+  /* Success: Green — validations, "le plus avantageux" */
+  --success: oklch(0.62 0.18 145);
   --success-foreground: oklch(0.99 0.003 250);
+  --success-light: oklch(0.95 0.06 145);
 
-  --warning: oklch(0.74 0.16 75);
-  --warning-foreground: oklch(0.2 0.02 60);
+  /* Warning: Amber sombre — avertissements */
+  --warning: oklch(0.68 0.16 60);
+  --warning-foreground: oklch(0.99 0.003 250);
+  --warning-light: oklch(0.95 0.06 75);
 
   --border: oklch(0.92 0.005 250);
   --input: oklch(0.92 0.005 250);
-  --ring: oklch(0.55 0.21 25);
+  --ring: oklch(0.58 0.11 185);
 
-  --chart-1: oklch(0.55 0.21 25);
+  --chart-1: oklch(0.58 0.11 185);
   --chart-2: oklch(0.55 0.18 240);
-  --chart-3: oklch(0.62 0.16 152);
-  --chart-4: oklch(0.74 0.16 75);
+  --chart-3: oklch(0.62 0.18 145);
+  --chart-4: oklch(0.78 0.16 70);
   --chart-5: oklch(0.55 0.2 305);
 
   --sidebar: oklch(0.985 0.003 250);
   --sidebar-foreground: oklch(0.22 0.02 260);
-  --sidebar-primary: oklch(0.55 0.21 25);
+  --sidebar-primary: oklch(0.58 0.11 185);
   --sidebar-primary-foreground: oklch(0.99 0.003 250);
   --sidebar-accent: oklch(0.95 0.005 250);
   --sidebar-accent-foreground: oklch(0.22 0.02 260);
   --sidebar-border: oklch(0.92 0.005 250);
-  --sidebar-ring: oklch(0.55 0.21 25);
+  --sidebar-ring: oklch(0.58 0.11 185);
 
   /* Effects 2026 — relief, profondeur, glass */
   --gradient-primary: linear-gradient(135deg, var(--primary), var(--primary-glow));
@@ -179,9 +194,11 @@
   --popover: oklch(0.2 0.018 260);
   --popover-foreground: oklch(0.97 0.005 250);
 
-  --primary: oklch(0.7 0.2 25);
+  --primary: oklch(0.72 0.12 185);
   --primary-foreground: oklch(0.16 0.015 260);
-  --primary-glow: oklch(0.78 0.18 25);
+  --primary-glow: oklch(0.8 0.12 185);
+  --primary-hover: oklch(0.78 0.12 185);
+  --primary-light: oklch(0.3 0.06 185);
 
   --secondary: oklch(0.25 0.015 260);
   --secondary-foreground: oklch(0.97 0.005 250);
@@ -189,36 +206,39 @@
   --muted: oklch(0.24 0.015 260);
   --muted-foreground: oklch(0.7 0.015 250);
 
-  --accent: oklch(0.27 0.02 260);
-  --accent-foreground: oklch(0.97 0.005 250);
+  --accent: oklch(0.82 0.16 75);
+  --accent-foreground: oklch(0.16 0.015 260);
 
   --destructive: oklch(0.7 0.22 25);
   --destructive-foreground: oklch(0.16 0.015 260);
+  --destructive-light: oklch(0.3 0.1 25);
 
-  --success: oklch(0.7 0.16 152);
+  --success: oklch(0.72 0.18 145);
   --success-foreground: oklch(0.16 0.015 260);
+  --success-light: oklch(0.3 0.08 145);
 
   --warning: oklch(0.78 0.16 75);
   --warning-foreground: oklch(0.16 0.015 260);
+  --warning-light: oklch(0.3 0.08 75);
 
   --border: oklch(1 0 0 / 9%);
   --input: oklch(1 0 0 / 12%);
-  --ring: oklch(0.7 0.2 25);
+  --ring: oklch(0.72 0.12 185);
 
-  --chart-1: oklch(0.7 0.2 25);
+  --chart-1: oklch(0.72 0.12 185);
   --chart-2: oklch(0.7 0.16 240);
-  --chart-3: oklch(0.7 0.16 152);
-  --chart-4: oklch(0.78 0.16 75);
+  --chart-3: oklch(0.72 0.18 145);
+  --chart-4: oklch(0.82 0.16 75);
   --chart-5: oklch(0.7 0.18 305);
 
   --sidebar: oklch(0.18 0.015 260);
   --sidebar-foreground: oklch(0.97 0.005 250);
-  --sidebar-primary: oklch(0.7 0.2 25);
+  --sidebar-primary: oklch(0.72 0.12 185);
   --sidebar-primary-foreground: oklch(0.16 0.015 260);
   --sidebar-accent: oklch(0.25 0.015 260);
   --sidebar-accent-foreground: oklch(0.97 0.005 250);
   --sidebar-border: oklch(1 0 0 / 9%);
-  --sidebar-ring: oklch(0.7 0.2 25);
+  --sidebar-ring: oklch(0.72 0.12 185);
 
   --shadow-elegant: 0 20px 50px -25px color-mix(in oklab, var(--primary) 60%, transparent);
   --shadow-card:
