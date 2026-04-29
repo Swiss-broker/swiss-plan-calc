@@ -36,13 +36,20 @@ export const Route = createRootRoute({
         content:
           "L'outil tout-en-un pour les courtiers suisses : impôts, 2e pilier, 3e pilier, frontaliers et optimisation fiscale exacte par canton.",
       },
-      { property: "og:title", content: "SwissBroker Pro" },
+      { property: "og:title", content: "SwissBroker Pro · Calculateur prévoyance & fiscalité suisse" },
       {
         property: "og:description",
         content:
           "Calculateur exhaustif de prévoyance et d'optimisation fiscale suisse pour courtiers professionnels.",
       },
       { property: "og:type", content: "website" },
+      { name: "twitter:title", content: "SwissBroker Pro · Calculateur prévoyance & fiscalité suisse" },
+      { name: "description", content: "Swiss Pension Planner is a comprehensive financial calculator for Swiss insurance and pension brokers." },
+      { property: "og:description", content: "Swiss Pension Planner is a comprehensive financial calculator for Swiss insurance and pension brokers." },
+      { name: "twitter:description", content: "Swiss Pension Planner is a comprehensive financial calculator for Swiss insurance and pension brokers." },
+      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/c9012219-7461-46fd-997e-69624e4256ec/id-preview-8cf6f284--1e296310-17a8-48f0-800b-e1d24beffbf7.lovable.app-1777457430948.png" },
+      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/c9012219-7461-46fd-997e-69624e4256ec/id-preview-8cf6f284--1e296310-17a8-48f0-800b-e1d24beffbf7.lovable.app-1777457430948.png" },
+      { name: "twitter:card", content: "summary_large_image" },
     ],
     links: [{ rel: "stylesheet", href: appCss }],
   }),
