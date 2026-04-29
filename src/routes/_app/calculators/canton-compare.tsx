@@ -214,11 +214,14 @@ function CantonCompareCalc() {
 
         {/* Séparateur visuel + badge ZG */}
         {hasZG && (
-          <div className="mt-3 flex items-center gap-2 rounded-md border border-dashed border-success/40 bg-success/5 p-2 text-xs">
-            <Sparkles className="h-3.5 w-3.5 text-success" aria-hidden />
-            <span className="font-semibold text-foreground">ZG · Zoug</span>
-            <span className="text-muted-foreground">
-              — Référence fiscalité optimisée (hors scope domicile v1, {romandsCount} cantons romands au-dessus)
+          <div className="mt-3 flex flex-wrap items-start gap-2 rounded-md border border-dashed border-success/40 bg-success/5 p-2 text-xs">
+            <Sparkles className="mt-0.5 h-3.5 w-3.5 shrink-0 text-success" aria-hidden />
+            <span className="font-semibold text-foreground shrink-0">ZG · Zoug</span>
+            <span className="min-w-0 flex-1 text-muted-foreground break-words">
+              <span className="sm:hidden">— Référence fiscalité optimisée</span>
+              <span className="hidden sm:inline">
+                — Référence fiscalité optimisée (hors scope domicile v1, {romandsCount} cantons romands au-dessus)
+              </span>
             </span>
           </div>
         )}
