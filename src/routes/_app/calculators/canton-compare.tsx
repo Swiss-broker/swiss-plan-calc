@@ -178,15 +178,22 @@ function CantonCompareCalc() {
                 tick={{ fontSize: 11, fill: "var(--foreground)" }}
               />
               <Tooltip
+                allowEscapeViewBox={{ x: false, y: false }}
+                wrapperStyle={{ maxWidth: 280, zIndex: 50 }}
                 contentStyle={{
                   background: "var(--card)",
                   border: "1px solid var(--border)",
                   borderRadius: 8,
+                  maxWidth: 280,
+                  whiteSpace: "normal",
+                  wordBreak: "break-word",
                 }}
+                itemStyle={{ whiteSpace: "normal" }}
+                labelStyle={{ whiteSpace: "normal" }}
                 formatter={(v: number, _: string, props) => {
                   const isZG = props.payload.code === ZG_CODE;
                   const label = isZG
-                    ? `${props.payload.name} · ${props.payload.effective}% — Hors Suisse romande, non disponible comme canton de domicile en v1`
+                    ? `${props.payload.name} · ${props.payload.effective}% — Hors Suisse romande.`
                     : `${props.payload.name} · ${props.payload.effective}%`;
                   return [formatCHF(v), label];
                 }}
