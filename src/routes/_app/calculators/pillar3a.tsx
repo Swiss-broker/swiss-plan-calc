@@ -100,8 +100,8 @@ function Pillar3aCalc() {
 
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-5">
-        <div className="lg:col-span-3">
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-5">
+        <div className="md:col-span-3">
           <CalcCard title="Cotisation 3a annuelle" description="Plafond 2026 : 7'258 CHF (LPP) ou 36'288 CHF (indépendant).">
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <label className="flex items-center gap-2 text-sm">
@@ -142,7 +142,7 @@ function Pillar3aCalc() {
             </div>
           </CalcCard>
         </div>
-        <div className="space-y-4 lg:col-span-2">
+        <div className="space-y-4 md:col-span-2">
           <CalcCard title="Économie fiscale immédiate">
             <Row>
               <MoneyTile label="Économie d'impôt" value={savings.taxSavings} tone="success" big />

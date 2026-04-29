@@ -52,8 +52,8 @@ function CrossBorderCalc() {
         : "Hors régime";
 
   return (
-    <div className="grid grid-cols-1 gap-6 lg:grid-cols-5">
-      <div className="lg:col-span-3">
+    <div className="grid grid-cols-1 gap-6 md:grid-cols-5">
+      <div className="md:col-span-3">
         <CalcCard
           title="Profil frontalier"
           description="Calcul automatique du régime applicable (FR-CH 4.5 %, GE, TI)."
@@ -129,7 +129,7 @@ function CrossBorderCalc() {
         </div>
       </div>
 
-      <div className="space-y-4 lg:col-span-2">
+      <div className="space-y-4 md:col-span-2">
         <div className="flex justify-end">
           <ExportPdfButton
             onClick={() => exportCrossBorderPdf({ input: form, result })}

@@ -79,8 +79,8 @@ function VestedBenefitsCalc() {
   }, [projections]);
 
   return (
-    <div className="grid grid-cols-1 gap-6 lg:grid-cols-5">
-      <div className="lg:col-span-2">
+    <div className="grid grid-cols-1 gap-6 md:grid-cols-5">
+      <div className="md:col-span-2">
         <CalcCard
           title="Paramètres"
           description="Capital actuel + horizon jusqu'à la retraite."
@@ -133,7 +133,7 @@ function VestedBenefitsCalc() {
         </CalcCard>
       </div>
 
-      <div className="space-y-4 lg:col-span-3">
+      <div className="space-y-4 md:col-span-3">
         <div className="flex justify-end">
           <ExportPdfButton
             onClick={() =>

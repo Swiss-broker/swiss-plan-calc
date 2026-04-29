@@ -92,8 +92,8 @@ function LppCalc() {
 
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-5">
-        <div className="lg:col-span-3">
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-5">
+        <div className="md:col-span-3">
           <CalcCard title="Projection capital LPP" description="Bonifications légales + rendement net (taux − frais) + rachats annuels.">
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <NumField label="Âge actuel" value={form.currentAge} onChange={(v) => set("currentAge", v)} />
@@ -111,7 +111,7 @@ function LppCalc() {
             </p>
           </CalcCard>
         </div>
-        <div className="space-y-4 lg:col-span-2">
+        <div className="space-y-4 md:col-span-2">
           <CalcCard title="Résultat retraite">
             <Row>
               <MoneyTile label="Capital projeté (net)" value={projection.projectedBalance} tone="primary" big />
@@ -156,8 +156,8 @@ function LppCalc() {
         </div>
       </CalcCard>
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-5">
-        <div className="lg:col-span-3">
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-5">
+        <div className="md:col-span-3">
           <CalcCard title="Plan de rachat LPP" description="Étalez vos rachats pour maximiser l'effet progressif.">
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div className="space-y-1.5">
@@ -189,7 +189,7 @@ function LppCalc() {
             </div>
           </CalcCard>
         </div>
-        <div className="space-y-4 lg:col-span-2">
+        <div className="space-y-4 md:col-span-2">
           <CalcCard title="Économie fiscale">
             <Row>
               <MoneyTile label="Économie totale" value={buybackPlan.totalTaxSavings} tone="success" big />

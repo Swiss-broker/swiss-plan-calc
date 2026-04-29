@@ -73,8 +73,8 @@ function RetirementCalc() {
 
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-5">
-        <div className="lg:col-span-3">
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-5">
+        <div className="md:col-span-3">
           <CalcCard title="Hypothèses" description="Comparez le retrait en capital au versement en rente.">
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <NumField label="Capital LPP au moment de la retraite" value={form.capital} onChange={(v) => set("capital", v)} />
@@ -107,7 +107,7 @@ function RetirementCalc() {
             </div>
           </CalcCard>
         </div>
-        <div className="space-y-4 lg:col-span-2">
+        <div className="space-y-4 md:col-span-2">
           <CalcCard title="Impôt unique sur capital (1/5 du barème)">
             <Row>
               <MoneyTile label="IFD" value={lumpTax.ifd} />
