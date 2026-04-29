@@ -232,7 +232,7 @@ function ScenariosPage() {
                         ? "text-muted-foreground"
                         : positive
                           ? "text-destructive"
-                          : "text-emerald-600 dark:text-emerald-400"
+                          : "text-success"
                     }`}
                   >
                     {i === 0

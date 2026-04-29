@@ -75,8 +75,8 @@ function TOUCalc() {
   }, [form, eligibility.eligibleForTOU]);
 
   return (
-    <div className="grid grid-cols-1 gap-6 lg:grid-cols-5">
-      <div className="lg:col-span-3 space-y-4">
+    <div className="grid grid-cols-1 gap-6 md:grid-cols-5">
+      <div className="md:col-span-3 space-y-4">
         <CalcCard
           title="Éligibilité quasi-résident"
           description="Seuil légal : 90 % du revenu mondial gagné en Suisse."
@@ -100,8 +100,8 @@ function TOUCalc() {
           <div
             className={`mt-4 flex items-start gap-2 rounded-lg border p-3 text-sm ${
               eligibility.eligibleForTOU
-                ? "border-emerald-500/30 bg-emerald-500/5 text-emerald-700 dark:text-emerald-400"
-                : "border-amber-500/30 bg-amber-500/5 text-amber-700 dark:text-amber-400"
+                ? "border-success/30 bg-success/5 text-success"
+                : "border-warning/30 bg-warning/5 text-warning"
             }`}
           >
             {eligibility.eligibleForTOU ? (
@@ -161,7 +161,7 @@ function TOUCalc() {
         </CalcCard>
       </div>
 
-      <div className="space-y-4 lg:col-span-2">
+      <div className="space-y-4 md:col-span-2">
         <div className="flex justify-end">
           <ExportPdfButton
             onClick={() =>

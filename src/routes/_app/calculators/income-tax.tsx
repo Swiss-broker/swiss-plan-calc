@@ -69,8 +69,8 @@ function IncomeTaxCalculator() {
     });
 
   return (
-    <div className="grid grid-cols-1 gap-6 lg:grid-cols-5">
-      <div className="lg:col-span-3">
+    <div className="grid grid-cols-1 gap-6 md:grid-cols-5">
+      <div className="md:col-span-3">
         <CalcCard title="Situation" description="Renseignez votre profil fiscal.">
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <Field label="Canton">
@@ -174,7 +174,7 @@ function IncomeTaxCalculator() {
         </CalcCard>
       </div>
 
-      <div className="space-y-4 lg:col-span-2">
+      <div className="space-y-4 md:col-span-2">
         <CalcCard title="Résultat fiscal" description="Estimation barèmes 2026.">
           <Row>
             <MoneyTile label="Impôt total" value={result.totalTax} tone="primary" big />

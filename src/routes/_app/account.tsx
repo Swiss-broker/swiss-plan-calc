@@ -139,7 +139,7 @@ function AccountPage() {
             </select>
             {profile.default_canton &&
               !isSelectableCanton(profile.default_canton) && (
-                <p className="text-xs text-amber-600 dark:text-amber-400">
+                <p className="text-xs text-warning">
                   Ce canton n'est pas disponible en v1 (Suisse romande). Sélectionnez un canton romand pour activer les calculs.
                 </p>
               )}
