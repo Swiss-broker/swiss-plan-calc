@@ -8,6 +8,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
+import { NumField as BaseNumField } from "@/components/ui/num-field";
 import { Label } from "@/components/ui/label";
 import { Globe, Info, ArrowRightLeft } from "lucide-react";
 import { CalcCard, MoneyTile, PctTile, Row } from "@/components/calculators/CalcUI";

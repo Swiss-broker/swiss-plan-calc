@@ -10,6 +10,7 @@ import {
   CartesianGrid,
 } from "recharts";
 import { Input } from "@/components/ui/input";
+import { NumField as BaseNumField } from "@/components/ui/num-field";
 import { Label } from "@/components/ui/label";
 import {
   Select,

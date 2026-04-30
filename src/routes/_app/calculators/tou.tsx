@@ -8,6 +8,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
+import { NumField as BaseNumField } from "@/components/ui/num-field";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Info, CheckCircle2, AlertCircle, Scale } from "lucide-react";
