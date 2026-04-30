@@ -8,6 +8,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { NumField } from "@/components/ui/num-field";
+import { PhoneInput } from "@/components/ui/phone-input";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -478,13 +480,7 @@ function StepIdentity({ form, update, errors }: StepProps) {
         />
       </Field>
       <Field label="Téléphone" htmlFor="ph">
-        <Input
-          id="ph"
-          type="tel"
-          value={form.phone}
-          onChange={(e) => update("phone", e.target.value)}
-          maxLength={40}
-        />
+        <PhoneInput id="ph" value={form.phone} onChange={(v) => update("phone", v)} />
       </Field>
       <Field label="Permis de séjour">
         <Select value={form.permit} onValueChange={(v) => update("permit", v as Permit)}>
@@ -651,14 +647,12 @@ function StepActivity({ form, update }: StepProps) {
           </SelectContent>
         </Select>
       </Field>
-      <Field label="Taux d'activité (%)" htmlFor="ar">
-        <Input
+      <Field label="Taux d'activité" htmlFor="ar">
+        <NumField
           id="ar"
-          type="number"
-          min={0}
-          max={100}
           value={form.activity_rate}
-          onChange={(e) => update("activity_rate", e.target.value)}
+          onChange={(v) => update("activity_rate", v)}
+          suffix="%"
         />
       </Field>
       <Field label="Employeur" htmlFor="emp">
@@ -669,28 +663,28 @@ function StepActivity({ form, update }: StepProps) {
           maxLength={120}
         />
       </Field>
-      <Field label="Salaire annuel brut (CHF)" htmlFor="sal">
-        <Input
+      <Field label="Salaire annuel brut" htmlFor="sal">
+        <NumField
           id="sal"
-          inputMode="decimal"
           value={form.gross_annual_salary}
-          onChange={(e) => update("gross_annual_salary", e.target.value)}
+          onChange={(v) => update("gross_annual_salary", v)}
+          suffix="CHF"
         />
       </Field>
-      <Field label="Bonus / 13e (CHF)" htmlFor="bn">
-        <Input
+      <Field label="Bonus / 13e" htmlFor="bn">
+        <NumField
           id="bn"
-          inputMode="decimal"
           value={form.bonus}
-          onChange={(e) => update("bonus", e.target.value)}
+          onChange={(v) => update("bonus", v)}
+          suffix="CHF"
         />
       </Field>
-      <Field label="Autres revenus (CHF)" htmlFor="oi">
-        <Input
+      <Field label="Autres revenus" htmlFor="oi">
+        <NumField
           id="oi"
-          inputMode="decimal"
           value={form.other_income}
-          onChange={(e) => update("other_income", e.target.value)}
+          onChange={(v) => update("other_income", v)}
+          suffix="CHF"
         />
       </Field>
     </div>
@@ -767,11 +761,11 @@ function StepFamily({
                   onChange={(e) => update("spouse_date_of_birth", e.target.value)}
                 />
               </Field>
-              <Field label="Salaire annuel brut conjoint (CHF)">
-                <Input
-                  inputMode="decimal"
+              <Field label="Salaire annuel brut conjoint">
+                <NumField
                   value={form.spouse_gross_annual_salary}
-                  onChange={(e) => update("spouse_gross_annual_salary", e.target.value)}
+                  onChange={(v) => update("spouse_gross_annual_salary", v)}
+                  suffix="CHF"
                 />
               </Field>
             </div>
@@ -837,25 +831,25 @@ function StepPatrimoine({ form, update }: StepProps) {
       <div>
         <h3 className="text-sm font-semibold">2e pilier (LPP)</h3>
         <div className="mt-3 grid gap-4 sm:grid-cols-2">
-          <Field label="Avoir LPP actuel (CHF)">
-            <Input
-              inputMode="decimal"
+          <Field label="Avoir LPP actuel">
+            <NumField
               value={form.lpp_current_balance}
-              onChange={(e) => update("lpp_current_balance", e.target.value)}
+              onChange={(v) => update("lpp_current_balance", v)}
+              suffix="CHF"
             />
           </Field>
-          <Field label="Salaire assuré LPP (CHF)">
-            <Input
-              inputMode="decimal"
+          <Field label="Salaire assuré LPP">
+            <NumField
               value={form.lpp_insured_salary}
-              onChange={(e) => update("lpp_insured_salary", e.target.value)}
+              onChange={(v) => update("lpp_insured_salary", v)}
+              suffix="CHF"
             />
           </Field>
-          <Field label="Capacité de rachat LPP (CHF)" hint="Maximum mentionné par la caisse">
-            <Input
-              inputMode="decimal"
+          <Field label="Capacité de rachat LPP" hint="Maximum mentionné par la caisse">
+            <NumField
               value={form.lpp_max_buyback}
-              onChange={(e) => update("lpp_max_buyback", e.target.value)}
+              onChange={(v) => update("lpp_max_buyback", v)}
+              suffix="CHF"
             />
           </Field>
           <Field label="Plan LPP">
@@ -879,11 +873,11 @@ function StepPatrimoine({ form, update }: StepProps) {
       <div>
         <h3 className="text-sm font-semibold">3e pilier (3a)</h3>
         <div className="mt-3 grid gap-4 sm:grid-cols-2">
-          <Field label="Versement annuel 3a (CHF)" hint="Plafond 2026 salarié : 7'258 CHF">
-            <Input
-              inputMode="decimal"
+          <Field label="Versement annuel 3a" hint="Plafond 2026 salarié : 7'258 CHF">
+            <NumField
               value={form.pillar_3a_annual_contribution}
-              onChange={(e) => update("pillar_3a_annual_contribution", e.target.value)}
+              onChange={(v) => update("pillar_3a_annual_contribution", v)}
+              suffix="CHF"
             />
           </Field>
         </div>
@@ -893,32 +887,32 @@ function StepPatrimoine({ form, update }: StepProps) {
       <div>
         <h3 className="text-sm font-semibold">Patrimoine</h3>
         <div className="mt-3 grid gap-4 sm:grid-cols-2">
-          <Field label="Comptes bancaires (CHF)">
-            <Input
-              inputMode="decimal"
+          <Field label="Comptes bancaires">
+            <NumField
               value={form.bank_accounts}
-              onChange={(e) => update("bank_accounts", e.target.value)}
+              onChange={(v) => update("bank_accounts", v)}
+              suffix="CHF"
             />
           </Field>
-          <Field label="Titres / portefeuille (CHF)">
-            <Input
-              inputMode="decimal"
+          <Field label="Titres / portefeuille">
+            <NumField
               value={form.securities}
-              onChange={(e) => update("securities", e.target.value)}
+              onChange={(v) => update("securities", v)}
+              suffix="CHF"
             />
           </Field>
-          <Field label="Bien immobilier (valeur fiscale CHF)">
-            <Input
-              inputMode="decimal"
+          <Field label="Bien immobilier (valeur fiscale)">
+            <NumField
               value={form.real_estate_value}
-              onChange={(e) => update("real_estate_value", e.target.value)}
+              onChange={(v) => update("real_estate_value", v)}
+              suffix="CHF"
             />
           </Field>
-          <Field label="Dette hypothécaire (CHF)">
-            <Input
-              inputMode="decimal"
+          <Field label="Dette hypothécaire">
+            <NumField
               value={form.mortgage_debt}
-              onChange={(e) => update("mortgage_debt", e.target.value)}
+              onChange={(v) => update("mortgage_debt", v)}
+              suffix="CHF"
             />
           </Field>
         </div>
