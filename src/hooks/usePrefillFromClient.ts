@@ -2,6 +2,7 @@
 // charge le dossier client et retourne le mapping pré-rempli pour le calculateur.
 // En mode standalone (pas de clientId), retourne null sans aucun fetch.
 
+import { useEffect, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -14,6 +15,7 @@ import {
   toPillar3aInput,
   toCantonCompareInput,
   toRetirementInput,
+  stripUndefined,
   type ClientBundle,
 } from "@/lib/clients/to-calculator-input";
 import type { Client, ClientPension, ClientAssets } from "@/lib/clients/types";
@@ -88,4 +90,22 @@ export function usePrefillFromClient<K extends CalculatorKind>(
     isLoading,
     error: (error as Error | null) ?? null,
   };
+}
+
+/**
+ * Helper : hydrate UNE SEULE FOIS un useState form avec les valeurs prefill,
+ * en ignorant les undefined (pour préserver les défauts du calculateur).
+ * Les modifications "what-if" du courtier ne sont JAMAIS écrasées.
+ */
+export function useHydrateFormFromPrefill<T extends Record<string, unknown>>(
+  prefill: Partial<T> | null,
+  setForm: (updater: (prev: T) => T) => void,
+) {
+  const hydratedRef = useRef(false);
+  useEffect(() => {
+    if (prefill && !hydratedRef.current) {
+      setForm((prev) => ({ ...prev, ...stripUndefined(prefill as Record<string, unknown>) }) as T);
+      hydratedRef.current = true;
+    }
+  }, [prefill, setForm]);
 }
