@@ -306,6 +306,10 @@ function ClientDetailPage() {
         <Kpi label="Fortune nette" value={formatCHF(fortune)} icon={Wallet} />
       </div>
 
+      <div className="mt-6">
+        <ClientCalculatorBar client={client} />
+      </div>
+
       <Tabs defaultValue="overview" className="mt-8">
         <TabsList className="flex h-auto w-full flex-wrap justify-start gap-1 bg-muted p-1">
           <TabsTrigger value="overview">Synthèse</TabsTrigger>
