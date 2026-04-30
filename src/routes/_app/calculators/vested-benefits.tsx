@@ -101,18 +101,18 @@ function VestedBenefitsCalc() {
           description="Capital actuel + horizon jusqu'à la retraite."
         >
           <div className="space-y-4">
-            <Field label="Capital libre passage actuel (CHF)">
-              <Input
-                type="number"
-                value={form.initialBalance}
-                onChange={(e) => set("initialBalance", Number(e.target.value) || 0)}
+            <Field label="Capital libre passage actuel">
+              <BaseNumField
+                value={String(form.initialBalance)}
+                onChange={(v) => set("initialBalance", Number(v) || 0)}
+                suffix="CHF"
               />
             </Field>
             <Field label="Années jusqu'au retrait">
-              <Input
-                type="number"
-                value={form.yearsToRetirement}
-                onChange={(e) => set("yearsToRetirement", Number(e.target.value) || 0)}
+              <BaseNumField
+                value={String(form.yearsToRetirement)}
+                onChange={(v) => set("yearsToRetirement", Number(v) || 0)}
+                suffix="ans"
               />
             </Field>
             <Field label="Canton de retrait">
