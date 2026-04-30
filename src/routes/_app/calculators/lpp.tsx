@@ -139,14 +139,30 @@ function LppCalc() {
           </CalcCard>
         </div>
         <div className="space-y-4 md:col-span-2">
-          <CalcCard title="Résultat retraite">
+          <CalcCard title="Résultat à la retraite">
             <Row>
-              <MoneyTile label="Capital projeté (net)" value={projection.projectedBalance} tone="primary" big />
-              <MoneyTile label="Rente annuelle" value={projection.annualPension} tone="success" />
+              <MoneyTile
+                label="Capital projeté (avec rendement)"
+                value={projection.projectedBalance}
+                hint="Bonifications + intérêts nets + rachats"
+                tone="primary"
+                big
+              />
+              <MoneyTile
+                label="Rente annuelle estimée"
+                value={projection.annualPension}
+                hint={`Taux conversion ${form.conversionRate}%`}
+                tone="success"
+              />
             </Row>
             <div className="mt-3 grid grid-cols-2 gap-3">
               <MoneyTile label="Rente mensuelle" value={projection.monthlyPension} tone="default" />
-              <MoneyTile label="Sans rendement" value={projection.projectedBalanceNoYield} tone="default" />
+              <MoneyTile
+                label="Capital sans rendement (référence)"
+                value={projection.projectedBalanceNoYield}
+                hint={`+${formatCHF(projection.projectedBalance - projection.projectedBalanceNoYield)} grâce au rendement`}
+                tone="default"
+              />
             </div>
             <div className="mt-3 grid grid-cols-2 gap-3">
               <MoneyTile label="Frais cumulés" value={projection.totalFees} tone="warning" />
