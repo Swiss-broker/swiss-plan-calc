@@ -630,6 +630,16 @@ function StepFiscal({ form, update, errors }: StepProps) {
 }
 
 function StepActivity({ form, update }: StepProps) {
+  const rules = getWorkStatusRules(form.work_status);
+  const salaryLabel = rules.isSelfEmployed && form.work_status === "self_employed"
+    ? "Revenu net annuel (indépendant)"
+    : rules.isRetired
+      ? "Rentes annuelles totales (AVS + LPP)"
+      : "Salaire annuel brut";
+  const otherIncomeLabel = rules.isRetired
+    ? "Autres revenus (loyers, dividendes…)"
+    : "Autres revenus";
+
   return (
     <div className="grid gap-4 sm:grid-cols-2">
       <Field label="Statut professionnel">
@@ -649,39 +659,47 @@ function StepActivity({ form, update }: StepProps) {
           </SelectContent>
         </Select>
       </Field>
-      <Field label="Taux d'activité" htmlFor="ar">
-        <NumField
-          id="ar"
-          value={form.activity_rate}
-          onChange={(v) => update("activity_rate", v)}
-          suffix="%"
-        />
-      </Field>
-      <Field label="Employeur" htmlFor="emp">
-        <Input
-          id="emp"
-          value={form.employer}
-          onChange={(e) => update("employer", e.target.value)}
-          maxLength={120}
-        />
-      </Field>
-      <Field label="Salaire annuel brut" htmlFor="sal">
-        <NumField
-          id="sal"
-          value={form.gross_annual_salary}
-          onChange={(v) => update("gross_annual_salary", v)}
-          suffix="CHF"
-        />
-      </Field>
-      <Field label="Bonus / 13e" htmlFor="bn">
-        <NumField
-          id="bn"
-          value={form.bonus}
-          onChange={(v) => update("bonus", v)}
-          suffix="CHF"
-        />
-      </Field>
-      <Field label="Autres revenus" htmlFor="oi">
+      {rules.hasSalary && (
+        <Field label="Taux d'activité" htmlFor="ar">
+          <NumField
+            id="ar"
+            value={form.activity_rate}
+            onChange={(v) => update("activity_rate", v)}
+            suffix="%"
+          />
+        </Field>
+      )}
+      {rules.hasSalary && !rules.isSelfEmployed && (
+        <Field label="Employeur" htmlFor="emp">
+          <Input
+            id="emp"
+            value={form.employer}
+            onChange={(e) => update("employer", e.target.value)}
+            maxLength={120}
+          />
+        </Field>
+      )}
+      {(rules.hasSalary || rules.isSelfEmployed || rules.isRetired) && (
+        <Field label={salaryLabel} htmlFor="sal">
+          <NumField
+            id="sal"
+            value={form.gross_annual_salary}
+            onChange={(v) => update("gross_annual_salary", v)}
+            suffix="CHF"
+          />
+        </Field>
+      )}
+      {rules.hasSalary && !rules.isSelfEmployed && (
+        <Field label="Bonus / 13e" htmlFor="bn">
+          <NumField
+            id="bn"
+            value={form.bonus}
+            onChange={(v) => update("bonus", v)}
+            suffix="CHF"
+          />
+        </Field>
+      )}
+      <Field label={otherIncomeLabel} htmlFor="oi">
         <NumField
           id="oi"
           value={form.other_income}
