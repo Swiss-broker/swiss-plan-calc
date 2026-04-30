@@ -98,6 +98,7 @@ function IncomeTaxCalculator() {
           <ClientLinkBanner client={client} />
         </div>
       )}
+      <div className="md:col-span-3">
         <CalcCard title="Situation" description="Renseignez votre profil fiscal.">
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <Field label="Canton">
