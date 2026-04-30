@@ -1,4 +1,4 @@
-import { Sparkles, TrendingUp, AlertCircle } from "lucide-react";
+import { Sparkles, TrendingUp, AlertCircle, AlertTriangle } from "lucide-react";
 import type { Optimization } from "@/lib/optimizer";
 import { formatCHF } from "@/lib/format";
 import { cn } from "@/lib/utils";
@@ -105,6 +105,39 @@ export function OptimizationsPanel({
                         </span>
                       </div>
                     ))}
+                  </div>
+                )}
+                {o.warning && (
+                  <div
+                    className={cn(
+                      "mt-3 flex gap-2 rounded-lg border-2 p-3",
+                      o.warning.severity === "warning"
+                        ? "border-warning/60 bg-warning/10"
+                        : "border-primary/40 bg-primary/5",
+                    )}
+                    role="alert"
+                  >
+                    <AlertTriangle
+                      className={cn(
+                        "mt-0.5 h-4 w-4 shrink-0",
+                        o.warning.severity === "warning" ? "text-warning" : "text-primary",
+                      )}
+                    />
+                    <div className="flex-1 space-y-1">
+                      <p
+                        className={cn(
+                          "text-xs font-semibold",
+                          o.warning.severity === "warning"
+                            ? "text-warning-foreground"
+                            : "text-foreground",
+                        )}
+                      >
+                        ⚠ {o.warning.title}
+                      </p>
+                      <p className="whitespace-pre-line text-[11px] leading-relaxed text-foreground/80">
+                        {o.warning.body}
+                      </p>
+                    </div>
                   </div>
                 )}
               </div>

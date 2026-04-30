@@ -13,6 +13,30 @@ import { CANTON_SCALES } from "../tax/cantons";
 
 export type OptimizationCategory = "lpp" | "3a" | "canton" | "wealth" | "withdrawal";
 
+/**
+ * Statut fiscal du contribuable — détermine si les déductions
+ * (rachat LPP, 3a, etc.) sont automatiquement appliquées ou non.
+ *
+ * - `ordinary_resident` / `quasi_resident` : déductions OK (taxation ordinaire).
+ * - `source_taxed` : déductions NON automatiques (rectification IS ou TOU requise).
+ * - `cross_border_g` : règles spécifiques par convention (DE/FR/IT/AT).
+ * - `non_taxable` : aucune économie fiscale possible.
+ */
+export type TaxStatusContext =
+  | "ordinary_resident"
+  | "source_taxed"
+  | "cross_border_g"
+  | "quasi_resident"
+  | "non_taxable";
+
+export type WorkStatusContext =
+  | "employee"
+  | "self_employed"
+  | "mixed"
+  | "retired"
+  | "unemployed"
+  | "student";
+
 export interface Optimization {
   id: string;
   category: OptimizationCategory;
@@ -24,6 +48,16 @@ export interface Optimization {
   priority: "high" | "medium" | "low";
   /** Détails additionnels (clé/valeur) */
   details?: Record<string, string | number>;
+  /**
+   * Avertissement fiscal critique (statut IS, frontalier, etc.).
+   * Doit être affiché de manière TRÈS visible : la déduction n'est pas
+   * automatique et nécessite une démarche du client.
+   */
+  warning?: {
+    severity: "warning" | "info";
+    title: string;
+    body: string;
+  };
 }
 
 export interface OptimizerInput {
@@ -40,17 +74,75 @@ export interface OptimizerInput {
   age?: number;
   /** Capital LPP actuel (pour scénarios retraite) */
   lppBalance?: number;
+  /** Statut fiscal — IMPORTANT pour adapter les suggestions */
+  taxStatus?: TaxStatusContext;
+  /** Statut professionnel — utile pour 3a non-LPP, etc. */
+  workStatus?: WorkStatusContext;
+}
+
+/** Construit l'avertissement à afficher sur les déductions pour les imposés à la source. */
+function sourceTaxedWarning(
+  kind: "lpp_buyback" | "3a" | "withdrawal",
+): Optimization["warning"] | undefined {
+  const common =
+    "Sans démarche, l'opération reste possible mais ne génère AUCUNE économie fiscale.";
+  if (kind === "lpp_buyback") {
+    return {
+      severity: "warning",
+      title: "Client imposé à la source — déduction non automatique",
+      body: `La déduction fiscale annoncée n'est applicable que si :
+• le client est quasi-résident (≥ 90 % revenus en CH) ET demande la TOU (Taxation Ordinaire Ultérieure) ;
+• OU le client demande une rectification IS auprès de l'administration cantonale ;
+• OU le client passe en taxation ordinaire (permis C / Suisse).
+${common}`,
+    };
+  }
+  if (kind === "3a") {
+    return {
+      severity: "warning",
+      title: "Client imposé à la source — déduction 3a non automatique",
+      body: `Le versement 3a est autorisé pour un imposé à la source, mais sa déduction fiscale exige : TOU (quasi-résident ≥ 90 %), rectification IS, ou passage en taxation ordinaire.
+${common}`,
+    };
+  }
+  return {
+    severity: "info",
+    title: "Client imposé à la source — vérifier l'imposition du retrait",
+    body: "Le retrait en capital 3a/LPP reste imposé séparément dans le canton de domicile au moment du retrait. Vérifier la résidence fiscale prévue à l'échéance.",
+  };
+}
+
+function crossBorderWarning(): Optimization["warning"] {
+  return {
+    severity: "warning",
+    title: "Frontalier (permis G) — règles conventionnelles spécifiques",
+    body: "La déductibilité dépend de la convention de double imposition (DE/FR/IT/AT) et du pays d'imposition principal. Vérifier au cas par cas avant de recommander l'opération.",
+  };
+}
+
+/** Le statut fiscal autorise-t-il les déductions de manière automatique ? */
+function deductionsAreAutomatic(s?: TaxStatusContext): boolean {
+  return s === undefined || s === "ordinary_resident" || s === "quasi_resident";
 }
 
 export function runOptimizer(input: OptimizerInput): Optimization[] {
   const optimizations: Optimization[] = [];
   const baseline = computeIncomeTax(input.taxInput);
   const status = input.taxInput.status;
+  const taxStatus = input.taxStatus;
+
+  // Si non imposable, aucune optimisation fiscale n'a de sens.
+  if (taxStatus === "non_taxable") {
+    return [];
+  }
+
+  const isSource = taxStatus === "source_taxed";
+  const isCrossBorder = taxStatus === "cross_border_g";
+  const needsWarning = isSource || isCrossBorder;
 
   // 1) RACHAT LPP · si capacité disponible
   if ((input.lppBuybackCapacity ?? 0) > 5_000) {
     const capacity = input.lppBuybackCapacity!;
-    // Échelonner sur 3 ans pour maximiser l'effet progressif
     const plan = simulateBuybackPlan({
       buybackCapacity: capacity,
       years: 3,
@@ -61,14 +153,20 @@ export function runOptimizer(input: OptimizerInput): Optimization[] {
         id: "lpp-buyback",
         category: "lpp",
         title: "Rachat LPP étalé sur 3 ans",
-        description: `Vous disposez d'une capacité de rachat de CHF ${capacity.toLocaleString("fr-CH")}. En étalant sur 3 ans, vous économisez environ CHF ${plan.totalTaxSavings.toLocaleString("fr-CH")} d'impôts. Attention : aucun retrait LPP possible dans les 3 ans suivant un rachat.`,
+        description: `Vous disposez d'une capacité de rachat de CHF ${capacity.toLocaleString("fr-CH")}. En étalant sur 3 ans, vous économisez environ CHF ${plan.totalTaxSavings.toLocaleString("fr-CH")} d'impôts (sur 3 ans). Attention : aucun retrait LPP possible dans les 3 ans suivant un rachat.`,
         estimatedSavings: plan.totalTaxSavings,
         priority: plan.totalTaxSavings > 10_000 ? "high" : "medium",
         details: {
           versementAnnuel: plan.yearlyAmount,
-          retourMoyen: `${plan.averageReturn} %`,
+          economieAnnuelleMoyenne: Math.round(plan.totalTaxSavings / 3),
+          tauxMarginal: `${baseline.marginalRate.toFixed(1)} %`,
           dureeBlocage: "3 ans après dernier versement",
         },
+        warning: isSource
+          ? sourceTaxedWarning("lpp_buyback")
+          : isCrossBorder
+            ? crossBorderWarning()
+            : undefined,
       });
     }
   }
@@ -96,6 +194,11 @@ export function runOptimizer(input: OptimizerInput): Optimization[] {
           ecart: gap3a,
           tauxMarginal: `${baseline.marginalRate.toFixed(1)} %`,
         },
+        warning: isSource
+          ? sourceTaxedWarning("3a")
+          : isCrossBorder
+            ? crossBorderWarning()
+            : undefined,
       });
     }
   }
@@ -122,13 +225,13 @@ export function runOptimizer(input: OptimizerInput): Optimization[] {
           impotFractionne: stag.totalTaxSeparated,
           impotUnique: stag.totalTaxSingle,
         },
+        // Le retrait reste imposé séparément dans le canton de domicile : info utile.
+        warning: needsWarning ? sourceTaxedWarning("withdrawal") : undefined,
       });
     }
   }
 
   // 4) COMPARATIF CANTONAL · si revenu élevé
-  // Scope v1 : la seule alternative proposée est Zoug (référence fiscalité optimisée).
-  // En v1.5+, élargir à SZ/NW/OW lorsqu'ils deviendront `comparable`.
   if (baseline.taxableIncomeCC > 100_000) {
     const otherCantons = ["ZG"];
     let bestSavings = 0;
@@ -167,9 +270,17 @@ export function runOptimizer(input: OptimizerInput): Optimization[] {
       description: `À ${input.age} ans, dernière fenêtre pour effectuer des rachats LPP. Le délai de blocage de 3 ans concerne uniquement le retrait en capital · la rente reste possible. Capacité disponible : CHF ${input.lppBuybackCapacity!.toLocaleString("fr-CH")}.`,
       estimatedSavings: Math.round((input.lppBuybackCapacity ?? 0) * (baseline.marginalRate / 100)),
       priority: "high",
+      warning: isSource
+        ? sourceTaxedWarning("lpp_buyback")
+        : isCrossBorder
+          ? crossBorderWarning()
+          : undefined,
     });
   }
 
-  // Trier par économie estimée
+  // Marqueur cohérence : si déductions non automatiques, on peut éventuellement
+  // log côté dev. (Pas d'effet runtime ici.)
+  void deductionsAreAutomatic;
+
   return optimizations.sort((a, b) => b.estimatedSavings - a.estimatedSavings);
 }
