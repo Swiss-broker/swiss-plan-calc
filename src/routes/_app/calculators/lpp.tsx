@@ -27,13 +27,24 @@ import { ExportPdfButton } from "@/components/calculators/ExportPdfButton";
 import { exportLppPdf } from "@/lib/pdf/reports";
 import { SaveSimulationButton } from "@/components/calculators/SaveSimulationButton";
 import { useAuth } from "@/contexts/AuthContext";
+import { zodValidator, fallback } from "@tanstack/zod-adapter";
+import { z } from "zod";
+import { usePrefillFromClient, useHydrateFormFromPrefill } from "@/hooks/usePrefillFromClient";
+import { ClientLinkBanner } from "@/components/calculators/ClientLinkBanner";
+
+const searchSchema = z.object({
+  clientId: fallback(z.string().uuid().optional(), undefined),
+});
 
 export const Route = createFileRoute("/_app/calculators/lpp")({
+  validateSearch: zodValidator(searchSchema),
   head: () => ({ meta: [{ title: "LPP & rachats · SwissBroker Pro" }] }),
   component: LppCalc,
 });
 
 function LppCalc() {
+  const { clientId } = Route.useSearch();
+  const { client, prefill } = usePrefillFromClient(clientId, "lpp");
   const [form, setForm] = useState({
     currentAge: 40,
     retirementAge: 65,
