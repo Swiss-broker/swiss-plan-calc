@@ -120,10 +120,22 @@ function LppCalc() {
               <NumField label="Croissance salariale (%/an)" value={form.salaryGrowthRate} onChange={(v) => set("salaryGrowthRate", v)} step={0.1} />
               <NumField label="Taux conversion à la retraite (%)" value={form.conversionRate} onChange={(v) => set("conversionRate", v)} step={0.05} />
               <NumField label="Bonifications surobligatoires (%)" value={form.extraCreditRate} onChange={(v) => set("extraCreditRate", v)} step={0.5} />
+              <NumField label="Plafond salaire assuré (CHF)" value={form.insuredSalaryCap} onChange={(v) => set("insuredSalaryCap", v)} step={1000} />
             </div>
             <p className="mt-3 text-xs text-muted-foreground">
               Rendement net effectif appliqué : <strong>{projection.netReturnRate.toFixed(2)}%</strong> par an.
             </p>
+            <div className="mt-3 rounded-lg border border-primary/30 bg-primary/5 p-3 text-[11px] leading-relaxed text-foreground/80">
+              <p className="font-semibold text-foreground">📘 Note pédagogique — plan LPP standard vs cadre</p>
+              <p className="mt-1">
+                Par défaut le calcul applique le <strong>minimum légal LPP</strong> :
+                rendement <strong>1.25 %</strong> (taux min. 2026), plafond salaire
+                assuré <strong>90 720 CHF</strong>, taux conversion <strong>6.8 %</strong>.
+                Pour un profil <strong>cadre / plan 1e</strong>, ajustez : bonifications
+                surobligatoires <strong>5–10 %</strong>, plafond élargi (jusqu'à
+                ~860 000 CHF), rendement réel de la caisse.
+              </p>
+            </div>
           </CalcCard>
         </div>
         <div className="space-y-4 md:col-span-2">
