@@ -242,14 +242,13 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
   );
 }
 
-function NumField({ label, value, onChange }: { label: string; value: number; onChange: (v: number) => void }) {
+function NumField({ label, value, onChange, suffix }: { label: string; value: number; onChange: (v: number) => void; suffix?: string }) {
   return (
     <Field label={label}>
-      <Input
-        type="number"
-        inputMode="decimal"
-        value={value}
-        onChange={(e) => onChange(Number(e.target.value) || 0)}
+      <BaseNumField
+        value={String(value)}
+        onChange={(v) => onChange(Number(v) || 0)}
+        suffix={suffix}
       />
     </Field>
   );

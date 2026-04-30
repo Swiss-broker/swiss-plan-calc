@@ -271,15 +271,21 @@ function NumField({
   label,
   value,
   onChange,
+  suffix,
 }: {
   label: string;
   value: number;
   onChange: (v: number) => void;
+  suffix?: string;
 }) {
   return (
     <div className="space-y-1.5">
       <Label className="text-xs font-medium text-muted-foreground">{label}</Label>
-      <Input type="number" value={value} onChange={(e) => onChange(Number(e.target.value) || 0)} />
+      <BaseNumField
+        value={String(value)}
+        onChange={(v) => onChange(Number(v) || 0)}
+        suffix={suffix}
+      />
     </div>
   );
 }
