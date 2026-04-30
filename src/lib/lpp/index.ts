@@ -101,11 +101,13 @@ export function projectLPP(input: LPPProjectionInput): LPPProjectionResult {
   let totalBuybacks = 0;
   const yearly: LPPProjectionResult["yearly"] = [];
 
+  const insuredCap = Math.max(0, input.insuredSalaryCap ?? LPP_MAX_INSURED_SALARY_2026);
+
   for (let i = 0; i < yearsToRetire; i++) {
     const age = input.currentAge + i;
     const coordinated = Math.max(
       0,
-      Math.min(salary - LPP_COORDINATION_DEDUCTION_2026, LPP_MAX_INSURED_SALARY_2026),
+      Math.min(salary - LPP_COORDINATION_DEDUCTION_2026, insuredCap),
     );
     const creditRate = lppCreditRate(age) + extraCredit;
     const credit = coordinated * creditRate;
