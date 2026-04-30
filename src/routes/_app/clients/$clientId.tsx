@@ -54,6 +54,7 @@ import { runOptimizer } from "@/lib/optimizer";
 import { OptimizationsPanel } from "@/components/optimizer/OptimizationsPanel";
 import type { IncomeTaxInput } from "@/lib/tax/income";
 import { ClientCalculatorBar } from "@/components/clients/ClientCalculatorBar";
+import { toIncomeTaxInput, getClientTaxContext } from "@/lib/clients/to-calculator-input";
 
 export const Route = createFileRoute("/_app/clients/$clientId")({
   head: () => ({ meta: [{ title: "Fiche client · SwissBroker Pro" }] }),
