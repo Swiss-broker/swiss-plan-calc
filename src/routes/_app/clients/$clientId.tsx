@@ -209,6 +209,8 @@ function ClientDetailPage() {
     hasLPP: Number(pension?.lpp_current_balance ?? 0) > 0,
     age: age ?? undefined,
     lppBalance: Number(pension?.lpp_current_balance ?? 0),
+    taxStatus: client.tax_status,
+    workStatus: client.work_status,
   });
 
   return (
