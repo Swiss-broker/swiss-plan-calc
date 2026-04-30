@@ -104,6 +104,7 @@ function LppCalc() {
 
   return (
     <div className="space-y-6">
+      {client && <ClientLinkBanner client={client} />}
       <div className="grid grid-cols-1 gap-6 md:grid-cols-5">
         <div className="md:col-span-3">
           <CalcCard title="Projection capital LPP" description="Bonifications légales + rendement net (taux − frais) + rachats annuels.">
