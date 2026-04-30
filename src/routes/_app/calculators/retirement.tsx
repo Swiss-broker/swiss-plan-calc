@@ -17,12 +17,24 @@ import { exportRetirementPdf } from "@/lib/pdf/reports";
 import { SaveSimulationButton } from "@/components/calculators/SaveSimulationButton";
 import { useAuth } from "@/contexts/AuthContext";
 
+import { zodValidator, fallback } from "@tanstack/zod-adapter";
+import { z } from "zod";
+import { usePrefillFromClient, useHydrateFormFromPrefill } from "@/hooks/usePrefillFromClient";
+import { ClientLinkBanner } from "@/components/calculators/ClientLinkBanner";
+
+const searchSchema = z.object({
+  clientId: fallback(z.string().uuid().optional(), undefined),
+});
+
 export const Route = createFileRoute("/_app/calculators/retirement")({
+  validateSearch: zodValidator(searchSchema),
   head: () => ({ meta: [{ title: "Rente vs capital · SwissBroker Pro" }] }),
   component: RetirementCalc,
 });
 
 function RetirementCalc() {
+  const { clientId } = Route.useSearch();
+  const { client, prefill } = usePrefillFromClient(clientId, "retirement");
   const [form, setForm] = useState({
     capital: 600_000,
     canton: "VD",
@@ -32,6 +44,7 @@ function RetirementCalc() {
     selfReturnRate: 2.5,
     rentMarginalRate: 25,
   });
+  useHydrateFormFromPrefill(prefill, setForm);
 
   const set = <K extends keyof typeof form>(k: K, v: (typeof form)[K]) =>
     setForm((f) => ({ ...f, [k]: v }));
@@ -73,6 +86,7 @@ function RetirementCalc() {
 
   return (
     <div className="space-y-6">
+      {client && <ClientLinkBanner client={client} />}
       <div className="grid grid-cols-1 gap-6 md:grid-cols-5">
         <div className="md:col-span-3">
           <CalcCard title="Hypothèses" description="Comparez le retrait en capital au versement en rente.">

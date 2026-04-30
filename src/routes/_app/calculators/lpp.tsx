@@ -27,13 +27,24 @@ import { ExportPdfButton } from "@/components/calculators/ExportPdfButton";
 import { exportLppPdf } from "@/lib/pdf/reports";
 import { SaveSimulationButton } from "@/components/calculators/SaveSimulationButton";
 import { useAuth } from "@/contexts/AuthContext";
+import { zodValidator, fallback } from "@tanstack/zod-adapter";
+import { z } from "zod";
+import { usePrefillFromClient, useHydrateFormFromPrefill } from "@/hooks/usePrefillFromClient";
+import { ClientLinkBanner } from "@/components/calculators/ClientLinkBanner";
+
+const searchSchema = z.object({
+  clientId: fallback(z.string().uuid().optional(), undefined),
+});
 
 export const Route = createFileRoute("/_app/calculators/lpp")({
+  validateSearch: zodValidator(searchSchema),
   head: () => ({ meta: [{ title: "LPP & rachats · SwissBroker Pro" }] }),
   component: LppCalc,
 });
 
 function LppCalc() {
+  const { clientId } = Route.useSearch();
+  const { client, prefill } = usePrefillFromClient(clientId, "lpp");
   const [form, setForm] = useState({
     currentAge: 40,
     retirementAge: 65,
@@ -53,6 +64,7 @@ function LppCalc() {
     buybackCapacity: 60_000,
     buybackYears: 3,
   });
+  useHydrateFormFromPrefill(prefill, setForm);
 
   const set = <K extends keyof typeof form>(k: K, v: (typeof form)[K]) =>
     setForm((f) => ({ ...f, [k]: v }));
@@ -92,6 +104,7 @@ function LppCalc() {
 
   return (
     <div className="space-y-6">
+      {client && <ClientLinkBanner client={client} />}
       <div className="grid grid-cols-1 gap-6 md:grid-cols-5">
         <div className="md:col-span-3">
           <CalcCard title="Projection capital LPP" description="Bonifications légales + rendement net (taux − frais) + rachats annuels.">

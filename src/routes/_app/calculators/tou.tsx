@@ -18,12 +18,24 @@ import { checkQuasiResident, compareTOUvsSource } from "@/lib/tax/tou";
 import type { IncomeTaxInput } from "@/lib/tax/income";
 import { exportTouPdf } from "@/lib/pdf/reports";
 
+import { zodValidator, fallback } from "@tanstack/zod-adapter";
+import { z } from "zod";
+import { usePrefillFromClient, useHydrateFormFromPrefill } from "@/hooks/usePrefillFromClient";
+import { ClientLinkBanner } from "@/components/calculators/ClientLinkBanner";
+
+const searchSchema = z.object({
+  clientId: fallback(z.string().uuid().optional(), undefined),
+});
+
 export const Route = createFileRoute("/_app/calculators/tou")({
+  validateSearch: zodValidator(searchSchema),
   head: () => ({ meta: [{ title: "TOU / quasi-résident · SwissBroker Pro" }] }),
   component: TOUCalc,
 });
 
 function TOUCalc() {
+  const { clientId } = Route.useSearch();
+  const { client, prefill } = usePrefillFromClient(clientId, "tou");
   const [form, setForm] = useState({
     canton: "VD",
     status: "single" as IncomeTaxInput["status"],
@@ -40,6 +52,7 @@ function TOUCalc() {
     worldwideIncome: 92_000,
     isEUEFTAResident: true,
   });
+  useHydrateFormFromPrefill(prefill, setForm);
   const set = <K extends keyof typeof form>(k: K, v: (typeof form)[K]) =>
     setForm((f) => ({ ...f, [k]: v }));
 
@@ -76,6 +89,7 @@ function TOUCalc() {
 
   return (
     <div className="grid grid-cols-1 gap-6 md:grid-cols-5">
+      {client && <div className="md:col-span-5"><ClientLinkBanner client={client} /></div>}
       <div className="md:col-span-3 space-y-4">
         <CalcCard
           title="Éligibilité quasi-résident"

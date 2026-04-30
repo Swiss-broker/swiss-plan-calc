@@ -21,7 +21,17 @@ import {
 import { CANTON_BY_CODE } from "@/lib/swiss/cantons";
 import { exportCrossBorderPdf } from "@/lib/pdf/reports";
 
+import { zodValidator, fallback } from "@tanstack/zod-adapter";
+import { z } from "zod";
+import { usePrefillFromClient, useHydrateFormFromPrefill } from "@/hooks/usePrefillFromClient";
+import { ClientLinkBanner } from "@/components/calculators/ClientLinkBanner";
+
+const searchSchema = z.object({
+  clientId: fallback(z.string().uuid().optional(), undefined),
+});
+
 export const Route = createFileRoute("/_app/calculators/cross-border")({
+  validateSearch: zodValidator(searchSchema),
   head: () => ({ meta: [{ title: "Frontaliers · SwissBroker Pro" }] }),
   component: CrossBorderCalc,
 });
@@ -29,6 +39,8 @@ export const Route = createFileRoute("/_app/calculators/cross-border")({
 const ELIGIBLE_CANTONS = [...FR_ACCORD_CANTONS, "GE", "TI"] as const;
 
 function CrossBorderCalc() {
+  const { clientId } = Route.useSearch();
+  const { client, prefill } = usePrefillFromClient(clientId, "cross-border");
   const [form, setForm] = useState({
     workCanton: "VD" as string,
     grossAnnualSalary: 95_000,
@@ -38,6 +50,7 @@ function CrossBorderCalc() {
     spouseGrossSalary: 0,
     eurChfRate: 0.95,
   });
+  useHydrateFormFromPrefill(prefill, setForm);
   const set = <K extends keyof typeof form>(k: K, v: (typeof form)[K]) =>
     setForm((f) => ({ ...f, [k]: v }));
 
@@ -53,6 +66,7 @@ function CrossBorderCalc() {
 
   return (
     <div className="grid grid-cols-1 gap-6 md:grid-cols-5">
+      {client && <div className="md:col-span-5"><ClientLinkBanner client={client} /></div>}
       <div className="md:col-span-3">
         <CalcCard
           title="Profil frontalier"

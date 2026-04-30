@@ -19,12 +19,24 @@ import { exportSourceTaxPdf } from "@/lib/pdf/reports";
 import { SaveSimulationButton } from "@/components/calculators/SaveSimulationButton";
 import { useAuth } from "@/contexts/AuthContext";
 
+import { zodValidator, fallback } from "@tanstack/zod-adapter";
+import { z } from "zod";
+import { usePrefillFromClient, useHydrateFormFromPrefill } from "@/hooks/usePrefillFromClient";
+import { ClientLinkBanner } from "@/components/calculators/ClientLinkBanner";
+
+const searchSchema = z.object({
+  clientId: fallback(z.string().uuid().optional(), undefined),
+});
+
 export const Route = createFileRoute("/_app/calculators/source-tax")({
+  validateSearch: zodValidator(searchSchema),
   head: () => ({ meta: [{ title: "Impôt à la source · SwissBroker Pro" }] }),
   component: SourceTaxCalc,
 });
 
 function SourceTaxCalc() {
+  const { clientId } = Route.useSearch();
+  const { client, prefill } = usePrefillFromClient(clientId, "source-tax");
   const [form, setForm] = useState({
     canton: "GE",
     scale: "A" as SourceScale,
@@ -33,6 +45,7 @@ function SourceTaxCalc() {
     church: false,
     isCrossBorderFR: false,
   });
+  useHydrateFormFromPrefill(prefill, setForm);
   const set = <K extends keyof typeof form>(k: K, v: (typeof form)[K]) =>
     setForm((f) => ({ ...f, [k]: v }));
 
@@ -48,6 +61,7 @@ function SourceTaxCalc() {
 
   return (
     <div className="grid grid-cols-1 gap-6 md:grid-cols-5">
+      {client && <div className="md:col-span-5"><ClientLinkBanner client={client} /></div>}
       <div className="md:col-span-3">
         <CalcCard
           title="Situation salariée"

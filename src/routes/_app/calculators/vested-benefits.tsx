@@ -32,7 +32,17 @@ import {
 import { formatCHF } from "@/lib/format";
 import { exportVestedBenefitsPdf } from "@/lib/pdf/reports";
 
+import { zodValidator, fallback } from "@tanstack/zod-adapter";
+import { z } from "zod";
+import { usePrefillFromClient, useHydrateFormFromPrefill } from "@/hooks/usePrefillFromClient";
+import { ClientLinkBanner } from "@/components/calculators/ClientLinkBanner";
+
+const searchSchema = z.object({
+  clientId: fallback(z.string().uuid().optional(), undefined),
+});
+
 export const Route = createFileRoute("/_app/calculators/vested-benefits")({
+  validateSearch: zodValidator(searchSchema),
   head: () => ({ meta: [{ title: "Libre passage · SwissBroker Pro" }] }),
   component: VestedBenefitsCalc,
 });
@@ -44,11 +54,14 @@ const STRATEGY_ICONS: Record<VestedStrategy, React.ElementType> = {
 };
 
 function VestedBenefitsCalc() {
+  const { clientId } = Route.useSearch();
+  const { client, prefill } = usePrefillFromClient(clientId, "vested-benefits");
   const [form, setForm] = useState({
     initialBalance: 150_000,
     yearsToRetirement: 20,
     withdrawalCanton: "VD",
   });
+  useHydrateFormFromPrefill(prefill, setForm);
   const set = <K extends keyof typeof form>(k: K, v: (typeof form)[K]) =>
     setForm((f) => ({ ...f, [k]: v }));
 
@@ -80,6 +93,7 @@ function VestedBenefitsCalc() {
 
   return (
     <div className="grid grid-cols-1 gap-6 md:grid-cols-5">
+      {client && <div className="md:col-span-5"><ClientLinkBanner client={client} /></div>}
       <div className="md:col-span-2">
         <CalcCard
           title="Paramètres"

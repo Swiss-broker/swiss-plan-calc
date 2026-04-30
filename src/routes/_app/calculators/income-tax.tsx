@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 import { zodValidator, fallback } from "@tanstack/zod-adapter";
 import { z } from "zod";
 import {
@@ -21,9 +21,9 @@ import { ExportPdfButton } from "@/components/calculators/ExportPdfButton";
 import { exportIncomeTaxPdf } from "@/lib/pdf/reports";
 import { SaveSimulationButton } from "@/components/calculators/SaveSimulationButton";
 import { useAuth } from "@/contexts/AuthContext";
-import { usePrefillFromClient } from "@/hooks/usePrefillFromClient";
+import { usePrefillFromClient, useHydrateFormFromPrefill } from "@/hooks/usePrefillFromClient";
 import { ClientLinkBanner } from "@/components/calculators/ClientLinkBanner";
-import { stripUndefined, getClientTaxContext } from "@/lib/clients/to-calculator-input";
+import { getClientTaxContext } from "@/lib/clients/to-calculator-input";
 
 const searchSchema = z.object({
   clientId: fallback(z.string().uuid().optional(), undefined),
@@ -57,14 +57,7 @@ function IncomeTaxCalculator() {
     pillar3aBalance: 0,
   });
 
-  // Hydratation 1 fois — les what-if du courtier ne sont jamais écrasés.
-  const hydratedRef = useRef(false);
-  useEffect(() => {
-    if (prefill && !hydratedRef.current) {
-      setForm((prev) => ({ ...prev, ...stripUndefined(prefill) }));
-      hydratedRef.current = true;
-    }
-  }, [prefill]);
+  useHydrateFormFromPrefill(prefill, setForm);
 
   const setField = <K extends keyof typeof form>(k: K, v: (typeof form)[K]) =>
     setForm((f) => ({ ...f, [k]: v }));

@@ -103,24 +103,48 @@ export function toIncomeTaxInput(b: ClientBundle) {
 
 /** source-tax */
 export function toSourceTaxInput(b: ClientBundle) {
+  const married =
+    b.client.civil_status === "married" ||
+    b.client.civil_status === "registered_partnership";
+  const hasKids = parseChildren(b.client.children).length > 0;
+  // Barème par défaut si non renseigné dans la fiche
+  const defaultScale: "A" | "B" | "C" | "H" = married
+    ? "B"
+    : hasKids
+      ? "H"
+      : "A";
+  const scale = ((b.client.source_tax_scale as string | null) ?? defaultScale) as
+    | "A"
+    | "B"
+    | "C"
+    | "H";
   return {
     canton: b.client.canton ?? undefined,
-    scale: (b.client.source_tax_scale as string | null) ?? undefined,
+    scale,
     children: parseChildren(b.client.children).length,
     monthlyGross: b.client.gross_annual_salary
       ? Math.round(Number(b.client.gross_annual_salary) / 12)
       : undefined,
-    annualBonus: numOrUndef(b.client.bonus),
+    church: b.client.confession && b.client.confession !== "none" ? true : undefined,
+    isCrossBorderFR:
+      b.client.tax_status === "cross_border_g" &&
+      b.client.country_of_residence === "FR"
+        ? true
+        : undefined,
   };
 }
 
 /** cross-border (frontalier FR/IT) */
 export function toCrossBorderInput(b: ClientBundle) {
+  const married =
+    b.client.civil_status === "married" ||
+    b.client.civil_status === "registered_partnership";
   return {
-    canton: b.client.canton ?? undefined,
-    countryOfResidence: b.client.country_of_residence ?? undefined,
+    workCanton: b.client.canton ?? undefined,
     grossAnnualSalary: numOrUndef(b.client.gross_annual_salary),
-    daysWorkedInSwitzerland: undefined,
+    status: (married ? "married" : "single") as "single" | "married",
+    children: parseChildren(b.client.children).length,
+    spouseGrossSalary: numOrUndef(b.client.spouse_gross_annual_salary),
   };
 }
 
@@ -151,21 +175,24 @@ export function toLppInput(b: ClientBundle) {
 
 /** Libre passage */
 export function toVestedBenefitsInput(b: ClientBundle) {
+  const age = ageFromDob(b.client.date_of_birth);
   return {
-    canton: b.client.canton ?? undefined,
-    status: mapStatus(b.client, parseChildren(b.client.children).length > 0),
-    currentAge: ageFromDob(b.client.date_of_birth) ?? undefined,
+    withdrawalCanton: b.client.canton ?? undefined,
+    initialBalance: numOrUndef(b.pension?.lpp_current_balance),
+    yearsToRetirement: age !== null ? Math.max(1, 65 - age) : undefined,
   };
 }
 
 /** Pilier 3a */
 export function toPillar3aInput(b: ClientBundle) {
+  const age = ageFromDob(b.client.date_of_birth);
   return {
     canton: b.client.canton ?? undefined,
     status: mapStatus(b.client, parseChildren(b.client.children).length > 0),
-    currentAge: ageFromDob(b.client.date_of_birth) ?? undefined,
     grossSalary: numOrUndef(b.client.gross_annual_salary),
     contribution: numOrUndef(b.pension?.pillar_3a_annual_contribution),
+    currentBalance: undefined as number | undefined,
+    yearsToRetirement: age !== null ? Math.max(1, 65 - age) : undefined,
     hasLPP: Number(b.pension?.lpp_current_balance ?? 0) > 0,
   };
 }
@@ -173,21 +200,27 @@ export function toPillar3aInput(b: ClientBundle) {
 /** Comparateur cantonal */
 export function toCantonCompareInput(b: ClientBundle) {
   return {
-    canton: b.client.canton ?? undefined,
+    referenceCanton: b.client.canton ?? undefined,
     status: mapStatus(b.client, parseChildren(b.client.children).length > 0),
     children: parseChildren(b.client.children).length,
     grossSalary: numOrUndef(b.client.gross_annual_salary),
-    pillar3aContributions: numOrUndef(b.pension?.pillar_3a_annual_contribution),
+    spouseGrossSalary: numOrUndef(b.client.spouse_gross_annual_salary),
+    netWealth: computeFortune(b.assets) || undefined,
   };
 }
 
 /** Rente vs capital */
 export function toRetirementInput(b: ClientBundle) {
+  const married =
+    b.client.civil_status === "married" ||
+    b.client.civil_status === "registered_partnership";
   return {
     canton: b.client.canton ?? undefined,
-    status: mapStatus(b.client, parseChildren(b.client.children).length > 0),
+    status: (married ? "married" : "single") as
+      | "single"
+      | "married"
+      | "single_with_children",
     capital: numOrUndef(b.pension?.lpp_current_balance),
-    currentAge: ageFromDob(b.client.date_of_birth) ?? undefined,
   };
 }
 
