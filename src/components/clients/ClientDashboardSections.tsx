@@ -9,6 +9,7 @@ import {
   Map,
   Scale,
   Sparkles,
+  HeartHandshake,
 } from "lucide-react";
 import {
   DashboardCard,
