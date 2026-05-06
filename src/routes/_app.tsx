@@ -8,7 +8,6 @@ import {
   LogOut,
   Loader2,
   Building2,
-  Building,
   Menu,
   Bookmark,
 } from "lucide-react";
