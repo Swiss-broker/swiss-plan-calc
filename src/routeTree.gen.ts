@@ -35,6 +35,7 @@ import { Route as AppCalculatorsIncomeTaxRouteImport } from './routes/_app/calcu
 import { Route as AppCalculatorsCrossBorderRouteImport } from './routes/_app/calculators/cross-border'
 import { Route as AppCalculatorsCantonCompareRouteImport } from './routes/_app/calculators/canton-compare'
 import { Route as AppCalculatorsAvsAiRouteImport } from './routes/_app/calculators/avs-ai'
+import { Route as AppCompaniesCompanyIdEditRouteImport } from './routes/_app/companies/$companyId_.edit'
 import { Route as AppClientsClientIdScenariosRouteImport } from './routes/_app/clients/$clientId_.scenarios'
 import { Route as AppClientsClientIdEditRouteImport } from './routes/_app/clients/$clientId_.edit'
 
@@ -171,6 +172,12 @@ const AppCalculatorsAvsAiRoute = AppCalculatorsAvsAiRouteImport.update({
   path: '/avs-ai',
   getParentRoute: () => AppCalculatorsRoute,
 } as any)
+const AppCompaniesCompanyIdEditRoute =
+  AppCompaniesCompanyIdEditRouteImport.update({
+    id: '/$companyId_/edit',
+    path: '/$companyId/edit',
+    getParentRoute: () => AppCompaniesRoute,
+  } as any)
 const AppClientsClientIdScenariosRoute =
   AppClientsClientIdScenariosRouteImport.update({
     id: '/clients/$clientId_/scenarios',
@@ -211,6 +218,7 @@ export interface FileRoutesByFullPath {
   '/companies/': typeof AppCompaniesIndexRoute
   '/clients/$clientId/edit': typeof AppClientsClientIdEditRoute
   '/clients/$clientId/scenarios': typeof AppClientsClientIdScenariosRoute
+  '/companies/$companyId/edit': typeof AppCompaniesCompanyIdEditRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -238,6 +246,7 @@ export interface FileRoutesByTo {
   '/companies': typeof AppCompaniesIndexRoute
   '/clients/$clientId/edit': typeof AppClientsClientIdEditRoute
   '/clients/$clientId/scenarios': typeof AppClientsClientIdScenariosRoute
+  '/companies/$companyId/edit': typeof AppCompaniesCompanyIdEditRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -269,6 +278,7 @@ export interface FileRoutesById {
   '/_app/companies/': typeof AppCompaniesIndexRoute
   '/_app/clients/$clientId_/edit': typeof AppClientsClientIdEditRoute
   '/_app/clients/$clientId_/scenarios': typeof AppClientsClientIdScenariosRoute
+  '/_app/companies/$companyId_/edit': typeof AppCompaniesCompanyIdEditRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -300,6 +310,7 @@ export interface FileRouteTypes {
     | '/companies/'
     | '/clients/$clientId/edit'
     | '/clients/$clientId/scenarios'
+    | '/companies/$companyId/edit'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -327,6 +338,7 @@ export interface FileRouteTypes {
     | '/companies'
     | '/clients/$clientId/edit'
     | '/clients/$clientId/scenarios'
+    | '/companies/$companyId/edit'
   id:
     | '__root__'
     | '/'
@@ -357,6 +369,7 @@ export interface FileRouteTypes {
     | '/_app/companies/'
     | '/_app/clients/$clientId_/edit'
     | '/_app/clients/$clientId_/scenarios'
+    | '/_app/companies/$companyId_/edit'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -550,6 +563,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppCalculatorsAvsAiRouteImport
       parentRoute: typeof AppCalculatorsRoute
     }
+    '/_app/companies/$companyId_/edit': {
+      id: '/_app/companies/$companyId_/edit'
+      path: '/$companyId/edit'
+      fullPath: '/companies/$companyId/edit'
+      preLoaderRoute: typeof AppCompaniesCompanyIdEditRouteImport
+      parentRoute: typeof AppCompaniesRoute
+    }
     '/_app/clients/$clientId_/scenarios': {
       id: '/_app/clients/$clientId_/scenarios'
       path: '/clients/$clientId/scenarios'
@@ -603,12 +623,14 @@ interface AppCompaniesRouteChildren {
   AppCompaniesCompanyIdRoute: typeof AppCompaniesCompanyIdRoute
   AppCompaniesNewRoute: typeof AppCompaniesNewRoute
   AppCompaniesIndexRoute: typeof AppCompaniesIndexRoute
+  AppCompaniesCompanyIdEditRoute: typeof AppCompaniesCompanyIdEditRoute
 }
 
 const AppCompaniesRouteChildren: AppCompaniesRouteChildren = {
   AppCompaniesCompanyIdRoute: AppCompaniesCompanyIdRoute,
   AppCompaniesNewRoute: AppCompaniesNewRoute,
   AppCompaniesIndexRoute: AppCompaniesIndexRoute,
+  AppCompaniesCompanyIdEditRoute: AppCompaniesCompanyIdEditRoute,
 }
 
 const AppCompaniesRouteWithChildren = AppCompaniesRoute._addFileChildren(
