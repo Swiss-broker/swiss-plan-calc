@@ -134,6 +134,7 @@ function initialForm(initial?: WizardInitialData): FormState {
     first_name: c?.first_name ?? "",
     last_name: c?.last_name ?? "",
     date_of_birth: c?.date_of_birth ?? "",
+    gender: (c?.gender as Gender | null) ?? "",
     email: c?.email ?? "",
     phone: c?.phone ?? "",
     nationality: c?.nationality ?? "CH",
