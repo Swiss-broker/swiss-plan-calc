@@ -23,7 +23,7 @@ import {
 } from "recharts";
 import { CalcCard, MoneyTile, Row } from "@/components/calculators/CalcUI";
 import { ExportPdfButton } from "@/components/calculators/ExportPdfButton";
-import { getSelectableCantons } from "@/lib/swiss/cantons";
+import { getWithdrawalCantons } from "@/lib/swiss/cantons";
 import {
   compareVestedStrategies,
   recommendVestedStrategy,
@@ -122,7 +122,7 @@ function VestedBenefitsCalc() {
               >
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  {getSelectableCantons().map((c) => (
+                  {getWithdrawalCantons().map((c) => (
                     <SelectItem key={c.code} value={c.code}>
                       {c.code} · {c.name}
                     </SelectItem>
@@ -274,6 +274,12 @@ function VestedBenefitsCalc() {
               <strong className="text-foreground">Hypothèses :</strong> rendements nets de frais,
               fourchettes ±1 écart-type. Performance passée non garantie. Ajustez l'horizon et la
               tolérance au risque selon le profil client.
+            </div>
+            <div className="text-xs text-muted-foreground sm:col-span-2">
+              <strong className="text-foreground">Source des rendements :</strong> rendements de
+              référence basés sur les moyennes historiques 2010-2024 des indices SBI AAA-BBB
+              (obligataire CHF), SPI (actions suisses) et MSCI World (actions internationales).
+              Hypothèses indicatives — les rendements futurs peuvent différer.
             </div>
           </Row>
         </CalcCard>

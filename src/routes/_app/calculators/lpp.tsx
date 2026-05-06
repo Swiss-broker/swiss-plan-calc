@@ -136,6 +136,10 @@ function LppCalc() {
                 surobligatoires <strong>5–10 %</strong>, plafond élargi (jusqu'à
                 ~860 000 CHF), rendement réel de la caisse.
               </p>
+              <p className="mt-2 text-[10px] text-muted-foreground">
+                Source : paramètres LPP 2026 publiés par l'Office fédéral des assurances
+                sociales (OFAS).
+              </p>
             </div>
           </CalcCard>
         </div>

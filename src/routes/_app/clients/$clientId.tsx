@@ -219,16 +219,16 @@ function ClientDetailPage() {
           </div>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <Link to="/clients/$clientId/scenarios" params={{ clientId }}>
-            <Button size="sm" className="shine">
+          <Button asChild size="sm" className="shine">
+            <Link to="/clients/$clientId/scenarios" params={{ clientId }}>
               <GitCompare className="h-4 w-4" /> Comparer scénarios
-            </Button>
-          </Link>
-          <Link to="/clients/$clientId/edit" params={{ clientId }}>
-            <Button variant="outline" size="sm">
+            </Link>
+          </Button>
+          <Button asChild variant="outline" size="sm">
+            <Link to="/clients/$clientId/edit" params={{ clientId }}>
               <Pencil className="h-4 w-4" /> Modifier
-            </Button>
-          </Link>
+            </Link>
+          </Button>
           <Button
             variant="outline"
             size="sm"

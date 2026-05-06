@@ -10,7 +10,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { getSelectableCantons } from "@/lib/swiss/cantons";
+import { getWithdrawalCantons } from "@/lib/swiss/cantons";
 import { annuityVsLumpSum, capitalWithdrawalTax } from "@/lib/lpp";
 import { CalcCard, MoneyTile, Row } from "@/components/calculators/CalcUI";
 import { ExportPdfButton } from "@/components/calculators/ExportPdfButton";
@@ -94,15 +94,21 @@ function RetirementCalc() {
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <NumField label="Capital LPP au moment de la retraite" value={form.capital} onChange={(v) => set("capital", v)} />
               <div className="space-y-1.5">
-                <Label className="text-xs font-medium text-muted-foreground">Canton</Label>
+                <Label className="text-xs font-medium text-muted-foreground">
+                  Canton de retrait
+                </Label>
                 <Select value={form.canton} onValueChange={(v) => set("canton", v)}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    {getSelectableCantons().map((c) => (
+                    {getWithdrawalCantons().map((c) => (
                       <SelectItem key={c.code} value={c.code}>{c.code} · {c.name}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
+                <p className="text-[10px] text-muted-foreground">
+                  Canton de l'institution au moment du retrait — peut différer du canton de domicile
+                  (transfert vers une institution en canton à fiscalité favorable, ex. Zoug).
+                </p>
               </div>
               <div className="space-y-1.5">
                 <Label className="text-xs font-medium text-muted-foreground">Situation civile</Label>

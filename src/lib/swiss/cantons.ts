@@ -74,6 +74,16 @@ export function getComparableCantons(): Canton[] {
   return CANTONS.filter((c) => c.comparable);
 }
 
+/**
+ * Cantons utilisables comme **canton de retrait** d'un capital de prévoyance
+ * (LPP, libre passage, 3a). Décorrélé du canton de domicile : un client peut
+ * transférer son avoir dans une institution sise dans un canton à fiscalité
+ * favorable (ex. Zoug) avant le retrait. v1 = romands + ZG.
+ */
+export function getWithdrawalCantons(): Canton[] {
+  return getComparableCantons();
+}
+
 /** Vrai si le canton (code ISO) peut être sélectionné comme domicile/travail. */
 export function isSelectableCanton(code: string): boolean {
   return CANTON_BY_CODE[code]?.selectable === true;
