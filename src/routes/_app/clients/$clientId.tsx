@@ -40,6 +40,7 @@ import { toast } from "sonner";
 import { CANTON_BY_CODE } from "@/lib/swiss/cantons";
 import {
   CIVIL_STATUS_LABELS,
+  GENDER_LABELS,
   CONFESSION_LABELS,
   PERMIT_LABELS,
   TAX_STATUS_LABELS,
