@@ -66,18 +66,19 @@ export function StatTile({
     <div
       key={value}
       className={cn(
-        "group rounded-xl border p-4 hover-lift kpi-pop",
+        "group min-w-0 rounded-xl border p-4 hover-lift kpi-pop",
         toneCls,
       )}
     >
-      <div className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground transition-colors group-hover:text-foreground/80">
+      <div className="truncate text-[11px] font-medium uppercase tracking-wider text-muted-foreground transition-colors group-hover:text-foreground/80">
         {label}
       </div>
       <div
         className={cn(
-          "mt-1 font-semibold tabular-nums transition-transform duration-300 group-hover:translate-y-[-1px]",
+          "mt-1 truncate font-semibold tabular-nums transition-transform duration-300 group-hover:translate-y-[-1px]",
           big ? "text-2xl" : "text-xl",
         )}
+        title={value}
       >
         {value}
       </div>
