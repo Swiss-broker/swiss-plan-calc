@@ -59,7 +59,7 @@ function CalculatorsLayout() {
 
       {/* Mobile: select fallback for quick switching */}
       <div className="mb-4 sm:hidden">
-        <Select value={currentTab} onValueChange={(v) => navigate({ to: v as (typeof TABS)[number]["to"] })}>
+        <Select value={currentTab} onValueChange={(v) => navigate({ to: v as (typeof TABS)[number]["to"], search: tabSearch })}>
           <SelectTrigger>
             <SelectValue />
           </SelectTrigger>
