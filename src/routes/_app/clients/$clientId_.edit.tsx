@@ -65,6 +65,12 @@ function EditClientPage() {
               lpp_max_buyback: Number(data.pension.lpp_max_buyback),
               lpp_plan: data.pension.lpp_plan,
               pillar_3a_annual_contribution: Number(data.pension.pillar_3a_annual_contribution),
+              pillar_3a_accounts: Array.isArray(data.pension.pillar_3a_accounts)
+                ? (data.pension.pillar_3a_accounts as unknown as { institution: string; balance: number }[])
+                : [],
+              vested_benefits_accounts: Array.isArray(data.pension.vested_benefits_accounts)
+                ? (data.pension.vested_benefits_accounts as unknown as { institution: string; balance: number }[])
+                : [],
             }
           : undefined,
         assets: data.assets
