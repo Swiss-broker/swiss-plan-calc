@@ -54,6 +54,7 @@ function AppShell() {
 const NAV = [
   { to: "/dashboard", label: "Tableau de bord", icon: LayoutDashboard },
   { to: "/clients", label: "Clients", icon: Users },
+  { to: "/companies", label: "Sociétés", icon: Building2 },
   { to: "/calculators", label: "Calculateurs", icon: Calculator },
   { to: "/history", label: "Historique", icon: Bookmark },
   { to: "/account", label: "Mon profil", icon: UserCircle },
