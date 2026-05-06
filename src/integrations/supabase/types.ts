@@ -213,6 +213,7 @@ export type Database = {
           children: Json
           civil_status: Database["public"]["Enums"]["civil_status"]
           commune: string | null
+          company_id: string | null
           confession: Database["public"]["Enums"]["confession"]
           country_of_residence: string | null
           created_at: string
@@ -248,6 +249,7 @@ export type Database = {
           children?: Json
           civil_status?: Database["public"]["Enums"]["civil_status"]
           commune?: string | null
+          company_id?: string | null
           confession?: Database["public"]["Enums"]["confession"]
           country_of_residence?: string | null
           created_at?: string
@@ -283,6 +285,7 @@ export type Database = {
           children?: Json
           civil_status?: Database["public"]["Enums"]["civil_status"]
           commune?: string | null
+          company_id?: string | null
           confession?: Database["public"]["Enums"]["confession"]
           country_of_residence?: string | null
           created_at?: string
@@ -312,6 +315,75 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "clients_broker_id_fkey"
+            columns: ["broker_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "clients_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      companies: {
+        Row: {
+          annual_profit: number | null
+          annual_revenue: number | null
+          archived: boolean
+          broker_id: string
+          canton: string | null
+          created_at: string
+          founding_year: number | null
+          id: string
+          ide_number: string | null
+          legal_form: Database["public"]["Enums"]["company_legal_form"]
+          legal_name: string
+          notes: string | null
+          retained_earnings: number | null
+          updated_at: string
+          vat_number: string | null
+        }
+        Insert: {
+          annual_profit?: number | null
+          annual_revenue?: number | null
+          archived?: boolean
+          broker_id: string
+          canton?: string | null
+          created_at?: string
+          founding_year?: number | null
+          id?: string
+          ide_number?: string | null
+          legal_form?: Database["public"]["Enums"]["company_legal_form"]
+          legal_name: string
+          notes?: string | null
+          retained_earnings?: number | null
+          updated_at?: string
+          vat_number?: string | null
+        }
+        Update: {
+          annual_profit?: number | null
+          annual_revenue?: number | null
+          archived?: boolean
+          broker_id?: string
+          canton?: string | null
+          created_at?: string
+          founding_year?: number | null
+          id?: string
+          ide_number?: string | null
+          legal_form?: Database["public"]["Enums"]["company_legal_form"]
+          legal_name?: string
+          notes?: string | null
+          retained_earnings?: number | null
+          updated_at?: string
+          vat_number?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "companies_broker_id_fkey"
             columns: ["broker_id"]
             isOneToOne: false
             referencedRelation: "profiles"
@@ -622,6 +694,12 @@ export type Database = {
         | "divorced"
         | "widowed"
         | "separated"
+      company_legal_form:
+        | "sarl"
+        | "sa"
+        | "cooperative"
+        | "association"
+        | "other"
       confession:
         | "none"
         | "roman_catholic"
@@ -801,6 +879,7 @@ export const Constants = {
         "widowed",
         "separated",
       ],
+      company_legal_form: ["sarl", "sa", "cooperative", "association", "other"],
       confession: [
         "none",
         "roman_catholic",
