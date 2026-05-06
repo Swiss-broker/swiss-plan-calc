@@ -383,6 +383,69 @@ function buildCantonCompare(
   };
 }
 
+function buildAvs(b: ClientBundle): DashboardAvs | null {
+  if (!b.client.date_of_birth) return null;
+  const birthYear = new Date(b.client.date_of_birth).getFullYear();
+  if (!Number.isFinite(birthYear)) return null;
+
+  const gender = (b.client.gender as Gender | null) ?? null;
+  const referenceAge = getReferenceAge(birthYear, gender);
+  const retirementYear = birthYear + Math.round(referenceAge);
+
+  // Approximation revenu moyen carrière = salaire actuel + bonus.
+  const avgIncome =
+    Number(b.client.gross_annual_salary ?? 0) + Number(b.client.bonus ?? 0);
+  if (avgIncome <= 0) return null;
+
+  // Début de cotisation : par défaut, à 21 ans (ou première année si déjà passé).
+  const contributionStartYear = birthYear + 21;
+
+  const isCouple =
+    b.client.civil_status === "married" ||
+    b.client.civil_status === "registered_partnership";
+  const spouseBirthYear = b.client.spouse_date_of_birth
+    ? new Date(b.client.spouse_date_of_birth).getFullYear()
+    : null;
+  const spouseIncome = Number(b.client.spouse_gross_annual_salary ?? 0);
+
+  try {
+    const proj = projectAvsPension({
+      status: isCouple ? "married" : "single",
+      primary: {
+        birthYear,
+        gender,
+        contributionStartYear,
+        retirementYear,
+        averageAnnualIncome: avgIncome,
+      },
+      spouse:
+        isCouple && spouseBirthYear
+          ? {
+              birthYear: spouseBirthYear,
+              gender: gender === "female" ? "male" : "female",
+              contributionStartYear: spouseBirthYear + 21,
+              retirementYear:
+                spouseBirthYear +
+                Math.round(getReferenceAge(spouseBirthYear, undefined)),
+              averageAnnualIncome: spouseIncome,
+            }
+          : undefined,
+    });
+    return {
+      referenceAge,
+      retirementYear,
+      effectiveYears: proj.primary.effectiveYears,
+      missingYears: proj.primary.missingYears,
+      monthlyPension: proj.primary.monthlyPension,
+      annualPension: proj.primary.annualPension,
+      combinedMonthlyPension: proj.combinedMonthlyPension,
+      cappedCouple: proj.cappedCouple,
+    };
+  } catch {
+    return null;
+  }
+}
+
 // ────────────────────────────────────────────────────────────────────────────
 // Entrée publique
 // ────────────────────────────────────────────────────────────────────────────
