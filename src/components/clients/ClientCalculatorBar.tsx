@@ -53,6 +53,7 @@ const CHIPS: CalcChip[] = [
   { to: "/calculators/vested-benefits", label: "Libre passage", icon: Vault },
   { to: "/calculators/retirement", label: "Retraite", icon: Sun },
   { to: "/calculators/canton-compare", label: "Comparateur cantons", icon: Scale },
+  { to: "/calculators/avs-ai", label: "Rente AVS/AI", icon: HeartHandshake },
   { to: "/calculators/tou", label: "TOU", icon: Calculator },
 ];
 
