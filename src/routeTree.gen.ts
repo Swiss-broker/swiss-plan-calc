@@ -15,6 +15,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as SharedTokenRouteImport } from './routes/shared.$token'
 import { Route as AppHistoryRouteImport } from './routes/_app/history'
 import { Route as AppDashboardRouteImport } from './routes/_app/dashboard'
+import { Route as AppCompaniesRouteImport } from './routes/_app/companies'
 import { Route as AppCalculatorsRouteImport } from './routes/_app/calculators'
 import { Route as AppAccountRouteImport } from './routes/_app/account'
 import { Route as AppClientsIndexRouteImport } from './routes/_app/clients/index'
@@ -61,6 +62,11 @@ const AppHistoryRoute = AppHistoryRouteImport.update({
 const AppDashboardRoute = AppDashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppCompaniesRoute = AppCompaniesRouteImport.update({
+  id: '/companies',
+  path: '/companies',
   getParentRoute: () => AppRoute,
 } as any)
 const AppCalculatorsRoute = AppCalculatorsRouteImport.update({
@@ -164,6 +170,7 @@ export interface FileRoutesByFullPath {
   '/auth': typeof AuthRoute
   '/account': typeof AppAccountRoute
   '/calculators': typeof AppCalculatorsRouteWithChildren
+  '/companies': typeof AppCompaniesRoute
   '/dashboard': typeof AppDashboardRoute
   '/history': typeof AppHistoryRoute
   '/shared/$token': typeof SharedTokenRoute
@@ -188,6 +195,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/account': typeof AppAccountRoute
+  '/companies': typeof AppCompaniesRoute
   '/dashboard': typeof AppDashboardRoute
   '/history': typeof AppHistoryRoute
   '/shared/$token': typeof SharedTokenRoute
@@ -215,6 +223,7 @@ export interface FileRoutesById {
   '/auth': typeof AuthRoute
   '/_app/account': typeof AppAccountRoute
   '/_app/calculators': typeof AppCalculatorsRouteWithChildren
+  '/_app/companies': typeof AppCompaniesRoute
   '/_app/dashboard': typeof AppDashboardRoute
   '/_app/history': typeof AppHistoryRoute
   '/shared/$token': typeof SharedTokenRoute
@@ -242,6 +251,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/account'
     | '/calculators'
+    | '/companies'
     | '/dashboard'
     | '/history'
     | '/shared/$token'
@@ -266,6 +276,7 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/account'
+    | '/companies'
     | '/dashboard'
     | '/history'
     | '/shared/$token'
@@ -292,6 +303,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/_app/account'
     | '/_app/calculators'
+    | '/_app/companies'
     | '/_app/dashboard'
     | '/_app/history'
     | '/shared/$token'
@@ -362,6 +374,13 @@ declare module '@tanstack/react-router' {
       path: '/dashboard'
       fullPath: '/dashboard'
       preLoaderRoute: typeof AppDashboardRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/companies': {
+      id: '/_app/companies'
+      path: '/companies'
+      fullPath: '/companies'
+      preLoaderRoute: typeof AppCompaniesRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/calculators': {
@@ -528,6 +547,7 @@ const AppCalculatorsRouteWithChildren = AppCalculatorsRoute._addFileChildren(
 interface AppRouteChildren {
   AppAccountRoute: typeof AppAccountRoute
   AppCalculatorsRoute: typeof AppCalculatorsRouteWithChildren
+  AppCompaniesRoute: typeof AppCompaniesRoute
   AppDashboardRoute: typeof AppDashboardRoute
   AppHistoryRoute: typeof AppHistoryRoute
   AppClientsClientIdRoute: typeof AppClientsClientIdRoute
@@ -540,6 +560,7 @@ interface AppRouteChildren {
 const AppRouteChildren: AppRouteChildren = {
   AppAccountRoute: AppAccountRoute,
   AppCalculatorsRoute: AppCalculatorsRouteWithChildren,
+  AppCompaniesRoute: AppCompaniesRoute,
   AppDashboardRoute: AppDashboardRoute,
   AppHistoryRoute: AppHistoryRoute,
   AppClientsClientIdRoute: AppClientsClientIdRoute,
