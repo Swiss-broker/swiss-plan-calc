@@ -32,7 +32,7 @@ const linkSearch = (clientId: string) => ({ clientId });
 
 export function DashboardOverview({ dashboard, clientId }: Props) {
   return (
-    <div className="grid gap-4 lg:grid-cols-2 xl:grid-cols-3">
+    <div className="grid gap-4 lg:grid-cols-2 xl:grid-cols-4">
       <DashboardCard
         title="Charge fiscale annuelle"
         icon={Calculator}
@@ -126,6 +126,46 @@ export function DashboardOverview({ dashboard, clientId }: Props) {
           </>
         ) : (
           <DashboardEmpty>3a non applicable pour ce statut.</DashboardEmpty>
+        )}
+      </DashboardCard>
+
+      <DashboardCard
+        title="Rente AVS/AI"
+        icon={HeartHandshake}
+        detailLink={{ to: "/calculators/avs-ai", search: linkSearch(clientId) }}
+      >
+        {dashboard.avs ? (
+          <>
+            <DashboardMetric
+              label="Rente mensuelle estimée"
+              value={formatCHF(dashboard.avs.monthlyPension)}
+              emphasis
+            />
+            <DashboardMetric
+              label="Rente annuelle"
+              value={formatCHF(dashboard.avs.annualPension)}
+            />
+            <DashboardMetric
+              label="Années cotisées"
+              value={`${dashboard.avs.effectiveYears} / 44`}
+              sub={
+                dashboard.avs.missingYears > 0
+                  ? `${dashboard.avs.missingYears} manquantes`
+                  : undefined
+              }
+            />
+            {dashboard.avs.combinedMonthlyPension !== undefined && (
+              <DashboardMetric
+                label="Rente couple / mois"
+                value={formatCHF(dashboard.avs.combinedMonthlyPension)}
+                sub={dashboard.avs.cappedCouple ? "plafonnée" : undefined}
+              />
+            )}
+          </>
+        ) : (
+          <DashboardEmpty>
+            Renseignez date de naissance et salaire pour estimer la rente AVS.
+          </DashboardEmpty>
         )}
       </DashboardCard>
     </div>
