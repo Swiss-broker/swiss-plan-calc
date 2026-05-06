@@ -22,6 +22,7 @@ import { Route as AppCompaniesIndexRouteImport } from './routes/_app/companies/i
 import { Route as AppClientsIndexRouteImport } from './routes/_app/clients/index'
 import { Route as AppCalculatorsIndexRouteImport } from './routes/_app/calculators/index'
 import { Route as AppCompaniesNewRouteImport } from './routes/_app/companies/new'
+import { Route as AppCompaniesCompanyIdRouteImport } from './routes/_app/companies/$companyId'
 import { Route as AppClientsNewRouteImport } from './routes/_app/clients/new'
 import { Route as AppClientsClientIdRouteImport } from './routes/_app/clients/$clientId'
 import { Route as AppCalculatorsVestedBenefitsRouteImport } from './routes/_app/calculators/vested-benefits'
@@ -99,6 +100,11 @@ const AppCalculatorsIndexRoute = AppCalculatorsIndexRouteImport.update({
 const AppCompaniesNewRoute = AppCompaniesNewRouteImport.update({
   id: '/new',
   path: '/new',
+  getParentRoute: () => AppCompaniesRoute,
+} as any)
+const AppCompaniesCompanyIdRoute = AppCompaniesCompanyIdRouteImport.update({
+  id: '/$companyId',
+  path: '/$companyId',
   getParentRoute: () => AppCompaniesRoute,
 } as any)
 const AppClientsNewRoute = AppClientsNewRouteImport.update({
@@ -198,6 +204,7 @@ export interface FileRoutesByFullPath {
   '/calculators/vested-benefits': typeof AppCalculatorsVestedBenefitsRoute
   '/clients/$clientId': typeof AppClientsClientIdRoute
   '/clients/new': typeof AppClientsNewRoute
+  '/companies/$companyId': typeof AppCompaniesCompanyIdRoute
   '/companies/new': typeof AppCompaniesNewRoute
   '/calculators/': typeof AppCalculatorsIndexRoute
   '/clients/': typeof AppClientsIndexRoute
@@ -224,6 +231,7 @@ export interface FileRoutesByTo {
   '/calculators/vested-benefits': typeof AppCalculatorsVestedBenefitsRoute
   '/clients/$clientId': typeof AppClientsClientIdRoute
   '/clients/new': typeof AppClientsNewRoute
+  '/companies/$companyId': typeof AppCompaniesCompanyIdRoute
   '/companies/new': typeof AppCompaniesNewRoute
   '/calculators': typeof AppCalculatorsIndexRoute
   '/clients': typeof AppClientsIndexRoute
@@ -254,6 +262,7 @@ export interface FileRoutesById {
   '/_app/calculators/vested-benefits': typeof AppCalculatorsVestedBenefitsRoute
   '/_app/clients/$clientId': typeof AppClientsClientIdRoute
   '/_app/clients/new': typeof AppClientsNewRoute
+  '/_app/companies/$companyId': typeof AppCompaniesCompanyIdRoute
   '/_app/companies/new': typeof AppCompaniesNewRoute
   '/_app/calculators/': typeof AppCalculatorsIndexRoute
   '/_app/clients/': typeof AppClientsIndexRoute
@@ -284,6 +293,7 @@ export interface FileRouteTypes {
     | '/calculators/vested-benefits'
     | '/clients/$clientId'
     | '/clients/new'
+    | '/companies/$companyId'
     | '/companies/new'
     | '/calculators/'
     | '/clients/'
@@ -310,6 +320,7 @@ export interface FileRouteTypes {
     | '/calculators/vested-benefits'
     | '/clients/$clientId'
     | '/clients/new'
+    | '/companies/$companyId'
     | '/companies/new'
     | '/calculators'
     | '/clients'
@@ -339,6 +350,7 @@ export interface FileRouteTypes {
     | '/_app/calculators/vested-benefits'
     | '/_app/clients/$clientId'
     | '/_app/clients/new'
+    | '/_app/companies/$companyId'
     | '/_app/companies/new'
     | '/_app/calculators/'
     | '/_app/clients/'
@@ -445,6 +457,13 @@ declare module '@tanstack/react-router' {
       path: '/new'
       fullPath: '/companies/new'
       preLoaderRoute: typeof AppCompaniesNewRouteImport
+      parentRoute: typeof AppCompaniesRoute
+    }
+    '/_app/companies/$companyId': {
+      id: '/_app/companies/$companyId'
+      path: '/$companyId'
+      fullPath: '/companies/$companyId'
+      preLoaderRoute: typeof AppCompaniesCompanyIdRouteImport
       parentRoute: typeof AppCompaniesRoute
     }
     '/_app/clients/new': {
@@ -581,11 +600,13 @@ const AppCalculatorsRouteWithChildren = AppCalculatorsRoute._addFileChildren(
 )
 
 interface AppCompaniesRouteChildren {
+  AppCompaniesCompanyIdRoute: typeof AppCompaniesCompanyIdRoute
   AppCompaniesNewRoute: typeof AppCompaniesNewRoute
   AppCompaniesIndexRoute: typeof AppCompaniesIndexRoute
 }
 
 const AppCompaniesRouteChildren: AppCompaniesRouteChildren = {
+  AppCompaniesCompanyIdRoute: AppCompaniesCompanyIdRoute,
   AppCompaniesNewRoute: AppCompaniesNewRoute,
   AppCompaniesIndexRoute: AppCompaniesIndexRoute,
 }
