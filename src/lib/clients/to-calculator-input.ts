@@ -228,6 +228,18 @@ export function toRetirementInput(b: ClientBundle) {
 // Utilitaires
 // ──────────────────────────────────────────────────────────────────────────
 
+/** Somme les soldes ("balance" / "amount" / "value") d'un tableau JSONB de comptes. */
+export function sumAccountBalances(value: unknown): number {
+  if (!Array.isArray(value)) return 0;
+  return value.reduce((acc, item) => {
+    if (typeof item !== "object" || item === null) return acc;
+    const rec = item as Record<string, unknown>;
+    const raw = rec.balance ?? rec.amount ?? rec.value ?? 0;
+    const n = Number(raw);
+    return Number.isFinite(n) ? acc + n : acc;
+  }, 0);
+}
+
 function numOrUndef(v: number | string | null | undefined): number | undefined {
   if (v === null || v === undefined || v === "") return undefined;
   const n = Number(v);
