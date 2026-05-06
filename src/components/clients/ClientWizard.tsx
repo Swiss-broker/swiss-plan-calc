@@ -160,6 +160,14 @@ function initialForm(initial?: WizardInitialData): FormState {
     lpp_max_buyback: p?.lpp_max_buyback?.toString() ?? "",
     lpp_plan: p?.lpp_plan ?? "mandatory",
     pillar_3a_annual_contribution: p?.pillar_3a_annual_contribution?.toString() ?? "",
+    pillar_3a_accounts: parsePensionAccountsSafe(
+      (initial?.client as unknown as Record<string, unknown> | undefined)?.pillar_3a_accounts ??
+        p?.pillar_3a_accounts,
+    ),
+    vested_benefits_accounts: parsePensionAccountsSafe(
+      (initial?.client as unknown as Record<string, unknown> | undefined)?.vested_benefits_accounts ??
+        p?.vested_benefits_accounts,
+    ),
     bank_accounts: a?.bank_accounts?.toString() ?? "",
     securities: a?.securities?.toString() ?? "",
     real_estate_value: a?.real_estate_value?.toString() ?? "",
