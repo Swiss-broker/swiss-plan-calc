@@ -269,7 +269,6 @@ function LppCalc() {
                   </SelectContent>
                 </Select>
               </div>
-              <NumField label="Salaire brut annuel (CHF)" value={form.grossSalary} onChange={(v) => set("grossSalary", v)} />
               <NumField label="Nombre d'enfants" value={form.children} onChange={(v) => set("children", v)} />
               <NumField label="Capacité de rachat (CHF)" value={form.buybackCapacity} onChange={(v) => set("buybackCapacity", v)} />
               <NumField label="Étaler sur (années)" value={form.buybackYears} onChange={(v) => set("buybackYears", v)} />
