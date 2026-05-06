@@ -9,6 +9,7 @@ import {
   Globe,
   Scale,
   ShieldCheck,
+  HeartHandshake,
   ArrowRight,
 } from "lucide-react";
 import { CalcCard } from "@/components/calculators/CalcUI";
@@ -42,6 +43,12 @@ const ITEMS = [
     icon: Scale,
     title: "TOU / quasi-résident",
     desc: "Éligibilité 90 % et comparatif IS retenue vs taxation ordinaire ultérieure.",
+  },
+  {
+    to: "/calculators/avs-ai" as const,
+    icon: HeartHandshake,
+    title: "Rente AVS/AI (1er pilier)",
+    desc: "Estimation rente individuelle ou couple, AVS21, plafonnement 3'780 CHF/mois.",
   },
   {
     to: "/calculators/lpp" as const,
