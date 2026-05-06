@@ -109,5 +109,6 @@ function CalculatorsLayout() {
       </div>
       <Outlet />
     </div>
+    </div>
   );
 }
