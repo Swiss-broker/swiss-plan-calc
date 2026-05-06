@@ -56,7 +56,7 @@ function CalculatorsLayout() {
       className={cn(
         "min-h-[calc(100vh-3.5rem)] transition-colors",
         inClientContext &&
-          "bg-[linear-gradient(180deg,color-mix(in_oklab,var(--primary)_8%,transparent),transparent_320px)] ring-1 ring-inset ring-primary/15",
+          "bg-primary/10 border-l-4 border-primary",
       )}
     >
     <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
