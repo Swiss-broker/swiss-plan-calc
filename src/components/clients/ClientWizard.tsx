@@ -993,6 +993,18 @@ function StepPatrimoine({
 
       <Separator />
       <div>
+        <h3 className="text-sm font-semibold">Comptes de libre passage</h3>
+        <p className="mt-1 text-xs text-muted-foreground">
+          Anciens 2e pilier transférés sur des comptes/polices de libre passage (changement d'emploi, indépendance, etc.).
+        </p>
+        <PensionAccountsEditor
+          value={form.vested_benefits_accounts}
+          onChange={(v) => update("vested_benefits_accounts", v)}
+        />
+      </div>
+
+      <Separator />
+      <div>
         <h3 className="text-sm font-semibold">Patrimoine</h3>
         <div className="mt-3 grid gap-4 sm:grid-cols-2">
           <Field label="Comptes bancaires">
