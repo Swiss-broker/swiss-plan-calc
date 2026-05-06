@@ -213,8 +213,10 @@ function VestedBenefitsCalc() {
             </ResponsiveContainer>
           </div>
         </CalcCard>
+      </div>
+      </div>
 
-        <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
           {projections.map((p) => {
             const Icon = STRATEGY_ICONS[p.strategy.id];
             const isRecommended = p.strategy.id === recommended;
@@ -235,11 +237,11 @@ function VestedBenefitsCalc() {
                   )}
                 </div>
                 <p className="mt-1 text-xs text-muted-foreground">{p.strategy.description}</p>
-                <div className="mt-3 grid grid-cols-1 gap-2 xl:grid-cols-2">
-                  <MoneyTile label="Capital final" value={p.finalBalance} tone="primary" />
-                  <MoneyTile label="Gains nets" value={p.totalGains} tone="success" />
+                <div className="mt-4 grid grid-cols-2 gap-3">
+                  <MoneyTile label="Capital final" value={p.finalBalance} tone="primary" big compact />
+                  <MoneyTile label="Gains nets" value={p.totalGains} tone="success" big compact />
                 </div>
-                <dl className="mt-3 space-y-1 text-xs">
+                <dl className="mt-4 space-y-1.5 text-xs">
                   <Line2 label="Rendement net annualisé" value={`${p.netReturn} %`} />
                   <Line2 label="Frais annuels" value={`${p.strategy.totalFees} %`} />
                   <Line2 label="Fourchette basse (-1σ)" value={formatCHF(p.finalLow)} />
@@ -261,30 +263,29 @@ function VestedBenefitsCalc() {
               </CalcCard>
             );
           })}
-        </div>
-
-        <CalcCard>
-          <Row>
-            <div className="text-xs text-muted-foreground">
-              <strong className="text-foreground">Rappel libre passage :</strong> compte ouvert
-              entre deux affiliations LPP ou en cas de départ à l'étranger / indépendance. Possibilité
-              de fragmenter sur plusieurs comptes pour casser la progressivité de l'impôt sur prestation
-              en capital.
-            </div>
-            <div className="text-xs text-muted-foreground">
-              <strong className="text-foreground">Hypothèses :</strong> rendements nets de frais,
-              fourchettes ±1 écart-type. Performance passée non garantie. Ajustez l'horizon et la
-              tolérance au risque selon le profil client.
-            </div>
-            <div className="text-xs text-muted-foreground sm:col-span-2">
-              <strong className="text-foreground">Source des rendements :</strong> rendements de
-              référence basés sur les moyennes historiques 2010-2024 des indices SBI AAA-BBB
-              (obligataire CHF), SPI (actions suisses) et MSCI World (actions internationales).
-              Hypothèses indicatives — les rendements futurs peuvent différer.
-            </div>
-          </Row>
-        </CalcCard>
       </div>
+
+      <CalcCard>
+        <Row>
+          <div className="text-xs text-muted-foreground">
+            <strong className="text-foreground">Rappel libre passage :</strong> compte ouvert
+            entre deux affiliations LPP ou en cas de départ à l'étranger / indépendance. Possibilité
+            de fragmenter sur plusieurs comptes pour casser la progressivité de l'impôt sur prestation
+            en capital.
+          </div>
+          <div className="text-xs text-muted-foreground">
+            <strong className="text-foreground">Hypothèses :</strong> rendements nets de frais,
+            fourchettes ±1 écart-type. Performance passée non garantie. Ajustez l'horizon et la
+            tolérance au risque selon le profil client.
+          </div>
+          <div className="text-xs text-muted-foreground sm:col-span-2">
+            <strong className="text-foreground">Source des rendements :</strong> rendements de
+            référence basés sur les moyennes historiques 2010-2024 des indices SBI AAA-BBB
+            (obligataire CHF), SPI (actions suisses) et MSCI World (actions internationales).
+            Hypothèses indicatives — les rendements futurs peuvent différer.
+          </div>
+        </Row>
+      </CalcCard>
     </div>
   );
 }
