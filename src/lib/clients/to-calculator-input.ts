@@ -176,9 +176,10 @@ export function toLppInput(b: ClientBundle) {
 /** Libre passage */
 export function toVestedBenefitsInput(b: ClientBundle) {
   const age = ageFromDob(b.client.date_of_birth);
+  const vestedSum = sumAccountBalances(b.pension?.vested_benefits_accounts);
   return {
     withdrawalCanton: b.client.canton ?? undefined,
-    initialBalance: numOrUndef(b.pension?.lpp_current_balance),
+    initialBalance: vestedSum > 0 ? vestedSum : numOrUndef(b.pension?.lpp_current_balance),
     yearsToRetirement: age !== null ? Math.max(1, 65 - age) : undefined,
   };
 }
@@ -186,12 +187,13 @@ export function toVestedBenefitsInput(b: ClientBundle) {
 /** Pilier 3a */
 export function toPillar3aInput(b: ClientBundle) {
   const age = ageFromDob(b.client.date_of_birth);
+  const pillar3aSum = sumAccountBalances(b.pension?.pillar_3a_accounts);
   return {
     canton: b.client.canton ?? undefined,
     status: mapStatus(b.client, parseChildren(b.client.children).length > 0),
     grossSalary: numOrUndef(b.client.gross_annual_salary),
     contribution: numOrUndef(b.pension?.pillar_3a_annual_contribution),
-    currentBalance: undefined as number | undefined,
+    currentBalance: pillar3aSum > 0 ? pillar3aSum : undefined,
     yearsToRetirement: age !== null ? Math.max(1, 65 - age) : undefined,
     hasLPP: Number(b.pension?.lpp_current_balance ?? 0) > 0,
   };
@@ -227,6 +229,18 @@ export function toRetirementInput(b: ClientBundle) {
 // ──────────────────────────────────────────────────────────────────────────
 // Utilitaires
 // ──────────────────────────────────────────────────────────────────────────
+
+/** Somme les soldes ("balance" / "amount" / "value") d'un tableau JSONB de comptes. */
+export function sumAccountBalances(value: unknown): number {
+  if (!Array.isArray(value)) return 0;
+  return value.reduce((acc, item) => {
+    if (typeof item !== "object" || item === null) return acc;
+    const rec = item as Record<string, unknown>;
+    const raw = rec.balance ?? rec.amount ?? rec.value ?? 0;
+    const n = Number(raw);
+    return Number.isFinite(n) ? acc + n : acc;
+  }, 0);
+}
 
 function numOrUndef(v: number | string | null | undefined): number | undefined {
   if (v === null || v === undefined || v === "") return undefined;
