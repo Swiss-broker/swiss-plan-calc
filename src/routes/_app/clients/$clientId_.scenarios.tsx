@@ -19,7 +19,7 @@ import {
 } from "@/lib/scenarios/presets";
 import type { Client, ClientPension, ClientAssets } from "@/lib/clients/types";
 
-export const Route = createFileRoute("/_app/clients/$clientId/scenarios")({
+export const Route = createFileRoute("/_app/clients/$clientId_/scenarios")({
   head: () => ({ meta: [{ title: "Comparateur de scénarios · SwissBroker Pro" }] }),
   component: ScenariosPage,
 });

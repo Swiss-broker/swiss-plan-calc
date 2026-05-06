@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { ClientWizard } from "@/components/clients/ClientWizard";
 import type { Client, ClientPension, ClientAssets } from "@/lib/clients/types";
 
-export const Route = createFileRoute("/_app/clients/$clientId/edit")({
+export const Route = createFileRoute("/_app/clients/$clientId_/edit")({
   head: () => ({ meta: [{ title: "Modifier client · SwissBroker Pro" }] }),
   component: EditClientPage,
 });
