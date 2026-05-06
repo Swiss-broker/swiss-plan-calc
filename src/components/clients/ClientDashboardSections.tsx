@@ -9,6 +9,7 @@ import {
   Map,
   Scale,
   Sparkles,
+  HeartHandshake,
 } from "lucide-react";
 import {
   DashboardCard,
@@ -301,6 +302,54 @@ export function DashboardPension({ dashboard, clientId }: Props) {
           </>
         ) : (
           <DashboardEmpty>Capital LPP projeté insuffisant.</DashboardEmpty>
+        )}
+      </DashboardCard>
+
+      <DashboardCard
+        title="Rente AVS/AI (1er pilier)"
+        icon={HeartHandshake}
+        detailLink={{ to: "/calculators/avs-ai", search: linkSearch(clientId) }}
+        hint={{
+          tone: "info",
+          text: "Estimation indicative. Pour un calcul officiel, demandez l'Extrait du Compte Individuel (CI) à votre caisse AVS.",
+        }}
+      >
+        {dashboard.avs ? (
+          <>
+            <DashboardMetric
+              label="Rente mensuelle estimée"
+              value={formatCHF(dashboard.avs.monthlyPension)}
+              emphasis
+            />
+            <DashboardMetric
+              label="Rente annuelle"
+              value={formatCHF(dashboard.avs.annualPension)}
+            />
+            <DashboardMetric
+              label="Âge de référence"
+              value={`${dashboard.avs.referenceAge} ans`}
+            />
+            <DashboardMetric
+              label="Années de cotisation"
+              value={`${dashboard.avs.effectiveYears} / 44`}
+              sub={
+                dashboard.avs.missingYears > 0
+                  ? `${dashboard.avs.missingYears} manquantes`
+                  : undefined
+              }
+            />
+            {dashboard.avs.combinedMonthlyPension !== undefined && (
+              <DashboardMetric
+                label="Rente couple / mois"
+                value={formatCHF(dashboard.avs.combinedMonthlyPension)}
+                sub={dashboard.avs.cappedCouple ? "plafonnée" : undefined}
+              />
+            )}
+          </>
+        ) : (
+          <DashboardEmpty>
+            Renseignez la date de naissance et le salaire pour estimer la rente AVS.
+          </DashboardEmpty>
         )}
       </DashboardCard>
     </div>
