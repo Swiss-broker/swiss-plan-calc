@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   LineChart,
   Line as RLine,
@@ -9,7 +9,7 @@ import {
   ResponsiveContainer,
   CartesianGrid,
 } from "recharts";
-import { Input } from "@/components/ui/input";
+
 import { NumField as BaseNumField } from "@/components/ui/num-field";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
