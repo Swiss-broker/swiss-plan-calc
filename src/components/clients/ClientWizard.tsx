@@ -43,6 +43,7 @@ import {
 import type { Child, Client } from "@/lib/clients/types";
 import { getWorkStatusRules } from "@/lib/clients/work-status-rules";
 import { formatCHF } from "@/lib/format";
+import { computeLppInsuredSalary, LPP_COORDINATION_DEDUCTION_2026, LPP_MAX_INSURED_SALARY_2026 } from "@/lib/lpp";
 
 const STEPS = [
   { id: 1, title: "Identité", desc: "Informations personnelles" },
@@ -199,7 +200,13 @@ export function ClientWizard({ initial, mode, clientId }: ClientWizardProps) {
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const update = <K extends keyof FormState>(key: K, value: FormState[K]) =>
-    setForm((s) => ({ ...s, [key]: value }));
+    setForm((s) => {
+      if (key === "gross_annual_salary") {
+        const gross = num(String(value)) ?? 0;
+        return { ...s, [key]: value, lpp_insured_salary: String(computeLppInsuredSalary(gross)) };
+      }
+      return { ...s, [key]: value };
+    });
 
   const isMarried = form.civil_status === "married" || form.civil_status === "registered_partnership";
 
