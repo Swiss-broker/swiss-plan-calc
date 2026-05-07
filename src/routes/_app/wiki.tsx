@@ -387,9 +387,19 @@ function WikiPage() {
                 {category}
               </h2>
               <div className="rounded-2xl border border-border bg-card shadow-card">
-                <Accordion type="multiple" className="w-full">
+                <Accordion
+                  type="multiple"
+                  className="w-full"
+                  value={openItems}
+                  onValueChange={setOpenItems}
+                >
                   {items.map((a) => (
-                    <AccordionItem key={a.id} value={a.id} className="border-b last:border-0 px-4">
+                    <AccordionItem
+                      key={a.id}
+                      value={a.id}
+                      id={`wiki-${a.id}`}
+                      className="border-b last:border-0 px-4 transition-shadow"
+                    >
                       <AccordionTrigger className="text-sm font-medium hover:no-underline">
                         <div className="flex items-center gap-2 text-left">
                           <ChevronRight className="h-3.5 w-3.5 text-primary" />
