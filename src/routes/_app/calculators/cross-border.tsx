@@ -210,10 +210,13 @@ function CrossBorderCalc() {
   );
 }
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
+function Field({ label, children, wikiId, wikiTip }: { label: string; children: React.ReactNode; wikiId?: string; wikiTip?: React.ReactNode }) {
   return (
     <div className="space-y-1.5">
-      <Label className="text-xs font-medium text-muted-foreground">{label}</Label>
+      <Label className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+        <span>{label}</span>
+        {wikiId ? <WikiTip articleId={wikiId} tip={wikiTip ?? label} /> : null}
+      </Label>
       {children}
     </div>
   );
