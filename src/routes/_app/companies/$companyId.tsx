@@ -7,7 +7,7 @@ import {
   Archive,
   ArchiveRestore,
   Trash2,
-  Building2,
+  
   Users,
   TrendingUp,
   PiggyBank,
@@ -443,14 +443,62 @@ function CompanyDetailPage() {
 
         {/* Calc */}
         <TabsContent value="calc" className="mt-4">
-          <div className="rounded-2xl border border-dashed border-border bg-muted/20 p-10 text-center">
-            <Building2 className="mx-auto h-8 w-8 text-muted-foreground" />
-            <p className="mt-3 text-sm font-medium">Comparateur dividende / salaire</p>
-            <p className="mt-1 text-xs text-muted-foreground">
-              Cet outil arrive en Phase 4. Il croisera les données de la société et du dirigeant
-              pour optimiser la rémunération.
+          <Card title="Comparateur rémunération dirigeant (salaire / dividendes)">
+            <p className="text-sm text-muted-foreground">
+              Compare la situation actuelle du dirigeant à 4 stratégies préset (100/0, 70/30,
+              50/50, 30/70) en croisant les données de la société (bénéfice, réserve cible) avec
+              celles du dirigeant. Économie fiscale chiffrée sur 1 an et 10 ans.
             </p>
-          </div>
+
+            {directors.length === 0 ? (
+              <div className="mt-4 rounded-md border border-dashed border-border bg-muted/20 p-6 text-center">
+                <p className="text-sm text-muted-foreground">
+                  Rattachez d'abord un dirigeant pour lancer le comparateur avec préfill automatique.
+                </p>
+                <Button size="sm" className="mt-3" onClick={() => setAttachOpen(true)}>
+                  <UserPlus className="h-4 w-4" /> Rattacher un dirigeant
+                </Button>
+              </div>
+            ) : (
+              <div className="mt-4 space-y-2">
+                <ul className="divide-y divide-border rounded-md border border-border">
+                  {directors.map((d) => (
+                    <li
+                      key={d.id}
+                      className="flex flex-col gap-2 px-3 py-2 sm:flex-row sm:items-center sm:justify-between"
+                    >
+                      <div className="min-w-0">
+                        <div className="truncate text-sm font-medium">
+                          {d.last_name.toUpperCase()} {d.first_name}
+                        </div>
+                        <div className="truncate text-xs text-muted-foreground">
+                          {d.company_role ?? "Rôle non renseigné"} ·{" "}
+                          {formatCHF(d.gross_annual_salary)} / an
+                        </div>
+                      </div>
+                      <Button asChild size="sm">
+                        <Link
+                          to="/calculators/director-compensation"
+                          search={{ clientId: d.id, companyId }}
+                        >
+                          <TrendingUp className="h-3.5 w-3.5" />
+                          Lancer le comparateur
+                        </Link>
+                      </Button>
+                    </li>
+                  ))}
+                </ul>
+                <Button asChild size="sm" variant="outline">
+                  <Link
+                    to="/calculators/director-compensation"
+                    search={{ companyId }}
+                  >
+                    Ouvrir sans dirigeant pré-sélectionné
+                  </Link>
+                </Button>
+              </div>
+            )}
+          </Card>
         </TabsContent>
 
         {/* Notes */}
