@@ -155,8 +155,7 @@ export function OptimizationsPanel({
 
       <p className="flex items-start gap-2 text-[11px] text-muted-foreground">
         <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-        Estimations indicatives basées sur les barèmes 2026 · confirmez avec une simulation
-        détaillée avant d'agir.
+        Suggestions calculées sur la base des barèmes fiscaux 2026 et du statut fiscal du client. Pour les cas complexes (frontaliers TOU, structures holding, revenus internationaux), valider la cohérence des hypothèses avant remise au client.
       </p>
     </div>
   );
