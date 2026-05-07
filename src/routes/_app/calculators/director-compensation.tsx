@@ -988,6 +988,22 @@ function LegalDisclaimer() {
   );
 }
 
+function DeltaTile({ label, value, positiveIsGood }: { label: string; value: number; positiveIsGood?: boolean }) {
+  const positive = value >= 0;
+  const good = positiveIsGood ? positive : !positive;
+  return (
+    <div className={cn(
+      "rounded-lg border p-3",
+      good ? "border-success/40 bg-success/5" : "border-destructive/30 bg-destructive/5",
+    )}>
+      <div className="text-[10px] uppercase tracking-wider text-muted-foreground">{label}</div>
+      <div className={cn("mt-1 text-base font-semibold tabular-nums", good ? "text-success-foreground" : "text-destructive")}>
+        {positive ? "+" : ""}{formatCHF(value)}
+      </div>
+    </div>
+  );
+}
+
 function round1(n: number): number {
   return Math.round(n * 10) / 10;
 }
