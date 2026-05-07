@@ -342,16 +342,23 @@ function NumField({
   onChange,
   step: _step = 1,
   suffix,
+  wikiId,
+  wikiTip,
 }: {
   label: string;
   value: number;
   onChange: (v: number) => void;
   step?: number;
   suffix?: string;
+  wikiId?: string;
+  wikiTip?: React.ReactNode;
 }) {
   return (
     <div className="space-y-1.5">
-      <Label className="text-xs font-medium text-muted-foreground">{label}</Label>
+      <Label className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+        <span>{label}</span>
+        {wikiId ? <WikiTip articleId={wikiId} tip={wikiTip ?? label} /> : null}
+      </Label>
       <BaseNumField
         value={String(value)}
         onChange={(v) => onChange(Number(v) || 0)}
