@@ -26,7 +26,9 @@ describe("computeStrategy", () => {
     // Sanity checks
     expect(r.company.grossSalary).toBeGreaterThan(100_000);
     expect(r.company.grossSalary).toBeLessThan(140_000);
-    expect(r.company.dividendShortfall).toBe(false);
+    // Note : avec 70% du bénéfice en coût salaire (charges incluses) et 14% IS,
+    // il reste ~51.6k pour 60k de dividendes ciblés → shortfall attendu, cap appliqué.
+    expect(r.company.dividendShortfall).toBe(true);
     expect(r.directorNet).toBeGreaterThan(0);
     expect(Math.abs(r.reconciliation)).toBeLessThan(2);
   });
