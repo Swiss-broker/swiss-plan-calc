@@ -290,8 +290,30 @@ const ARTICLES: Article[] = [
 const CATEGORIES = Array.from(new Set(ARTICLES.map((a) => a.category)));
 
 function WikiPage() {
+  const { article: targetArticle } = Route.useSearch();
   const [q, setQ] = useState("");
   const [cat, setCat] = useState<string | null>(null);
+  const [openItems, setOpenItems] = useState<string[]>([]);
+
+  // Quand on arrive avec ?article=xxx, ouvrir + scroller automatiquement
+  useEffect(() => {
+    if (!targetArticle) return;
+    const found = ARTICLES.find((a) => a.id === targetArticle);
+    if (!found) return;
+    setCat(null);
+    setQ("");
+    setOpenItems((prev) => (prev.includes(targetArticle) ? prev : [...prev, targetArticle]));
+    // Scroll après render
+    const t = setTimeout(() => {
+      const el = document.getElementById(`wiki-${targetArticle}`);
+      if (el) {
+        el.scrollIntoView({ behavior: "smooth", block: "center" });
+        el.classList.add("ring-2", "ring-primary", "rounded-xl");
+        setTimeout(() => el.classList.remove("ring-2", "ring-primary", "rounded-xl"), 2200);
+      }
+    }, 120);
+    return () => clearTimeout(t);
+  }, [targetArticle]);
 
   const filtered = useMemo(() => {
     const t = q.trim().toLowerCase();
