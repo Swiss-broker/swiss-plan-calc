@@ -55,6 +55,7 @@ export const TAX_STATUS_LABELS: Record<TaxStatus, string> = {
 export const WORK_STATUS_LABELS: Record<WorkStatus, string> = {
   employee: "Salarié",
   self_employed: "Indépendant",
+  director: "Dirigeant de société",
   mixed: "Mixte (salarié + indépendant)",
   retired: "Retraité",
   unemployed: "Sans emploi",
