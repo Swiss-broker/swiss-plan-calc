@@ -162,6 +162,21 @@ function ClientDetailPage() {
     : null;
   const dashboard = useClientDashboard(bundle);
 
+  const companyId = data?.client.company_id ?? null;
+  const { data: linkedCompany } = useQuery({
+    queryKey: ["client-linked-company", clientId, companyId],
+    enabled: !!companyId,
+    queryFn: async () => {
+      const { data: c, error } = await supabase
+        .from("companies")
+        .select("*")
+        .eq("id", companyId!)
+        .maybeSingle();
+      if (error) throw error;
+      return c as Company | null;
+    },
+  });
+
   if (isLoading) {
     return (
       <div className="flex min-h-[60vh] items-center justify-center">
