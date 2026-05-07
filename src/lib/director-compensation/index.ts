@@ -248,6 +248,103 @@ export function computeAllStrategies(
   return list.map((s) => computeStrategy(inputs, s));
 }
 
+/**
+ * Calcule un résultat à partir d'une répartition ABSOLUE en CHF
+ * (modélise la situation actuelle réelle d'un dirigeant).
+ */
+export function computeStrategyFromAbsolute(
+  inputs: DirectorInputs,
+  abs: import("./types").AbsoluteAllocation,
+  label = "Situation actuelle",
+): CompensationResult {
+  const warnings: string[] = [];
+  const totalProfit = Math.max(0, inputs.totalProfit);
+  const grossSalary = Math.max(0, abs.grossSalary);
+  const dividendsTargeted = Math.max(0, abs.dividends);
+
+  const employerCharges = computeEmployerCharges(grossSalary, inputs);
+  const totalSalaryCost = grossSalary + employerCharges.total;
+
+  const profitBeforeCorporateTax = Math.max(0, totalProfit - totalSalaryCost);
+  const corporateTax = profitBeforeCorporateTax * CORPORATE_TAX_RATE[inputs.companyCanton];
+  const netProfitAfterTax = profitBeforeCorporateTax - corporateTax;
+
+  let dividendsPaid = dividendsTargeted;
+  let dividendShortfall = false;
+  if (dividendsTargeted > netProfitAfterTax + 1) {
+    dividendShortfall = true;
+    dividendsPaid = Math.max(0, netProfitAfterTax);
+    warnings.push(
+      `Situation actuelle : dividendes saisis (${round(dividendsTargeted)} CHF) ` +
+        `supérieurs au bénéfice net après IS (${round(netProfitAfterTax)} CHF). ` +
+        `Cappés à ${round(dividendsPaid)} CHF.`,
+    );
+  }
+  const retainedActual =
+    abs.retained != null
+      ? Math.max(0, abs.retained)
+      : Math.max(0, netProfitAfterTax - dividendsPaid);
+
+  const employeeCharges = computeEmployeeCharges(grossSalary, inputs);
+  const netSalary = grossSalary - employeeCharges.total;
+  const fractions = dividendTaxableFractions(inputs.directorCanton, inputs.qualifiedHolding);
+  const taxableSalaryBase = Math.max(0, grossSalary - employeeCharges.total);
+  const taxableIncomeIFD = taxableSalaryBase + dividendsPaid * fractions.federal;
+  const taxableIncomeICC = taxableSalaryBase + dividendsPaid * fractions.cantonal;
+  const ifd = computeIFD(taxableIncomeIFD, inputs.status);
+  const cc = computeCantonalCommunal({
+    canton: inputs.directorCanton,
+    taxableIncome: taxableIncomeICC,
+    status: inputs.status,
+    children: inputs.children ?? 0,
+    confession: inputs.confession,
+    communalMultiplier: inputs.directorCommunalMultiplier,
+  });
+  const totalIncomeTax = ifd + cc.cantonal + cc.communal + cc.church;
+  const netCash = netSalary + dividendsPaid - totalIncomeTax;
+  const totalTaxAndCharges =
+    employerCharges.total + corporateTax + employeeCharges.total + totalIncomeTax;
+
+  return {
+    strategy: { salaryPct: 0, dividendPct: 0, retainedPct: 0, label },
+    inputs,
+    company: {
+      grossSalary: round(grossSalary),
+      employerCharges,
+      totalSalaryCost: round(totalSalaryCost),
+      profitBeforeCorporateTax: round(profitBeforeCorporateTax),
+      corporateTax: round(corporateTax),
+      netProfitAfterTax: round(netProfitAfterTax),
+      dividendsTargeted: round(dividendsTargeted),
+      retainedTargeted: round(retainedActual),
+      dividendShortfall,
+      dividendsPaid: round(dividendsPaid),
+      retainedActual: round(retainedActual),
+    },
+    director: {
+      grossSalary: round(grossSalary),
+      employeeCharges,
+      netSalary: round(netSalary),
+      dividendsReceived: round(dividendsPaid),
+      taxableIncomeIFD: round(taxableIncomeIFD),
+      taxableIncomeICC: round(taxableIncomeICC),
+      dividendFederalFraction: fractions.federal,
+      dividendCantonalFraction: fractions.cantonal,
+      ifd: round(ifd),
+      cantonal: round(cc.cantonal),
+      communal: round(cc.communal),
+      church: round(cc.church),
+      totalIncomeTax: round(totalIncomeTax),
+      netCash: round(netCash),
+    },
+    totalTaxAndCharges: round(totalTaxAndCharges),
+    directorNet: round(netCash),
+    retainedInCompany: round(retainedActual),
+    reconciliation: round(netCash + retainedActual + totalTaxAndCharges - totalProfit),
+    warnings,
+  };
+}
+
 export function recommendBestStrategy(results: CompensationResult[]): {
   best: CompensationResult;
   reason: string;
