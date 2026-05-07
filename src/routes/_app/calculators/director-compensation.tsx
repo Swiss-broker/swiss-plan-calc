@@ -704,20 +704,27 @@ function ComparisonTable({
         <TableBody>
           {results.map((r, idx) => {
             const isBest = r.strategy.label === bestLabel;
+            const isCurrent = currentLabel != null && r.strategy.label === currentLabel;
             const eff = effectivePct(r);
             const adjusted = r.company.dividendShortfall;
             return (
               <TableRow
                 key={idx}
-                className={cn(isBest && "bg-success/5 hover:bg-success/10")}
+                className={cn(
+                  isBest && "bg-success/5 hover:bg-success/10",
+                  isCurrent && "bg-muted/40 hover:bg-muted/60",
+                )}
               >
                 <TableCell>
                   <div className="flex flex-col">
                     <div className="flex items-center gap-1.5 font-medium">
                       {r.strategy.label}
+                      {isCurrent && (
+                        <Badge variant="outline" className="text-[10px]">Actuel</Badge>
+                      )}
                       {isBest && (
                         <Badge variant="secondary" className="bg-success/15 text-success-foreground text-[10px]">
-                          <Sparkles className="mr-1 h-3 w-3" /> Optimal
+                          <Sparkles className="mr-1 h-3 w-3" /> Recommandée
                         </Badge>
                       )}
                     </div>
@@ -763,8 +770,46 @@ function ComparisonTable({
               </TableRow>
             );
           })}
+          {currentRow && (
+            <TableRow className="border-t-2 border-primary/30 bg-primary/5">
+              <TableCell className="text-xs font-semibold uppercase text-muted-foreground">
+                Δ vs situation actuelle
+              </TableCell>
+              {results.map((r, i) => null) /* placeholder */}
+              <TableCell colSpan={5} className="text-[11px] text-muted-foreground">
+                Comparaison du net dirigeant par rapport à la situation actuelle ({formatCHF(currentRow.directorNet)}).
+              </TableCell>
+              <TableCell className="text-right text-xs">—</TableCell>
+              <TableCell className="text-right text-xs">—</TableCell>
+            </TableRow>
+          )}
         </TableBody>
       </Table>
+      {currentRow && (
+        <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+          {results
+            .filter((r) => r.strategy.label !== currentLabel)
+            .map((r, i) => {
+              const delta = r.directorNet - currentRow.directorNet;
+              const positive = delta >= 0;
+              return (
+                <div
+                  key={i}
+                  className={cn(
+                    "flex items-center justify-between rounded-lg border p-2 text-xs",
+                    positive ? "border-success/40 bg-success/5" : "border-destructive/30 bg-destructive/5",
+                  )}
+                >
+                  <span className="font-medium">{r.strategy.label}</span>
+                  <span className={cn("inline-flex items-center gap-1 tabular-nums font-semibold", positive ? "text-success-foreground" : "text-destructive")}>
+                    {positive ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
+                    {positive ? "+" : ""}{formatCHF(delta)}
+                  </span>
+                </div>
+              );
+            })}
+        </div>
+      )}
     </div>
   );
 }
