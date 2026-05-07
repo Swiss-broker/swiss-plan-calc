@@ -58,6 +58,7 @@ const schema = z.object({
   annual_revenue: z.string().optional(),
   annual_profit: z.string().optional(),
   retained_earnings: z.string().optional(),
+  headcount_fte: z.string().optional(),
   notes: z.string().optional(),
 });
 
