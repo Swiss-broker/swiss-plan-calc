@@ -351,7 +351,7 @@ export function DashboardPension({ dashboard, clientId }: Props) {
         detailLink={{ to: "/calculators/avs-ai", search: linkSearch(clientId) }}
         hint={{
           tone: "info",
-          text: "Estimation indicative. Pour un calcul officiel, demandez l'Extrait du Compte Individuel (CI) à votre caisse AVS.",
+          text: "Calcul basé sur les paramètres AVS 2026. La rente définitive est arrêtée par la Caisse de compensation au départ à la retraite, sur la base de l'Extrait de Compte Individuel (CI) officiel.",
         }}
       >
         {dashboard.avs ? (

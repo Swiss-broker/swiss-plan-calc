@@ -293,10 +293,10 @@ function VestedBenefitsCalc() {
             tolérance au risque selon le profil client.
           </div>
           <div className="text-xs text-muted-foreground sm:col-span-2">
-            <strong className="text-foreground">Source des rendements :</strong> rendements de
-            référence basés sur les moyennes historiques 2010-2024 des indices SBI AAA-BBB
-            (obligataire CHF), SPI (actions suisses) et MSCI World (actions internationales).
-            Hypothèses indicatives. Les rendements futurs peuvent différer.
+            <strong className="text-foreground">Source des rendements :</strong> moyennes
+            historiques 2010-2024 des indices SBI AAA-BBB (obligataire CHF), SPI (actions
+            suisses) et MSCI World (actions internationales). Calibrer selon profil de
+            risque réel du client et horizon de placement.
           </div>
         </Row>
       </CalcCard>

@@ -902,7 +902,7 @@ function RecommendationCard({
             <DeltaTile label="Cumul sur 10 ans" value={(best.directorNet - current.directorNet) * 10} positiveIsGood />
           </div>
           <p className="mt-3 text-[11px] leading-relaxed text-muted-foreground">
-            ⚠️ Recommandation INDICATIVE. Vérifier avec un fiscaliste les contraintes spécifiques (salaire usuel pour la branche, historique fiscal, statut LPP, etc.).
+            📋 Recommandation calculée sur la base des barèmes 2026 et des données saisies. Avant validation finale avec le client, vérifier : caractère « usuel » du salaire pour la branche (théorie du dividende dissimulé, art. 58 CO), pertes fiscales reportées, structure de groupe / intégration fiscale, plans de prévoyance spécifiques (1e, surobligatoire, BVG-cadres).
           </p>
         </div>
       )}
@@ -973,15 +973,15 @@ function LegalDisclaimer() {
       <div className="flex items-start gap-2">
         <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-warning" />
         <div>
-          <strong className="text-foreground">Avertissement.</strong> Les résultats
-          sont des <strong>estimations indicatives</strong> basées sur les paramètres
-          fiscaux et sociaux 2024-2026 (à reconfirmer pour le millésime fiscal final).
-          Les multiplicateurs communaux utilisés sont ceux du chef-lieu cantonal :
-          la précision communale exacte sera disponible dans une prochaine version.
-          Ce calcul ne remplace pas l'analyse d'un expert fiscal ou d'une fiduciaire.
-          Les notions de <em>salaire usuel</em>, <em>dividende dissimulé</em> et{" "}
-          <em>participation qualifiée</em> dépendent de l'appréciation de l'AFC et
-          du canton.
+          <strong className="text-foreground">Méthodologie.</strong> Calculs basés sur
+          les barèmes fiscaux et sociaux 2026 (paramètres OFAS / AFC en vigueur). Les
+          multiplicateurs communaux par défaut sont ceux du chef-lieu cantonal — la
+          précision communale exhaustive arrive en V2. Pour les cas complexes
+          (structures de groupe, holdings, revenus internationaux), valider la
+          cohérence des hypothèses avant remise au client. Les notions de{" "}
+          <em>salaire usuel</em>, <em>dividende dissimulé</em> et{" "}
+          <em>participation qualifiée</em> relèvent de l'appréciation de l'AFC et du
+          canton.
         </div>
       </div>
     </div>

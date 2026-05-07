@@ -76,6 +76,16 @@ export interface AvsPersonInput {
   retirementYear: number;
   /** Revenu annuel moyen revalorisé sur la carrière (CHF) */
   averageAnnualIncome: number;
+  /** Année de départ de Suisse prévue (arrête les cotisations avant la retraite) */
+  departureYear?: number | null;
+  /** Bonifications pour tâches éducatives : nombre d'années avec enfant <16 ans */
+  educationalYears?: number;
+  /** Pourcentage attribué (0..100) — 50% si conjoint actif, sinon 100% */
+  educationalShare?: number;
+  /** Bonifications pour tâches d'assistance : nombre d'années */
+  assistanceYears?: number;
+  /** Pourcentage attribué (0..100) */
+  assistanceShare?: number;
 }
 
 export interface AvsCoupleInput {
@@ -92,26 +102,48 @@ export interface AvsPersonResult {
   reducedAnnualPension: number;
   monthlyPension: number;
   annualPension: number;
+  /** Bonus annuel ajouté au revenu déterminant (CHF) */
+  bonificationsBonus: number;
+  /** Revenu déterminant final utilisé pour le calcul */
+  determiningIncome: number;
+  /** Année effective d'arrêt des cotisations (départ ou retraite) */
+  contributionEndYear: number;
 }
 
 export interface AvsProjection {
   primary: AvsPersonResult;
   spouse?: AvsPersonResult;
-  /** Si couple : rente totale après plafonnement (CHF/an) */
   combinedAnnualPension?: number;
   combinedMonthlyPension?: number;
-  /** True si plafonnement couple appliqué */
   cappedCouple: boolean;
 }
 
 function computePerson(input: AvsPersonInput): AvsPersonResult {
-  const { fullContributionYears } = AVS_2026;
-  const rawYears = input.retirementYear - input.contributionStartYear;
+  const { fullContributionYears, minAnnualPension, maxDeterminingIncome } = AVS_2026;
+  const endYear = input.departureYear && input.departureYear < input.retirementYear
+    ? input.departureYear
+    : input.retirementYear;
+  const rawYears = endYear - input.contributionStartYear;
   const effectiveYears = Math.max(0, Math.min(fullContributionYears, rawYears));
   const missingYears = Math.max(0, fullContributionYears - effectiveYears);
   const reductionRatio = effectiveYears / fullContributionYears;
 
-  const theo = theoreticalAnnualPension(input.averageAnnualIncome);
+  // Bonifications éducatives + assistance : 3 × rente min × années × part
+  const eduYears = Math.max(0, input.educationalYears ?? 0);
+  const eduShare = Math.max(0, Math.min(100, input.educationalShare ?? 100)) / 100;
+  const assistYears = Math.max(0, input.assistanceYears ?? 0);
+  const assistShare = Math.max(0, Math.min(100, input.assistanceShare ?? 100)) / 100;
+  const totalCareerYears = Math.max(1, effectiveYears);
+  // Bonus annualisé = somme bonifications / années de carrière (revenu moyen)
+  const eduBonus = (3 * minAnnualPension * eduYears * eduShare) / totalCareerYears;
+  const assistBonus = (3 * minAnnualPension * assistYears * assistShare) / totalCareerYears;
+  const bonificationsBonus = eduBonus + assistBonus;
+
+  const determining = Math.min(
+    maxDeterminingIncome,
+    input.averageAnnualIncome + bonificationsBonus,
+  );
+  const theo = theoreticalAnnualPension(determining);
   const reduced = theo * reductionRatio;
 
   return {
@@ -122,6 +154,9 @@ function computePerson(input: AvsPersonInput): AvsPersonResult {
     reducedAnnualPension: Math.round(reduced),
     annualPension: Math.round(reduced),
     monthlyPension: Math.round(reduced / 12),
+    bonificationsBonus: Math.round(bonificationsBonus),
+    determiningIncome: Math.round(determining),
+    contributionEndYear: endYear,
   };
 }
 

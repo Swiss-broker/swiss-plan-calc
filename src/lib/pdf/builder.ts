@@ -232,7 +232,7 @@ export class ReportPdf {
     doc.setFontSize(8);
     doc.setTextColor(...muted);
     doc.text(
-      "Document à valeur indicative · ne constitue pas un conseil fiscal contraignant.",
+      "Document de travail · calculs basés sur les barèmes 2026 et les données saisies.",
       margin,
       pageHeight - 7,
     );

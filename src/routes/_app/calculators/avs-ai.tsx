@@ -59,6 +59,11 @@ function AvsAiCalc() {
     contributionStartYear: 2003,
     retirementYear: 2045,
     averageAnnualIncome: 90_000,
+    departureYear: 0, // 0 = pas de départ prévu
+    educationalYears: 0,
+    educationalShare: 100,
+    assistanceYears: 0,
+    assistanceShare: 100,
     // Couple
     isCouple: false,
     spouseBirthYear: 1982,
@@ -86,6 +91,11 @@ function AvsAiCalc() {
           contributionStartYear: form.contributionStartYear,
           retirementYear: form.retirementYear,
           averageAnnualIncome: form.averageAnnualIncome,
+          departureYear: form.departureYear > 0 ? form.departureYear : null,
+          educationalYears: form.educationalYears,
+          educationalShare: form.educationalShare,
+          assistanceYears: form.assistanceYears,
+          assistanceShare: form.assistanceShare,
         },
         spouse: form.isCouple
           ? {
@@ -229,6 +239,64 @@ function AvsAiCalc() {
             </p>
           </CalcCard>
 
+          <CalcCard title="Bonifications & cas particuliers (optionnel)">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <NumField
+                label="Année de départ prévu de Suisse"
+                value={form.departureYear}
+                onChange={(v) => set("departureYear", v)}
+                wikiId="avs-base"
+                wikiTip="Si renseigné (≠ 0), les cotisations s'arrêtent à cette date au lieu de l'année de retraite. Critique pour frontaliers/expatriés."
+              />
+              <div />
+              <NumField
+                label="Années avec enfant < 16 ans (bonif. éducatives)"
+                value={form.educationalYears}
+                onChange={(v) => set("educationalYears", v)}
+                wikiId="avs-base"
+                wikiTip="3 × rente min annuelle (45 360 CHF en 2026) ajoutés au revenu déterminant par année reconnue."
+              />
+              <NumField
+                label="Part attribuée éducatives (%)"
+                value={form.educationalShare}
+                onChange={(v) => set("educationalShare", v)}
+                suffix="%"
+                wikiId="avs-base"
+                wikiTip="50 % si conjoint actif (à répartir), 100 % si seul parent / conjoint inactif."
+              />
+              <NumField
+                label="Années tâches d'assistance"
+                value={form.assistanceYears}
+                onChange={(v) => set("assistanceYears", v)}
+                wikiId="avs-base"
+                wikiTip="Années passées à s'occuper d'un proche nécessitant des soins (handicap moyen/grave, conditions strictes)."
+              />
+              <NumField
+                label="Part attribuée assistance (%)"
+                value={form.assistanceShare}
+                onChange={(v) => set("assistanceShare", v)}
+                suffix="%"
+              />
+            </div>
+            {(form.educationalYears > 0 || form.assistanceYears > 0 || form.departureYear > 0) && (
+              <div className="mt-3 rounded-md bg-muted/50 p-3 text-xs space-y-1">
+                {form.departureYear > 0 && (
+                  <p>
+                    Départ prévu en <strong>{form.departureYear}</strong> :{" "}
+                    {projection.primary.effectiveYears} années cotisées effectivement,{" "}
+                    {projection.primary.missingYears} années manquantes.
+                  </p>
+                )}
+                {projection.primary.bonificationsBonus > 0 && (
+                  <p>
+                    Bonus revenu déterminant : <strong>+{projection.primary.bonificationsBonus.toLocaleString("fr-CH")} CHF/an</strong>{" "}
+                    (revenu déterminant final : {projection.primary.determiningIncome.toLocaleString("fr-CH")} CHF).
+                  </p>
+                )}
+              </div>
+            )}
+          </CalcCard>
+
           <div data-guide="avs-couple"><CalcCard title="Conjoint·e (optionnel)">
             <label className="mb-3 flex items-center gap-2 text-sm">
               <Checkbox
@@ -367,26 +435,44 @@ function AvsAiCalc() {
         </div>
       </div>
 
-      <CalcCard title="Avertissement & limites du modèle">
+      <CalcCard title="Méthodologie & points de vigilance">
         <ul className="space-y-1.5 text-xs text-muted-foreground">
           <li>
-            • Estimation basée sur les paramètres OFAS 2026 (rente min{" "}
+            • Calcul basé sur les paramètres OFAS 2026 (rente min{" "}
             {AVS_2026.minMonthlyPension.toLocaleString("fr-CH")} CHF/mois, max{" "}
-            {AVS_2026.maxMonthlyPension.toLocaleString("fr-CH")} CHF/mois).
+            {AVS_2026.maxMonthlyPension.toLocaleString("fr-CH")} CHF/mois, échelle 44).
           </li>
           <li>
-            • Approximation par interpolation 2 segments (marge d'erreur ±3 % vs caisse de
-            compensation).
+            • Modèle d'interpolation 2 segments calibré sur la formule de rente OFAS
+            (écart observé ±3 % vs caisse de compensation pour situations standard).
           </li>
           <li>
-            • Bonifications éducatives / d'assistance et splitting AVS officiel non modélisés.
+            • Bonifications éducatives / assistance modélisées (P3) ; splitting AVS
+            officiel pour couple : approximation par plafonnement proportionnel.
           </li>
           <li>
-            • <strong>Pour un calcul officiel : demander un Extrait de Compte Individuel
-              (CI)</strong>{" "}
-            auprès de la caisse cantonale.
+            • La rente définitive est arrêtée par la Caisse de compensation au départ
+            à la retraite, sur la base de l'Extrait de Compte Individuel (CI) officiel.
           </li>
         </ul>
+        <div className="mt-4 rounded-lg border border-primary/20 bg-primary/5 p-3 text-xs">
+          <p className="font-medium text-foreground">💡 Extrait de Compte Individuel (CI) AVS</p>
+          <p className="mt-1 text-muted-foreground">
+            Demande gratuite auprès de la caisse de compensation cantonale du client.
+            Liste les années réellement cotisées et les revenus AVS retenus.
+          </p>
+          <a
+            href="https://www.ahv-iv.ch/fr/Particuliers/Extrait-CI/Demander-l-extrait-de-compte-CI"
+            target="_blank"
+            rel="noreferrer"
+            className="mt-2 inline-block text-primary underline hover:no-underline"
+          >
+            → Faire la demande en ligne (ahv-iv.ch)
+          </a>
+          <p className="mt-2 text-muted-foreground">
+            Documents à fournir : numéro AVS (756.XXXX.XXXX.XX) + pièce d'identité.
+          </p>
+        </div>
       </CalcCard>
     </div>
   );

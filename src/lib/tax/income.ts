@@ -8,6 +8,7 @@ import {
   CANTON_SCALES,
   type CCComputeResult,
 } from "./cantons";
+import { LPP_2026 } from "@/lib/lpp/parameters-2026";
 
 export interface IncomeTaxInput {
   /** Code canton */
@@ -122,8 +123,9 @@ export function estimateSocialContributions(grossSalary: number): {
 } {
   const avs = grossSalary * AVS_AI_APG_RATE;
   // LPP estimé : 7.5% du salaire coordonné moyen (bonification + risque)
-  // Salaire coordonné = max(0, brut - 26'460) plafonné à 64'260
-  const coordinated = Math.max(0, Math.min(grossSalary - 26_460, 64_260));
+  // Salaire coordonné = max(0, min(brut, plafond LPP) - déduction de coordination)
+  const cappedSalary = Math.min(grossSalary, LPP_2026.maxInsuredSalary);
+  const coordinated = Math.max(0, cappedSalary - LPP_2026.coordinationDeduction);
   const lpp = coordinated * 0.075;
   return { avs: Math.round(avs), lpp: Math.round(lpp) };
 }
