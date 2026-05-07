@@ -625,7 +625,7 @@ export function exportCrossBorderPdf(args: {
   pdf.paragraph(
     "L'estimation de l'impôt français applique le barème progressif 2025 (DGFiP) avec abattement forfaitaire 10 % et quotient familial. " +
       "L'IRPEF italien intègre les addizionali régionale/communale moyennes (~2,5 %) et la franchise frontalière de 10 000 EUR (loi 83/2023). " +
-      "Le résultat est indicatif : la déclaration définitive doit être établie par un fiscaliste agréé dans le pays de résidence.",
+      "La déclaration définitive est établie dans le pays de résidence selon le millésime fiscal applicable.",
     { italic: true, muted: true },
   );
 
