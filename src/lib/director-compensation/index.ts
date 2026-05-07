@@ -127,23 +127,21 @@ export function computeStrategy(
   let retainedActual = retainedTargeted;
   let dividendShortfall = false;
 
-  // Vérif : dividendes + réserves doivent tenir dans le bénéfice net société.
-  const distributable = dividendsTargeted + retainedTargeted;
-  if (distributable > netProfitAfterTax + 1) {
+  // Mode "Réaliste" : si les dividendes ciblés > bénéfice net après IS,
+  // on cappe les dividendes au max disponible et on reclasse le delta en réserves.
+  if (dividendsTargeted > netProfitAfterTax + 1) {
     dividendShortfall = true;
+    const delta = dividendsTargeted - netProfitAfterTax;
+    dividendsPaid = Math.max(0, netProfitAfterTax);
+    retainedActual = Math.max(0, retainedTargeted + delta);
     warnings.push(
-      `Distribution impossible : bénéfice net société (${round(netProfitAfterTax)} CHF) ` +
-        `< dividendes + réserves visés (${round(distributable)} CHF). ` +
-        `Cap appliqué proportionnellement.`,
+      `Dividendes ciblés (${round(dividendsTargeted)} CHF) > bénéfice net société ` +
+        `(${round(netProfitAfterTax)} CHF). Delta de ${round(delta)} CHF ` +
+        `reclassé en réserves conservées.`,
     );
-    if (distributable > 0) {
-      const ratio = netProfitAfterTax / distributable;
-      dividendsPaid = Math.max(0, dividendsTargeted * ratio);
-      retainedActual = Math.max(0, retainedTargeted * ratio);
-    } else {
-      dividendsPaid = 0;
-      retainedActual = 0;
-    }
+  } else if (dividendsTargeted + retainedTargeted > netProfitAfterTax + 1) {
+    // Sécurité : dividendes OK mais total > net. On cappe les réserves.
+    retainedActual = Math.max(0, netProfitAfterTax - dividendsTargeted);
   }
 
   if (strategy.salaryPct < 50 && grossSalary > 0) {
