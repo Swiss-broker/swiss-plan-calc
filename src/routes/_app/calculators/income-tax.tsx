@@ -267,10 +267,23 @@ function IncomeTaxCalculator() {
   );
 }
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
+function Field({
+  label,
+  children,
+  wikiId,
+  wikiTip,
+}: {
+  label: string;
+  children: React.ReactNode;
+  wikiId?: string;
+  wikiTip?: React.ReactNode;
+}) {
   return (
     <div className="space-y-1.5">
-      <Label className="text-xs font-medium text-muted-foreground">{label}</Label>
+      <Label className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+        <span>{label}</span>
+        {wikiId && wikiTip ? <WikiTip articleId={wikiId} tip={wikiTip} /> : null}
+      </Label>
       {children}
     </div>
   );
@@ -281,14 +294,18 @@ function NumField({
   value,
   onChange,
   suffix,
+  wikiId,
+  wikiTip,
 }: {
   label: string;
   value: number;
   onChange: (v: number) => void;
   suffix?: string;
+  wikiId?: string;
+  wikiTip?: React.ReactNode;
 }) {
   return (
-    <Field label={label}>
+    <Field label={label} wikiId={wikiId} wikiTip={wikiTip}>
       <BaseNumField
         value={String(value)}
         onChange={(v) => onChange(Number(v) || 0)}
