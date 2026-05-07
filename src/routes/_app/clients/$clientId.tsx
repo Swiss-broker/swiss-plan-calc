@@ -442,6 +442,7 @@ function ClientDetailPage() {
               </div>
             </Card>
           )}
+        </TabsContent>
 
         <TabsContent value="patrimoine" className="mt-4 space-y-6">
           {dashboard?.hasEnoughData && <DashboardWealthSummary dashboard={dashboard} />}
