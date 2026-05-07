@@ -59,6 +59,11 @@ function AvsAiCalc() {
     contributionStartYear: 2003,
     retirementYear: 2045,
     averageAnnualIncome: 90_000,
+    departureYear: 0, // 0 = pas de départ prévu
+    educationalYears: 0,
+    educationalShare: 100,
+    assistanceYears: 0,
+    assistanceShare: 100,
     // Couple
     isCouple: false,
     spouseBirthYear: 1982,
@@ -86,6 +91,11 @@ function AvsAiCalc() {
           contributionStartYear: form.contributionStartYear,
           retirementYear: form.retirementYear,
           averageAnnualIncome: form.averageAnnualIncome,
+          departureYear: form.departureYear > 0 ? form.departureYear : null,
+          educationalYears: form.educationalYears,
+          educationalShare: form.educationalShare,
+          assistanceYears: form.assistanceYears,
+          assistanceShare: form.assistanceShare,
         },
         spouse: form.isCouple
           ? {
