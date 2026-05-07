@@ -105,32 +105,37 @@ export function computeStrategy(
   validateStrategy(strategy, warnings);
 
   const totalProfit = Math.max(0, inputs.totalProfit);
+  const reserveTarget = Math.max(0, inputs.reserveTarget ?? 0);
+  let availableProfit = totalProfit;
+  if (reserveTarget > 0) {
+    if (reserveTarget >= totalProfit) {
+      warnings.push(
+        `Réserve cible (${round(reserveTarget)} CHF) supérieure ou égale au bénéfice ` +
+          `total (${round(totalProfit)} CHF) : aucune répartition salaire/dividende possible.`,
+      );
+      availableProfit = 0;
+    } else {
+      availableProfit = totalProfit - reserveTarget;
+    }
+  }
 
   // ── Côté société ────────────────────────────────────────────────────────
-  // On résout le salaire de manière à ce que :
-  //   salaire_brut + charges_employeur(salaire_brut) = pct_salaire × bénéfice_total
-  // Comme charges_employeur est ~linéaire en grossSalary (sauf plafonds AC/LPP),
-  // on inverse approximativement par itération (2 passes suffisent).
-  const salaryBudget = totalProfit * (strategy.salaryPct / 100);
+  const salaryBudget = availableProfit * (strategy.salaryPct / 100);
   const grossSalary = solveGrossSalaryFromBudget(salaryBudget, inputs);
   const employerCharges = computeEmployerCharges(grossSalary, inputs);
   const totalSalaryCost = grossSalary + employerCharges.total;
 
-  const profitBeforeCorporateTax = Math.max(0, totalProfit - totalSalaryCost);
+  const profitBeforeCorporateTax = Math.max(0, availableProfit - totalSalaryCost);
   const corporateTax = profitBeforeCorporateTax * CORPORATE_TAX_RATE[inputs.companyCanton];
   const netProfitAfterTax = profitBeforeCorporateTax - corporateTax;
 
-  const dividendsTargeted = totalProfit * (strategy.dividendPct / 100);
-  const retainedTargeted = totalProfit * (strategy.retainedPct / 100);
+  const dividendsTargeted = availableProfit * (strategy.dividendPct / 100);
+  const retainedTargeted = availableProfit * (strategy.retainedPct / 100);
 
   let dividendsPaid = dividendsTargeted;
   let retainedActual = retainedTargeted;
   let dividendShortfall = false;
 
-  // Mode "Réaliste" : le bénéfice net après IS doit couvrir dividendes + réserves.
-  // Si dividendes ciblés > net dispo, on cappe les dividendes au max disponible.
-  // Le delta non distribuable correspond aux charges sociales+IS additionnelles
-  // déjà consommées : il est annoté comme "ajusté" pour transparence.
   if (dividendsTargeted > netProfitAfterTax + 1) {
     dividendShortfall = true;
     const delta = dividendsTargeted - netProfitAfterTax;
@@ -143,9 +148,11 @@ export function computeStrategy(
         `charges sociales et l'impôt société).`,
     );
   } else if (dividendsTargeted + retainedTargeted > netProfitAfterTax + 1) {
-    // Dividendes OK mais réserves cibles dépassent le solde restant.
     retainedActual = Math.max(0, netProfitAfterTax - dividendsTargeted);
   }
+
+  // Réserve cible ajoutée à la réserve effective.
+  retainedActual += reserveTarget;
 
   if (strategy.salaryPct < 50 && grossSalary > 0) {
     warnings.push(
@@ -162,7 +169,7 @@ export function computeStrategy(
     corporateTax: round(corporateTax),
     netProfitAfterTax: round(netProfitAfterTax),
     dividendsTargeted: round(dividendsTargeted),
-    retainedTargeted: round(retainedTargeted),
+    retainedTargeted: round(retainedTargeted + reserveTarget),
     dividendShortfall,
     dividendsPaid: round(dividendsPaid),
     retainedActual: round(retainedActual),
