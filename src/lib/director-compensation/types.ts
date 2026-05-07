@@ -38,6 +38,18 @@ export interface DirectorInputs {
   lppPlan: LppPlanKind;
   /** Détention qualifiée (≥10%) → imposition partielle dividendes */
   qualifiedHolding: boolean;
+  /** Réserve cible que le dirigeant souhaite conserver chaque année dans la société (CHF). Optionnel. */
+  reserveTarget?: number;
+}
+
+/** Répartition absolue (CHF) — utilisée pour modéliser une situation réelle. */
+export interface AbsoluteAllocation {
+  /** Salaire BRUT versé (avant charges sociales employeur) */
+  grossSalary: number;
+  /** Dividendes bruts perçus par le dirigeant */
+  dividends: number;
+  /** Réserves laissées en société (optionnel : sinon calculé par solde) */
+  retained?: number;
 }
 
 export interface EmployerCharges {
