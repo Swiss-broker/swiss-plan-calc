@@ -97,7 +97,10 @@ function SourceTaxCalc() {
               </Select>
             </div>
             <div className="space-y-1.5">
-              <Label className="text-xs font-medium text-muted-foreground">Barème</Label>
+              <Label className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+                <span>Barème</span>
+                <WikiTip articleId="frontaliers" tip="A = célibataire, B = marié monoactif, C = marié biactif, H = famille monoparentale." />
+              </Label>
               <Select value={form.scale} onValueChange={(v) => set("scale", v as SourceScale)}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
