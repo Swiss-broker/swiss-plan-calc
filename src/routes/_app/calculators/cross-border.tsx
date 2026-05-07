@@ -228,15 +228,19 @@ function NumField({
   onChange,
   step: _step,
   suffix,
+  wikiId,
+  wikiTip,
 }: {
   label: string;
   value: number;
   onChange: (v: number) => void;
   step?: number;
   suffix?: string;
+  wikiId?: string;
+  wikiTip?: React.ReactNode;
 }) {
   return (
-    <Field label={label}>
+    <Field label={label} wikiId={wikiId} wikiTip={wikiTip}>
       <BaseNumField
         value={String(value)}
         onChange={(v) => onChange(Number(v) || 0)}
