@@ -159,12 +159,14 @@ function AvsAiCalc() {
             description={`Âge de référence AVS21 : ${refAge} ans (déterminé par genre + année de naissance).`}
           >
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <NumField
-                label="Année de naissance"
-                value={form.birthYear}
-                onChange={(v) => set("birthYear", v)}
-              />
-              <div className="space-y-1.5">
+              <div data-guide="avs-birth-year">
+                <NumField
+                  label="Année de naissance"
+                  value={form.birthYear}
+                  onChange={(v) => set("birthYear", v)}
+                />
+              </div>
+              <div data-guide="avs-gender" className="space-y-1.5">
                 <Label className="text-xs font-medium text-muted-foreground">Genre</Label>
                 <Select
                   value={form.gender}
@@ -180,22 +182,28 @@ function AvsAiCalc() {
                   </SelectContent>
                 </Select>
               </div>
-              <NumField
-                label="Année de début de cotisation"
-                value={form.contributionStartYear}
-                onChange={(v) => set("contributionStartYear", v)}
-              />
-              <NumField
-                label="Année de retraite envisagée"
-                value={form.retirementYear}
-                onChange={(v) => set("retirementYear", v)}
-              />
-              <NumField
-                label="Revenu annuel moyen carrière"
-                value={form.averageAnnualIncome}
-                onChange={(v) => set("averageAnnualIncome", v)}
-                suffix="CHF"
-              />
+              <div data-guide="avs-contrib-start">
+                <NumField
+                  label="Année de début de cotisation"
+                  value={form.contributionStartYear}
+                  onChange={(v) => set("contributionStartYear", v)}
+                />
+              </div>
+              <div data-guide="avs-retirement-year">
+                <NumField
+                  label="Année de retraite envisagée"
+                  value={form.retirementYear}
+                  onChange={(v) => set("retirementYear", v)}
+                />
+              </div>
+              <div data-guide="avs-income">
+                <NumField
+                  label="Revenu annuel moyen carrière"
+                  value={form.averageAnnualIncome}
+                  onChange={(v) => set("averageAnnualIncome", v)}
+                  suffix="CHF"
+                />
+              </div>
             </div>
             <p className="mt-3 text-xs text-muted-foreground">
               Année courante : {currentYear} · Âge à la retraite :{" "}
