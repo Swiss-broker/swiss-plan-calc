@@ -9,6 +9,7 @@ import {
   type CCComputeResult,
 } from "./cantons";
 import { LPP_2026 } from "@/lib/lpp/parameters-2026";
+import { lppCreditRate } from "@/lib/lpp";
 
 export interface IncomeTaxInput {
   /** Code canton */
@@ -20,6 +21,10 @@ export interface IncomeTaxInput {
   status: FilingStatus;
   confession?: "none" | "catholic" | "protestant" | "other";
   children?: number;
+  /** Âge du contribuable (utilisé pour calculer la part salarié LPP). Défaut 40. */
+  age?: number;
+  /** Âge du conjoint (pour part salarié LPP conjoint). */
+  spouseAge?: number;
   /** Confession du conjoint (impacte la part paroissiale couple) */
   spouseConfession?: "none" | "catholic" | "protestant" | "other";
 
@@ -71,6 +76,7 @@ export interface IncomeTaxBreakdown {
   /** Détails déductions */
   deductions: {
     avs: number;
+    ac: number;
     lpp: number;
     pillar3a: number;
     lppBuyback: number;
@@ -112,22 +118,35 @@ export const HEALTH_INSURANCE_MAX_SINGLE = 1_800;
 export const HEALTH_INSURANCE_MAX_MARRIED = 3_600;
 export const HEALTH_INSURANCE_PER_CHILD = 700;
 export const CHILDCARE_MAX_FEDERAL_2026 = 25_500;
-export const AVS_AI_APG_RATE = 0.0625; // 5.3% AVS + 0.7% AI + 0.25% APG (employé) → 6.25% côté salarié AVS+AI+APG+AC
+// Cotisations sociales 2026 (parts salarié)
+export const AVS_AI_APG_RATE = 0.053; // AVS 5.3% (AI/APG inclus dans le taux global salarié)
+export const AC_RATE = 0.011; // 1.1% jusqu'au plafond AC
+export const AC_COMPLEMENTARY_RATE = 0.005; // 0.5% au-delà du plafond
+export const AC_CEILING_2026 = 148_200; // Plafond AC 2026
 
 /**
- * Estime les cotisations sociales déductibles (AVS/AI/APG/AC + LPP standard).
+ * Estime les cotisations sociales déductibles part salarié (AVS/AI/APG + AC + LPP).
+ * - AVS/AI/APG : 5.3% du salaire brut (sans plafond)
+ * - AC : 1.1% jusqu'à 148'200 + 0.5% au-delà (cotisation de solidarité)
+ * - LPP : bonification selon âge × salaire coordonné × 50% (part salarié)
  */
-export function estimateSocialContributions(grossSalary: number): {
-  avs: number;
-  lpp: number;
-} {
+export function estimateSocialContributions(
+  grossSalary: number,
+  age: number = 40,
+): { avs: number; ac: number; lpp: number } {
   const avs = grossSalary * AVS_AI_APG_RATE;
-  // LPP estimé : 7.5% du salaire coordonné moyen (bonification + risque)
-  // Salaire coordonné = max(0, min(brut, plafond LPP) - déduction de coordination)
+  const acBase = Math.min(grossSalary, AC_CEILING_2026) * AC_RATE;
+  const acComp = Math.max(0, grossSalary - AC_CEILING_2026) * AC_COMPLEMENTARY_RATE;
+  const ac = acBase + acComp;
+
+  // LPP : bonification (selon âge) × salaire coordonné, dont 50% part salarié
   const cappedSalary = Math.min(grossSalary, LPP_2026.maxInsuredSalary);
   const coordinated = Math.max(0, cappedSalary - LPP_2026.coordinationDeduction);
-  const lpp = coordinated * 0.075;
-  return { avs: Math.round(avs), lpp: Math.round(lpp) };
+  const creditRate = lppCreditRate(age) || 0.10; // défaut 10% si <25 ou >65
+  const lppEmployerEmployee = coordinated * creditRate;
+  const lpp = lppEmployerEmployee * 0.5; // part salarié = 50%
+
+  return { avs: Math.round(avs), ac: Math.round(ac), lpp: Math.round(lpp) };
 }
 
 /**
