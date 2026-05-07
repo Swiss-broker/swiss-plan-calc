@@ -287,8 +287,8 @@ function LppCalc() {
                 </Select>
               </div>
               <NumField label="Nombre d'enfants" value={form.children} onChange={(v) => set("children", v)} />
-              <NumField label="Capacité de rachat (CHF)" value={form.buybackCapacity} onChange={(v) => set("buybackCapacity", v)} />
-              <NumField label="Étaler sur (années)" value={form.buybackYears} onChange={(v) => set("buybackYears", v)} />
+              <NumField label="Capacité de rachat (CHF)" value={form.buybackCapacity} onChange={(v) => set("buybackCapacity", v)} wikiId="lpp-rachat" wikiTip="Montant maximum rachetable indiqué sur votre certificat LPP." />
+              <NumField label="Étaler sur (années)" value={form.buybackYears} onChange={(v) => set("buybackYears", v)} wikiId="lpp-rachat" wikiTip="Étaler les rachats permet d'optimiser l'économie fiscale en restant dans la tranche marginale haute." />
             </div>
           </CalcCard>
         </div>
