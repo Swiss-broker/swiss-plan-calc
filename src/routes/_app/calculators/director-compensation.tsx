@@ -767,7 +767,7 @@ function LegalDisclaimer() {
           <strong className="text-foreground">Avertissement.</strong> Les résultats
           sont des <strong>estimations indicatives</strong> basées sur les paramètres
           fiscaux et sociaux 2024-2026 (à reconfirmer pour le millésime fiscal final).
-          Les multiplicateurs communaux utilisés sont ceux du chef-lieu cantonal —
+          Les multiplicateurs communaux utilisés sont ceux du chef-lieu cantonal :
           la précision communale exacte sera disponible dans une prochaine version.
           Ce calcul ne remplace pas l'analyse d'un expert fiscal ou d'une fiduciaire.
           Les notions de <em>salaire usuel</em>, <em>dividende dissimulé</em> et{" "}
