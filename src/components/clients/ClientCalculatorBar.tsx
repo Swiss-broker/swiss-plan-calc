@@ -35,6 +35,16 @@ type CalcChip = {
 };
 
 const CHIPS: CalcChip[] = [
+  { to: "/calculators/avs-ai", label: "1er pilier AVS/AI", icon: HeartHandshake },
+  { to: "/calculators/lpp", label: "2e pilier LPP & rachats", icon: Landmark },
+  { to: "/calculators/pillar3a", label: "3e pilier A & B", icon: PiggyBank },
+  { to: "/calculators/vested-benefits", label: "Libre passage", icon: Vault },
+  {
+    to: "/calculators/cross-border",
+    label: "Frontalier",
+    icon: Globe2,
+    show: (c) => c.tax_status === "cross_border_g",
+  },
   { to: "/calculators/income-tax", label: "Impôt revenu", icon: Receipt },
   {
     to: "/calculators/source-tax",
@@ -42,18 +52,8 @@ const CHIPS: CalcChip[] = [
     icon: Coins,
     show: (c) => c.tax_status === "source_taxed" || c.tax_status === "quasi_resident",
   },
-  {
-    to: "/calculators/cross-border",
-    label: "Frontalier",
-    icon: Globe2,
-    show: (c) => c.tax_status === "cross_border_g",
-  },
-  { to: "/calculators/pillar3a", label: "3ᵉ pilier A", icon: PiggyBank },
-  { to: "/calculators/lpp", label: "Rachat LPP", icon: Landmark },
-  { to: "/calculators/vested-benefits", label: "Libre passage", icon: Vault },
-  { to: "/calculators/retirement", label: "Retraite", icon: Sun },
+  { to: "/calculators/retirement", label: "Rente vs capital", icon: Sun },
   { to: "/calculators/canton-compare", label: "Comparateur cantons", icon: Scale },
-  { to: "/calculators/avs-ai", label: "Rente AVS/AI", icon: HeartHandshake },
   { to: "/calculators/tou", label: "TOU", icon: Calculator },
 ];
 
