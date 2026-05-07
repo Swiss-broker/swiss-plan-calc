@@ -6,11 +6,45 @@ import { formatCHF, formatPct } from "@/lib/format";
 import { useParallaxTilt } from "@/hooks/useParallaxTilt";
 import { Label } from "@/components/ui/label";
 import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+  HoverCard,
+  HoverCardContent,
+  HoverCardTrigger,
+} from "@/components/ui/hover-card";
+
+/**
+ * Pastille d'aide visible (badge bleu "i") qui ouvre une bulle au survol OU au clic.
+ * Beaucoup plus visible qu'une icône fantôme — pensé pour ne jamais passer inaperçu.
+ */
+export function HelpDot({ tip, size = "sm" }: { tip: ReactNode; size?: "sm" | "md" }) {
+  const dim = size === "md" ? "h-5 w-5" : "h-4 w-4";
+  const icon = size === "md" ? "h-3 w-3" : "h-2.5 w-2.5";
+  return (
+    <HoverCard openDelay={120} closeDelay={80}>
+      <HoverCardTrigger asChild>
+        <button
+          type="button"
+          aria-label="Aide"
+          className={cn(
+            "inline-flex shrink-0 items-center justify-center rounded-full",
+            "bg-primary/15 text-primary ring-1 ring-primary/30",
+            "transition-all hover:bg-primary hover:text-primary-foreground hover:ring-primary",
+            "focus:outline-none focus:ring-2 focus:ring-primary",
+            dim,
+          )}
+        >
+          <Info className={icon} />
+        </button>
+      </HoverCardTrigger>
+      <HoverCardContent
+        side="top"
+        align="center"
+        className="max-w-xs text-left text-[12px] leading-snug"
+      >
+        {tip}
+      </HoverCardContent>
+    </HoverCard>
+  );
+}
 
 /**
  * Label avec icône info + tooltip explicatif.
