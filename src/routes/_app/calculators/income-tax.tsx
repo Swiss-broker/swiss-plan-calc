@@ -109,7 +109,7 @@ function IncomeTaxCalculator() {
       <div className="md:col-span-3">
         <CalcCard title="Situation" description="Renseignez votre profil fiscal.">
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <Field label="Canton">
+            <Field label="Canton" wikiId="ifd-icc" wikiTip="Détermine le barème ICC, le coefficient cantonal et le multiplicateur communal.">
               <Select value={form.canton} onValueChange={(v) => setField("canton", v)}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
@@ -121,7 +121,7 @@ function IncomeTaxCalculator() {
                 </SelectContent>
               </Select>
             </Field>
-            <Field label="Situation civile">
+            <Field label="Situation civile" wikiId="ifd-icc" wikiTip="Marié = splitting partiel (barème plus favorable). Famille monoparentale = barème spécial.">
               <Select
                 value={form.status}
                 onValueChange={(v) => setField("status", v as IncomeTaxInput["status"])}
@@ -134,7 +134,7 @@ function IncomeTaxCalculator() {
                 </SelectContent>
               </Select>
             </Field>
-            <Field label="Confession">
+            <Field label="Confession" wikiId="ifd-icc" wikiTip="Catholique ou protestante = impôt ecclésiastique ajouté (selon canton).">
               <Select
                 value={form.confession}
                 onValueChange={(v) =>
