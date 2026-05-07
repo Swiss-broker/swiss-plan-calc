@@ -100,7 +100,7 @@ function CrossBorderCalc() {
                 </SelectContent>
               </Select>
             </Field>
-            <Field label="Régime applicable">
+            <Field label="Régime applicable" wikiId="frontaliers" wikiTip="Le régime dépend du canton de travail : accord franco-suisse 4.5 % (VD/NE/JU/BS/BL/BE/SO/VS), Genève (IS genevoise rétrocédée), Tessin (accord 2023).">
               <div className="flex h-10 items-center rounded-md border border-input bg-muted/40 px-3 text-sm">
                 <Globe className="mr-2 h-4 w-4 text-primary" />
                 {regimeBadge}
