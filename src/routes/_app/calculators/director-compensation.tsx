@@ -855,10 +855,14 @@ function RecommendationCard({
   best,
   reason,
   totalProfit,
+  current,
+  clientName,
 }: {
   best: CompensationResult;
   reason: string;
   totalProfit: number;
+  current: CompensationResult | null;
+  clientName: string | null;
 }) {
   const salaryRatio = totalProfit > 0 ? best.company.totalSalaryCost / totalProfit : 0;
   const lowSalaryWarning = salaryRatio < 0.5 && best.company.totalSalaryCost > 0;
