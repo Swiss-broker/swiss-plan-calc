@@ -260,9 +260,12 @@ function CantonCompareCalc() {
         }
       >
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          <NumField label="Salaire brut (CHF)" value={form.grossSalary} onChange={(v) => set("grossSalary", v)} />
+          <NumField label="Salaire brut (CHF)" value={form.grossSalary} onChange={(v) => set("grossSalary", v)} wikiId="ifd-icc" wikiTip="Salaire annuel brut soumis au barème cantonal et IFD." />
           <div className="space-y-1.5">
-            <Label className="text-xs font-medium text-muted-foreground">Situation civile</Label>
+            <Label className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+              <span>Situation civile</span>
+              <WikiTip articleId="ifd-icc" tip="Marié = splitting partiel (barème plus favorable). Famille monoparentale = barème spécial." />
+            </Label>
             <Select value={form.status} onValueChange={(v) => set("status", v as IncomeTaxInput["status"])}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
@@ -273,10 +276,10 @@ function CantonCompareCalc() {
             </Select>
           </div>
           {form.status === "married" && (
-            <NumField label="Salaire brut conjoint (CHF)" value={form.spouseGrossSalary} onChange={(v) => set("spouseGrossSalary", v)} />
+            <NumField label="Salaire brut conjoint (CHF)" value={form.spouseGrossSalary} onChange={(v) => set("spouseGrossSalary", v)} wikiId="ifd-icc" wikiTip="Marié = imposition commune. Le revenu du conjoint compte dans le barème." />
           )}
           <NumField label="Nombre d'enfants" value={form.children} onChange={(v) => set("children", v)} />
-          <NumField label="Fortune nette (CHF)" value={form.netWealth} onChange={(v) => set("netWealth", v)} />
+          <NumField label="Fortune nette (CHF)" value={form.netWealth} onChange={(v) => set("netWealth", v)} wikiId="fortune" wikiTip="Fortune imposable cantonale. Avoirs LPP / 3a exonérés tant que non retirés." />
           <div className="space-y-1.5">
             <Label className="text-xs font-medium text-muted-foreground">Canton de référence</Label>
             <Select
