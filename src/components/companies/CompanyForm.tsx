@@ -96,6 +96,7 @@ export function CompanyForm({ mode, initial }: CompanyFormProps) {
       annual_revenue: fromNum(initial?.annual_revenue),
       annual_profit: fromNum(initial?.annual_profit),
       retained_earnings: fromNum(initial?.retained_earnings),
+      headcount_fte: fromNum((initial as Company & { headcount_fte?: number | null })?.headcount_fte ?? null),
       notes: initial?.notes ?? "",
     },
   });
