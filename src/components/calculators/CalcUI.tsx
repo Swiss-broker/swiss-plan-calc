@@ -1,8 +1,57 @@
 // Petits composants réutilisables pour les calculateurs.
 import { useRef, type ReactNode } from "react";
+import { Info } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatCHF, formatPct } from "@/lib/format";
 import { useParallaxTilt } from "@/hooks/useParallaxTilt";
+import { Label } from "@/components/ui/label";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+
+/**
+ * Label avec icône info + tooltip explicatif.
+ * À utiliser sur tous les champs/résultats où une explication métier aide à éviter une perte de temps.
+ */
+export function InfoLabel({
+  children,
+  tip,
+  className,
+}: {
+  children: ReactNode;
+  tip: ReactNode;
+  className?: string;
+}) {
+  return (
+    <TooltipProvider delayDuration={150}>
+      <Label
+        className={cn(
+          "flex items-center gap-1 text-xs font-medium text-muted-foreground",
+          className,
+        )}
+      >
+        <span>{children}</span>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <button
+              type="button"
+              className="inline-flex h-3.5 w-3.5 items-center justify-center rounded-full text-muted-foreground/70 transition-colors hover:text-primary"
+              aria-label="Aide"
+            >
+              <Info className="h-3 w-3" />
+            </button>
+          </TooltipTrigger>
+          <TooltipContent className="max-w-xs text-left text-[11px] leading-snug">
+            {tip}
+          </TooltipContent>
+        </Tooltip>
+      </Label>
+    </TooltipProvider>
+  );
+}
 
 export function CalcCard({
   title,
@@ -10,12 +59,15 @@ export function CalcCard({
   children,
   className,
   tilt = false,
+  tip,
 }: {
   title?: string;
   description?: string;
   children: ReactNode;
   className?: string;
   tilt?: boolean;
+  /** Tooltip optionnel affiché à côté du titre */
+  tip?: ReactNode;
 }) {
   const tiltRef = useParallaxTilt<HTMLDivElement>({ max: 3, scale: 1.004 });
   const fallbackRef = useRef<HTMLDivElement>(null);
@@ -30,7 +82,27 @@ export function CalcCard({
     >
       {title ? (
         <div className="mb-4">
-          <h3 className="text-base font-semibold tracking-tight">{title}</h3>
+          <h3 className="flex items-center gap-1.5 text-base font-semibold tracking-tight">
+            {title}
+            {tip ? (
+              <TooltipProvider delayDuration={150}>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      type="button"
+                      className="inline-flex h-4 w-4 items-center justify-center rounded-full text-muted-foreground/70 transition-colors hover:text-primary"
+                      aria-label="Aide"
+                    >
+                      <Info className="h-3.5 w-3.5" />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-xs text-left text-[11px] leading-snug">
+                    {tip}
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            ) : null}
+          </h3>
           {description ? (
             <p className="mt-0.5 text-xs text-muted-foreground">{description}</p>
           ) : null}
@@ -47,12 +119,14 @@ export function StatTile({
   hint,
   tone = "default",
   big = false,
+  tip,
 }: {
   label: string;
   value: string;
   hint?: string;
   tone?: "default" | "primary" | "success" | "warning";
   big?: boolean;
+  tip?: ReactNode;
 }) {
   const toneCls =
     tone === "primary"
@@ -70,8 +144,26 @@ export function StatTile({
         toneCls,
       )}
     >
-      <div className="text-[10px] font-medium uppercase leading-tight tracking-wider text-muted-foreground transition-colors group-hover:text-foreground/80">
-        {label}
+      <div className="flex items-center gap-1 text-[10px] font-medium uppercase leading-tight tracking-wider text-muted-foreground transition-colors group-hover:text-foreground/80">
+        <span>{label}</span>
+        {tip ? (
+          <TooltipProvider delayDuration={150}>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  type="button"
+                  className="inline-flex h-3 w-3 items-center justify-center rounded-full text-muted-foreground/70 transition-colors hover:text-primary"
+                  aria-label="Aide"
+                >
+                  <Info className="h-2.5 w-2.5" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent className="max-w-xs text-left text-[11px] leading-snug normal-case tracking-normal">
+                {tip}
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        ) : null}
       </div>
       <div
         className={cn(
@@ -94,6 +186,7 @@ export function MoneyTile({
   tone,
   big,
   compact = false,
+  tip,
 }: {
   label: string;
   value: number | null | undefined;
@@ -102,6 +195,7 @@ export function MoneyTile({
   big?: boolean;
   /** Si true, n'affiche pas le préfixe "CHF" devant le montant */
   compact?: boolean;
+  tip?: ReactNode;
 }) {
   const formatted = compact
     ? new Intl.NumberFormat("fr-CH", { maximumFractionDigits: 0 }).format(value ?? 0)
@@ -113,6 +207,7 @@ export function MoneyTile({
       hint={hint}
       tone={tone}
       big={big}
+      tip={tip}
     />
   );
 }
@@ -122,13 +217,15 @@ export function PctTile({
   value,
   hint,
   tone,
+  tip,
 }: {
   label: string;
   value: number | null | undefined;
   hint?: string;
   tone?: "default" | "primary" | "success" | "warning";
+  tip?: ReactNode;
 }) {
-  return <StatTile label={label} value={formatPct(value ?? 0)} hint={hint} tone={tone} />;
+  return <StatTile label={label} value={formatPct(value ?? 0)} hint={hint} tone={tone} tip={tip} />;
 }
 
 export function Row({ children }: { children: ReactNode }) {

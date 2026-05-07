@@ -18,7 +18,7 @@ import {
   projectPillar3a,
   staggeredWithdrawal,
 } from "@/lib/pillar3";
-import { CalcCard, MoneyTile, Row } from "@/components/calculators/CalcUI";
+import { CalcCard, MoneyTile, Row, InfoLabel } from "@/components/calculators/CalcUI";
 import type { IncomeTaxInput } from "@/lib/tax/income";
 import { ExportPdfButton } from "@/components/calculators/ExportPdfButton";
 import { exportPillar3aPdf } from "@/lib/pdf/reports";
@@ -35,7 +35,7 @@ const searchSchema = z.object({
 
 export const Route = createFileRoute("/_app/calculators/pillar3a")({
   validateSearch: zodValidator(searchSchema),
-  head: () => ({ meta: [{ title: "Pilier 3a · SwissBroker Pro" }] }),
+  head: () => ({ meta: [{ title: "3e pilier A & B · SwissBroker Pro" }] }),
   component: Pillar3aCalc,
 });
 
@@ -54,6 +54,11 @@ function Pillar3aCalc() {
     expectedReturn: 2.5,
     withdrawalCapital: 250_000,
     withdrawalAccounts: 3,
+    // 3e pilier B (libre, non déductible)
+    pillar3bYearly: 3_000,
+    pillar3bCurrent: 0,
+    pillar3bYears: 25,
+    pillar3bReturn: 2.0,
   });
   useHydrateFormFromPrefill(prefill, setForm);
 
@@ -111,9 +116,39 @@ function Pillar3aCalc() {
       staggered: stag,
     });
 
+  // Projection 3e pilier B (libre, non déductible mais souvent exonéré à la sortie)
+  const projection3b = useMemo(() => {
+    const r = form.pillar3bReturn / 100;
+    let balance = form.pillar3bCurrent;
+    for (let i = 0; i < form.pillar3bYears; i++) {
+      balance = balance * (1 + r) + form.pillar3bYearly;
+    }
+    const totalContrib = form.pillar3bYearly * form.pillar3bYears;
+    return {
+      finalBalance: Math.round(balance),
+      totalContributions: totalContrib,
+      totalReturns: Math.round(balance - form.pillar3bCurrent - totalContrib),
+    };
+  }, [form.pillar3bCurrent, form.pillar3bReturn, form.pillar3bYears, form.pillar3bYearly]);
+
   return (
     <div className="space-y-6">
       {client && <ClientLinkBanner client={client} />}
+
+      <div className="rounded-xl border border-primary/30 bg-primary/5 p-4 text-sm">
+        <div className="font-semibold">3e pilier en Suisse : deux régimes complémentaires</div>
+        <div className="mt-2 grid gap-3 sm:grid-cols-2">
+          <div>
+            <div className="text-xs font-semibold uppercase tracking-wider text-primary">Pilier 3a (lié)</div>
+            <p className="mt-1 text-xs text-muted-foreground">Cotisations <strong>déductibles du revenu imposable</strong> (max 7'''258 CHF avec LPP, 36'''288 CHF indépendant). Capital bloqué jusqu'''à 5 ans avant l'''âge AVS. Imposé à taux réduit au retrait.</p>
+          </div>
+          <div>
+            <div className="text-xs font-semibold uppercase tracking-wider text-primary">Pilier 3b (libre)</div>
+            <p className="mt-1 text-xs text-muted-foreground">Épargne libre : assurance-vie, compte épargne, fonds. <strong>Pas de déduction</strong> à l'''entrée mais aucun plafond, capital disponible à tout moment, et retrait <strong>généralement exonéré</strong> d'''impôt sur le revenu.</p>
+          </div>
+        </div>
+      </div>
+
       <div className="grid grid-cols-1 gap-6 md:grid-cols-5">
         <div className="md:col-span-3">
           <CalcCard title="Cotisation 3a annuelle" description="Plafond 2026 : 7'258 CHF (LPP) ou 36'288 CHF (indépendant).">
@@ -191,10 +226,38 @@ function Pillar3aCalc() {
             <MoneyTile label="Impôt si retrait unique" value={stag.totalTaxSingle} tone="warning" />
             <MoneyTile label="Impôt si fractionné" value={stag.totalTaxSeparated} tone="primary" />
             <MoneyTile label="Économie" value={stag.savings} tone="success" big />
-            <MoneyTile label="Par compte" value={stag.perAccount} />
+            <MoneyTile label="Par compte" value={stag.perAccount} tip="Montant moyen par compte 3a." />
           </div>
         </CalcCard>
       </div>
+
+      <CalcCard
+        title="3e pilier B (libre)"
+        description="Épargne libre, sans plafond ni blocage. Pas de déduction fiscale, mais retrait souvent exonéré."
+        tip="Le 3b regroupe assurance-vie mixte, compte épargne, fonds libres. Utile pour épargner au-delà du 3a, financer un projet avant la retraite, ou compléter une planification successorale."
+      >
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+          <div className="space-y-3">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <NumField label="Capital actuel 3b" value={form.pillar3bCurrent} onChange={(v) => set("pillar3bCurrent", v)} />
+              <NumField label="Versement annuel" value={form.pillar3bYearly} onChange={(v) => set("pillar3bYearly", v)} />
+              <NumField label="Durée (années)" value={form.pillar3bYears} onChange={(v) => set("pillar3bYears", v)} />
+              <NumField label="Rendement net (%/an)" value={form.pillar3bReturn} onChange={(v) => set("pillar3bReturn", v)} step={0.1} />
+            </div>
+            <p className="text-[11px] text-muted-foreground">
+              Pas de déduction fiscale, mais capital disponible à tout moment et retrait
+              normalement exonéré d'''impôt sur le revenu (selon produit et durée).
+            </p>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <MoneyTile label="Capital final 3b" value={projection3b.finalBalance} tone="primary" big tip="Capital estimé après capitalisation composée." />
+            <MoneyTile label="Versements cumulés" value={projection3b.totalContributions} tip="Total des primes ou versements effectués." />
+            <MoneyTile label="Intérêts cumulés" value={projection3b.totalReturns} tone="success" tip="Performance brute du placement." />
+            <MoneyTile label="Total 3a + 3b projeté" value={projection.finalBalance + projection3b.finalBalance} tone="success" tip="Vue consolidée du 3e pilier à la sortie." />
+          </div>
+        </div>
+      </CalcCard>
+
       <div className="flex flex-wrap justify-end gap-2">
         <SaveSimulationButton
           kind="pillar3a"

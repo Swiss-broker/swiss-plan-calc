@@ -33,11 +33,11 @@ export const Route = createFileRoute("/_app/calculators")({
 
 const TABS = [
   { to: "/calculators", label: "Vue d'ensemble", icon: Calculator, exact: true as boolean },
+  { to: "/calculators/avs-ai", label: "1er pilier AVS/AI", icon: HeartHandshake, exact: false as boolean },
+  { to: "/calculators/lpp", label: "2e pilier LPP & rachats", icon: Landmark, exact: false as boolean },
+  { to: "/calculators/pillar3a", label: "3e pilier A & B", icon: PiggyBank, exact: false as boolean },
   { to: "/calculators/income-tax", label: "Impôt revenu & fortune", icon: Coins, exact: false as boolean },
   { to: "/calculators/source-tax", label: "Impôt à la source", icon: Wallet, exact: false as boolean },
-  { to: "/calculators/avs-ai", label: "AVS/AI (1er pilier)", icon: HeartHandshake, exact: false as boolean },
-  { to: "/calculators/lpp", label: "LPP & rachats", icon: Landmark, exact: false as boolean },
-  { to: "/calculators/pillar3a", label: "Pilier 3a", icon: PiggyBank, exact: false as boolean },
   { to: "/calculators/canton-compare", label: "Comparateur cantonal", icon: Map, exact: false as boolean },
   { to: "/calculators/retirement", label: "Rente vs capital", icon: TrendingUp, exact: false as boolean },
 ] as const;
