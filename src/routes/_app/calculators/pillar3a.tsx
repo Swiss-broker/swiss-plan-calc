@@ -211,10 +211,38 @@ function Pillar3aCalc() {
             <MoneyTile label="Impôt si retrait unique" value={stag.totalTaxSingle} tone="warning" />
             <MoneyTile label="Impôt si fractionné" value={stag.totalTaxSeparated} tone="primary" />
             <MoneyTile label="Économie" value={stag.savings} tone="success" big />
-            <MoneyTile label="Par compte" value={stag.perAccount} />
+            <MoneyTile label="Par compte" value={stag.perAccount} tip="Montant moyen par compte 3a." />
           </div>
         </CalcCard>
       </div>
+
+      <CalcCard
+        title="3e pilier B (libre)"
+        description="Épargne libre, sans plafond ni blocage. Pas de déduction fiscale, mais retrait souvent exonéré."
+        tip="Le 3b regroupe assurance-vie mixte, compte épargne, fonds libres. Utile pour épargner au-delà du 3a, financer un projet avant la retraite, ou compléter une planification successorale."
+      >
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+          <div className="space-y-3">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <NumField label="Capital actuel 3b" value={form.pillar3bCurrent} onChange={(v) => set("pillar3bCurrent", v)} />
+              <NumField label="Versement annuel" value={form.pillar3bYearly} onChange={(v) => set("pillar3bYearly", v)} />
+              <NumField label="Durée (années)" value={form.pillar3bYears} onChange={(v) => set("pillar3bYears", v)} />
+              <NumField label="Rendement net (%/an)" value={form.pillar3bReturn} onChange={(v) => set("pillar3bReturn", v)} step={0.1} />
+            </div>
+            <p className="text-[11px] text-muted-foreground">
+              Pas de déduction fiscale, mais capital disponible à tout moment et retrait
+              normalement exonéré d'''impôt sur le revenu (selon produit et durée).
+            </p>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <MoneyTile label="Capital final 3b" value={projection3b.finalBalance} tone="primary" big tip="Capital estimé après capitalisation composée." />
+            <MoneyTile label="Versements cumulés" value={projection3b.totalContributions} tip="Total des primes ou versements effectués." />
+            <MoneyTile label="Intérêts cumulés" value={projection3b.totalReturns} tone="success" tip="Performance brute du placement." />
+            <MoneyTile label="Total 3a + 3b projeté" value={projection.finalBalance + projection3b.finalBalance} tone="success" tip="Vue consolidée du 3e pilier à la sortie." />
+          </div>
+        </div>
+      </CalcCard>
+
       <div className="flex flex-wrap justify-end gap-2">
         <SaveSimulationButton
           kind="pillar3a"
