@@ -22,6 +22,36 @@ export const Route = createFileRoute("/_app/calculators/")({
 
 const ITEMS = [
   {
+    to: "/calculators/avs-ai" as const,
+    icon: HeartHandshake,
+    title: "1er pilier AVS/AI",
+    desc: "Estimation rente individuelle ou couple, AVS21, plafonnement 3'780 CHF/mois.",
+  },
+  {
+    to: "/calculators/lpp" as const,
+    icon: Landmark,
+    title: "2e pilier LPP & rachats",
+    desc: "Projection capital retraite, plan de rachat étalé, économie fiscale.",
+  },
+  {
+    to: "/calculators/pillar3a" as const,
+    icon: PiggyBank,
+    title: "3e pilier A & B",
+    desc: "3a (déductible, plafond 7'258 CHF) et 3b (libre, non déductible). Projection et retrait étalé.",
+  },
+  {
+    to: "/calculators/vested-benefits" as const,
+    icon: ShieldCheck,
+    title: "Libre passage",
+    desc: "Stratégies sécurité / équilibre / dynamique, projection nette frais et impôts.",
+  },
+  {
+    to: "/calculators/cross-border" as const,
+    icon: Globe,
+    title: "Frontaliers FR / IT",
+    desc: "Régime 4.5 % (8 cantons), Genève spécifique, accord italo-suisse Tessin 2023.",
+  },
+  {
     to: "/calculators/income-tax" as const,
     icon: Coins,
     title: "Impôt revenu & fortune",
@@ -34,46 +64,10 @@ const ITEMS = [
     desc: "Barèmes A / B / C / H 2026 + frontaliers France (4.5 %).",
   },
   {
-    to: "/calculators/cross-border" as const,
-    icon: Globe,
-    title: "Frontaliers FR / IT",
-    desc: "Régime 4.5 % (8 cantons), Genève spécifique, accord italo-suisse Tessin 2023.",
-  },
-  {
     to: "/calculators/tou" as const,
     icon: Scale,
     title: "TOU / quasi-résident",
     desc: "Éligibilité 90 % et comparatif IS retenue vs taxation ordinaire ultérieure.",
-  },
-  {
-    to: "/calculators/avs-ai" as const,
-    icon: HeartHandshake,
-    title: "Rente AVS/AI (1er pilier)",
-    desc: "Estimation rente individuelle ou couple, AVS21, plafonnement 3'780 CHF/mois.",
-  },
-  {
-    to: "/calculators/lpp" as const,
-    icon: Landmark,
-    title: "LPP & rachats",
-    desc: "Projection capital retraite, plan de rachat étalé, économie fiscale.",
-  },
-  {
-    to: "/calculators/vested-benefits" as const,
-    icon: ShieldCheck,
-    title: "Libre passage",
-    desc: "Stratégies sécurité / équilibre / dynamique, projection nette frais et impôts.",
-  },
-  {
-    to: "/calculators/pillar3a" as const,
-    icon: PiggyBank,
-    title: "Pilier 3a",
-    desc: "Maximum déductible 2026, projection capitalisation, retrait étalé.",
-  },
-  {
-    to: "/calculators/canton-compare" as const,
-    icon: Map,
-    title: "Comparateur cantonal",
-    desc: "Compare votre charge fiscale dans les 6 cantons romands (+ Zoug en référence) en un clic.",
   },
   {
     to: "/calculators/retirement" as const,
@@ -86,6 +80,12 @@ const ITEMS = [
     icon: Building2,
     title: "Salaire / dividende dirigeant",
     desc: "Comparateur de stratégies de rémunération pour dirigeants Sàrl/SA : salaire, dividendes, réserves.",
+  },
+  {
+    to: "/calculators/canton-compare" as const,
+    icon: Map,
+    title: "Comparateur cantonal",
+    desc: "Compare votre charge fiscale dans les 6 cantons romands (+ Zoug en référence) en un clic.",
   },
 ];
 
