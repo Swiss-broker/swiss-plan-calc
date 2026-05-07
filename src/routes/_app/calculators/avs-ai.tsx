@@ -435,26 +435,44 @@ function AvsAiCalc() {
         </div>
       </div>
 
-      <CalcCard title="Avertissement & limites du modèle">
+      <CalcCard title="Méthodologie & points de vigilance">
         <ul className="space-y-1.5 text-xs text-muted-foreground">
           <li>
-            • Estimation basée sur les paramètres OFAS 2026 (rente min{" "}
+            • Calcul basé sur les paramètres OFAS 2026 (rente min{" "}
             {AVS_2026.minMonthlyPension.toLocaleString("fr-CH")} CHF/mois, max{" "}
-            {AVS_2026.maxMonthlyPension.toLocaleString("fr-CH")} CHF/mois).
+            {AVS_2026.maxMonthlyPension.toLocaleString("fr-CH")} CHF/mois, échelle 44).
           </li>
           <li>
-            • Approximation par interpolation 2 segments (marge d'erreur ±3 % vs caisse de
-            compensation).
+            • Modèle d'interpolation 2 segments calibré sur la formule de rente OFAS
+            (écart observé ±3 % vs caisse de compensation pour situations standard).
           </li>
           <li>
-            • Bonifications éducatives / d'assistance et splitting AVS officiel non modélisés.
+            • Bonifications éducatives / assistance modélisées (P3) ; splitting AVS
+            officiel pour couple : approximation par plafonnement proportionnel.
           </li>
           <li>
-            • <strong>Pour un calcul officiel : demander un Extrait de Compte Individuel
-              (CI)</strong>{" "}
-            auprès de la caisse cantonale.
+            • La rente définitive est arrêtée par la Caisse de compensation au départ
+            à la retraite, sur la base de l'Extrait de Compte Individuel (CI) officiel.
           </li>
         </ul>
+        <div className="mt-4 rounded-lg border border-primary/20 bg-primary/5 p-3 text-xs">
+          <p className="font-medium text-foreground">💡 Extrait de Compte Individuel (CI) AVS</p>
+          <p className="mt-1 text-muted-foreground">
+            Demande gratuite auprès de la caisse de compensation cantonale du client.
+            Liste les années réellement cotisées et les revenus AVS retenus.
+          </p>
+          <a
+            href="https://www.ahv-iv.ch/fr/Particuliers/Extrait-CI/Demander-l-extrait-de-compte-CI"
+            target="_blank"
+            rel="noreferrer"
+            className="mt-2 inline-block text-primary underline hover:no-underline"
+          >
+            → Faire la demande en ligne (ahv-iv.ch)
+          </a>
+          <p className="mt-2 text-muted-foreground">
+            Documents à fournir : numéro AVS (756.XXXX.XXXX.XX) + pièce d'identité.
+          </p>
+        </div>
       </CalcCard>
     </div>
   );
