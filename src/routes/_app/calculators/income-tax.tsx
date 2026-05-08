@@ -127,6 +127,23 @@ function IncomeTaxCalculator() {
                 </SelectContent>
               </Select>
             </Field>
+            <Field
+              label="Statut fiscal"
+              wikiId="ifd-icc"
+              wikiTip="Détermine le mode d'imposition : taxation ordinaire (déductions complètes), imposition à la source (barème IS), frontalier français accord 1983 (4,5 % rétrocédés à la France), ou TOU (rétroactif vers la taxation ordinaire pour quasi-résidents)."
+            >
+              <Select
+                value={form.taxStatus}
+                onValueChange={(v) => setField("taxStatus", v as TaxStatus)}
+              >
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {(Object.keys(TAX_STATUS_LABELS) as TaxStatus[]).map((k) => (
+                    <SelectItem key={k} value={k}>{TAX_STATUS_LABELS[k]}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </Field>
             <Field label="Situation civile" wikiId="ifd-icc" wikiTip="Marié = splitting partiel (barème plus favorable). Famille monoparentale = barème spécial.">
               <Select
                 value={form.status}
