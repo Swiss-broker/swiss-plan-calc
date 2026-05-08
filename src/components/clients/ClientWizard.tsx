@@ -226,14 +226,36 @@ export function ClientWizard({ initial, mode, clientId }: ClientWizardProps) {
   const [form, setForm] = useState<FormState>(() => initialForm(initial));
   const [errors, setErrors] = useState<Record<string, string>>({});
 
+  // Suggestion auto du statut fiscal : uniquement à la création, et seulement
+  // tant que le courtier n'a pas modifié manuellement le champ. En édition,
+  // on respecte intégralement la valeur existante.
+  const taxStatusManuallyEdited = useRef<boolean>(mode === "edit");
+
   const update = <K extends keyof FormState>(key: K, value: FormState[K]) =>
     setForm((s) => {
+      if (key === "tax_status") {
+        taxStatusManuallyEdited.current = true;
+      }
       if (key === "gross_annual_salary") {
         const gross = num(String(value)) ?? 0;
         return { ...s, [key]: value, lpp_insured_salary: String(computeLppInsuredSalary(gross)) };
       }
       return { ...s, [key]: value };
     });
+
+  // Auto-suggestion en mode création : recalcule dès qu'un champ déterminant change.
+  useEffect(() => {
+    if (taxStatusManuallyEdited.current) return;
+    const suggested = suggestTaxStatus({
+      nationality: form.nationality,
+      permit: form.permit,
+      country_of_residence: form.country_of_residence,
+      canton: form.canton,
+    });
+    if (suggested && suggested !== form.tax_status) {
+      setForm((s) => ({ ...s, tax_status: suggested }));
+    }
+  }, [form.nationality, form.permit, form.country_of_residence, form.canton, form.tax_status]);
 
   const isMarried = form.civil_status === "married" || form.civil_status === "registered_partnership";
 
