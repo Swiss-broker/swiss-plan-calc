@@ -11,6 +11,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useState } from "react";
 import { Toaster } from "@/components/ui/sonner";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { LanguageProvider, useLanguage } from "@/contexts/LanguageContext";
 import appCss from "../styles.css?url";
 
 // Search params globaux : `clientId` est conservé automatiquement entre
@@ -87,13 +88,26 @@ function RootShell({ children }: { children: React.ReactNode }) {
   );
 }
 
+function LanguageScopedTree() {
+  // Re-mount complet du sous-arbre au changement de langue : garantit que
+  // tous les composants (et les Proxy enums) recalculent leurs libellés.
+  const { lang } = useLanguage();
+  return (
+    <div key={lang} className="contents">
+      <Outlet />
+      <Toaster richColors position="top-right" />
+    </div>
+  );
+}
+
 function RootComponent() {
   const [queryClient] = useState(() => new QueryClient());
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <Outlet />
-        <Toaster richColors position="top-right" />
+        <LanguageProvider>
+          <LanguageScopedTree />
+        </LanguageProvider>
       </AuthProvider>
     </QueryClientProvider>
   );
