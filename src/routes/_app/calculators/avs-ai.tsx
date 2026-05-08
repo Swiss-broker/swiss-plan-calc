@@ -291,6 +291,11 @@ function AvsAiCalc() {
                   <p>
                     Bonus revenu déterminant : <strong>+{projection.primary.bonificationsBonus.toLocaleString("fr-CH")} CHF/an</strong>{" "}
                     (revenu déterminant final : {projection.primary.determiningIncome.toLocaleString("fr-CH")} CHF).
+                    {form.averageAnnualIncome >= AVS_2026.maxDeterminingIncome && (
+                      <span className="ml-1 text-warning">
+                        ⚠️ Bonus sans effet : revenu déjà au plafond ({AVS_2026.maxDeterminingIncome.toLocaleString("fr-CH")} CHF) → rente max déjà atteinte.
+                      </span>
+                    )}
                   </p>
                 )}
               </div>
@@ -462,7 +467,7 @@ function AvsAiCalc() {
             Liste les années réellement cotisées et les revenus AVS retenus.
           </p>
           <a
-            href="https://www.ahv-iv.ch/fr/Particuliers/Extrait-CI/Demander-l-extrait-de-compte-CI"
+            href="https://www.ahv-iv.ch/fr/Formulaires/Demande-dextrait-de-compte"
             target="_blank"
             rel="noreferrer"
             className="mt-2 inline-block text-primary underline hover:no-underline"
