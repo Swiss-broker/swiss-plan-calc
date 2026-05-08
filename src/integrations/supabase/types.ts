@@ -412,6 +412,7 @@ export type Database = {
           logo_url: string | null
           phone: string | null
           plan: Database["public"]["Enums"]["broker_plan"]
+          preferred_language: Database["public"]["Enums"]["app_language"]
           updated_at: string
         }
         Insert: {
@@ -425,6 +426,7 @@ export type Database = {
           logo_url?: string | null
           phone?: string | null
           plan?: Database["public"]["Enums"]["broker_plan"]
+          preferred_language?: Database["public"]["Enums"]["app_language"]
           updated_at?: string
         }
         Update: {
@@ -438,6 +440,7 @@ export type Database = {
           logo_url?: string | null
           phone?: string | null
           plan?: Database["public"]["Enums"]["broker_plan"]
+          preferred_language?: Database["public"]["Enums"]["app_language"]
           updated_at?: string
         }
         Relationships: []
@@ -695,6 +698,7 @@ export type Database = {
       }
     }
     Enums: {
+      app_language: "fr" | "de" | "en" | "it"
       broker_plan: "free" | "pro" | "enterprise"
       civil_status:
         | "single"
@@ -880,6 +884,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      app_language: ["fr", "de", "en", "it"],
       broker_plan: ["free", "pro", "enterprise"],
       civil_status: [
         "single",

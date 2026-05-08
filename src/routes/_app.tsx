@@ -15,6 +15,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger, SheetTitle, SheetHeader } from "@/components/ui/sheet";
 import { useAuth } from "@/contexts/AuthContext";
+import { useT } from "@/contexts/LanguageContext";
+import { LanguageSwitcher } from "@/components/common/LanguageSwitcher";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_app")({
@@ -53,13 +55,13 @@ function AppShell() {
 }
 
 const NAV = [
-  { to: "/dashboard", label: "Tableau de bord", icon: LayoutDashboard },
-  { to: "/clients", label: "Clients", icon: Users },
-  { to: "/companies", label: "Sociétés", icon: Building2 },
-  { to: "/calculators", label: "Calculateurs", icon: Calculator },
-  { to: "/wiki", label: "Wiki & formation", icon: BookOpen },
-  { to: "/history", label: "Historique", icon: Bookmark },
-  { to: "/account", label: "Mon profil", icon: UserCircle },
+  { to: "/dashboard", labelKey: "nav.dashboard", icon: LayoutDashboard },
+  { to: "/clients", labelKey: "nav.clients", icon: Users },
+  { to: "/companies", labelKey: "nav.companies", icon: Building2 },
+  { to: "/calculators", labelKey: "nav.calculators", icon: Calculator },
+  { to: "/wiki", labelKey: "nav.wiki", icon: BookOpen },
+  { to: "/history", labelKey: "nav.history", icon: Bookmark },
+  { to: "/account", labelKey: "nav.account", icon: UserCircle },
 ] as const;
 
 function BrandMark() {
@@ -77,6 +79,7 @@ function BrandMark() {
 
 function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const t = useT();
   return (
     <nav className="flex-1 space-y-1 px-3 py-4">
       {NAV.map((item) => {
@@ -96,7 +99,7 @@ function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
             )}
           >
             <item.icon className="h-4 w-4" />
-            {item.label}
+            {t(item.labelKey)}
           </Link>
         );
       })}
@@ -105,21 +108,23 @@ function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
 }
 
 function UserFooter({ email, onSignOut }: { email: string; onSignOut: () => Promise<void> }) {
+  const t = useT();
   return (
     <div className="border-t border-sidebar-border p-3">
       <div className="mb-2 flex items-center gap-2 rounded-lg px-3 py-2 text-xs">
         <Building2 className="h-3.5 w-3.5 text-muted-foreground" />
         <span className="truncate text-muted-foreground">{email}</span>
       </div>
+      <LanguageSwitcher />
       <Button
         type="button"
         variant="ghost"
         size="sm"
-        className="w-full justify-start gap-2 text-sidebar-foreground/70"
+        className="mt-1 w-full justify-start gap-2 text-sidebar-foreground/70"
         onClick={onSignOut}
       >
         <LogOut className="h-4 w-4" />
-        Se déconnecter
+        {t("nav.signout")}
       </Button>
     </div>
   );

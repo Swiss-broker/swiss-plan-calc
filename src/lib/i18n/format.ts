@@ -1,27 +1,52 @@
-// Formatage numérique au standard suisse.
+// Formatage numérique multilingue.
 //
-// Convention : apostrophe (typographique U+2019 ou ASCII U+0027 selon usage)
-// comme séparateur de milliers. Intl.NumberFormat("fr-CH") retourne par défaut
-// l'apostrophe ASCII (ex: "47'200"), ce qui correspond aux conventions
-// utilisées par l'AFC et les calculateurs cantonaux.
+// Convention CH (FR/DE/IT) : apostrophe comme séparateur de milliers ("47'200").
+// Convention EN (anglais) : virgule comme séparateur de milliers ("47,200").
 
-const numFmtCH = new Intl.NumberFormat("fr-CH", {
-  maximumFractionDigits: 0,
-});
+import type { AppLanguage } from "./types";
+import { getActiveLanguage } from "./active";
 
-const numFmtCH2 = new Intl.NumberFormat("fr-CH", {
-  maximumFractionDigits: 2,
-  minimumFractionDigits: 2,
-});
+const CACHE = new Map<string, Intl.NumberFormat>();
 
-/** Formate un nombre au standard suisse (apostrophe en milliers). */
-export function formatNumberCH(value: number, decimals = 0): string {
-  if (!Number.isFinite(value)) return "—";
-  return decimals === 0 ? numFmtCH.format(value) : numFmtCH2.format(value);
+function localeFor(lang: AppLanguage): string {
+  switch (lang) {
+    case "en":
+      return "en-CH"; // virgule séparateur, francs suisses
+    case "de":
+      return "de-CH";
+    case "it":
+      return "it-CH";
+    case "fr":
+    default:
+      return "fr-CH";
+  }
 }
 
-/** Formate un montant en CHF (ex: "47'200 CHF"). */
-export function formatCHF(value: number | null | undefined, decimals = 0): string {
+function fmt(lang: AppLanguage, decimals: number): Intl.NumberFormat {
+  const key = `${lang}:${decimals}`;
+  let f = CACHE.get(key);
+  if (!f) {
+    f = new Intl.NumberFormat(localeFor(lang), {
+      minimumFractionDigits: decimals,
+      maximumFractionDigits: decimals,
+    });
+    CACHE.set(key, f);
+  }
+  return f;
+}
+
+/** Formate un nombre selon la langue active (ou la langue passée). */
+export function formatNumberCH(value: number, decimals = 0, lang?: AppLanguage): string {
+  if (!Number.isFinite(value)) return "—";
+  return fmt(lang ?? getActiveLanguage(), decimals).format(value);
+}
+
+/** Formate un montant en CHF (ex FR/DE/IT: "47'200 CHF"; EN: "47,200 CHF"). */
+export function formatCHF(
+  value: number | null | undefined,
+  decimals = 0,
+  lang?: AppLanguage,
+): string {
   if (value === null || value === undefined || Number.isNaN(value)) return "—";
-  return `${formatNumberCH(value, decimals)} CHF`;
+  return `${formatNumberCH(value, decimals, lang)} CHF`;
 }
