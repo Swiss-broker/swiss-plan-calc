@@ -46,9 +46,12 @@ export const PERMIT_LABELS: Record<Permit, string> = {
 
 export const TAX_STATUS_LABELS: Record<TaxStatus, string> = {
   ordinary_resident: "Résident — imposition ordinaire",
-  source_taxed: "Imposé à la source",
-  cross_border_g: "Frontalier (permis G)",
-  quasi_resident: "Quasi-résident (TOU)",
+  source_taxed: "Imposé(e) à la source (permis B/L)",
+  cross_border_g: "Frontalier(ère) — permis G (générique)",
+  cross_border_fr_1983: "Frontalier(ère) français(e) — accord 1983",
+  cross_border_ge: "Frontalier(ère) Genève (IS au barème normal)",
+  quasi_resident: "Quasi-résident(e)",
+  tou: "TOU — Taxation Ordinaire Ultérieure",
   non_taxable: "Non imposable",
 };
 
