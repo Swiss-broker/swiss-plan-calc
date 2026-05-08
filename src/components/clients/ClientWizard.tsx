@@ -143,7 +143,7 @@ function initialForm(initial?: WizardInitialData): FormState {
     canton: c?.canton ?? "",
     commune: c?.commune ?? "",
     postal_code: c?.postal_code ?? "",
-    tax_status: c?.tax_status ?? "ordinary_resident",
+    tax_status: c?.tax_status ?? "resident",
     source_tax_scale: (c?.source_tax_scale as SourceTaxScale | null) ?? "",
     confession: c?.confession ?? "none",
     parish: c?.parish ?? "",
@@ -562,8 +562,9 @@ function StepIdentity({ form, update, errors }: StepProps) {
 function StepFiscal({ form, update, errors }: StepProps) {
   const isSource =
     form.tax_status === "source_taxed" ||
-    form.tax_status === "cross_border_g" ||
-    form.tax_status === "quasi_resident";
+    form.tax_status === "cross_border_fr_1983" ||
+    form.tax_status === "cross_border_ge" ||
+    form.tax_status === "tou";
   return (
     <div className="grid gap-4 sm:grid-cols-2">
       <Field label="Pays de résidence" htmlFor="cor">

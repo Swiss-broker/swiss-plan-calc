@@ -100,12 +100,11 @@ function IncomeTaxCalculator() {
   ];
 
   // Mode d'imposition : ordinaire (résident + TOU) ou source / frontalier.
-  const isOrdinary = form.taxStatus === "ordinary_resident" || form.taxStatus === "tou";
+  const isOrdinary = form.taxStatus === "resident" || form.taxStatus === "tou";
   const isFrCrossBorder = form.taxStatus === "cross_border_fr_1983";
   const isSourceLike =
     form.taxStatus === "source_taxed" ||
-    form.taxStatus === "cross_border_ge" ||
-    form.taxStatus === "cross_border_g";
+    form.taxStatus === "cross_border_ge";
 
   const monthlyGross = form.grossSalary / 12;
   const sourceTax = useMemo(

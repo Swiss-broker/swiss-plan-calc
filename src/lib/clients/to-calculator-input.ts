@@ -127,8 +127,9 @@ export function toSourceTaxInput(b: ClientBundle) {
       : undefined,
     church: b.client.confession && b.client.confession !== "none" ? true : undefined,
     isCrossBorderFR:
-      b.client.tax_status === "cross_border_g" &&
-      b.client.country_of_residence === "FR"
+      b.client.tax_status === "cross_border_fr_1983" ||
+      (b.client.tax_status === "cross_border_ge" &&
+        b.client.country_of_residence === "FR")
         ? true
         : undefined,
   };
@@ -154,7 +155,7 @@ export function toTouInput(b: ClientBundle) {
   return {
     ...base,
     worldwideIncome: numOrUndef(b.client.gross_annual_salary),
-    isEUEFTAResident: b.client.tax_status === "quasi_resident",
+    isEUEFTAResident: b.client.tax_status === "tou",
   };
 }
 
