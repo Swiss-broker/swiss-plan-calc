@@ -220,6 +220,7 @@ export interface ClientWizardProps {
 export function ClientWizard({ initial, mode, clientId }: ClientWizardProps) {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const qc = useQueryClient();
   const [step, setStep] = useState(1);
   const [form, setForm] = useState<FormState>(() => initialForm(initial));
   const [errors, setErrors] = useState<Record<string, string>>({});
