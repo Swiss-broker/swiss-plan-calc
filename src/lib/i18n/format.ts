@@ -8,7 +8,7 @@ import { getActiveLanguage } from "./active";
 
 const CACHE = new Map<string, Intl.NumberFormat>();
 
-function localeFor(lang: AppLanguage): string {
+export function localeFor(lang: AppLanguage): string {
   switch (lang) {
     case "en":
       return "en-CH"; // virgule séparateur, francs suisses
@@ -49,4 +49,19 @@ export function formatCHF(
 ): string {
   if (value === null || value === undefined || Number.isNaN(value)) return "—";
   return `${formatNumberCH(value, decimals, lang)} CHF`;
+}
+
+/** Locale BCP-47 active (utile pour Intl.DateTimeFormat). */
+export function getActiveLocale(lang?: AppLanguage): string {
+  return localeFor(lang ?? getActiveLanguage());
+}
+
+/** Format date court (ex: « 8 mai 2026 », « 8. Mai 2026 »). */
+export function formatDateShort(date: Date | string | number, lang?: AppLanguage): string {
+  const d = date instanceof Date ? date : new Date(date);
+  return new Intl.DateTimeFormat(getActiveLocale(lang), {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  }).format(d);
 }

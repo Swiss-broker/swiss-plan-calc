@@ -24,35 +24,31 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useT, useLanguage } from "@/contexts/LanguageContext";
+import { formatDateShort } from "@/lib/i18n/format";
 
 export const Route = createFileRoute("/_app/dashboard")({
   head: () => ({ meta: [{ title: "Tableau de bord · SwissBroker Pro" }] }),
   component: Dashboard,
 });
 
-const TIPS = [
-  "Un rachat LPP de 20 000 CHF économise typiquement 5 000 à 8 000 CHF d'impôts selon le canton.",
-  "Ouvrir 3 à 5 comptes 3a permet d'éclater le retrait sur plusieurs années et de diviser l'impôt par 2 ou 3.",
-  "Pour un dirigeant détenant ≥ 10 % de sa société, les dividendes sont taxés à seulement 50 % au fédéral.",
-  "Le bouclier fiscal limite l'impôt total à 60 % du revenu dans les cantons de Genève et Vaud.",
-  "Différer la rente AVS de 5 ans = +31.5 % de rente à vie. Rentable si espérance de vie > 13 ans après 65.",
-  "La déduction de coordination LPP s'applique APRÈS plafonnement au salaire assuré max (90 720 CHF).",
-];
-
-function getGreeting() {
+function getGreetingKey() {
   const h = new Date().getHours();
-  if (h < 6) return { text: "Bonne nuit", icon: Moon };
-  if (h < 12) return { text: "Bonjour", icon: Sun };
-  if (h < 18) return { text: "Bel après-midi", icon: Sun };
-  return { text: "Bonsoir", icon: Coffee };
+  if (h < 6) return { key: "dash.greet.night", icon: Moon };
+  if (h < 12) return { key: "dash.greet.morning", icon: Sun };
+  if (h < 18) return { key: "dash.greet.afternoon", icon: Sun };
+  return { key: "dash.greet.evening", icon: Coffee };
 }
 
 function Dashboard() {
+  const t = useT();
+  const { lang } = useLanguage();
   const { user } = useAuth();
   const brokerId = user?.id;
-  const greeting = getGreeting();
+  const greeting = getGreetingKey();
   const GreetIcon = greeting.icon;
-  const tip = TIPS[new Date().getDate() % TIPS.length];
+  const tipKey = `dash.tip.${(new Date().getDate() % 6) + 1}`;
+  const tip = t(tipKey);
 
   const { data: profile } = useQuery({
     queryKey: ["dashboard-profile", brokerId],
@@ -109,9 +105,8 @@ function Dashboard() {
     },
   });
 
-  const firstName = profile?.first_name || user?.email?.split("@")[0] || "courtier";
+  const firstName = profile?.first_name || user?.email?.split("@")[0] || t("dash.fallback.broker");
 
-  // Calcul d'un "niveau" ludique basé sur l'activité
   const totalActivity = (stats?.clientsActive ?? 0) + (stats?.simsTotal ?? 0);
   const level = Math.max(1, Math.floor(Math.sqrt(totalActivity)) + 1);
   const nextLevelAt = level * level;
@@ -130,51 +125,50 @@ function Dashboard() {
             </div>
             <div>
               <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
-                {greeting.text}, <span className="bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">{firstName}</span> 👋
+                {t(greeting.key)}, <span className="bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">{firstName}</span> {t("dash.hello.suffix")}
               </h1>
               <p className="mt-1 text-sm text-muted-foreground">
                 {profile?.brokerage_name ? `${profile.brokerage_name} · ` : ""}
-                Voici votre cockpit du jour.
+                {t("dash.subtitle")}
               </p>
             </div>
           </div>
           <div className="flex flex-wrap gap-2">
             <Link to="/clients">
-              <Button className="shadow-elegant"><PlusCircle className="h-4 w-4" /> Nouveau client</Button>
+              <Button className="shadow-elegant"><PlusCircle className="h-4 w-4" /> {t("dash.cta.new_client")}</Button>
             </Link>
             <Link to="/calculators">
-              <Button variant="outline"><Calculator className="h-4 w-4" /> Calculer</Button>
+              <Button variant="outline"><Calculator className="h-4 w-4" /> {t("dash.cta.calculate")}</Button>
             </Link>
           </div>
         </div>
 
-        {/* Niveau / progression */}
         <div className="relative mt-6 grid gap-3 sm:grid-cols-3">
           <div className="rounded-2xl border border-primary/20 bg-card/60 backdrop-blur p-4">
             <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-primary">
-              <Trophy className="h-3.5 w-3.5" /> Niveau courtier
+              <Trophy className="h-3.5 w-3.5" /> {t("dash.level.title")}
             </div>
-            <div className="mt-1 text-2xl font-bold">Niveau {level}</div>
+            <div className="mt-1 text-2xl font-bold">{t("dash.level.value", { n: level })}</div>
             <div className="mt-2 h-2 rounded-full bg-muted overflow-hidden">
               <div className="h-full bg-gradient-to-r from-primary to-primary/60 transition-all" style={{ width: `${progressPct}%` }} />
             </div>
             <div className="mt-1 text-[11px] text-muted-foreground">
-              {totalActivity} / {nextLevelAt} actions vers le niveau {level + 1}
+              {t("dash.level.progress", { current: totalActivity, target: nextLevelAt, next: level + 1 })}
             </div>
           </div>
           <div className="rounded-2xl border border-primary/20 bg-card/60 backdrop-blur p-4">
             <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-primary">
-              <Target className="h-3.5 w-3.5" /> Objectif du mois
+              <Target className="h-3.5 w-3.5" /> {t("dash.goal.title")}
             </div>
             <div className="mt-1 text-2xl font-bold">{stats?.simsMonth ?? 0} / 20</div>
             <div className="mt-2 h-2 rounded-full bg-muted overflow-hidden">
               <div className="h-full bg-gradient-to-r from-emerald-500 to-emerald-400 transition-all" style={{ width: `${Math.min(100, ((stats?.simsMonth ?? 0) / 20) * 100)}%` }} />
             </div>
-            <div className="mt-1 text-[11px] text-muted-foreground">simulations effectuées ce mois</div>
+            <div className="mt-1 text-[11px] text-muted-foreground">{t("dash.goal.hint")}</div>
           </div>
           <div className="rounded-2xl border border-primary/20 bg-card/60 backdrop-blur p-4">
             <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-primary">
-              <Zap className="h-3.5 w-3.5" /> Astuce du jour
+              <Zap className="h-3.5 w-3.5" /> {t("dash.tip.title")}
             </div>
             <p className="mt-1 text-xs leading-snug text-muted-foreground">{tip}</p>
           </div>
@@ -183,23 +177,43 @@ function Dashboard() {
 
       {/* KPIs */}
       <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <KpiCard label="Clients actifs" value={stats?.clientsActive} hint={stats?.clientsArchived ? `${stats.clientsArchived} archivé(s)` : "Démarrez votre portefeuille"} icon={Users} accent="from-blue-500/15 to-blue-500/0" iconColor="text-blue-500" />
-        <KpiCard label="Sociétés" value={stats?.companies} hint="Dirigeants & dividendes" icon={Building2} accent="from-purple-500/15 to-purple-500/0" iconColor="text-purple-500" />
-        <KpiCard label="Simulations ce mois" value={stats?.simsMonth} hint={stats?.simsTotal ? `${stats.simsTotal} au total` : undefined} icon={TrendingUp} accent="from-emerald-500/15 to-emerald-500/0" iconColor="text-emerald-500" />
-        <KpiCard label="Calculateurs" value={11} hint="11 modules métier" icon={Calculator} accent="from-amber-500/15 to-amber-500/0" iconColor="text-amber-500" />
+        <KpiCard
+          label={t("dash.kpi.clients_active")}
+          value={stats?.clientsActive}
+          hint={stats?.clientsArchived ? t("dash.kpi.clients_active.archived", { n: stats.clientsArchived }) : t("dash.kpi.clients_active.empty")}
+          icon={Users} accent="from-blue-500/15 to-blue-500/0" iconColor="text-blue-500"
+        />
+        <KpiCard
+          label={t("dash.kpi.companies")}
+          value={stats?.companies}
+          hint={t("dash.kpi.companies.hint")}
+          icon={Building2} accent="from-purple-500/15 to-purple-500/0" iconColor="text-purple-500"
+        />
+        <KpiCard
+          label={t("dash.kpi.sims_month")}
+          value={stats?.simsMonth}
+          hint={stats?.simsTotal ? t("dash.kpi.sims_month.total", { n: stats.simsTotal }) : undefined}
+          icon={TrendingUp} accent="from-emerald-500/15 to-emerald-500/0" iconColor="text-emerald-500"
+        />
+        <KpiCard
+          label={t("dash.kpi.calculators")}
+          value={11}
+          hint={t("dash.kpi.calculators.hint")}
+          icon={Calculator} accent="from-amber-500/15 to-amber-500/0" iconColor="text-amber-500"
+        />
       </div>
 
       {/* RACCOURCIS CALCULATEURS */}
       <div className="mt-8">
         <div className="mb-3 flex items-center justify-between">
-          <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Accès rapide aux calculateurs</h2>
-          <Link to="/calculators"><Button variant="ghost" size="sm">Tous <ArrowRight className="h-4 w-4" /></Button></Link>
+          <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">{t("dash.shortcuts.title")}</h2>
+          <Link to="/calculators"><Button variant="ghost" size="sm">{t("dash.shortcuts.all")} <ArrowRight className="h-4 w-4" /></Button></Link>
         </div>
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          <ShortcutCard to="/calculators/avs-ai" icon={Shield} title="1er pilier · AVS/AI" color="text-rose-500" bg="bg-rose-500/10" />
-          <ShortcutCard to="/calculators/lpp" icon={PiggyBank} title="2e pilier · LPP" color="text-blue-500" bg="bg-blue-500/10" />
-          <ShortcutCard to="/calculators/pillar3a" icon={Sparkles} title="3e pilier · A & B" color="text-emerald-500" bg="bg-emerald-500/10" />
-          <ShortcutCard to="/calculators/cross-border" icon={Globe} title="Frontaliers" color="text-amber-500" bg="bg-amber-500/10" />
+          <ShortcutCard to="/calculators/avs-ai" icon={Shield} title={t("dash.shortcut.avs")} color="text-rose-500" bg="bg-rose-500/10" />
+          <ShortcutCard to="/calculators/lpp" icon={PiggyBank} title={t("dash.shortcut.lpp")} color="text-blue-500" bg="bg-blue-500/10" />
+          <ShortcutCard to="/calculators/pillar3a" icon={Sparkles} title={t("dash.shortcut.p3")} color="text-emerald-500" bg="bg-emerald-500/10" />
+          <ShortcutCard to="/calculators/cross-border" icon={Globe} title={t("dash.shortcut.cb")} color="text-amber-500" bg="bg-amber-500/10" />
         </div>
       </div>
 
@@ -209,17 +223,17 @@ function Dashboard() {
           <div className="mb-4 flex items-center justify-between">
             <h3 className="text-lg font-semibold flex items-center gap-2">
               <History className="h-4 w-4 text-primary" />
-              Dernières simulations
+              {t("dash.recent.title")}
             </h3>
-            <Link to="/history"><Button variant="ghost" size="sm">Tout l'historique <ArrowRight className="h-4 w-4" /></Button></Link>
+            <Link to="/history"><Button variant="ghost" size="sm">{t("dash.recent.all")} <ArrowRight className="h-4 w-4" /></Button></Link>
           </div>
           {recentSims === undefined ? (
-            <p className="text-sm text-muted-foreground">Chargement…</p>
+            <p className="text-sm text-muted-foreground">{t("common.loading")}</p>
           ) : recentSims.length === 0 ? (
             <div className="rounded-xl border border-dashed p-8 text-center text-sm text-muted-foreground">
               <Sparkles className="mx-auto mb-2 h-6 w-6 text-primary" />
-              <p className="font-medium text-foreground">C'est parti !</p>
-              <p className="mt-1">Lancez un calculateur et cliquez sur « Sauvegarder » pour retrouver vos simulations ici.</p>
+              <p className="font-medium text-foreground">{t("dash.recent.empty.title")}</p>
+              <p className="mt-1">{t("dash.recent.empty.desc")}</p>
             </div>
           ) : (
             <ul className="divide-y divide-border">
@@ -228,7 +242,7 @@ function Dashboard() {
                   <div className="min-w-0 flex-1">
                     <div className="font-medium truncate">{s.title}</div>
                     <div className="text-xs text-muted-foreground">
-                      {new Date(s.created_at).toLocaleDateString("fr-CH", { day: "numeric", month: "short", year: "numeric" })}
+                      {formatDateShort(s.created_at, lang)}
                     </div>
                   </div>
                   <Badge variant="secondary" className="ml-2 text-[10px]">{s.kind}</Badge>
@@ -242,12 +256,10 @@ function Dashboard() {
           <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-elegant">
             <BookOpen className="h-6 w-6" />
           </div>
-          <h3 className="mt-4 text-lg font-semibold">Wiki & formation</h3>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Toutes les explications fiscales, sociales et techniques. AVS, LPP, 3a/3b, frontaliers, dividendes : pour ne plus rien chercher ailleurs.
-          </p>
+          <h3 className="mt-4 text-lg font-semibold">{t("dash.wiki.title")}</h3>
+          <p className="mt-1 text-sm text-muted-foreground">{t("dash.wiki.desc")}</p>
           <div className="mt-4 inline-flex items-center gap-1 text-sm font-medium text-primary">
-            Ouvrir le wiki <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+            {t("dash.wiki.cta")} <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
           </div>
         </Link>
       </div>
@@ -308,7 +320,8 @@ function ShortcutCard({
       <div className="min-w-0 flex-1">
         <div className="text-sm font-semibold truncate">{title}</div>
         <div className="text-xs text-muted-foreground flex items-center gap-1">
-          Ouvrir <ArrowRight className="h-3 w-3 transition-transform group-hover:translate-x-0.5" />
+          {/* arrow icon visual cue only */}
+          <ArrowRight className="h-3 w-3 transition-transform group-hover:translate-x-0.5" />
         </div>
       </div>
     </Link>
