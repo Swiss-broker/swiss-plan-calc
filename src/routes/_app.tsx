@@ -15,6 +15,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger, SheetTitle, SheetHeader } from "@/components/ui/sheet";
 import { useAuth } from "@/contexts/AuthContext";
+import { useT } from "@/contexts/LanguageContext";
+import { LanguageSwitcher } from "@/components/common/LanguageSwitcher";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_app")({
@@ -53,13 +55,13 @@ function AppShell() {
 }
 
 const NAV = [
-  { to: "/dashboard", label: "Tableau de bord", icon: LayoutDashboard },
-  { to: "/clients", label: "Clients", icon: Users },
-  { to: "/companies", label: "Sociétés", icon: Building2 },
-  { to: "/calculators", label: "Calculateurs", icon: Calculator },
-  { to: "/wiki", label: "Wiki & formation", icon: BookOpen },
-  { to: "/history", label: "Historique", icon: Bookmark },
-  { to: "/account", label: "Mon profil", icon: UserCircle },
+  { to: "/dashboard", labelKey: "nav.dashboard", icon: LayoutDashboard },
+  { to: "/clients", labelKey: "nav.clients", icon: Users },
+  { to: "/companies", labelKey: "nav.companies", icon: Building2 },
+  { to: "/calculators", labelKey: "nav.calculators", icon: Calculator },
+  { to: "/wiki", labelKey: "nav.wiki", icon: BookOpen },
+  { to: "/history", labelKey: "nav.history", icon: Bookmark },
+  { to: "/account", labelKey: "nav.account", icon: UserCircle },
 ] as const;
 
 function BrandMark() {
