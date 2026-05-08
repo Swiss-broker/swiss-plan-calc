@@ -27,6 +27,8 @@ import { ClientLinkBanner } from "@/components/calculators/ClientLinkBanner";
 import { GuideMode, GuideToggleButton, type GuideStep } from "@/components/calculators/GuideMode";
 import { WikiTip } from "@/components/calculators/WikiTip";
 import { getClientTaxContext } from "@/lib/clients/to-calculator-input";
+import { TAX_STATUS_LABELS, type TaxStatus } from "@/lib/swiss/enums";
+import { computeSourceTax, inferSourceScale } from "@/lib/tax/source";
 
 const searchSchema = z.object({
   clientId: fallback(z.string().uuid().optional(), undefined),
