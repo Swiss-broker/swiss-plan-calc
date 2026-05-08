@@ -46,7 +46,7 @@ function IncomeTaxCalculator() {
 
   const [form, setForm] = useState({
     canton: "VD",
-    taxStatus: "ordinary_resident" as TaxStatus,
+    taxStatus: "resident" as TaxStatus,
     status: "single" as IncomeTaxInput["status"],
     confession: "none" as NonNullable<IncomeTaxInput["confession"]>,
     children: 0,
