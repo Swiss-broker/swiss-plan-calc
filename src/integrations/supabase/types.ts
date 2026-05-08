@@ -742,6 +742,9 @@ export type Database = {
         | "cross_border_g"
         | "quasi_resident"
         | "non_taxable"
+        | "cross_border_fr_1983"
+        | "cross_border_ge"
+        | "tou"
       work_status:
         | "employee"
         | "self_employed"
@@ -926,6 +929,9 @@ export const Constants = {
         "cross_border_g",
         "quasi_resident",
         "non_taxable",
+        "cross_border_fr_1983",
+        "cross_border_ge",
+        "tou",
       ],
       work_status: [
         "employee",
