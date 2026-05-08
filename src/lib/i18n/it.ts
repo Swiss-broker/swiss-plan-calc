@@ -1,29 +1,387 @@
-// Dictionnaire italien · ÉTAPE 1 — placeholders préfixés [IT].
-// Étape 3 : remplacement par traductions officielles (LPP/AVS/Imposta alla fonte…).
+// Dizionario italiano · ÉTAPE 3 — vocabolario svizzero ufficiale (LPP/AVS/Imposta alla fonte).
+// Basato su bsv.admin.ch/it, estv.admin.ch/it, ahv-iv.ch/it.
+// Fonte di verità di fallback: src/lib/i18n/fr.ts.
 
-import { fr } from "./fr";
+export const it: Record<string, string> = {
+  // === Cantoni (nomi italiani ufficiali) ===
+  "canton.GE": "Ginevra",
+  "canton.VD": "Vaud",
+  "canton.VS": "Vallese",
+  "canton.FR": "Friburgo",
+  "canton.NE": "Neuchâtel",
+  "canton.JU": "Giura",
+  "canton.ZG": "Zugo",
 
-const PRESERVE_PREFIX = new Set([
-  "canton.",
-  "lang.",
-  "wiki.translation_pending",
-]);
+  // === Comparatore cantonale ===
+  "comparator.scope.notice":
+    "📍 Confronto sui 6 cantoni romandi + Zugo (riferimento). Altri 19 cantoni disponibili prossimamente.",
+  "comparator.zg.badge": "Riferimento per fiscalità ottimizzata",
+  "comparator.zg.tooltip":
+    "Confronto fuori dalla Svizzera romanda — non disponibile come cantone di domicilio nella v1.",
+  "comparator.section.romand": "Cantoni romandi",
+  "comparator.section.reference": "Riferimento fuori dalla Svizzera romanda",
 
-function placeholder(key: string, value: string): string {
-  if (key === "wiki.translation_pending") {
-    return "📚 Questo contenuto è attualmente disponibile solo in francese. Le traduzioni sono in corso.";
-  }
-  if (key === "lang.fr") return "Francese";
-  if (key === "lang.de") return "Tedesco";
-  if (key === "lang.en") return "Inglese";
-  if (key === "lang.it") return "Italiano";
-  if (key === "lang.label") return "Lingua";
-  for (const p of PRESERVE_PREFIX) {
-    if (key === p || key.startsWith(p)) return value;
-  }
-  return `[IT] ${value}`;
-}
+  // === Ottimizzatore · suggerimenti quantificati ===
+  "lpp.rachat.suggestion":
+    "Capacità di riscatto LPP: {montant} CHF. Risparmio fiscale stimato all'aliquota marginale ({taux}%): {economie} CHF.",
+  "canton.move.suggestion":
+    "Domicilio a {ville} ({code}): risparmio stimato di {economie} CHF/anno rispetto a {actuel}.",
 
-export const it: Record<string, string> = Object.fromEntries(
-  Object.entries(fr).map(([k, v]) => [k, placeholder(k, v)]),
-);
+  // === Comune ===
+  "common.year.short": "anno",
+  "common.years.short": "anni",
+
+  // === Azioni generiche ===
+  "common.save": "Salva",
+  "common.cancel": "Annulla",
+  "common.confirm": "Conferma",
+  "common.close": "Chiudi",
+  "common.edit": "Modifica",
+  "common.delete": "Elimina",
+  "common.archive": "Archivia",
+  "common.restore": "Ripristina",
+  "common.create": "Crea",
+  "common.next": "Avanti",
+  "common.previous": "Indietro",
+  "common.back": "Indietro",
+  "common.search": "Cerca",
+  "common.loading": "Caricamento…",
+  "common.attach": "Collega",
+  "common.detach": "Scollega",
+  "common.add": "Aggiungi",
+  "common.remove": "Rimuovi",
+  "common.duplicate": "Duplica",
+  "common.export": "Esporta",
+  "common.import": "Importa",
+  "common.share": "Condividi",
+  "common.print": "Stampa",
+  "common.optional": "Opzionale",
+  "common.required": "Obbligatorio",
+  "common.yes": "Sì",
+  "common.no": "No",
+  "common.empty": "Nessun elemento",
+  "common.error": "Errore",
+  "common.success": "Successo",
+
+  // === Moduli ===
+  "form.first_name": "Nome",
+  "form.last_name": "Cognome",
+  "form.date_of_birth": "Data di nascita",
+  "form.gender": "Sesso",
+  "form.email": "Email",
+  "form.phone": "Telefono",
+  "form.civil_status": "Stato civile",
+  "form.confession": "Confessione",
+  "form.nationality": "Nazionalità",
+  "form.permit": "Permesso",
+  "form.tax_status": "Statuto fiscale",
+  "form.canton": "Cantone",
+  "form.commune": "Comune",
+  "form.postal_code": "NPA",
+  "form.country_of_residence": "Paese di residenza",
+  "form.work_status": "Statuto professionale",
+  "form.employer": "Datore di lavoro",
+  "form.activity_rate": "Grado di occupazione",
+  "form.gross_annual_salary": "Salario annuo lordo",
+  "form.bonus": "Bonus",
+  "form.spouse": "Coniuge",
+  "form.children": "Figli",
+  "form.legal_form": "Forma giuridica",
+  "form.legal_name": "Ragione sociale",
+
+  // === Navigazione principale ===
+  "nav.dashboard": "Pannello",
+  "nav.clients": "Clienti",
+  "nav.companies": "Società",
+  "nav.calculators": "Calcolatori",
+  "nav.wiki": "Wiki & Formazione",
+  "nav.history": "Cronologia",
+  "nav.account": "Il mio profilo",
+  "nav.signout": "Disconnetti",
+
+  // === Selettore lingua ===
+  "lang.label": "Lingua",
+  "lang.fr": "Francese",
+  "lang.de": "Tedesco",
+  "lang.en": "Inglese",
+  "lang.it": "Italiano",
+
+  // === Calcolatori — titoli + descrizioni ===
+  "calc.avs_ai.title": "1° pilastro AVS/AI",
+  "calc.avs_ai.desc":
+    "Stima rendita individuale o di coppia, AVS21, plafond 3'780 CHF/mese.",
+  "calc.lpp.title": "2° pilastro LPP & riscatti",
+  "calc.lpp.desc":
+    "Proiezione capitale di pensionamento, piano di riscatto scaglionato, risparmio fiscale.",
+  "calc.pillar3a.title": "Pilastro 3a & 3b",
+  "calc.pillar3a.desc":
+    "3a (deducibile, plafond 7'258 CHF) e 3b (libero, non deducibile). Proiezione e prelievo scaglionato.",
+  "calc.vested.title": "Libero passaggio",
+  "calc.vested.desc":
+    "Strategie sicurezza / equilibrata / dinamica, proiezione netta da spese e imposte.",
+  "calc.cross_border.title": "Frontalieri FR / IT",
+  "calc.cross_border.desc":
+    "Regime 4,5 % (8 cantoni), specificità di Ginevra, accordo italo-svizzero Ticino 2023.",
+  "calc.income_tax.title": "Imposta su reddito e sostanza",
+  "calc.income_tax.desc":
+    "IFD + ICC tutti i cantoni, deduzioni standard svizzere, aliquota marginale ed effettiva.",
+  "calc.source_tax.title": "Imposta alla fonte",
+  "calc.source_tax.desc": "Tariffe A / B / C / H 2026 + frontalieri Francia (4,5 %).",
+  "calc.tou.title": "TOU / quasi-residente",
+  "calc.tou.desc":
+    "Verifica del 90 % e confronto imposta alla fonte vs tassazione ordinaria ulteriore.",
+  "calc.retirement.title": "Rendita o capitale",
+  "calc.retirement.desc": "Confronta la rendita LPP vitalizia con il prelievo in capitale + investimento.",
+  "calc.director.title": "Salario / dividendo del dirigente",
+  "calc.director.desc":
+    "Comparatore di strategie di remunerazione per dirigenti Sagl/SA: salario, dividendi, riserve.",
+  "calc.canton_compare.title": "Comparatore cantonale",
+  "calc.canton_compare.desc":
+    "Confronta il tuo carico fiscale nei 6 cantoni romandi (+ Zugo come riferimento) in un clic.",
+  "calc.open": "Apri",
+
+  // === Enums : gender ===
+  "enum.gender.male": "Maschio",
+  "enum.gender.female": "Femmina",
+  "enum.gender.other": "Altro / Non binario",
+
+  // === Enums : civil_status ===
+  "enum.civil_status.single": "Celibe / Nubile",
+  "enum.civil_status.married": "Coniugato/a",
+  "enum.civil_status.registered_partnership": "Unione domestica registrata",
+  "enum.civil_status.divorced": "Divorziato/a",
+  "enum.civil_status.widowed": "Vedovo/a",
+  "enum.civil_status.separated": "Separato/a",
+
+  // === Enums : confession ===
+  "enum.confession.none": "Senza confessione",
+  "enum.confession.roman_catholic": "Cattolico romano",
+  "enum.confession.protestant": "Protestante / Riformato",
+  "enum.confession.christian_catholic": "Cattolico cristiano",
+  "enum.confession.jewish": "Ebraico",
+  "enum.confession.other": "Altro",
+
+  // === Enums : permit ===
+  "enum.permit.swiss": "Svizzero",
+  "enum.permit.C": "Permesso C (domicilio)",
+  "enum.permit.B": "Permesso B (dimora)",
+  "enum.permit.L": "Permesso L (breve durata)",
+  "enum.permit.Ci": "Permesso Ci (ricongiungimento)",
+  "enum.permit.F": "Permesso F (ammissione provvisoria)",
+  "enum.permit.G": "Permesso G (frontaliere)",
+  "enum.permit.none": "Nessuno",
+
+  // === Enums : tax_status ===
+  "enum.tax_status.resident": "Residente — tassazione ordinaria",
+  "enum.tax_status.source_taxed": "Imposto alla fonte (permesso B/L)",
+  "enum.tax_status.cross_border_fr_1983": "Frontaliere francese — accordo 1983",
+  "enum.tax_status.cross_border_ge": "Frontaliere Ginevra (imposta alla fonte — tariffa ordinaria)",
+  "enum.tax_status.tou": "TOU — Tassazione ordinaria ulteriore",
+
+  // === Enums : work_status ===
+  "enum.work_status.employee": "Dipendente",
+  "enum.work_status.self_employed": "Indipendente",
+  "enum.work_status.director": "Dirigente di società",
+  "enum.work_status.mixed": "Misto (dipendente + indipendente)",
+  "enum.work_status.retired": "Pensionato",
+  "enum.work_status.unemployed": "Disoccupato",
+  "enum.work_status.student": "Studente",
+
+  // === Enums : lpp_plan ===
+  "enum.lpp_plan.mandatory": "LPP obbligatoria",
+  "enum.lpp_plan.extra_mandatory": "Sovraobbligatoria",
+  "enum.lpp_plan.executive": "Piano dei quadri / 1e",
+  "enum.lpp_plan.mixed": "Misto",
+
+  // === Enums : legal_form ===
+  "enum.legal_form.sarl": "Sagl",
+  "enum.legal_form.sa": "SA",
+  "enum.legal_form.cooperative": "Cooperativa",
+  "enum.legal_form.association": "Associazione",
+  "enum.legal_form.other": "Altro",
+
+  // === Wiki ===
+  "wiki.translation_pending":
+    "📚 Questo contenuto è attualmente disponibile solo in francese. Le traduzioni sono in corso.",
+  "wiki.title": "Wiki & Formazione",
+  "wiki.subtitle":
+    "Tutte le spiegazioni fiscali, sociali e tecniche utilizzate in SwissBroker Pro. Cerca per parola chiave o sfoglia per tema.",
+  "wiki.search.placeholder": "Cerca (LPP, riscatto, frontaliere, dividendo…)",
+  "wiki.all": "Tutti ({count})",
+  "wiki.empty": "Nessun articolo corrisponde alla tua ricerca.",
+  "wiki.quick.clients.title": "I tuoi clienti",
+  "wiki.quick.clients.desc": "Crea, modifica, archivia",
+  "wiki.quick.calculators.title": "Calcolatori",
+  "wiki.quick.calculators.desc": "11 moduli di settore",
+  "wiki.quick.companies.title": "Società",
+  "wiki.quick.companies.desc": "Dirigenti & dividendi",
+  "wiki.footer": "I parametri legali visualizzati (plafond, aliquote, tariffe) sono aggiornati per l'anno fiscale 2026.",
+
+  // === Dashboard ===
+  "dash.greet.night": "Buona notte",
+  "dash.greet.morning": "Buongiorno",
+  "dash.greet.afternoon": "Buon pomeriggio",
+  "dash.greet.evening": "Buonasera",
+  "dash.hello.suffix": "👋",
+  "dash.subtitle": "Ecco il tuo cockpit di oggi.",
+  "dash.cta.new_client": "Nuovo cliente",
+  "dash.cta.calculate": "Calcola",
+  "dash.level.title": "Livello broker",
+  "dash.level.value": "Livello {n}",
+  "dash.level.progress": "{current} / {target} azioni verso il livello {next}",
+  "dash.goal.title": "Obiettivo del mese",
+  "dash.goal.hint": "simulazioni effettuate questo mese",
+  "dash.tip.title": "Consiglio del giorno",
+  "dash.kpi.clients_active": "Clienti attivi",
+  "dash.kpi.clients_active.empty": "Avvia il tuo portafoglio",
+  "dash.kpi.clients_active.archived": "{n} archiviato/i",
+  "dash.kpi.companies": "Società",
+  "dash.kpi.companies.hint": "Dirigenti & dividendi",
+  "dash.kpi.sims_month": "Simulazioni questo mese",
+  "dash.kpi.sims_month.total": "{n} in totale",
+  "dash.kpi.calculators": "Calcolatori",
+  "dash.kpi.calculators.hint": "11 moduli di settore",
+  "dash.shortcuts.title": "Accesso rapido ai calcolatori",
+  "dash.shortcuts.all": "Tutti",
+  "dash.shortcut.avs": "1° pilastro · AVS/AI",
+  "dash.shortcut.lpp": "2° pilastro · LPP",
+  "dash.shortcut.p3": "Pilastro 3a & 3b",
+  "dash.shortcut.cb": "Frontalieri",
+  "dash.recent.title": "Ultime simulazioni",
+  "dash.recent.all": "Cronologia completa",
+  "dash.recent.empty.title": "Si parte!",
+  "dash.recent.empty.desc": "Avvia un calcolatore e clicca su «Salva» per ritrovare qui le tue simulazioni.",
+  "dash.wiki.title": "Wiki & Formazione",
+  "dash.wiki.desc": "Tutte le spiegazioni fiscali, sociali e tecniche. AVS, LPP, 3a/3b, frontalieri, dividendi: niente più ricerche altrove.",
+  "dash.wiki.cta": "Apri il wiki",
+  "dash.tip.1": "Un riscatto LPP di 20'000 CHF permette tipicamente di risparmiare da 5'000 a 8'000 CHF di imposte secondo il cantone.",
+  "dash.tip.2": "Aprire da 3 a 5 conti 3a permette di scaglionare il prelievo su più anni e dividere l'imposta per 2 o 3.",
+  "dash.tip.3": "Per un dirigente che detiene ≥ 10 % della propria società, i dividendi sono tassati solo al 50 % a livello federale.",
+  "dash.tip.4": "Lo scudo fiscale limita l'imposta totale al 60 % del reddito nei cantoni di Ginevra e Vaud.",
+  "dash.tip.5": "Differire la rendita AVS di 5 anni = +31,5 % di rendita vitalizia. Conveniente se l'aspettativa di vita > 13 anni dopo i 65.",
+  "dash.tip.6": "La deduzione di coordinamento LPP si applica DOPO il plafonamento al salario assicurato massimo (90'720 CHF).",
+  "dash.fallback.broker": "broker",
+
+  // === Il mio profilo ===
+  "account.title": "Il mio profilo",
+  "account.subtitle": "Queste informazioni appaiono sui rapporti PDF generati per i tuoi clienti.",
+  "account.brokerage_name": "Nome dello studio",
+  "account.default_canton": "Cantone predefinito",
+  "account.default_canton.none": "nessuno",
+  "account.default_canton.out_of_scope": "(fuori scope v1)",
+  "account.default_canton.warning": "Questo cantone non è disponibile nella v1 (Svizzera romanda). Seleziona un cantone romando per attivare i calcoli.",
+  "account.save": "Registra",
+  "account.toast.load_error": "Impossibile caricare il tuo profilo",
+  "account.toast.save_error": "Registrazione fallita",
+  "account.toast.save_success": "Profilo aggiornato",
+
+  // === Lista clienti ===
+  "clients.title": "Clienti",
+  "clients.subtitle": "Gestisci le tue pratiche: identità, fiscalità, previdenza, patrimonio.",
+  "clients.new": "Nuovo cliente",
+  "clients.search.placeholder": "Cerca per nome, email, comune…",
+  "clients.tab.active": "Attivi",
+  "clients.tab.archived": "Archiviati",
+  "clients.col.name": "Nome",
+  "clients.col.civil_status": "Stato civile",
+  "clients.col.canton": "Cantone / Comune",
+  "clients.col.tax_status": "Statuto fiscale",
+  "clients.col.gross": "Reddito lordo",
+  "clients.row.years": "{n} anni",
+  "clients.empty.title": "Nessuna pratica cliente",
+  "clients.empty.searching": "Nessun cliente trovato",
+  "clients.empty.desc": "Crea la tua prima pratica per avviare simulazioni e ottimizzazioni.",
+  "clients.empty.search.desc": "Prova ad ampliare la ricerca.",
+  "clients.empty.cta": "Crea un cliente",
+  "clients.action.edit": "Modifica",
+  "clients.action.archive": "Archivia",
+  "clients.action.restore": "Ripristina",
+  "clients.action.delete": "Elimina",
+  "clients.toast.archived": "Cliente archiviato",
+  "clients.toast.restored": "Cliente ripristinato",
+  "clients.toast.deleted": "Cliente eliminato",
+  "clients.delete.title": "Eliminare questa pratica?",
+  "clients.delete.desc": "L'azione è definitiva. Tutti i dati (previdenza, patrimonio, scenari, note) collegati a {name} saranno eliminati.",
+  "clients.delete.confirm": "Elimina definitivamente",
+
+  // === Lista società ===
+  "companies.title": "Società",
+  "companies.subtitle": "Gestisci le PMI dei tuoi clienti dirigenti: identità, finanze, dirigenti collegati.",
+  "companies.new": "Nuova società",
+  "companies.search.placeholder": "Cerca per ragione sociale, IDI, cantone…",
+  "companies.filter.all_forms": "Tutte le forme",
+  "companies.tab.active": "Attive",
+  "companies.tab.archived": "Archiviate",
+  "companies.col.legal_name": "Ragione sociale",
+  "companies.col.form": "Forma",
+  "companies.col.canton": "Cantone della sede",
+  "companies.col.directors": "Dirigenti",
+  "companies.col.year": "Anno",
+  "companies.empty.title": "Nessuna società registrata",
+  "companies.empty.searching": "Nessuna società trovata",
+  "companies.empty.desc": "Le società ti permettono di gestire i dirigenti delle PMI e di confrontare dividendo / salario / utili.",
+  "companies.empty.search.desc": "Prova ad ampliare la ricerca o cambia il filtro di forma giuridica.",
+  "companies.empty.cta": "Crea la mia prima società",
+  "companies.toast.archived": "Società archiviata",
+  "companies.toast.restored": "Società ripristinata",
+  "companies.toast.deleted": "Società eliminata",
+  "companies.delete.title": "Eliminare questa società?",
+  "companies.delete.desc": "L'azione è definitiva. {name} sarà eliminata. I clienti dirigenti collegati non saranno eliminati ma il collegamento sarà rimosso.",
+  "companies.delete.confirm": "Elimina definitivamente",
+
+  // === Layout calcolatori (schede) ===
+  "calc.subtitle": "Simulazioni rapide · tariffe 2026 · IFD, ICC, alla fonte, LPP, 3a, comparatore cantonale.",
+  "calc.client_mode": "Modalità pratica cliente",
+  "calc.tab.overview": "Panoramica",
+  "calc.tab.avs": "1° pilastro AVS/AI",
+  "calc.tab.lpp": "2° pilastro LPP & riscatti",
+  "calc.tab.pillar3a": "Pilastro 3a & 3b",
+  "calc.tab.income_tax": "Imposta su reddito e sostanza",
+  "calc.tab.source_tax": "Imposta alla fonte",
+  "calc.tab.canton_compare": "Comparatore cantonale",
+  "calc.tab.retirement": "Rendita o capitale",
+
+  // === Cronologia delle simulazioni ===
+  "history.title": "Cronologia delle simulazioni",
+  "history.subtitle": "Cerca, rigenera i PDF, confronta fino a 4 simulazioni dello stesso tipo.",
+  "history.compare.show": "Confronta {n} simulazioni",
+  "history.compare.hide": "Nascondi il confronto",
+  "history.compare.disabled": "Le simulazioni devono essere dello stesso tipo",
+  "history.search.placeholder": "Cerca per titolo, nota, cliente, tag…",
+  "history.filter.all": "Tutti i tipi",
+  "history.deselect": "Deseleziona ({n})",
+  "history.count": "{n} simulazione",
+  "history.count.plural": "{n} simulazioni",
+  "history.count.desc": "Spunta da 2 a 4 simulazioni dello stesso tipo per confrontarle.",
+  "history.loading": "Caricamento…",
+  "history.empty": "Nessuna simulazione. Avvia un calcolo poi clicca su «Salva».",
+  "history.col.title": "Titolo",
+  "history.col.type": "Tipo",
+  "history.col.client": "Cliente",
+  "history.col.tags": "Tag",
+  "history.col.date": "Data",
+  "history.col.actions": "Azioni",
+  "history.row.client_default": "Cliente",
+  "history.action.open": "Apri",
+  "history.action.open_tooltip": "Riapri nel calcolatore",
+  "history.action.regenerate_pdf": "Rigenera il PDF",
+  "history.action.delete_tooltip": "Elimina",
+  "history.action.select": "Seleziona",
+  "history.toast.deleted": "Simulazione eliminata",
+  "history.toast.max": "Massimo 4 simulazioni confrontabili",
+  "history.toast.regenerate_error": "Rigenerazione fallita",
+  "history.delete.title": "Eliminare questa simulazione?",
+  "history.delete.desc": "«{title}» sarà eliminata definitivamente. L'azione è irreversibile.",
+  "history.compare.title": "Confronto · {kind}",
+  "history.compare.desc": "Le variazioni sono calcolate rispetto alla 1ª simulazione selezionata.",
+  "history.compare.col.kpi": "Indicatore",
+  "history.compare.ref": "Rif.",
+
+  // === Tipi simulazioni (history) ===
+  "history.kind.income_tax": "Imposta su reddito e sostanza",
+  "history.kind.source_tax": "Imposta alla fonte",
+  "history.kind.lpp": "LPP & riscatti",
+  "history.kind.pillar3a": "Pilastro 3a",
+  "history.kind.retirement": "Rendita o capitale",
+  "history.kind.canton_compare": "Comparatore cantonale",
+};

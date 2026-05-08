@@ -13,6 +13,7 @@ import {
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useT } from "@/contexts/LanguageContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -58,6 +59,7 @@ import {
 import { extractKpis, regeneratePdf } from "@/lib/history/registry";
 import { ShareSimulationButton } from "@/components/calculators/ShareSimulationButton";
 import { formatCHF } from "@/lib/format";
+import { formatDateShort } from "@/lib/i18n/format";
 
 export const Route = createFileRoute("/_app/history")({
   head: () => ({ meta: [{ title: "Historique des simulations · SwissBroker Pro" }] }),
@@ -75,6 +77,7 @@ const ALL_KINDS: SimulationKind[] = [
 
 function HistoryPage() {
   const { user } = useAuth();
+  const t = useT();
   const qc = useQueryClient();
   const [search, setSearch] = useState("");
   const [kindFilter, setKindFilter] = useState<SimulationKind | "all">("all");
@@ -105,7 +108,7 @@ function HistoryPage() {
       if (error) throw error;
       const map: Record<string, string> = {};
       (data ?? []).forEach((c) => {
-        map[c.id] = `${c.last_name ?? ""} ${c.first_name ?? ""}`.trim() || "Client";
+        map[c.id] = `${c.last_name ?? ""} ${c.first_name ?? ""}`.trim() || t("history.row.client_default");
       });
       return map;
     },
@@ -145,7 +148,7 @@ function HistoryPage() {
       const next = new Set(prev);
       if (next.has(id)) next.delete(id);
       else if (next.size < 4) next.add(id);
-      else toast.warning("Maximum 4 simulations comparables");
+      else toast.warning(t("history.toast.max"));
       return next;
     });
   };
@@ -157,7 +160,7 @@ function HistoryPage() {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["simulation-history"] });
-      toast.success("Simulation supprimée");
+      toast.success(t("history.toast.deleted"));
       setPendingDelete(null);
     },
     onError: (e: Error) => toast.error(e.message),
@@ -167,7 +170,7 @@ function HistoryPage() {
     try {
       await regeneratePdf(e.kind, e.inputs, user?.email ?? undefined);
     } catch (err) {
-      toast.error((err as Error).message ?? "Échec de la régénération");
+      toast.error((err as Error).message ?? t("history.toast.regenerate_error"));
     }
   };
 
@@ -177,10 +180,10 @@ function HistoryPage() {
         <div>
           <h1 className="flex items-center gap-2 text-3xl font-bold tracking-tight">
             <Bookmark className="h-7 w-7 text-primary" />
-            Historique des simulations
+            {t("history.title")}
           </h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Recherchez, régénérez les PDF, comparez jusqu'à 4 simulations du même type.
+            {t("history.subtitle")}
           </p>
         </div>
         {selected.size >= 2 && (
@@ -188,10 +191,10 @@ function HistoryPage() {
             onClick={() => setShowCompare((v) => !v)}
             className="gap-2 bg-gradient-primary text-primary-foreground shadow-elegant"
             disabled={!compareKind}
-            title={!compareKind ? "Les simulations doivent être du même type" : ""}
+            title={!compareKind ? t("history.compare.disabled") : ""}
           >
             <GitCompare className="h-4 w-4" />
-            {showCompare ? "Masquer la comparaison" : `Comparer ${selected.size} simulations`}
+            {showCompare ? t("history.compare.hide") : t("history.compare.show", { n: selected.size })}
           </Button>
         )}
       </div>
@@ -202,7 +205,7 @@ function HistoryPage() {
           <div className="relative min-w-[220px] flex-1">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
-              placeholder="Rechercher par titre, note, client, tag…"
+              placeholder={t("history.search.placeholder")}
               className="pl-9"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
@@ -213,7 +216,7 @@ function HistoryPage() {
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">Tous les types</SelectItem>
+              <SelectItem value="all">{t("history.filter.all")}</SelectItem>
               {ALL_KINDS.map((k) => (
                 <SelectItem key={k} value={k}>
                   {KIND_LABELS[k]}
@@ -232,7 +235,7 @@ function HistoryPage() {
               }}
             >
               <X className="h-3.5 w-3.5" />
-              Désélectionner ({selected.size})
+              {t("history.deselect", { n: selected.size })}
             </Button>
           )}
         </CardContent>
@@ -247,10 +250,12 @@ function HistoryPage() {
       <Card>
         <CardHeader>
           <CardTitle className="text-base">
-            {filtered.length} simulation{filtered.length > 1 ? "s" : ""}
+            {filtered.length > 1
+              ? t("history.count.plural", { n: filtered.length })
+              : t("history.count", { n: filtered.length })}
           </CardTitle>
           <CardDescription>
-            Cochez 2 à 4 simulations du même type pour les comparer.
+            {t("history.count.desc")}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -260,7 +265,7 @@ function HistoryPage() {
             </div>
           ) : filtered.length === 0 ? (
             <div className="py-12 text-center text-sm text-muted-foreground">
-              Aucune simulation. Lancez un calcul puis cliquez "Sauvegarder".
+              {t("history.empty")}
             </div>
           ) : (
             <div className="overflow-x-auto">
@@ -268,12 +273,12 @@ function HistoryPage() {
                 <TableHeader>
                   <TableRow>
                     <TableHead className="w-10"></TableHead>
-                    <TableHead>Titre</TableHead>
-                    <TableHead>Type</TableHead>
-                    <TableHead>Client</TableHead>
-                    <TableHead>Tags</TableHead>
-                    <TableHead>Date</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
+                    <TableHead>{t("history.col.title")}</TableHead>
+                    <TableHead>{t("history.col.type")}</TableHead>
+                    <TableHead>{t("history.col.client")}</TableHead>
+                    <TableHead>{t("history.col.tags")}</TableHead>
+                    <TableHead>{t("history.col.date")}</TableHead>
+                    <TableHead className="text-right">{t("history.col.actions")}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -289,7 +294,7 @@ function HistoryPage() {
                             checked={checked}
                             disabled={!checked && !sameKindOrEmpty}
                             onCheckedChange={() => toggle(e.id)}
-                            aria-label="Sélectionner"
+                            aria-label={t("history.action.select")}
                           />
                         </TableCell>
                         <TableCell>
@@ -308,39 +313,35 @@ function HistoryPage() {
                         </TableCell>
                         <TableCell>
                           <div className="flex flex-wrap gap-1">
-                            {(e.tags ?? []).map((t) => (
-                              <Badge key={t} variant="outline" className="text-[10px]">
-                                {t}
+                            {(e.tags ?? []).map((tag) => (
+                              <Badge key={tag} variant="outline" className="text-[10px]">
+                                {tag}
                               </Badge>
                             ))}
                           </div>
                         </TableCell>
                         <TableCell className="whitespace-nowrap text-xs text-muted-foreground">
-                          {new Date(e.created_at).toLocaleDateString("fr-CH", {
-                            day: "2-digit",
-                            month: "2-digit",
-                            year: "numeric",
-                          })}
+                          {formatDateShort(e.created_at)}
                         </TableCell>
                         <TableCell className="text-right">
                           <div className="flex justify-end gap-1">
                             <Button
                               size="sm"
                               variant="ghost"
-                              title="Rouvrir dans le calculateur"
+                              title={t("history.action.open_tooltip")}
                               asChild
                             >
                               <Link
                                 to={KIND_ROUTES[e.kind] as "/calculators/income-tax"}
                               >
-                                Ouvrir
+                                {t("history.action.open")}
                               </Link>
                             </Button>
                             <Button
                               size="sm"
                               variant="ghost"
                               onClick={() => handleRegenerate(e)}
-                              title="Régénérer le PDF"
+                              title={t("history.action.regenerate_pdf")}
                             >
                               <FileDown className="h-4 w-4" />
                             </Button>
@@ -349,7 +350,7 @@ function HistoryPage() {
                               size="sm"
                               variant="ghost"
                               onClick={() => setPendingDelete(e)}
-                              title="Supprimer"
+                              title={t("history.action.delete_tooltip")}
                             >
                               <Trash2 className="h-4 w-4 text-destructive" />
                             </Button>
@@ -368,18 +369,18 @@ function HistoryPage() {
       <AlertDialog open={!!pendingDelete} onOpenChange={(o) => !o && setPendingDelete(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Supprimer cette simulation ?</AlertDialogTitle>
+            <AlertDialogTitle>{t("history.delete.title")}</AlertDialogTitle>
             <AlertDialogDescription>
-              "{pendingDelete?.title}" sera définitivement supprimée. Cette action est irréversible.
+              {t("history.delete.desc", { title: pendingDelete?.title ?? "" })}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Annuler</AlertDialogCancel>
+            <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => pendingDelete && remove.mutate(pendingDelete.id)}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              Supprimer
+              {t("common.delete")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -395,6 +396,7 @@ function ComparisonPanel({
   kind: SimulationKind;
   entries: HistoryEntry[];
 }) {
+  const t = useT();
   // Build KPI matrix: rows = KPI labels, cols = entries
   const kpiSets = entries.map((e) => extractKpis(kind, e.summary));
   const labels = kpiSets[0]?.map((k) => k.label) ?? [];
@@ -426,10 +428,10 @@ function ComparisonPanel({
       <CardHeader>
         <CardTitle className="flex items-center gap-2 text-base">
           <GitCompare className="h-5 w-5 text-primary" />
-          Comparaison · {KIND_LABELS[kind]}
+          {t("history.compare.title", { kind: KIND_LABELS[kind] })}
         </CardTitle>
         <CardDescription>
-          Les variations sont calculées par rapport à la 1<sup>re</sup> simulation sélectionnée.
+          {t("history.compare.desc")}
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -437,15 +439,15 @@ function ComparisonPanel({
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="w-[180px]">Indicateur</TableHead>
+                <TableHead className="w-[180px]">{t("history.compare.col.kpi")}</TableHead>
                 {entries.map((e, i) => (
                   <TableHead key={e.id} className="min-w-[180px]">
                     <div className="text-xs font-semibold text-foreground">
-                      {i === 0 && <Badge variant="outline" className="mr-1">Réf.</Badge>}
+                      {i === 0 && <Badge variant="outline" className="mr-1">{t("history.compare.ref")}</Badge>}
                       {e.title}
                     </div>
                     <div className="text-[10px] font-normal text-muted-foreground">
-                      {new Date(e.created_at).toLocaleDateString("fr-CH")}
+                      {formatDateShort(e.created_at)}
                     </div>
                   </TableHead>
                 ))}

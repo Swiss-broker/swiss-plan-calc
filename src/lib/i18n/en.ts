@@ -1,29 +1,387 @@
-// Dictionnaire anglais · ÉTAPE 1 — placeholders préfixés [EN].
-// Étape 3 : remplacement par traductions officielles (BVG/OASI/Withholding tax…).
+// English dictionary · ÉTAPE 3 — official Swiss vocabulary (BVG/AHV/Withholding tax).
+// Based on bsv.admin.ch/en, estv.admin.ch/en, ahv-iv.ch/en glossaries.
+// Source of truth fallback: src/lib/i18n/fr.ts.
 
-import { fr } from "./fr";
+export const en: Record<string, string> = {
+  // === Cantons (English official names) ===
+  "canton.GE": "Geneva",
+  "canton.VD": "Vaud",
+  "canton.VS": "Valais",
+  "canton.FR": "Fribourg",
+  "canton.NE": "Neuchâtel",
+  "canton.JU": "Jura",
+  "canton.ZG": "Zug",
 
-const PRESERVE_PREFIX = new Set([
-  "canton.",
-  "lang.",
-  "wiki.translation_pending",
-]);
+  // === Cantonal comparator ===
+  "comparator.scope.notice":
+    "📍 Comparison covering the 6 French-speaking cantons + Zug (reference). 19 other cantons coming soon.",
+  "comparator.zg.badge": "Reference for optimised taxation",
+  "comparator.zg.tooltip":
+    "Comparison outside French-speaking Switzerland — not available as canton of residence in v1.",
+  "comparator.section.romand": "French-speaking cantons",
+  "comparator.section.reference": "Reference outside French-speaking Switzerland",
 
-function placeholder(key: string, value: string): string {
-  if (key === "wiki.translation_pending") {
-    return "📚 This content is currently available in French only. Translations are in progress.";
-  }
-  if (key === "lang.fr") return "French";
-  if (key === "lang.de") return "German";
-  if (key === "lang.en") return "English";
-  if (key === "lang.it") return "Italian";
-  if (key === "lang.label") return "Language";
-  for (const p of PRESERVE_PREFIX) {
-    if (key === p || key.startsWith(p)) return value;
-  }
-  return `[EN] ${value}`;
-}
+  // === Optimiser · quantified suggestions ===
+  "lpp.rachat.suggestion":
+    "BVG buyback capacity: {montant} CHF. Estimated tax saving at your marginal rate ({taux}%): {economie} CHF.",
+  "canton.move.suggestion":
+    "Residence in {ville} ({code}): estimated saving of {economie} CHF/year compared with {actuel}.",
 
-export const en: Record<string, string> = Object.fromEntries(
-  Object.entries(fr).map(([k, v]) => [k, placeholder(k, v)]),
-);
+  // === Common ===
+  "common.year.short": "yr",
+  "common.years.short": "yrs",
+
+  // === Generic actions ===
+  "common.save": "Save",
+  "common.cancel": "Cancel",
+  "common.confirm": "Confirm",
+  "common.close": "Close",
+  "common.edit": "Edit",
+  "common.delete": "Delete",
+  "common.archive": "Archive",
+  "common.restore": "Restore",
+  "common.create": "Create",
+  "common.next": "Next",
+  "common.previous": "Previous",
+  "common.back": "Back",
+  "common.search": "Search",
+  "common.loading": "Loading…",
+  "common.attach": "Link",
+  "common.detach": "Unlink",
+  "common.add": "Add",
+  "common.remove": "Remove",
+  "common.duplicate": "Duplicate",
+  "common.export": "Export",
+  "common.import": "Import",
+  "common.share": "Share",
+  "common.print": "Print",
+  "common.optional": "Optional",
+  "common.required": "Required",
+  "common.yes": "Yes",
+  "common.no": "No",
+  "common.empty": "No items",
+  "common.error": "Error",
+  "common.success": "Success",
+
+  // === Forms ===
+  "form.first_name": "First name",
+  "form.last_name": "Last name",
+  "form.date_of_birth": "Date of birth",
+  "form.gender": "Gender",
+  "form.email": "Email",
+  "form.phone": "Phone",
+  "form.civil_status": "Marital status",
+  "form.confession": "Religious affiliation",
+  "form.nationality": "Nationality",
+  "form.permit": "Permit",
+  "form.tax_status": "Tax status",
+  "form.canton": "Canton",
+  "form.commune": "Municipality",
+  "form.postal_code": "Postal code",
+  "form.country_of_residence": "Country of residence",
+  "form.work_status": "Employment status",
+  "form.employer": "Employer",
+  "form.activity_rate": "Activity rate",
+  "form.gross_annual_salary": "Gross annual salary",
+  "form.bonus": "Bonus",
+  "form.spouse": "Spouse",
+  "form.children": "Children",
+  "form.legal_form": "Legal form",
+  "form.legal_name": "Company name",
+
+  // === Main navigation ===
+  "nav.dashboard": "Dashboard",
+  "nav.clients": "Clients",
+  "nav.companies": "Companies",
+  "nav.calculators": "Calculators",
+  "nav.wiki": "Wiki & Training",
+  "nav.history": "History",
+  "nav.account": "My profile",
+  "nav.signout": "Log out",
+
+  // === Language switcher ===
+  "lang.label": "Language",
+  "lang.fr": "French",
+  "lang.de": "German",
+  "lang.en": "English",
+  "lang.it": "Italian",
+
+  // === Calculators — titles + descriptions ===
+  "calc.avs_ai.title": "1st pillar AHV/IV",
+  "calc.avs_ai.desc":
+    "Estimate of individual or couple pension, AHV21, capped at CHF 3,780/month.",
+  "calc.lpp.title": "2nd pillar BVG & buybacks",
+  "calc.lpp.desc":
+    "Projection of retirement capital, staggered buyback plan, tax savings.",
+  "calc.pillar3a.title": "Pillar 3a & 3b",
+  "calc.pillar3a.desc":
+    "Pillar 3a (deductible, cap CHF 7,258) and 3b (free, non-deductible). Projection and staggered withdrawal.",
+  "calc.vested.title": "Vested benefits",
+  "calc.vested.desc":
+    "Security / balanced / dynamic strategies, projection net of fees and taxes.",
+  "calc.cross_border.title": "FR / IT cross-border workers",
+  "calc.cross_border.desc":
+    "4.5% scheme (8 cantons), Geneva specifics, Italy-Switzerland Ticino agreement 2023.",
+  "calc.income_tax.title": "Income & wealth tax",
+  "calc.income_tax.desc":
+    "DFT + cantonal/communal tax, all cantons, standard Swiss deductions, marginal & effective rate.",
+  "calc.source_tax.title": "Withholding tax",
+  "calc.source_tax.desc": "2026 withholding tax scales A / B / C / H + French cross-border workers (4.5%).",
+  "calc.tou.title": "Subsequent ordinary assessment / quasi-resident",
+  "calc.tou.desc":
+    "90% eligibility test and comparison: withholding tax vs subsequent ordinary assessment.",
+  "calc.retirement.title": "Pension vs lump-sum",
+  "calc.retirement.desc": "Compares lifelong BVG pension with lump-sum withdrawal + investment.",
+  "calc.director.title": "Director salary / dividend",
+  "calc.director.desc":
+    "Compensation strategy comparator for LLC/Plc directors: salary, dividends, reserves.",
+  "calc.canton_compare.title": "Cantonal comparator",
+  "calc.canton_compare.desc":
+    "Compare your tax burden across the 6 French-speaking cantons (+ Zug as reference) in one click.",
+  "calc.open": "Open",
+
+  // === Enums : gender ===
+  "enum.gender.male": "Male",
+  "enum.gender.female": "Female",
+  "enum.gender.other": "Other / Non-binary",
+
+  // === Enums : civil_status ===
+  "enum.civil_status.single": "Single",
+  "enum.civil_status.married": "Married",
+  "enum.civil_status.registered_partnership": "Registered partnership",
+  "enum.civil_status.divorced": "Divorced",
+  "enum.civil_status.widowed": "Widowed",
+  "enum.civil_status.separated": "Separated",
+
+  // === Enums : confession ===
+  "enum.confession.none": "No religious affiliation",
+  "enum.confession.roman_catholic": "Roman Catholic",
+  "enum.confession.protestant": "Protestant / Reformed",
+  "enum.confession.christian_catholic": "Christian Catholic",
+  "enum.confession.jewish": "Jewish",
+  "enum.confession.other": "Other",
+
+  // === Enums : permit ===
+  "enum.permit.swiss": "Swiss citizen",
+  "enum.permit.C": "C permit (settlement)",
+  "enum.permit.B": "B permit (residence)",
+  "enum.permit.L": "L permit (short-term)",
+  "enum.permit.Ci": "Ci permit (family reunification)",
+  "enum.permit.F": "F permit (provisional admission)",
+  "enum.permit.G": "G permit (cross-border)",
+  "enum.permit.none": "None",
+
+  // === Enums : tax_status ===
+  "enum.tax_status.resident": "Resident — ordinary taxation",
+  "enum.tax_status.source_taxed": "Withholding-taxed (B/L permit)",
+  "enum.tax_status.cross_border_fr_1983": "French cross-border worker — 1983 Agreement",
+  "enum.tax_status.cross_border_ge": "Geneva cross-border worker (withholding tax — standard scale)",
+  "enum.tax_status.tou": "TOU — Subsequent ordinary assessment",
+
+  // === Enums : work_status ===
+  "enum.work_status.employee": "Employee",
+  "enum.work_status.self_employed": "Self-employed",
+  "enum.work_status.director": "Company director",
+  "enum.work_status.mixed": "Mixed (employee + self-employed)",
+  "enum.work_status.retired": "Retired",
+  "enum.work_status.unemployed": "Unemployed",
+  "enum.work_status.student": "Student",
+
+  // === Enums : lpp_plan ===
+  "enum.lpp_plan.mandatory": "Mandatory BVG",
+  "enum.lpp_plan.extra_mandatory": "Supplementary",
+  "enum.lpp_plan.executive": "Executive plan / 1e",
+  "enum.lpp_plan.mixed": "Mixed",
+
+  // === Enums : legal_form ===
+  "enum.legal_form.sarl": "LLC (Sàrl)",
+  "enum.legal_form.sa": "Plc (SA)",
+  "enum.legal_form.cooperative": "Cooperative",
+  "enum.legal_form.association": "Association",
+  "enum.legal_form.other": "Other",
+
+  // === Wiki ===
+  "wiki.translation_pending":
+    "📚 This content is currently available in French only. Translations are in progress.",
+  "wiki.title": "Wiki & Training",
+  "wiki.subtitle":
+    "All the tax, social and technical explanations used in SwissBroker Pro. Search by keyword or browse by topic.",
+  "wiki.search.placeholder": "Search (BVG, buyback, cross-border, dividend…)",
+  "wiki.all": "All ({count})",
+  "wiki.empty": "No article matches your search.",
+  "wiki.quick.clients.title": "Your clients",
+  "wiki.quick.clients.desc": "Create, edit, archive",
+  "wiki.quick.calculators.title": "Calculators",
+  "wiki.quick.calculators.desc": "11 business modules",
+  "wiki.quick.companies.title": "Companies",
+  "wiki.quick.companies.desc": "Directors & dividends",
+  "wiki.footer": "The legal parameters shown (caps, rates, scales) are updated for the 2026 tax year.",
+
+  // === Dashboard ===
+  "dash.greet.night": "Good night",
+  "dash.greet.morning": "Good morning",
+  "dash.greet.afternoon": "Good afternoon",
+  "dash.greet.evening": "Good evening",
+  "dash.hello.suffix": "👋",
+  "dash.subtitle": "Here is your cockpit for today.",
+  "dash.cta.new_client": "New client",
+  "dash.cta.calculate": "Calculate",
+  "dash.level.title": "Broker level",
+  "dash.level.value": "Level {n}",
+  "dash.level.progress": "{current} / {target} actions towards level {next}",
+  "dash.goal.title": "Monthly goal",
+  "dash.goal.hint": "simulations run this month",
+  "dash.tip.title": "Tip of the day",
+  "dash.kpi.clients_active": "Active clients",
+  "dash.kpi.clients_active.empty": "Start your portfolio",
+  "dash.kpi.clients_active.archived": "{n} archived",
+  "dash.kpi.companies": "Companies",
+  "dash.kpi.companies.hint": "Directors & dividends",
+  "dash.kpi.sims_month": "Simulations this month",
+  "dash.kpi.sims_month.total": "{n} in total",
+  "dash.kpi.calculators": "Calculators",
+  "dash.kpi.calculators.hint": "11 business modules",
+  "dash.shortcuts.title": "Quick access to calculators",
+  "dash.shortcuts.all": "All",
+  "dash.shortcut.avs": "1st pillar · AHV/IV",
+  "dash.shortcut.lpp": "2nd pillar · BVG",
+  "dash.shortcut.p3": "Pillar 3a & 3b",
+  "dash.shortcut.cb": "Cross-border workers",
+  "dash.recent.title": "Latest simulations",
+  "dash.recent.all": "Full history",
+  "dash.recent.empty.title": "Let's go!",
+  "dash.recent.empty.desc": "Run a calculator and click \"Save\" to find your simulations here.",
+  "dash.wiki.title": "Wiki & Training",
+  "dash.wiki.desc": "All the tax, social and technical explanations. AHV, BVG, 3a/3b, cross-border workers, dividends: no need to look anywhere else.",
+  "dash.wiki.cta": "Open the wiki",
+  "dash.tip.1": "A BVG buyback of CHF 20,000 typically saves CHF 5,000 to 8,000 in taxes depending on the canton.",
+  "dash.tip.2": "Opening 3 to 5 pillar 3a accounts allows you to spread withdrawals over several years and divide the tax by 2 or 3.",
+  "dash.tip.3": "For a director holding ≥ 10% of their company, dividends are taxed at only 50% at federal level.",
+  "dash.tip.4": "The tax shield caps total tax at 60% of income in the cantons of Geneva and Vaud.",
+  "dash.tip.5": "Deferring the AHV pension by 5 years = +31.5% lifelong pension. Profitable if life expectancy > 13 years after 65.",
+  "dash.tip.6": "The BVG coordination deduction applies AFTER capping the insured salary at the maximum (CHF 90,720).",
+  "dash.fallback.broker": "broker",
+
+  // === My profile ===
+  "account.title": "My profile",
+  "account.subtitle": "This information appears on the PDF reports generated for your clients.",
+  "account.brokerage_name": "Brokerage name",
+  "account.default_canton": "Default canton",
+  "account.default_canton.none": "none",
+  "account.default_canton.out_of_scope": "(out of v1 scope)",
+  "account.default_canton.warning": "This canton is not available in v1 (French-speaking Switzerland). Select a French-speaking canton to enable calculations.",
+  "account.save": "Save",
+  "account.toast.load_error": "Unable to load your profile",
+  "account.toast.save_error": "Save failed",
+  "account.toast.save_success": "Profile updated",
+
+  // === Clients list ===
+  "clients.title": "Clients",
+  "clients.subtitle": "Manage your files: identity, taxation, pensions, assets.",
+  "clients.new": "New client",
+  "clients.search.placeholder": "Search by name, email, municipality…",
+  "clients.tab.active": "Active",
+  "clients.tab.archived": "Archived",
+  "clients.col.name": "Name",
+  "clients.col.civil_status": "Marital status",
+  "clients.col.canton": "Canton / Municipality",
+  "clients.col.tax_status": "Tax status",
+  "clients.col.gross": "Gross income",
+  "clients.row.years": "{n} yrs",
+  "clients.empty.title": "No client file",
+  "clients.empty.searching": "No client found",
+  "clients.empty.desc": "Create your first file to start running simulations and optimisations.",
+  "clients.empty.search.desc": "Try broadening your search.",
+  "clients.empty.cta": "Create a client",
+  "clients.action.edit": "Edit",
+  "clients.action.archive": "Archive",
+  "clients.action.restore": "Restore",
+  "clients.action.delete": "Delete",
+  "clients.toast.archived": "Client archived",
+  "clients.toast.restored": "Client restored",
+  "clients.toast.deleted": "Client deleted",
+  "clients.delete.title": "Delete this file?",
+  "clients.delete.desc": "This action is final. All data (pensions, assets, scenarios, notes) linked to {name} will be deleted.",
+  "clients.delete.confirm": "Delete permanently",
+
+  // === Companies list ===
+  "companies.title": "Companies",
+  "companies.subtitle": "Manage SMEs of your director clients: identity, finances, attached directors.",
+  "companies.new": "New company",
+  "companies.search.placeholder": "Search by company name, UID, canton…",
+  "companies.filter.all_forms": "All legal forms",
+  "companies.tab.active": "Active",
+  "companies.tab.archived": "Archived",
+  "companies.col.legal_name": "Company name",
+  "companies.col.form": "Form",
+  "companies.col.canton": "Registered canton",
+  "companies.col.directors": "Directors",
+  "companies.col.year": "Year",
+  "companies.empty.title": "No company registered",
+  "companies.empty.searching": "No company found",
+  "companies.empty.desc": "Companies let you manage SME directors and run dividend / salary / profit comparisons.",
+  "companies.empty.search.desc": "Try broadening your search or change the legal form filter.",
+  "companies.empty.cta": "Create my first company",
+  "companies.toast.archived": "Company archived",
+  "companies.toast.restored": "Company restored",
+  "companies.toast.deleted": "Company deleted",
+  "companies.delete.title": "Delete this company?",
+  "companies.delete.desc": "This action is final. {name} will be deleted. The attached director clients will not be deleted but the link will be removed.",
+  "companies.delete.confirm": "Delete permanently",
+
+  // === Calculators layout (tabs) ===
+  "calc.subtitle": "Quick simulations · 2026 scales · DFT, cantonal/communal, withholding, BVG, 3a, cantonal comparator.",
+  "calc.client_mode": "Client file mode",
+  "calc.tab.overview": "Overview",
+  "calc.tab.avs": "1st pillar AHV/IV",
+  "calc.tab.lpp": "2nd pillar BVG & buybacks",
+  "calc.tab.pillar3a": "Pillar 3a & 3b",
+  "calc.tab.income_tax": "Income & wealth tax",
+  "calc.tab.source_tax": "Withholding tax",
+  "calc.tab.canton_compare": "Cantonal comparator",
+  "calc.tab.retirement": "Pension vs lump-sum",
+
+  // === Simulation history ===
+  "history.title": "Simulation history",
+  "history.subtitle": "Search, regenerate PDFs, compare up to 4 simulations of the same type.",
+  "history.compare.show": "Compare {n} simulations",
+  "history.compare.hide": "Hide comparison",
+  "history.compare.disabled": "Simulations must be of the same type",
+  "history.search.placeholder": "Search by title, note, client, tag…",
+  "history.filter.all": "All types",
+  "history.deselect": "Deselect ({n})",
+  "history.count": "{n} simulation",
+  "history.count.plural": "{n} simulations",
+  "history.count.desc": "Tick 2 to 4 simulations of the same type to compare them.",
+  "history.loading": "Loading…",
+  "history.empty": "No simulation. Run a calculation then click \"Save\".",
+  "history.col.title": "Title",
+  "history.col.type": "Type",
+  "history.col.client": "Client",
+  "history.col.tags": "Tags",
+  "history.col.date": "Date",
+  "history.col.actions": "Actions",
+  "history.row.client_default": "Client",
+  "history.action.open": "Open",
+  "history.action.open_tooltip": "Reopen in the calculator",
+  "history.action.regenerate_pdf": "Regenerate the PDF",
+  "history.action.delete_tooltip": "Delete",
+  "history.action.select": "Select",
+  "history.toast.deleted": "Simulation deleted",
+  "history.toast.max": "Maximum 4 comparable simulations",
+  "history.toast.regenerate_error": "Regeneration failed",
+  "history.delete.title": "Delete this simulation?",
+  "history.delete.desc": "\"{title}\" will be permanently deleted. This action is irreversible.",
+  "history.compare.title": "Comparison · {kind}",
+  "history.compare.desc": "Variations are calculated relative to the 1st simulation selected.",
+  "history.compare.col.kpi": "Indicator",
+  "history.compare.ref": "Ref.",
+
+  // === Simulation kinds (history) ===
+  "history.kind.income_tax": "Income & wealth tax",
+  "history.kind.source_tax": "Withholding tax",
+  "history.kind.lpp": "BVG & buybacks",
+  "history.kind.pillar3a": "Pillar 3a",
+  "history.kind.retirement": "Pension vs lump-sum",
+  "history.kind.canton_compare": "Cantonal comparator",
+};
