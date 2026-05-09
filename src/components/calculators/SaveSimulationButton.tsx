@@ -63,16 +63,16 @@ export function SaveSimulationButton({
 
   const save = useMutation({
     mutationFn: async () => {
-      if (!user) throw new Error("Non authentifié");
+      if (!user) throw new Error(t("save_sim.error.unauth"));
       const tags = tagsRaw
         .split(",")
-        .map((t) => t.trim())
+        .map((tag) => tag.trim())
         .filter(Boolean);
       const payload = {
         broker_id: user.id,
         client_id: clientId === "none" ? null : clientId,
         kind,
-        title: title.trim() || (defaultTitle ?? "Simulation"),
+        title: title.trim() || (defaultTitle ?? t("save_sim.default_title")),
         note: note.trim() || null,
         inputs: inputs as never,
         summary: summary as never,
@@ -83,7 +83,7 @@ export function SaveSimulationButton({
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["simulation-history"] });
-      toast.success("Simulation sauvegardée dans l'historique");
+      toast.success(t("save_sim.toast.success"));
       setOpen(false);
       setTitle(defaultTitle ?? "");
       setNote("");
