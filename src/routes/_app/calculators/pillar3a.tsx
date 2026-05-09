@@ -7,7 +7,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Input } from "@/components/ui/input";
 import { NumField as BaseNumField } from "@/components/ui/num-field";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -18,7 +17,7 @@ import {
   projectPillar3a,
   staggeredWithdrawal,
 } from "@/lib/pillar3";
-import { CalcCard, MoneyTile, Row, InfoLabel } from "@/components/calculators/CalcUI";
+import { CalcCard, MoneyTile, Row } from "@/components/calculators/CalcUI";
 import type { IncomeTaxInput } from "@/lib/tax/income";
 import { ExportPdfButton } from "@/components/calculators/ExportPdfButton";
 import { exportPillar3aPdf } from "@/lib/pdf/reports";
@@ -30,6 +29,7 @@ import { usePrefillFromClient, useHydrateFormFromPrefill } from "@/hooks/usePref
 import { ClientLinkBanner } from "@/components/calculators/ClientLinkBanner";
 import { GuideMode, GuideToggleButton, type GuideStep } from "@/components/calculators/GuideMode";
 import { WikiTip } from "@/components/calculators/WikiTip";
+import { useT } from "@/contexts/LanguageContext";
 
 const searchSchema = z.object({
   clientId: fallback(z.string().uuid().optional(), undefined),
@@ -42,6 +42,7 @@ export const Route = createFileRoute("/_app/calculators/pillar3a")({
 });
 
 function Pillar3aCalc() {
+  const t = useT();
   const { clientId } = Route.useSearch();
   const { client, prefill } = usePrefillFromClient(clientId, "pillar3a");
   const [form, setForm] = useState({
@@ -56,7 +57,6 @@ function Pillar3aCalc() {
     expectedReturn: 2.5,
     withdrawalCapital: 250_000,
     withdrawalAccounts: 3,
-    // 3e pilier B (libre, non déductible)
     pillar3bYearly: 3_000,
     pillar3bCurrent: 0,
     pillar3bYears: 25,
@@ -76,11 +76,7 @@ function Pillar3aCalc() {
     () =>
       pillar3aTaxSavings({
         contribution: form.contribution,
-        taxInput: {
-          canton: form.canton,
-          status: form.status,
-          grossSalary: form.grossSalary,
-        },
+        taxInput: { canton: form.canton, status: form.status, grossSalary: form.grossSalary },
       }),
     [form],
   );
@@ -102,8 +98,7 @@ function Pillar3aCalc() {
         totalCapital: form.withdrawalCapital,
         numberOfAccounts: form.withdrawalAccounts,
         canton: form.canton,
-        status:
-          form.status === "single_with_children" ? "single_with_children" : form.status,
+        status: form.status === "single_with_children" ? "single_with_children" : form.status,
       }),
     [form],
   );
@@ -118,7 +113,6 @@ function Pillar3aCalc() {
       staggered: stag,
     });
 
-  // Projection 3e pilier B (libre, non déductible mais souvent exonéré à la sortie)
   const projection3b = useMemo(() => {
     const r = form.pillar3bReturn / 100;
     let balance = form.pillar3bCurrent;
@@ -132,55 +126,53 @@ function Pillar3aCalc() {
       totalReturns: Math.round(balance - form.pillar3bCurrent - totalContrib),
     };
   }, [form.pillar3bCurrent, form.pillar3bReturn, form.pillar3bYears, form.pillar3bYearly]);
+
   const [guideOpen, setGuideOpen] = useState(false);
   const guideSteps: GuideStep[] = [
-    { title: "Bienvenue dans le calculateur 3e pilier", body: "Compare l'effet du 3a (lié, déductible, sortie limitée) et du 3b (libre, fiscalisé, souple)." },
-    { title: "Plafonds 3a 2026", body: "7 258 CHF pour salariés affiliés LPP, 36 288 CHF pour indépendants sans LPP (max 20 % du revenu)." },
-    { title: "Hypothèses", body: "Rendement, durée et tranche marginale d'imposition pour estimer l'économie fiscale annuelle." },
-    { title: "3e pilier B", body: "Versement libre, retrait à tout moment, mais primes non déductibles. Intéressant pour défiscaliser via assurance-vie ou compléter le 3a saturé." }
+    { title: t("calc.p3a.step.welcome.t"), body: t("calc.p3a.step.welcome.b") },
+    { title: t("calc.p3a.step.cap.t"), body: t("calc.p3a.step.cap.b") },
+    { title: t("calc.p3a.step.assumptions.t"), body: t("calc.p3a.step.assumptions.b") },
+    { title: t("calc.p3a.step.p3b.t"), body: t("calc.p3a.step.p3b.b") },
   ];
-
-
 
   return (
     <div className="space-y-6">
-      <GuideMode open={guideOpen} onClose={() => setGuideOpen(false)} steps={guideSteps} title="Guide 3e pilier" />
+      <GuideMode open={guideOpen} onClose={() => setGuideOpen(false)} steps={guideSteps} title={t("calc.p3a.guide_title")} />
       <div className="flex justify-end"><GuideToggleButton onClick={() => setGuideOpen(true)} /></div>
-
 
       {client && <ClientLinkBanner client={client} />}
 
       <div className="rounded-xl border border-primary/30 bg-primary/5 p-4 text-sm">
-        <div className="font-semibold">3e pilier en Suisse : deux régimes complémentaires</div>
+        <div className="font-semibold">{t("calc.p3a.intro_title")}</div>
         <div className="mt-2 grid gap-3 sm:grid-cols-2">
           <div>
-            <div className="text-xs font-semibold uppercase tracking-wider text-primary">Pilier 3a (lié)</div>
-            <p className="mt-1 text-xs text-muted-foreground">Cotisations <strong>déductibles du revenu imposable</strong> (max 7'258 CHF avec LPP, 36'288 CHF indépendant). Capital bloqué jusqu'à 5 ans avant l'âge AVS. Imposé à taux réduit au retrait.</p>
+            <div className="text-xs font-semibold uppercase tracking-wider text-primary">{t("calc.p3a.intro_3a_title")}</div>
+            <p className="mt-1 text-xs text-muted-foreground">{t("calc.p3a.intro_3a_body")}</p>
           </div>
           <div>
-            <div className="text-xs font-semibold uppercase tracking-wider text-primary">Pilier 3b (libre)</div>
-            <p className="mt-1 text-xs text-muted-foreground">Épargne libre : assurance-vie, compte épargne, fonds. <strong>Pas de déduction</strong> à l'entrée mais aucun plafond, capital disponible à tout moment, et retrait <strong>généralement exonéré</strong> d'impôt sur le revenu.</p>
+            <div className="text-xs font-semibold uppercase tracking-wider text-primary">{t("calc.p3a.intro_3b_title")}</div>
+            <p className="mt-1 text-xs text-muted-foreground">{t("calc.p3a.intro_3b_body")}</p>
           </div>
         </div>
       </div>
 
       <div className="grid grid-cols-1 gap-6 md:grid-cols-5">
         <div className="md:col-span-3">
-          <CalcCard title="Cotisation 3a annuelle" description="Plafond 2026 : 7'258 CHF (LPP) ou 36'288 CHF (indépendant).">
+          <CalcCard title={t("calc.p3a.contribution_card")} description={t("calc.p3a.contribution_desc")}>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <label className="flex items-center gap-2 text-sm">
                 <Checkbox checked={form.hasLPP} onCheckedChange={(v) => set("hasLPP", Boolean(v))} />
-                Affilié à une caisse LPP
+                {t("calc.p3a.has_lpp")}
               </label>
               {!form.hasLPP && (
                 <NumField
-                  label="Revenu net indépendant"
+                  label={t("calc.p3a.field.self_income")}
                   value={form.netSelfEmploymentIncome}
                   onChange={(v) => set("netSelfEmploymentIncome", v)}
                 />
               )}
               <div className="space-y-1.5">
-                <Label className="text-xs font-medium text-muted-foreground">Canton</Label>
+                <Label className="text-xs font-medium text-muted-foreground">{t("pension.canton")}</Label>
                 <Select value={form.canton} onValueChange={(v) => set("canton", v)}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
@@ -191,84 +183,81 @@ function Pillar3aCalc() {
                 </Select>
               </div>
               <div className="space-y-1.5">
-                <Label className="text-xs font-medium text-muted-foreground">Situation civile</Label>
+                <Label className="text-xs font-medium text-muted-foreground">{t("pension.civil_status")}</Label>
                 <Select value={form.status} onValueChange={(v) => set("status", v as IncomeTaxInput["status"])}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="single">Célibataire</SelectItem>
-                    <SelectItem value="married">Marié·e</SelectItem>
-                    <SelectItem value="single_with_children">Famille monoparentale</SelectItem>
+                    <SelectItem value="single">{t("calc.status.single")}</SelectItem>
+                    <SelectItem value="married">{t("calc.status.married")}</SelectItem>
+                    <SelectItem value="single_with_children">{t("calc.status.single_with_children")}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
-              <NumField label="Salaire brut annuel" value={form.grossSalary} onChange={(v) => set("grossSalary", v)} />
-              <NumField label={`Cotisation versée (max ${max.toLocaleString("fr-CH")})`} value={form.contribution} onChange={(v) => set("contribution", Math.min(v, max))} wikiId="p3a-base" wikiTip="Plafond 2026 : 7 258 CHF si affilié LPP, sinon 20 % du revenu (max 36 288 CHF)." />
+              <NumField label={t("pension.gross_salary_annual")} value={form.grossSalary} onChange={(v) => set("grossSalary", v)} />
+              <NumField label={t("calc.p3a.field.contribution_max", { max })} value={form.contribution} onChange={(v) => set("contribution", Math.min(v, max))} wikiId="p3a-base" wikiTip={t("calc.p3a.tip.contribution_max")} />
             </div>
           </CalcCard>
         </div>
         <div className="space-y-4 md:col-span-2">
-          <CalcCard title="Économie fiscale immédiate">
+          <CalcCard title={t("calc.p3a.savings_card")}>
             <Row>
-              <MoneyTile label="Économie d'impôt" value={savings.taxSavings} tone="success" big tip="Impôt fédéral + cantonal + communal économisé grâce à la déduction." />
-              <MoneyTile label="Coût net" value={savings.effectiveCost} tone="primary" tip="Cotisation versée moins l'économie d'impôt. Effort réel d'épargne." />
+              <MoneyTile label={t("calc.p3a.tax_savings_label")} value={savings.taxSavings} tone="success" big tip={t("calc.p3a.tip.tax_savings")} />
+              <MoneyTile label={t("calc.p3a.effective_cost")} value={savings.effectiveCost} tone="primary" tip={t("calc.p3a.tip.effective_cost")} />
             </Row>
             <p className="mt-2 text-xs text-muted-foreground">
-              Taux marginal estimé : <strong>{savings.marginalRate.toFixed(1)} %</strong>
+              {t("calc.p3a.marginal_rate", { rate: savings.marginalRate.toFixed(1) })}
             </p>
           </CalcCard>
         </div>
       </div>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        <CalcCard title="Projection capital 3a">
+        <CalcCard title={t("calc.p3a.projection_card")}>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <NumField label="Solde actuel" value={form.currentBalance} onChange={(v) => set("currentBalance", v)} />
-            <NumField label="Années jusqu'à retrait" value={form.yearsToRetirement} onChange={(v) => set("yearsToRetirement", v)} />
-            <NumField label="Rendement net (%/an)" value={form.expectedReturn} onChange={(v) => set("expectedReturn", v)} step={0.1} />
+            <NumField label={t("calc.p3a.field.current_balance")} value={form.currentBalance} onChange={(v) => set("currentBalance", v)} />
+            <NumField label={t("pension.years_to_retirement")} value={form.yearsToRetirement} onChange={(v) => set("yearsToRetirement", v)} />
+            <NumField label={t("pension.expected_return")} value={form.expectedReturn} onChange={(v) => set("expectedReturn", v)} step={0.1} />
           </div>
           <div className="mt-4 grid grid-cols-2 gap-3">
-            <MoneyTile label="Capital final" value={projection.finalBalance} tone="primary" big tip="Solde estimé à la date du retrait, intérêts composés inclus." />
-            <MoneyTile label="Cotisations cumulées" value={projection.totalContributions} tip="Somme totale des versements effectués sur la période." />
-            <MoneyTile label="Intérêts cumulés" value={projection.totalReturns} tone="success" tip="Performance générée par la capitalisation composée." />
+            <MoneyTile label={t("calc.p3a.final_balance")} value={projection.finalBalance} tone="primary" big tip={t("calc.p3a.tip.final_balance")} />
+            <MoneyTile label={t("calc.p3a.total_contrib")} value={projection.totalContributions} tip={t("calc.p3a.tip.total_contrib")} />
+            <MoneyTile label={t("calc.p3a.total_returns")} value={projection.totalReturns} tone="success" tip={t("calc.p3a.tip.total_returns")} />
           </div>
         </CalcCard>
-        <CalcCard title="Retrait étalé sur plusieurs comptes" description="3 à 5 comptes 3a permettent d'éclater l'imposition.">
+        <CalcCard title={t("calc.p3a.staggered_card")} description={t("calc.p3a.staggered_desc")}>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <NumField label="Capital total à retirer" value={form.withdrawalCapital} onChange={(v) => set("withdrawalCapital", v)} wikiId="p3a-base" wikiTip="Capital cumulé sur tous les comptes 3a au moment du retrait." />
-            <NumField label="Nombre de comptes" value={form.withdrawalAccounts} onChange={(v) => set("withdrawalAccounts", v)} wikiId="p3a-base" wikiTip="Stratégie : 3 à 5 comptes 3a retirés sur des années différentes pour fractionner l'impôt." />
+            <NumField label={t("calc.p3a.field.withdrawal_capital")} value={form.withdrawalCapital} onChange={(v) => set("withdrawalCapital", v)} wikiId="p3a-base" wikiTip={t("calc.p3a.tip.withdrawal_capital")} />
+            <NumField label={t("calc.p3a.field.withdrawal_accounts")} value={form.withdrawalAccounts} onChange={(v) => set("withdrawalAccounts", v)} wikiId="p3a-base" wikiTip={t("calc.p3a.tip.withdrawal_accounts")} />
           </div>
           <div className="mt-4 grid grid-cols-2 gap-3">
-            <MoneyTile label="Impôt si retrait unique" value={stag.totalTaxSingle} tone="warning" tip="Tout le capital retiré la même année : barème progressif appliqué d'un coup." />
-            <MoneyTile label="Impôt si fractionné" value={stag.totalTaxSeparated} tone="primary" tip="Capital divisé en N retraits sur années différentes : chaque tranche imposée séparément à taux plus bas." />
-            <MoneyTile label="Économie" value={stag.savings} tone="success" big tip="Différence entre les deux scénarios. Gain fiscal de la stratégie." />
-            <MoneyTile label="Par compte" value={stag.perAccount} tip="Montant moyen par compte 3a." />
+            <MoneyTile label={t("calc.p3a.tax_single")} value={stag.totalTaxSingle} tone="warning" tip={t("calc.p3a.tip.tax_single")} />
+            <MoneyTile label={t("calc.p3a.tax_separated")} value={stag.totalTaxSeparated} tone="primary" tip={t("calc.p3a.tip.tax_separated")} />
+            <MoneyTile label={t("calc.p3a.savings_label")} value={stag.savings} tone="success" big tip={t("calc.p3a.tip.savings_label")} />
+            <MoneyTile label={t("calc.p3a.per_account")} value={stag.perAccount} tip={t("calc.p3a.tip.per_account")} />
           </div>
         </CalcCard>
       </div>
 
       <CalcCard
-        title="3e pilier B (libre)"
-        description="Épargne libre, sans plafond ni blocage. Pas de déduction fiscale, mais retrait souvent exonéré."
-        tip="Le 3b regroupe assurance-vie mixte, compte épargne, fonds libres. Utile pour épargner au-delà du 3a, financer un projet avant la retraite, ou compléter une planification successorale."
+        title={t("calc.p3a.p3b_card")}
+        description={t("calc.p3a.p3b_desc")}
+        tip={t("calc.p3a.p3b_tip")}
       >
         <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
           <div className="space-y-3">
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              <NumField label="Capital actuel 3b" value={form.pillar3bCurrent} onChange={(v) => set("pillar3bCurrent", v)} />
-              <NumField label="Versement annuel" value={form.pillar3bYearly} onChange={(v) => set("pillar3bYearly", v)} />
-              <NumField label="Durée (années)" value={form.pillar3bYears} onChange={(v) => set("pillar3bYears", v)} />
-              <NumField label="Rendement net (%/an)" value={form.pillar3bReturn} onChange={(v) => set("pillar3bReturn", v)} step={0.1} />
+              <NumField label={t("calc.p3a.field.3b_current")} value={form.pillar3bCurrent} onChange={(v) => set("pillar3bCurrent", v)} />
+              <NumField label={t("calc.p3a.field.3b_yearly")} value={form.pillar3bYearly} onChange={(v) => set("pillar3bYearly", v)} />
+              <NumField label={t("calc.p3a.field.3b_years")} value={form.pillar3bYears} onChange={(v) => set("pillar3bYears", v)} />
+              <NumField label={t("calc.p3a.field.3b_return")} value={form.pillar3bReturn} onChange={(v) => set("pillar3bReturn", v)} step={0.1} />
             </div>
-            <p className="text-[11px] text-muted-foreground">
-              Pas de déduction fiscale, mais capital disponible à tout moment et retrait
-              normalement exonéré d'impôt sur le revenu (selon produit et durée).
-            </p>
+            <p className="text-[11px] text-muted-foreground">{t("calc.p3a.p3b_help")}</p>
           </div>
           <div className="grid grid-cols-2 gap-3">
-            <MoneyTile label="Capital final 3b" value={projection3b.finalBalance} tone="primary" big tip="Capital estimé après capitalisation composée." />
-            <MoneyTile label="Versements cumulés" value={projection3b.totalContributions} tip="Total des primes ou versements effectués." />
-            <MoneyTile label="Intérêts cumulés" value={projection3b.totalReturns} tone="success" tip="Performance brute du placement." />
-            <MoneyTile label="Total 3a + 3b projeté" value={projection.finalBalance + projection3b.finalBalance} tone="success" tip="Vue consolidée du 3e pilier à la sortie." />
+            <MoneyTile label={t("calc.p3a.p3b_final")} value={projection3b.finalBalance} tone="primary" big tip={t("calc.p3a.tip.p3b_final")} />
+            <MoneyTile label={t("calc.p3a.p3b_contrib")} value={projection3b.totalContributions} tip={t("calc.p3a.tip.p3b_contrib")} />
+            <MoneyTile label={t("calc.p3a.total_returns")} value={projection3b.totalReturns} tone="success" tip={t("calc.p3a.tip.p3b_returns")} />
+            <MoneyTile label={t("calc.p3a.total_3a_3b")} value={projection.finalBalance + projection3b.finalBalance} tone="success" tip={t("calc.p3a.tip.total_3a_3b")} />
           </div>
         </div>
       </CalcCard>

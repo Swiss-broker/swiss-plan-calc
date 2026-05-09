@@ -667,4 +667,10 @@ export const fr: Record<string, string> = {
   "calc.vested.step.capital.b": "Solde du compte ou de la police de libre passage à la sortie de la caisse de pension.",
   "calc.vested.step.split.t": "Échelonnement",
   "calc.vested.step.split.b": "Diviser le capital en 2 comptes LP permet un retrait sur 2 années fiscales et réduit la progression de l'impôt.",
+  "calc.status.single": "Célibataire",
+  "calc.status.married": "Marié·e",
+  "calc.status.single_with_children": "Famille monoparentale",
+  "calc.p3a.field.3b_return": "Rendement net (%/an)",
+  "calc.lpp.field.children": "Nombre d'enfants",
+  "calc.avs.tip.assistance_share": "100 % si vous assumez seul·e l'assistance, sinon part répartie.",
 };

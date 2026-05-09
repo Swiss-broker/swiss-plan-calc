@@ -7,7 +7,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Input } from "@/components/ui/input";
 import { NumField as BaseNumField } from "@/components/ui/num-field";
 import { Label } from "@/components/ui/label";
 import { Sparkles, ShieldCheck, TrendingUp, Activity } from "lucide-react";
@@ -39,6 +38,7 @@ import { usePrefillFromClient, useHydrateFormFromPrefill } from "@/hooks/usePref
 import { ClientLinkBanner } from "@/components/calculators/ClientLinkBanner";
 import { GuideMode, GuideToggleButton, type GuideStep } from "@/components/calculators/GuideMode";
 import { WikiTip } from "@/components/calculators/WikiTip";
+import { useT } from "@/contexts/LanguageContext";
 
 const searchSchema = z.object({
   clientId: fallback(z.string().uuid().optional(), undefined),
@@ -57,6 +57,7 @@ const STRATEGY_ICONS: Record<VestedStrategy, React.ElementType> = {
 };
 
 function VestedBenefitsCalc() {
+  const t = useT();
   const { clientId } = Route.useSearch();
   const { client, prefill } = usePrefillFromClient(clientId, "vested-benefits");
   const [form, setForm] = useState({
@@ -69,18 +70,30 @@ function VestedBenefitsCalc() {
     setForm((f) => ({ ...f, [k]: v }));
 
   const projections = useMemo(
-    () =>
-      compareVestedStrategies(
-        form.initialBalance,
-        form.yearsToRetirement,
-        form.withdrawalCanton,
-      ),
+    () => compareVestedStrategies(form.initialBalance, form.yearsToRetirement, form.withdrawalCanton),
     [form],
   );
 
   const recommended = recommendVestedStrategy(form.yearsToRetirement);
 
-  // Données graphique : courbe par stratégie
+  const strategyLabel = (id: VestedStrategy) => {
+    const map: Record<VestedStrategy, string> = {
+      security: t("calc.vested.strategy.security"),
+      balanced: t("calc.vested.strategy.balanced"),
+      dynamic: t("calc.vested.strategy.dynamic"),
+    };
+    return map[id];
+  };
+
+  const strategyDesc = (id: VestedStrategy) => {
+    const map: Record<VestedStrategy, string> = {
+      security: t("calc.vested.strategy.security_desc"),
+      balanced: t("calc.vested.strategy.balanced_desc"),
+      dynamic: t("calc.vested.strategy.dynamic_desc"),
+    };
+    return map[id];
+  };
+
   const chartData = useMemo(() => {
     const len = projections[0]?.yearByYear.length ?? 0;
     const rows: Array<Record<string, number>> = [];
@@ -93,54 +106,43 @@ function VestedBenefitsCalc() {
     }
     return rows;
   }, [projections]);
+
   const [guideOpen, setGuideOpen] = useState(false);
   const guideSteps: GuideStep[] = [
-    { title: "Bienvenue", body: "Calculateur de retrait de prestations de libre passage." },
-    { title: "Capital LP", body: "Solde du compte ou de la police de libre passage à la sortie de la caisse de pension." },
-    { title: "Échelonnement", body: "Diviser le capital en 2 comptes LP permet un retrait sur 2 années fiscales et réduit la progression de l'impôt." }
+    { title: t("calc.vested.step.welcome.t"), body: t("calc.vested.step.welcome.b") },
+    { title: t("calc.vested.step.capital.t"), body: t("calc.vested.step.capital.b") },
+    { title: t("calc.vested.step.split.t"), body: t("calc.vested.step.split.b") },
   ];
-
-
 
   return (
     <div className="space-y-6">
-      <GuideMode open={guideOpen} onClose={() => setGuideOpen(false)} steps={guideSteps} title="Guide libre passage" />
+      <GuideMode open={guideOpen} onClose={() => setGuideOpen(false)} steps={guideSteps} title={t("calc.vested.guide_title")} />
       <div className="flex justify-end"><GuideToggleButton onClick={() => setGuideOpen(true)} /></div>
-
 
       <div className="grid grid-cols-1 gap-6 md:grid-cols-5">
       {client && <div className="md:col-span-5"><ClientLinkBanner client={client} /></div>}
       <div className="md:col-span-2">
-        <CalcCard
-          title="Paramètres"
-          description="Capital actuel + horizon jusqu'à la retraite."
-        >
+        <CalcCard title={t("calc.vested.params_card")} description={t("calc.vested.params_desc")}>
           <div className="space-y-4">
-            <Field label="Capital libre passage actuel" wikiId="lpp-conversion" wikiTip="Solde du compte/police de libre passage (sortie de la caisse de pension, départ à l'étranger ou indépendance).">
+            <Field label={t("calc.vested.field.initial")} wikiId="lpp-conversion" wikiTip={t("calc.vested.tip.initial")}>
               <BaseNumField
                 value={String(form.initialBalance)}
                 onChange={(v) => set("initialBalance", Number(v) || 0)}
                 suffix="CHF"
               />
             </Field>
-            <Field label="Années jusqu'au retrait" wikiId="lpp-conversion" wikiTip="Horizon de placement avant le retrait au plus tard 5 ans après l'âge AVS de référence.">
+            <Field label={t("calc.vested.field.years")} wikiId="lpp-conversion" wikiTip={t("calc.vested.tip.years")}>
               <BaseNumField
                 value={String(form.yearsToRetirement)}
                 onChange={(v) => set("yearsToRetirement", Number(v) || 0)}
-                suffix="ans"
               />
             </Field>
-            <Field label="Canton de retrait" wikiId="lpp-conversion" wikiTip="Canton de l'institution de libre passage au moment du retrait. Ouverture en canton fiscalement avantageux possible (ex. SZ, ZG).">
-              <Select
-                value={form.withdrawalCanton}
-                onValueChange={(v) => set("withdrawalCanton", v)}
-              >
+            <Field label={t("calc.vested.field.canton")} wikiId="lpp-conversion" wikiTip={t("calc.vested.tip.canton")}>
+              <Select value={form.withdrawalCanton} onValueChange={(v) => set("withdrawalCanton", v)}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   {getWithdrawalCantons().map((c) => (
-                    <SelectItem key={c.code} value={c.code}>
-                      {c.code} · {c.name}
-                    </SelectItem>
+                    <SelectItem key={c.code} value={c.code}>{c.code} · {c.name}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -150,14 +152,13 @@ function VestedBenefitsCalc() {
           <div className="mt-5 rounded-lg border border-primary/30 bg-primary/5 p-3 text-sm">
             <div className="flex items-center gap-2 font-semibold">
               <Sparkles className="h-4 w-4 text-primary" />
-              Recommandation
+              {t("calc.vested.recommendation")}
             </div>
             <p className="mt-1 text-xs text-muted-foreground">
-              Pour {form.yearsToRetirement} ans d'horizon, la stratégie{" "}
-              <span className="font-semibold text-foreground">
-                {VESTED_STRATEGIES.find((s) => s.id === recommended)?.label}
-              </span>{" "}
-              est la plus cohérente.
+              {t("calc.vested.recommendation_body", {
+                years: form.yearsToRetirement,
+                strategy: strategyLabel(recommended),
+              })}
             </p>
           </div>
         </CalcCard>
@@ -175,23 +176,16 @@ function VestedBenefitsCalc() {
             }
           />
         </div>
-        <CalcCard title="Projection capital · 3 stratégies comparées">
+        <CalcCard title={t("calc.vested.projection_card")}>
           <div className="h-72 chart-rise">
             <ResponsiveContainer width="100%" height="100%">
               <ComposedChart data={chartData}>
                 <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
-                <XAxis
-                  dataKey="year"
-                  tickFormatter={(v) => `+${v}a`}
-                  className="text-xs"
-                />
-                <YAxis
-                  tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`}
-                  className="text-xs"
-                />
+                <XAxis dataKey="year" tickFormatter={(v) => t("calc.vested.year_axis", { n: v })} className="text-xs" />
+                <YAxis tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} className="text-xs" />
                 <Tooltip
                   formatter={(v: number) => formatCHF(v)}
-                  labelFormatter={(l) => `Année +${l}`}
+                  labelFormatter={(l) => t("calc.vested.year_label", { n: l })}
                   contentStyle={{
                     backgroundColor: "hsl(var(--card))",
                     border: "1px solid hsl(var(--border))",
@@ -199,30 +193,9 @@ function VestedBenefitsCalc() {
                   }}
                 />
                 <Legend />
-                <Line
-                  type="monotone"
-                  dataKey="security"
-                  name="Sécurité"
-                  stroke="var(--muted-foreground)"
-                  strokeWidth={3}
-                  dot={false}
-                />
-                <Line
-                  type="monotone"
-                  dataKey="balanced"
-                  name="Équilibré"
-                  stroke="var(--primary)"
-                  strokeWidth={3}
-                  dot={false}
-                />
-                <Line
-                  type="monotone"
-                  dataKey="dynamic"
-                  name="Dynamique"
-                  stroke="var(--success)"
-                  strokeWidth={3}
-                  dot={false}
-                />
+                <Line type="monotone" dataKey="security" name={t("calc.vested.strategy.security")} stroke="var(--muted-foreground)" strokeWidth={3} dot={false} />
+                <Line type="monotone" dataKey="balanced" name={t("calc.vested.strategy.balanced")} stroke="var(--primary)" strokeWidth={3} dot={false} />
+                <Line type="monotone" dataKey="dynamic" name={t("calc.vested.strategy.dynamic")} stroke="var(--success)" strokeWidth={3} dot={false} />
               </ComposedChart>
             </ResponsiveContainer>
           </div>
@@ -235,43 +208,33 @@ function VestedBenefitsCalc() {
             const Icon = STRATEGY_ICONS[p.strategy.id];
             const isRecommended = p.strategy.id === recommended;
             return (
-              <CalcCard
-                key={p.strategy.id}
-                className={isRecommended ? "ring-2 ring-primary/40" : undefined}
-              >
+              <CalcCard key={p.strategy.id} className={isRecommended ? "ring-2 ring-primary/40" : undefined}>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <Icon className="h-5 w-5 text-primary" />
-                    <h4 className="font-semibold">{p.strategy.label}</h4>
+                    <h4 className="font-semibold">{strategyLabel(p.strategy.id)}</h4>
                   </div>
                   {isRecommended && (
                     <span className="rounded-full bg-primary/15 px-2 py-0.5 text-[10px] font-semibold uppercase text-primary">
-                      Conseillé
+                      {t("calc.vested.recommended_badge")}
                     </span>
                   )}
                 </div>
-                <p className="mt-1 text-xs text-muted-foreground">{p.strategy.description}</p>
+                <p className="mt-1 text-xs text-muted-foreground">{strategyDesc(p.strategy.id)}</p>
                 <div className="mt-4 grid grid-cols-2 gap-3">
-                  <MoneyTile label="Capital final" value={p.finalBalance} tone="primary" big compact tip="Solde estimé à la date du retrait, intérêts composés inclus." />
-                  <MoneyTile label="Gains nets" value={p.totalGains} tone="success" big compact tip="Gain final net après tous frais et impôts." />
+                  <MoneyTile label={t("calc.vested.final_balance")} value={p.finalBalance} tone="primary" big compact tip={t("calc.vested.tip.final_balance")} />
+                  <MoneyTile label={t("calc.vested.net_gains")} value={p.totalGains} tone="success" big compact tip={t("calc.vested.tip.net_gains")} />
                 </div>
                 <dl className="mt-4 space-y-1.5 text-xs">
-                  <Line2 label="Rendement net annualisé" value={`${p.netReturn} %`} />
-                  <Line2 label="Frais annuels" value={`${p.strategy.totalFees} %`} />
-                  <Line2 label="Fourchette basse (-1σ)" value={formatCHF(p.finalLow)} />
-                  <Line2 label="Fourchette haute (+1σ)" value={formatCHF(p.finalHigh)} />
+                  <Line2 label={t("calc.vested.net_return")} value={`${p.netReturn} %`} />
+                  <Line2 label={t("calc.vested.annual_fees")} value={`${p.strategy.totalFees} %`} />
+                  <Line2 label={t("calc.vested.range_low")} value={formatCHF(p.finalLow)} />
+                  <Line2 label={t("calc.vested.range_high")} value={formatCHF(p.finalHigh)} />
                   {p.estimatedExitTax !== undefined && (
-                    <Line2
-                      label="Impôt sortie estimé"
-                      value={formatCHF(p.estimatedExitTax)}
-                    />
+                    <Line2 label={t("calc.vested.exit_tax")} value={formatCHF(p.estimatedExitTax)} />
                   )}
                   {p.estimatedExitTax !== undefined && (
-                    <Line2
-                      label="Net après impôt"
-                      value={formatCHF(p.finalBalance - p.estimatedExitTax)}
-                      bold
-                    />
+                    <Line2 label={t("calc.vested.net_after_tax")} value={formatCHF(p.finalBalance - p.estimatedExitTax)} bold />
                   )}
                 </dl>
               </CalcCard>
@@ -282,21 +245,16 @@ function VestedBenefitsCalc() {
       <CalcCard>
         <Row>
           <div className="text-xs text-muted-foreground">
-            <strong className="text-foreground">Rappel libre passage :</strong> compte ouvert
-            entre deux affiliations LPP ou en cas de départ à l'étranger / indépendance. Possibilité
-            de fragmenter sur plusieurs comptes pour casser la progressivité de l'impôt sur prestation
-            en capital.
+            <strong className="text-foreground">{t("calc.vested.disclaimer.lp")}</strong>{" "}
+            {t("calc.vested.disclaimer.lp_body")}
           </div>
           <div className="text-xs text-muted-foreground">
-            <strong className="text-foreground">Hypothèses :</strong> rendements nets de frais,
-            fourchettes ±1 écart-type. Performance passée non garantie. Ajustez l'horizon et la
-            tolérance au risque selon le profil client.
+            <strong className="text-foreground">{t("calc.vested.disclaimer.assumptions")}</strong>{" "}
+            {t("calc.vested.disclaimer.assumptions_body")}
           </div>
           <div className="text-xs text-muted-foreground sm:col-span-2">
-            <strong className="text-foreground">Source des rendements :</strong> moyennes
-            historiques 2010-2024 des indices SBI AAA-BBB (obligataire CHF), SPI (actions
-            suisses) et MSCI World (actions internationales). Calibrer selon profil de
-            risque réel du client et horizon de placement.
+            <strong className="text-foreground">{t("calc.vested.disclaimer.source")}</strong>{" "}
+            {t("calc.vested.disclaimer.source_body")}
           </div>
         </Row>
       </CalcCard>

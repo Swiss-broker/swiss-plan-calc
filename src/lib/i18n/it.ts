@@ -668,4 +668,10 @@ export const it: Record<string, string> = {
   "calc.vested.step.capital.b": "Saldo del conto o della polizza di libero passaggio all'uscita dalla cassa pensione.",
   "calc.vested.step.split.t": "Scaglionamento",
   "calc.vested.step.split.b": "Dividere il capitale in 2 conti LP consente un prelievo su 2 anni fiscali e riduce la progressione dell'imposta.",
+  "calc.status.single": "Celibe/Nubile",
+  "calc.status.married": "Coniugato/a",
+  "calc.status.single_with_children": "Famiglia monoparentale",
+  "calc.p3a.field.3b_return": "Rendimento netto (%/anno)",
+  "calc.lpp.field.children": "Numero di figli",
+  "calc.avs.tip.assistance_share": "100 % se assumi da solo/a l'assistenza, altrimenti quota ripartita.",
 };

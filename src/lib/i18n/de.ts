@@ -670,4 +670,10 @@ export const de: Record<string, string> = {
   "calc.vested.step.capital.b": "Saldo des Freizügigkeitskontos oder der -police beim Austritt aus der Pensionskasse.",
   "calc.vested.step.split.t": "Staffelung",
   "calc.vested.step.split.b": "Die Aufteilung des Kapitals auf 2 Freizügigkeitskonten ermöglicht den Bezug über 2 Steuerjahre und reduziert die Steuerprogression.",
+  "calc.status.single": "Ledig",
+  "calc.status.married": "Verheiratet",
+  "calc.status.single_with_children": "Alleinerziehend",
+  "calc.p3a.field.3b_return": "Nettorendite (%/Jahr)",
+  "calc.lpp.field.children": "Anzahl Kinder",
+  "calc.avs.tip.assistance_share": "100 % bei alleiniger Betreuung, sonst anteilig aufgeteilt.",
 };
