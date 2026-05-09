@@ -84,6 +84,7 @@ export const de: Record<string, string> = {
   "client_link.prefilled_badge": "Aus Dossier vorausgefüllt",
   "archive.default_label": "Archivieren",
   "delete.default_label": "Endgültig löschen",
+  "delete.confirm_prompt": "Zur Bestätigung tippen Sie exakt:",
 
   // === Formulaires ===
   "form.first_name": "Vorname",
