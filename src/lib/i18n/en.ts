@@ -83,6 +83,7 @@ export const en: Record<string, string> = {
   "client_link.prefilled_badge": "Prefilled from client file",
   "archive.default_label": "Archive",
   "delete.default_label": "Delete permanently",
+  "delete.confirm_prompt": "To confirm, type exactly:",
 
   // === Forms ===
   "form.first_name": "First name",
