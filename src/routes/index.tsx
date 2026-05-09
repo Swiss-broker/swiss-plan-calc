@@ -10,16 +10,15 @@ import {
   Building2,
   Globe2,
 } from "lucide-react";
+import { useT } from "@/contexts/LanguageContext";
+import { PublicLanguageSwitcher } from "@/components/common/PublicLanguageSwitcher";
+import { t as tStatic } from "@/lib/i18n";
 
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "SwissBroker Pro · Calculateur prévoyance & fiscalité suisse" },
-      {
-        name: "description",
-        content:
-          "Plateforme professionnelle pour courtiers suisses : impôts, LPP, 3e pilier, frontaliers, optimisation fiscale et simulations multi-scénarios sur la Suisse romande.",
-      },
+      { title: tStatic("landing.head.title") },
+      { name: "description", content: tStatic("landing.head.desc") },
     ],
   }),
   component: Landing,
@@ -40,6 +39,7 @@ function Landing() {
 }
 
 function Header() {
+  const t = useT();
   return (
     <header className="sticky top-0 z-50 border-b border-border/50 bg-background/80 backdrop-blur-xl">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-3 px-4 sm:px-6 lg:px-8">
@@ -53,25 +53,26 @@ function Header() {
         </Link>
         <nav className="hidden items-center gap-8 md:flex">
           <a href="#features" className="text-sm text-muted-foreground hover:text-foreground">
-            Fonctionnalités
+            {t("landing.nav.features")}
           </a>
           <a href="#modules" className="text-sm text-muted-foreground hover:text-foreground">
-            Modules
+            {t("landing.nav.modules")}
           </a>
           <a href="#optimisation" className="text-sm text-muted-foreground hover:text-foreground">
-            Optimisation
+            {t("landing.nav.optimization")}
           </a>
         </nav>
-        <div className="flex shrink-0 items-center gap-2 sm:gap-3">
+        <div className="flex shrink-0 items-center gap-1 sm:gap-2">
+          <PublicLanguageSwitcher />
           <Link to="/auth">
             <Button variant="ghost" size="sm" className="px-2 sm:px-3">
-              Se connecter
+              {t("landing.cta.signin")}
             </Button>
           </Link>
           <Link to="/auth" search={{ mode: "signup" }}>
             <Button size="sm" className="shadow-elegant">
-              <span className="hidden sm:inline">Essayer gratuitement</span>
-              <span className="sm:hidden">Essayer</span>
+              <span className="hidden sm:inline">{t("landing.cta.try")}</span>
+              <span className="sm:hidden">{t("landing.cta.try_short")}</span>
             </Button>
           </Link>
         </div>
@@ -81,6 +82,7 @@ function Header() {
 }
 
 function Hero() {
+  const t = useT();
   return (
     <section className="relative overflow-hidden bg-hero">
       <div className="absolute inset-0 grid-bg opacity-40" aria-hidden />
@@ -88,44 +90,42 @@ function Hero() {
         <div className="mx-auto max-w-3xl text-center">
           <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-border bg-card/60 px-4 py-1.5 text-xs font-medium text-muted-foreground backdrop-blur">
             <Sparkles className="h-3.5 w-3.5 text-primary" />
-            Conçu pour les courtiers suisses · Suisse romande · Frontaliers inclus
+            {t("landing.hero.badge")}
           </div>
           <h1 className="text-balance text-5xl font-bold tracking-tight text-foreground sm:text-6xl lg:text-7xl">
-            Le calculateur de référence pour la{" "}
+            {t("landing.hero.title.prefix")}{" "}
             <span className="bg-gradient-primary bg-clip-text text-transparent">
-              prévoyance suisse
+              {t("landing.hero.title.highlight")}
             </span>
           </h1>
           <p className="mx-auto mt-6 max-w-2xl text-balance text-lg text-muted-foreground">
-            Impôts, 2e pilier, 3e pilier, frontaliers, retraite, rachats LPP, projections de
-            placement. Des chiffres exacts, des scénarios comparés en un clic, des suggestions
-            d'optimisation contextuelles pour chaque client.
+            {t("landing.hero.subtitle")}
           </p>
           <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
             <Link to="/auth" search={{ mode: "signup" }}>
               <Button size="lg" className="h-12 px-8 shadow-elegant">
-                Créer mon compte gratuit
+                {t("landing.hero.cta.signup")}
                 <ArrowRight className="ml-1 h-4 w-4" />
               </Button>
             </Link>
             <a href="#modules">
               <Button size="lg" variant="outline" className="h-12 px-8">
-                Voir les modules
+                {t("landing.hero.cta.modules")}
               </Button>
             </a>
           </div>
           <div className="mt-8 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs text-muted-foreground">
             <span className="inline-flex items-center gap-1.5">
               <CheckCircle2 className="h-3.5 w-3.5 text-success" />
-              Gratuit en v1
+              {t("landing.hero.check.free")}
             </span>
             <span className="inline-flex items-center gap-1.5">
               <CheckCircle2 className="h-3.5 w-3.5 text-success" />
-              Sans carte bancaire
+              {t("landing.hero.check.no_card")}
             </span>
             <span className="inline-flex items-center gap-1.5">
               <CheckCircle2 className="h-3.5 w-3.5 text-success" />
-              Données chiffrées et privées
+              {t("landing.hero.check.private")}
             </span>
           </div>
         </div>
@@ -135,46 +135,23 @@ function Hero() {
 }
 
 function Features() {
+  const t = useT();
   const items = [
-    {
-      icon: Calculator,
-      title: "Calculs exacts",
-      desc: "Barèmes officiels IFD et ICC pour les 6 cantons romands (GE, VD, VS, FR, NE, JU), multiplicateurs communaux, impôt à la source A/B/C/H, frontaliers.",
-    },
-    {
-      icon: TrendingUp,
-      title: "Projections temps réel",
-      desc: "Capital LPP, économie 3a, rendement composé, comparatif rente vs capital · résultats instantanés.",
-    },
-    {
-      icon: Sparkles,
-      title: "Optimisations suggérées",
-      desc: "Recommandations chiffrées et contextuelles selon la situation du client (rachat LPP, fragmentation 3a, déménagement…).",
-    },
-    {
-      icon: ShieldCheck,
-      title: "Dossiers privés",
-      desc: "Chaque courtier a son espace privé. Données chiffrées, aucun partage, conforme aux pratiques suisses.",
-    },
+    { icon: Calculator, title: t("landing.feature.exact.title"), desc: t("landing.feature.exact.desc") },
+    { icon: TrendingUp, title: t("landing.feature.proj.title"), desc: t("landing.feature.proj.desc") },
+    { icon: Sparkles, title: t("landing.feature.opt.title"), desc: t("landing.feature.opt.desc") },
+    { icon: ShieldCheck, title: t("landing.feature.priv.title"), desc: t("landing.feature.priv.desc") },
   ];
   return (
     <section id="features" className="border-t border-border/50 py-24">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-2xl text-center">
-          <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
-            Précision suisse, design 2026
-          </h2>
-          <p className="mt-4 text-muted-foreground">
-            Un outil pensé pour les rendez-vous client : rapide, lisible, responsive · du
-            smartphone au grand écran.
-          </p>
+          <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">{t("landing.features.title")}</h2>
+          <p className="mt-4 text-muted-foreground">{t("landing.features.subtitle")}</p>
         </div>
         <div className="mt-16 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
           {items.map((it) => (
-            <div
-              key={it.title}
-              className="group rounded-2xl border border-border bg-card p-6 shadow-card transition-all hover:-translate-y-0.5 hover:shadow-elegant"
-            >
+            <div key={it.title} className="group rounded-2xl border border-border bg-card p-6 shadow-card transition-all hover:-translate-y-0.5 hover:shadow-elegant">
               <div className="mb-4 inline-flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10 text-primary transition-colors group-hover:bg-primary group-hover:text-primary-foreground">
                 <it.icon className="h-5 w-5" />
               </div>
@@ -189,56 +166,25 @@ function Features() {
 }
 
 function Modules() {
+  const t = useT();
   const modules = [
-    {
-      tag: "Fiscalité",
-      title: "Impôts revenu & fortune",
-      desc: "IFD + ICC + multiplicateur communal + impôt ecclésiastique. Toutes les déductions admises (frais pro, primes, intérêts, garde, 3a, rachats LPP).",
-    },
-    {
-      tag: "Source",
-      title: "Impôt à la source & frontaliers",
-      desc: "Barèmes A/B/C/H par canton, accord France-Suisse 4,5 %, régime genevois, quasi-résident et TOU avec recommandation.",
-    },
-    {
-      tag: "2e pilier",
-      title: "LPP · rachats, retraite, libre passage",
-      desc: "Lacune de prévoyance, étalement optimal des rachats, comparatif rente / capital / mixte, impôt sur prestation en capital, projection libre passage.",
-    },
-    {
-      tag: "3e pilier",
-      title: "3a / 3b avec retrait échelonné",
-      desc: "Plafonds salarié et indépendant, économie fiscale au taux marginal, projection rendement, fragmentation optimale en plusieurs comptes.",
-    },
-    {
-      tag: "Scénarios",
-      title: "Avant / après changement de vie",
-      desc: "Mariage, naissance, déménagement intercantonal, achat immobilier, départ retraite · comparatif chiffré côte à côte.",
-    },
-    {
-      tag: "Comparateur",
-      title: "Classement des cantons romands",
-      desc: "Pour un profil client donné, voir le classement des 6 cantons romands (+ Zoug en référence) les plus avantageux.",
-    },
+    { tag: t("landing.module.tax.tag"), title: t("landing.module.tax.title"), desc: t("landing.module.tax.desc") },
+    { tag: t("landing.module.source.tag"), title: t("landing.module.source.title"), desc: t("landing.module.source.desc") },
+    { tag: t("landing.module.lpp.tag"), title: t("landing.module.lpp.title"), desc: t("landing.module.lpp.desc") },
+    { tag: t("landing.module.p3.tag"), title: t("landing.module.p3.title"), desc: t("landing.module.p3.desc") },
+    { tag: t("landing.module.scen.tag"), title: t("landing.module.scen.title"), desc: t("landing.module.scen.desc") },
+    { tag: t("landing.module.cmp.tag"), title: t("landing.module.cmp.title"), desc: t("landing.module.cmp.desc") },
   ];
   return (
     <section id="modules" className="border-t border-border/50 bg-muted/30 py-24">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-2xl text-center">
-          <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
-            Tout ce qui se calcule en Suisse
-          </h2>
-          <p className="mt-4 text-muted-foreground">
-            Un moteur de calcul exhaustif. Les chiffres sont basés sur les barèmes officiels et
-            mis à jour chaque année fiscale.
-          </p>
+          <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">{t("landing.modules.title")}</h2>
+          <p className="mt-4 text-muted-foreground">{t("landing.modules.subtitle")}</p>
         </div>
         <div className="mt-16 grid gap-5 md:grid-cols-2 lg:grid-cols-3">
           {modules.map((m) => (
-            <div
-              key={m.title}
-              className="rounded-2xl border border-border bg-card p-6 shadow-card"
-            >
+            <div key={m.title} className="rounded-2xl border border-border bg-card p-6 shadow-card">
               <div className="mb-3 inline-flex items-center rounded-md bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
                 {m.tag}
               </div>
@@ -253,61 +199,35 @@ function Modules() {
 }
 
 function Optimization() {
+  const t = useT();
   return (
     <section id="optimisation" className="border-t border-border/50 py-24">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="grid items-center gap-12 lg:grid-cols-2">
           <div>
             <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-border bg-card px-3 py-1 text-xs font-medium">
-              <Sparkles className="h-3 w-3 text-primary" /> Différenciateur
+              <Sparkles className="h-3 w-3 text-primary" /> {t("landing.opt.badge")}
             </div>
-            <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
-              Suggestions d'optimisation contextuelles
-            </h2>
-            <p className="mt-4 text-muted-foreground">
-              L'outil analyse automatiquement la situation du client et affiche les actions à
-              valeur ajoutée · chiffrées, justifiées, prêtes à présenter.
-            </p>
+            <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">{t("landing.opt.title")}</h2>
+            <p className="mt-4 text-muted-foreground">{t("landing.opt.desc")}</p>
             <ul className="mt-6 space-y-3 text-sm">
-              <Bullet>
-                Capacité de rachat LPP détectée et étalée pour maximiser l'économie d'impôt.
-              </Bullet>
-              <Bullet>
-                Versement 3a complémentaire chiffré au taux marginal exact du client.
-              </Bullet>
-              <Bullet>
-                Stratégie de retrait LPP / 3a fragmentée pour casser la progressivité.
-              </Bullet>
-              <Bullet>
-                Comparatif IS retenue vs TOU (taxation ordinaire ultérieure) pour quasi-résidents.
-              </Bullet>
-              <Bullet>
-                Impact d'un déménagement intercantonal estimé à revenu constant.
-              </Bullet>
+              <Bullet>{t("landing.opt.b1")}</Bullet>
+              <Bullet>{t("landing.opt.b2")}</Bullet>
+              <Bullet>{t("landing.opt.b3")}</Bullet>
+              <Bullet>{t("landing.opt.b4")}</Bullet>
+              <Bullet>{t("landing.opt.b5")}</Bullet>
             </ul>
           </div>
           <div className="relative">
             <div className="rounded-2xl border border-border bg-card p-6 shadow-elegant">
               <div className="mb-4 flex items-center gap-2">
                 <Sparkles className="h-4 w-4 text-primary" />
-                <span className="text-sm font-medium">Optimisations détectées</span>
+                <span className="text-sm font-medium">{t("landing.opt.card.label")}</span>
               </div>
               <div className="space-y-3">
-                <SuggestionCard
-                  title="Rachat LPP recommandé"
-                  amount="+ CHF 15'104 d'économie"
-                  desc="Lacune disponible : 47'200. Étalement sur 3 ans pour optimiser le palier de progression."
-                />
-                <SuggestionCard
-                  title="Versement 3a complémentaire"
-                  amount="+ CHF 790 d'économie cette année"
-                  desc="Versé : 4'800 / Plafond : 7'258. Compléter le maximum déductible."
-                />
-                <SuggestionCard
-                  title="Fragmentation du retrait LPP"
-                  amount="+ CHF 24'000 d'économie au départ retraite"
-                  desc="Étaler le retrait sur 3 ans + 2 comptes 3a séparés."
-                />
+                <SuggestionCard title={t("landing.opt.demo1.title")} amount={t("landing.opt.demo1.amount")} desc={t("landing.opt.demo1.desc")} />
+                <SuggestionCard title={t("landing.opt.demo2.title")} amount={t("landing.opt.demo2.amount")} desc={t("landing.opt.demo2.desc")} />
+                <SuggestionCard title={t("landing.opt.demo3.title")} amount={t("landing.opt.demo3.amount")} desc={t("landing.opt.demo3.desc")} />
               </div>
             </div>
           </div>
@@ -326,15 +246,7 @@ function Bullet({ children }: { children: React.ReactNode }) {
   );
 }
 
-function SuggestionCard({
-  title,
-  amount,
-  desc,
-}: {
-  title: string;
-  amount: string;
-  desc: string;
-}) {
+function SuggestionCard({ title, amount, desc }: { title: string; amount: string; desc: string }) {
   return (
     <div className="rounded-xl border border-border bg-background p-4">
       <div className="flex flex-col items-start gap-2 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
@@ -349,6 +261,7 @@ function SuggestionCard({
 }
 
 function CTASection() {
+  const t = useT();
   return (
     <section className="border-t border-border/50 py-24">
       <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
@@ -356,19 +269,12 @@ function CTASection() {
           <div className="absolute inset-0 grid-bg opacity-20" aria-hidden />
           <div className="relative">
             <h2 className="text-3xl font-bold tracking-tight text-primary-foreground sm:text-4xl">
-              Prêt à optimiser vos rendez-vous client ?
+              {t("landing.cta.title")}
             </h2>
-            <p className="mx-auto mt-4 max-w-xl text-primary-foreground/90">
-              Inscription en 30 secondes. Aucune carte bancaire. Tout est gratuit pendant la
-              phase de lancement.
-            </p>
+            <p className="mx-auto mt-4 max-w-xl text-primary-foreground/90">{t("landing.cta.desc")}</p>
             <Link to="/auth" search={{ mode: "signup" }} className="mt-8 inline-block">
-              <Button
-                size="lg"
-                variant="secondary"
-                className="h-12 px-8 text-foreground shadow-card"
-              >
-                Créer mon compte courtier
+              <Button size="lg" variant="secondary" className="h-12 px-8 text-foreground shadow-card">
+                {t("landing.cta.button")}
                 <ArrowRight className="ml-1 h-4 w-4" />
               </Button>
             </Link>
@@ -380,16 +286,17 @@ function CTASection() {
 }
 
 function Footer() {
+  const t = useT();
   return (
     <footer className="border-t border-border/50 py-10">
       <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-4 px-4 sm:flex-row sm:px-6 lg:px-8">
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
           <Building2 className="h-4 w-4" />
-          SwissBroker Pro · Conçu en Suisse
+          {t("landing.footer.brand")}
         </div>
         <div className="flex items-center gap-2 text-xs text-muted-foreground">
           <Globe2 className="h-3.5 w-3.5" />
-          Suisse romande · Frontaliers FR / IT / DE / AT
+          {t("landing.footer.scope")}
         </div>
       </div>
     </footer>
