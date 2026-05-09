@@ -28,7 +28,7 @@ import { useT, useLanguage } from "@/contexts/LanguageContext";
 import { formatDateShort } from "@/lib/i18n/format";
 
 export const Route = createFileRoute("/_app/dashboard")({
-  head: () => ({ meta: [{ title: "Tableau de bord · SwissBroker Pro" }] }),
+  head: () => ({ meta: [{ title: translate("dash.head.title") }] }),
   component: Dashboard,
 });
 
