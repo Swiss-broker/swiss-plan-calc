@@ -9,10 +9,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useT } from "@/contexts/LanguageContext";
 import { getSelectableCantons, isSelectableCanton, CANTON_BY_CODE } from "@/lib/swiss/cantons";
-import { tCanton } from "@/lib/i18n";
+import { tCanton, t as translate } from "@/lib/i18n";
 
 export const Route = createFileRoute("/_app/account")({
-  head: () => ({ meta: [{ title: "Mon profil · SwissBroker Pro" }] }),
+  head: () => ({ meta: [{ title: translate("account.head.title") }] }),
   component: AccountPage,
 });
 
