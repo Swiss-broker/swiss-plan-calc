@@ -826,6 +826,7 @@ function StepFamily({
   update,
   isMarried,
 }: StepProps & { isMarried: boolean }) {
+  const t = useT();
   const addChild = () =>
     update("children", [
       ...form.children,
@@ -845,7 +846,7 @@ function StepFamily({
   return (
     <div className="space-y-6">
       <div className="grid gap-4 sm:grid-cols-2">
-        <Field label="État civil">
+        <Field label={t("wizard.field.civil_status")}>
           <Select
             value={form.civil_status}
             onValueChange={(v) => update("civil_status", v as CivilStatus)}
@@ -868,30 +869,30 @@ function StepFamily({
         <>
           <Separator />
           <div>
-            <h3 className="text-sm font-semibold">Conjoint</h3>
+            <h3 className="text-sm font-semibold">{t("wizard.spouse.title")}</h3>
             <div className="mt-3 grid gap-4 sm:grid-cols-2">
-              <Field label="Prénom du conjoint">
+              <Field label={t("wizard.spouse.first_name")}>
                 <Input
                   value={form.spouse_first_name}
                   onChange={(e) => update("spouse_first_name", e.target.value)}
                   maxLength={80}
                 />
               </Field>
-              <Field label="Nom du conjoint">
+              <Field label={t("wizard.spouse.last_name")}>
                 <Input
                   value={form.spouse_last_name}
                   onChange={(e) => update("spouse_last_name", e.target.value)}
                   maxLength={80}
                 />
               </Field>
-              <Field label="Date de naissance">
+              <Field label={t("wizard.spouse.dob")}>
                 <Input
                   type="date"
                   value={form.spouse_date_of_birth}
                   onChange={(e) => update("spouse_date_of_birth", e.target.value)}
                 />
               </Field>
-              <Field label="Salaire annuel brut conjoint">
+              <Field label={t("wizard.spouse.salary")}>
                 <NumField
                   value={form.spouse_gross_annual_salary}
                   onChange={(v) => update("spouse_gross_annual_salary", v)}
@@ -906,14 +907,14 @@ function StepFamily({
       <Separator />
       <div>
         <div className="flex items-center justify-between">
-          <h3 className="text-sm font-semibold">Enfants à charge</h3>
+          <h3 className="text-sm font-semibold">{t("wizard.children.title")}</h3>
           <Button type="button" variant="outline" size="sm" onClick={addChild}>
-            <Plus className="h-4 w-4" /> Ajouter
+            <Plus className="h-4 w-4" /> {t("wizard.children.add")}
           </Button>
         </div>
         {form.children.length === 0 ? (
           <p className="mt-3 text-sm text-muted-foreground">
-            Aucun enfant · ajoutez les enfants à charge pour ajuster les déductions fiscales.
+            {t("wizard.children.empty")}
           </p>
         ) : (
           <div className="mt-3 space-y-3">
@@ -922,7 +923,7 @@ function StepFamily({
                 <Input
                   value={c.first_name}
                   onChange={(e) => updateChild(i, { first_name: e.target.value })}
-                  placeholder="Prénom"
+                  placeholder={t("wizard.children.first_name.placeholder")}
                   maxLength={80}
                 />
                 <Input
@@ -935,7 +936,7 @@ function StepFamily({
                     checked={c.in_household}
                     onCheckedChange={(v) => updateChild(i, { in_household: !!v })}
                   />
-                  Au foyer
+                  {t("wizard.children.in_household")}
                 </label>
                 <Button
                   type="button"
