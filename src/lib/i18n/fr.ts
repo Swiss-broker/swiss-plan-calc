@@ -671,7 +671,6 @@ export const fr: Record<string, string> = {
   "calc.status.married": "Marié·e",
   "calc.status.single_with_children": "Famille monoparentale",
   "calc.p3a.field.3b_return": "Rendement net (%/an)",
-  "calc.p3a.tip.p3b_returns": "Performance brute du placement.",
   "calc.lpp.field.children": "Nombre d'enfants",
   "calc.avs.tip.assistance_share": "100 % si vous assumez seul·e l'assistance, sinon part répartie.",
 };

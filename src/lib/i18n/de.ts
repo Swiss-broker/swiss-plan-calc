@@ -674,7 +674,6 @@ export const de: Record<string, string> = {
   "calc.status.married": "Verheiratet",
   "calc.status.single_with_children": "Alleinerziehend",
   "calc.p3a.field.3b_return": "Nettorendite (%/Jahr)",
-  "calc.p3a.tip.p3b_returns": "Bruttoperformance der Anlage.",
   "calc.lpp.field.children": "Anzahl Kinder",
   "calc.avs.tip.assistance_share": "100 % bei alleiniger Betreuung, sonst anteilig aufgeteilt.",
 };

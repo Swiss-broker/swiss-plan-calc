@@ -672,7 +672,6 @@ export const en: Record<string, string> = {
   "calc.status.married": "Married",
   "calc.status.single_with_children": "Single parent",
   "calc.p3a.field.3b_return": "Net return (%/yr)",
-  "calc.p3a.tip.p3b_returns": "Gross investment performance.",
   "calc.lpp.field.children": "Number of children",
   "calc.avs.tip.assistance_share": "100 % if you provide care alone, otherwise split share.",
 };
