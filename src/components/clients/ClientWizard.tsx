@@ -430,36 +430,36 @@ export function ClientWizard({ initial, mode, clientId }: ClientWizardProps) {
       <div className="flex items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
-            {mode === "edit" ? "Modifier le client" : "Nouveau client"}
+            {mode === "edit" ? t("wizard.title.edit") : t("wizard.title.new")}
           </h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Étape {step} sur {STEPS.length} · {current.title}
-            <span className="text-muted-foreground/70"> · {current.desc}</span>
+            {t("wizard.step_of", { step, total: STEP_COUNT })} · {currentTitle}
+            <span className="text-muted-foreground/70"> · {currentDesc}</span>
           </p>
         </div>
         <Button variant="ghost" onClick={() => navigate({ to: "/clients" })}>
-          Annuler
+          {t("common.cancel")}
         </Button>
       </div>
 
       <Progress value={progress} className="mt-4 h-1.5" />
 
       <div className="mt-6 hidden grid-cols-5 gap-2 sm:grid">
-        {STEPS.map((s) => (
+        {STEP_IDS.map((id) => (
           <button
-            key={s.id}
+            key={id}
             type="button"
-            onClick={() => setStep(s.id)}
+            onClick={() => setStep(id)}
             className={`rounded-lg border px-3 py-2 text-left text-xs transition-colors ${
-              s.id === step
+              id === step
                 ? "border-primary bg-primary/5"
-                : s.id < step
+                : id < step
                   ? "border-border bg-muted/40"
                   : "border-border bg-card"
             }`}
           >
-            <div className="font-semibold">{s.id}. {s.title}</div>
-            <div className="mt-0.5 text-muted-foreground">{s.desc}</div>
+            <div className="font-semibold">{id}. {t(STEP_KEYS[id].title)}</div>
+            <div className="mt-0.5 text-muted-foreground">{t(STEP_KEYS[id].desc)}</div>
           </button>
         ))}
       </div>
@@ -474,11 +474,11 @@ export function ClientWizard({ initial, mode, clientId }: ClientWizardProps) {
 
       <div className="mt-6 flex items-center justify-between">
         <Button variant="outline" onClick={prev} disabled={step === 1}>
-          <ChevronLeft className="h-4 w-4" /> Précédent
+          <ChevronLeft className="h-4 w-4" /> {t("common.previous")}
         </Button>
-        {step < STEPS.length ? (
+        {step < STEP_COUNT ? (
           <Button onClick={next}>
-            Suivant <ChevronRight className="h-4 w-4" />
+            {t("common.next")} <ChevronRight className="h-4 w-4" />
           </Button>
         ) : (
           <Button onClick={submit} disabled={save.isPending} className="shadow-elegant">
@@ -487,7 +487,7 @@ export function ClientWizard({ initial, mode, clientId }: ClientWizardProps) {
             ) : (
               <Save className="h-4 w-4" />
             )}
-            {mode === "edit" ? "Enregistrer" : "Créer le dossier"}
+            {mode === "edit" ? t("wizard.btn.save") : t("wizard.btn.create")}
           </Button>
         )}
       </div>
