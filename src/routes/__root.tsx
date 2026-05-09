@@ -13,6 +13,7 @@ import { Toaster } from "@/components/ui/sonner";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { LanguageProvider, useLanguage } from "@/contexts/LanguageContext";
 import appCss from "../styles.css?url";
+import { t as translate } from "@/lib/i18n";
 
 // Search params globaux : `clientId` est conservé automatiquement entre
 // les calculateurs lorsque le courtier navigue depuis la fiche client.
@@ -21,8 +22,8 @@ const rootSearchSchema = z.object({
 });
 
 function NotFoundComponent() {
-  // t() lit la langue active du module — pas de hook nécessaire ici.
-  const { t } = require("@/lib/i18n") as { t: (k: string) => string };
+  // translate() lit la langue active du module — pas de hook nécessaire ici.
+  const t = translate;
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <div className="max-w-md text-center">
