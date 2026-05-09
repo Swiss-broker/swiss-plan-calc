@@ -1,13 +1,15 @@
 import { Button } from "@/components/ui/button";
 import { FileDown } from "lucide-react";
+import { useT } from "@/contexts/LanguageContext";
 
 export function ExportPdfButton({
   onClick,
-  label = "Exporter le rapport PDF",
+  label,
 }: {
   onClick: () => void;
   label?: string;
 }) {
+  const t = useT();
   return (
     <Button
       type="button"
@@ -16,7 +18,7 @@ export function ExportPdfButton({
       className="shine gap-2 bg-gradient-primary text-primary-foreground shadow-elegant hover:opacity-90"
     >
       <FileDown className="h-4 w-4" />
-      {label}
+      {label ?? t("common.export_pdf_report")}
     </Button>
   );
 }
