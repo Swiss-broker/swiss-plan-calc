@@ -34,6 +34,7 @@ import { ExportPdfButton } from "@/components/calculators/ExportPdfButton";
 import { exportCantonComparePdf } from "@/lib/pdf/reports";
 import { SaveSimulationButton } from "@/components/calculators/SaveSimulationButton";
 import { useAuth } from "@/contexts/AuthContext";
+import { useT } from "@/contexts/LanguageContext";
 import { useClientDashboard } from "@/hooks/use-client-dashboard";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -74,13 +75,12 @@ type Row = {
 type CompareMode = "annual" | "lump_sum";
 
 function CantonCompareCalc() {
+  const t = useT();
   const { clientId } = Route.useSearch();
   const { client, prefill } = usePrefillFromClient(clientId, "canton-compare");
   const selectable = getSelectableCantons();
   const comparable = getComparableCantons();
 
-  // Charge le bundle complet (pension + assets) pour calculer le capital LPP
-  // projeté à 65 ans. Uniquement quand un client est sélectionné.
   const { data: bundle } = useQuery({
     enabled: !!clientId,
     queryKey: ["client-bundle-canton-compare", clientId],
@@ -143,31 +143,27 @@ function CantonCompareCalc() {
             isReference: c.code === ZG_CODE,
           });
         } else {
-          // Mode prestation LPP en capital à la retraite
-          const t = capitalWithdrawalTax({
+          const tt = capitalWithdrawalTax({
             capital: projectedLPPCapital,
             canton: c.code,
             status: lumpSumStatus,
           });
           const effective =
             projectedLPPCapital > 0
-              ? Math.round((t.total / projectedLPPCapital) * 1000) / 10
+              ? Math.round((tt.total / projectedLPPCapital) * 1000) / 10
               : 0;
           rows.push({
             code: c.code,
             name: c.name,
-            total: t.total,
+            total: tt.total,
             effective,
             isReference: c.code === ZG_CODE,
           });
         }
       } catch (e) {
-        // Garde-fou : un canton comparable mais sans barème complet
-        // ne casse pas tout le ranking (warn console seulement).
         console.warn(`[canton-compare] Calcul ignoré pour ${c.code}`, e);
       }
     }
-    // Romands triés par charge fiscale, ZG toujours en bas (référence)
     const romands = rows.filter((r) => r.code !== ZG_CODE).sort((a, b) => a.total - b.total);
     const zg = rows.filter((r) => r.code === ZG_CODE);
     return [...romands, ...zg];
@@ -193,23 +189,20 @@ function CantonCompareCalc() {
     });
   const [guideOpen, setGuideOpen] = useState(false);
   const guideSteps: GuideStep[] = [
-    { title: "Bienvenue", body: "Compare la charge fiscale entre cantons pour un même profil." },
-    { title: "Paramètres", body: "Saisissez votre situation civile, revenu et déductions. Le calculateur compare les 26 cantons." },
-    { title: "Multiplicateur", body: "Calcul effectué sur le chef-lieu de chaque canton (commune-précise viendra dans une prochaine version)." }
+    { title: t("calc.canton_compare.guide.s1.title"), body: t("calc.canton_compare.guide.s1.body") },
+    { title: t("calc.canton_compare.guide.s2.title"), body: t("calc.canton_compare.guide.s2.body") },
+    { title: t("calc.canton_compare.guide.s3.title"), body: t("calc.canton_compare.guide.s3.body") },
   ];
-
-
 
   return (
     <div className="space-y-6">
-      <GuideMode open={guideOpen} onClose={() => setGuideOpen(false)} steps={guideSteps} title="Guide comparateur cantonal" />
+      <GuideMode open={guideOpen} onClose={() => setGuideOpen(false)} steps={guideSteps} title={t("calc.canton_compare.guide.title")} />
       <div className="flex justify-end"><GuideToggleButton onClick={() => setGuideOpen(true)} /></div>
-
 
       {client && <ClientLinkBanner client={client} />}
 
       {clientId && (
-        <CalcCard title="Mode de comparaison">
+        <CalcCard title={t("calc.canton_compare.mode.title")}>
           <RadioGroup
             value={mode}
             onValueChange={(v) => setMode(v as CompareMode)}
@@ -221,9 +214,9 @@ function CantonCompareCalc() {
             >
               <RadioGroupItem id="mode-annual" value="annual" className="mt-1" />
               <div>
-                <div className="text-sm font-medium">Charge fiscale annuelle</div>
+                <div className="text-sm font-medium">{t("calc.canton_compare.mode.annual")}</div>
                 <div className="text-xs text-muted-foreground">
-                  Situation actuelle : revenu et fortune renseignés.
+                  {t("calc.canton_compare.mode.annual.desc")}
                 </div>
               </div>
             </label>
@@ -239,11 +232,11 @@ function CantonCompareCalc() {
                 disabled={projectedLPPCapital <= 0}
               />
               <div>
-                <div className="text-sm font-medium">Impôt prestation LPP à la retraite</div>
+                <div className="text-sm font-medium">{t("calc.canton_compare.mode.lump")}</div>
                 <div className="text-xs text-muted-foreground">
                   {projectedLPPCapital > 0
-                    ? `Capital projeté à 65 ans : ${formatCHF(projectedLPPCapital)}`
-                    : "Capital LPP projeté indisponible (renseigner LPP dans la fiche)."}
+                    ? t("calc.canton_compare.mode.lump.has_capital", { amount: formatCHF(projectedLPPCapital) })
+                    : t("calc.canton_compare.mode.lump.no_capital")}
                 </div>
               </div>
             </label>
@@ -252,36 +245,36 @@ function CantonCompareCalc() {
       )}
 
       <CalcCard
-        title="Profil à comparer"
+        title={t("calc.canton_compare.profile.title")}
         description={
           mode === "lump_sum"
-            ? `Impôt unique sur prestation en capital de ${formatCHF(projectedLPPCapital)} (1/5 du barème fédéral + cantonal).`
-            : "Charge fiscale annuelle simulée pour le profil renseigné."
+            ? t("calc.canton_compare.profile.desc.lump", { amount: formatCHF(projectedLPPCapital) })
+            : t("calc.canton_compare.profile.desc.annual")
         }
       >
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          <NumField label="Salaire brut (CHF)" value={form.grossSalary} onChange={(v) => set("grossSalary", v)} wikiId="ifd-icc" wikiTip="Salaire annuel brut soumis au barème cantonal et IFD." />
+          <NumField label={t("calc.canton_compare.field.gross")} value={form.grossSalary} onChange={(v) => set("grossSalary", v)} wikiId="ifd-icc" wikiTip={t("calc.canton_compare.tip.gross")} />
           <div className="space-y-1.5">
             <Label className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
-              <span>Situation civile</span>
-              <WikiTip articleId="ifd-icc" tip="Marié = splitting partiel (barème plus favorable). Famille monoparentale = barème spécial." />
+              <span>{t("calc.canton_compare.field.civil_status")}</span>
+              <WikiTip articleId="ifd-icc" tip={t("calc.canton_compare.tip.civil_status")} />
             </Label>
             <Select value={form.status} onValueChange={(v) => set("status", v as IncomeTaxInput["status"])}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="single">Célibataire</SelectItem>
-                <SelectItem value="married">Marié·e</SelectItem>
-                <SelectItem value="single_with_children">Famille monoparentale</SelectItem>
+                <SelectItem value="single">{t("calc.status.single")}</SelectItem>
+                <SelectItem value="married">{t("calc.status.married")}</SelectItem>
+                <SelectItem value="single_with_children">{t("calc.status.single_with_children")}</SelectItem>
               </SelectContent>
             </Select>
           </div>
           {form.status === "married" && (
-            <NumField label="Salaire brut conjoint (CHF)" value={form.spouseGrossSalary} onChange={(v) => set("spouseGrossSalary", v)} wikiId="ifd-icc" wikiTip="Marié = imposition commune. Le revenu du conjoint compte dans le barème." />
+            <NumField label={t("calc.canton_compare.field.spouse_salary")} value={form.spouseGrossSalary} onChange={(v) => set("spouseGrossSalary", v)} wikiId="ifd-icc" wikiTip={t("calc.canton_compare.tip.spouse_salary")} />
           )}
-          <NumField label="Nombre d'enfants" value={form.children} onChange={(v) => set("children", v)} />
-          <NumField label="Fortune nette (CHF)" value={form.netWealth} onChange={(v) => set("netWealth", v)} wikiId="fortune" wikiTip="Fortune imposable cantonale. Avoirs LPP / 3a exonérés tant que non retirés." />
+          <NumField label={t("calc.canton_compare.field.children")} value={form.children} onChange={(v) => set("children", v)} />
+          <NumField label={t("calc.canton_compare.field.wealth")} value={form.netWealth} onChange={(v) => set("netWealth", v)} wikiId="fortune" wikiTip={t("calc.canton_compare.tip.wealth")} />
           <div className="space-y-1.5">
-            <Label className="text-xs font-medium text-muted-foreground">Canton de référence</Label>
+            <Label className="text-xs font-medium text-muted-foreground">{t("calc.canton_compare.field.reference")}</Label>
             <Select
               value={form.referenceCanton}
               onValueChange={(v) => set("referenceCanton", v as SelectableCantonCode)}
@@ -297,17 +290,15 @@ function CantonCompareCalc() {
         </div>
       </CalcCard>
 
-      {/* Encart roadmap — au-dessus du graphique */}
       <div className="flex items-start gap-3 rounded-lg border border-border bg-muted/40 p-3 text-sm">
         <Info className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
-        <p className="text-muted-foreground">
-          Comparaison sur les <strong className="text-foreground">6 cantons romands</strong> (GE, VD, VS, FR, NE, JU)
-          {" + "}<strong className="text-foreground">Zoug</strong> à titre de référence fiscale.
-          {" "}19 autres cantons disponibles prochainement (ZH, BS, BE, SZ, …).
-        </p>
+        <p
+          className="text-muted-foreground [&_strong]:text-foreground"
+          dangerouslySetInnerHTML={{ __html: t("calc.canton_compare.scope_notice.html") }}
+        />
       </div>
 
-      <CalcCard title="Classement par charge fiscale totale">
+      <CalcCard title={t("calc.canton_compare.ranking.title")}>
         <div className="h-[520px] w-full chart-rise">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={data} layout="vertical" margin={{ left: 12, right: 32, top: 8, bottom: 8 }}>
@@ -333,10 +324,7 @@ function CantonCompareCalc() {
                 itemStyle={{ whiteSpace: "normal" }}
                 labelStyle={{ whiteSpace: "normal" }}
                 formatter={(v: number, _: string, props) => {
-                  const isZG = props.payload.code === ZG_CODE;
-                  const label = isZG
-                    ? `${props.payload.name} · ${props.payload.effective}% · Hors Suisse romande.`
-                    : `${props.payload.name} · ${props.payload.effective}%`;
+                  const label = `${props.payload.name} · ${props.payload.effective}%`;
                   return [formatCHF(v), label];
                 }}
               />
@@ -344,8 +332,6 @@ function CantonCompareCalc() {
                 {data.map((d) => {
                   const isCheapest = cheapestRomand?.code === d.code;
                   const isZG = d.code === ZG_CODE;
-                  // ZG = exemple positif d'optimisation fiscale → vert translucide.
-                  // Plus avantageux Romandie → vert plein. Autres → teal (primary).
                   const fill = isCheapest || isZG ? "var(--success)" : "var(--primary)";
                   return <Cell key={d.code} fill={fill} fillOpacity={isZG ? 0.65 : 1} />;
                 })}
@@ -354,24 +340,23 @@ function CantonCompareCalc() {
           </ResponsiveContainer>
         </div>
 
-        {/* Séparateur visuel + badge ZG */}
         {hasZG && (
           <div className="mt-3 flex flex-wrap items-start gap-2 rounded-md border border-dashed border-success/40 bg-success/5 p-2 text-xs">
             <Sparkles className="mt-0.5 h-3.5 w-3.5 shrink-0 text-success" aria-hidden />
             <span className="font-semibold text-foreground shrink-0">ZG · Zoug</span>
             <span className="min-w-0 flex-1 text-muted-foreground break-words">
-              <span className="sm:hidden">Référence fiscalité optimisée</span>
+              <span className="sm:hidden">{t("calc.canton_compare.zg.short")}</span>
               <span className="hidden sm:inline">
-                Référence fiscalité optimisée (hors scope domicile v1, {romandsCount} cantons romands au-dessus)
+                {t("calc.canton_compare.zg.long", { count: romandsCount })}
               </span>
             </span>
           </div>
         )}
 
         <div className="mt-3 flex flex-wrap items-center gap-4 text-xs text-muted-foreground">
-          <Legend color="var(--success)" label="Canton le plus avantageux (Romandie)" />
-          <Legend color="var(--primary)" label="Cantons romands" />
-          <Legend color="var(--success)" label="Zoug · référence fiscale" opacity={0.65} />
+          <Legend color="var(--success)" label={t("calc.canton_compare.legend.cheapest")} />
+          <Legend color="var(--primary)" label={t("calc.canton_compare.legend.romand")} />
+          <Legend color="var(--success)" label={t("calc.canton_compare.legend.zg")} opacity={0.65} />
         </div>
       </CalcCard>
 
