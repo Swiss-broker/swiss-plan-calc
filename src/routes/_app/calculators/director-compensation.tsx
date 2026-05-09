@@ -672,6 +672,7 @@ function ComparisonTable({
   bestLabel?: string;
   currentLabel?: string;
 }) {
+  const t = useT();
   const currentRow = currentLabel
     ? results.find((r) => r.strategy.label === currentLabel)
     : undefined;
@@ -680,13 +681,13 @@ function ComparisonTable({
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>Stratégie</TableHead>
-            <TableHead className="text-right">Salaire brut</TableHead>
-            <TableHead className="text-right">IS société</TableHead>
-            <TableHead className="text-right">Dividendes</TableHead>
-            <TableHead className="text-right">Impôt revenu</TableHead>
-            <TableHead className="text-right">Réserves</TableHead>
-            <TableHead className="text-right font-bold">Net dirigeant</TableHead>
+            <TableHead>{t("calc.dir.col.strategy")}</TableHead>
+            <TableHead className="text-right">{t("calc.dir.col.gross_salary")}</TableHead>
+            <TableHead className="text-right">{t("calc.dir.col.corporate_tax")}</TableHead>
+            <TableHead className="text-right">{t("calc.dir.col.dividends")}</TableHead>
+            <TableHead className="text-right">{t("calc.dir.col.income_tax")}</TableHead>
+            <TableHead className="text-right">{t("calc.dir.col.reserves")}</TableHead>
+            <TableHead className="text-right font-bold">{t("calc.dir.col.net")}</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -708,63 +709,50 @@ function ComparisonTable({
                     <div className="flex items-center gap-1.5 font-medium">
                       {r.strategy.label}
                       {isCurrent && (
-                        <Badge variant="outline" className="text-[10px]">Actuel</Badge>
+                        <Badge variant="outline" className="text-[10px]">{t("calc.dir.badge.current")}</Badge>
                       )}
                       {isBest && (
                         <Badge variant="secondary" className="bg-success/15 text-success-foreground text-[10px]">
-                          <Sparkles className="mr-1 h-3 w-3" /> Recommandée
+                          <Sparkles className="mr-1 h-3 w-3" /> {t("calc.dir.badge.recommended")}
                         </Badge>
                       )}
                     </div>
                     <div className="text-[10px] text-muted-foreground">
-                      Effectif : {eff.s.toFixed(0)}/{eff.d.toFixed(0)}/{eff.rr.toFixed(0)}
+                      {t("calc.dir.effective", { s: eff.s.toFixed(0), d: eff.d.toFixed(0), r: eff.rr.toFixed(0) })}
                       {adjusted && (
                         <Tooltip>
                           <TooltipTrigger asChild>
                             <span className="ml-1 cursor-help text-warning">
-                              (ajusté)
+                              {t("calc.dir.adjusted")}
                             </span>
                           </TooltipTrigger>
                           <TooltipContent className="max-w-xs text-xs">
-                            La répartition demandée impliquait{" "}
-                            {formatCHF(r.company.dividendsTargeted)} de dividendes,
-                            mais le bénéfice net après impôt société ne permet que{" "}
-                            {formatCHF(r.company.dividendsPaid)}. Le delta a été
-                            absorbé par les charges et l'IS.
+                            {t("calc.dir.adjusted.tip", {
+                              targeted: formatCHF(r.company.dividendsTargeted),
+                              paid: formatCHF(r.company.dividendsPaid),
+                            })}
                           </TooltipContent>
                         </Tooltip>
                       )}
                     </div>
                   </div>
                 </TableCell>
-                <TableCell className="text-right tabular-nums">
-                  {formatCHF(r.company.grossSalary)}
-                </TableCell>
-                <TableCell className="text-right tabular-nums text-muted-foreground">
-                  {formatCHF(r.company.corporateTax)}
-                </TableCell>
-                <TableCell className="text-right tabular-nums">
-                  {formatCHF(r.company.dividendsPaid)}
-                </TableCell>
-                <TableCell className="text-right tabular-nums text-muted-foreground">
-                  {formatCHF(r.director.totalIncomeTax)}
-                </TableCell>
-                <TableCell className="text-right tabular-nums">
-                  {formatCHF(r.retainedInCompany)}
-                </TableCell>
-                <TableCell className="text-right font-semibold tabular-nums">
-                  {formatCHF(r.directorNet)}
-                </TableCell>
+                <TableCell className="text-right tabular-nums">{formatCHF(r.company.grossSalary)}</TableCell>
+                <TableCell className="text-right tabular-nums text-muted-foreground">{formatCHF(r.company.corporateTax)}</TableCell>
+                <TableCell className="text-right tabular-nums">{formatCHF(r.company.dividendsPaid)}</TableCell>
+                <TableCell className="text-right tabular-nums text-muted-foreground">{formatCHF(r.director.totalIncomeTax)}</TableCell>
+                <TableCell className="text-right tabular-nums">{formatCHF(r.retainedInCompany)}</TableCell>
+                <TableCell className="text-right font-semibold tabular-nums">{formatCHF(r.directorNet)}</TableCell>
               </TableRow>
             );
           })}
           {currentRow && (
             <TableRow className="border-t-2 border-primary/30 bg-primary/5">
               <TableCell className="text-xs font-semibold uppercase text-muted-foreground">
-                Δ vs actuel
+                {t("calc.dir.delta_vs_current")}
               </TableCell>
               <TableCell colSpan={6} className="text-[11px] text-muted-foreground">
-                Net dirigeant actuel : {formatCHF(currentRow.directorNet)}. Détail des écarts ci-dessous.
+                {t("calc.dir.current_net", { amount: formatCHF(currentRow.directorNet) })}
               </TableCell>
             </TableRow>
           )}
