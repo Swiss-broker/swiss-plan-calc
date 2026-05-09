@@ -27,6 +27,11 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
       setActiveLanguage(stored);
       return stored;
     }
+    const browser = detectBrowserLanguage();
+    if (browser) {
+      setActiveLanguage(browser);
+      return browser;
+    }
     return getActiveLanguage();
   });
 
