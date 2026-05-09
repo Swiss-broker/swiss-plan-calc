@@ -1,6 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
-import { Input } from "@/components/ui/input";
 import { NumField as BaseNumField } from "@/components/ui/num-field";
 import { Label } from "@/components/ui/label";
 import {
@@ -17,6 +16,7 @@ import { ExportPdfButton } from "@/components/calculators/ExportPdfButton";
 import { exportRetirementPdf } from "@/lib/pdf/reports";
 import { SaveSimulationButton } from "@/components/calculators/SaveSimulationButton";
 import { useAuth } from "@/contexts/AuthContext";
+import { useT } from "@/contexts/LanguageContext";
 
 import { zodValidator, fallback } from "@tanstack/zod-adapter";
 import { z } from "zod";
@@ -36,6 +36,7 @@ export const Route = createFileRoute("/_app/calculators/retirement")({
 });
 
 function RetirementCalc() {
+  const t = useT();
   const { clientId } = Route.useSearch();
   const { client, prefill } = usePrefillFromClient(clientId, "retirement");
   const [form, setForm] = useState({
@@ -72,10 +73,10 @@ function RetirementCalc() {
 
   const reco =
     compare.recommendation === "annuity"
-      ? "Privilégier la rente : sécurité à vie + revenu garanti."
+      ? t("calc.retirement.reco.annuity")
       : compare.recommendation === "lump_sum"
-        ? "Privilégier le capital : meilleur rendement net après impôts si bien placé."
-        : "Mixte recommandé : 50/50 capital + rente pour équilibrer sécurité et performance.";
+        ? t("calc.retirement.reco.lump")
+        : t("calc.retirement.reco.mixed");
 
   const { user } = useAuth();
   const handleExport = () =>
@@ -88,29 +89,26 @@ function RetirementCalc() {
     });
   const [guideOpen, setGuideOpen] = useState(false);
   const guideSteps: GuideStep[] = [
-    { title: "Bienvenue", body: "Compare la rente viagère LPP et le retrait du capital." },
-    { title: "Taux de conversion", body: "Pour 2026 : 6.0 % sur la part obligatoire (en baisse continue). Vérifiez le taux de votre caisse." },
-    { title: "Hypothèses", body: "Espérance de vie, rendement post-retraite, fiscalité du capital — paramètres clés du verdict." }
+    { title: t("calc.retirement.guide.s1.title"), body: t("calc.retirement.guide.s1.body") },
+    { title: t("calc.retirement.guide.s2.title"), body: t("calc.retirement.guide.s2.body") },
+    { title: t("calc.retirement.guide.s3.title"), body: t("calc.retirement.guide.s3.body") },
   ];
-
-
 
   return (
     <div className="space-y-6">
-      <GuideMode open={guideOpen} onClose={() => setGuideOpen(false)} steps={guideSteps} title="Guide rente vs capital" />
+      <GuideMode open={guideOpen} onClose={() => setGuideOpen(false)} steps={guideSteps} title={t("calc.retirement.guide.title")} />
       <div className="flex justify-end"><GuideToggleButton onClick={() => setGuideOpen(true)} /></div>
-
 
       {client && <ClientLinkBanner client={client} />}
       <div className="grid grid-cols-1 gap-6 md:grid-cols-5">
         <div className="md:col-span-3">
-          <CalcCard title="Hypothèses" description="Comparez le retrait en capital au versement en rente.">
+          <CalcCard title={t("calc.retirement.section.title")} description={t("calc.retirement.section.desc")}>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <NumField label="Capital LPP au moment de la retraite" value={form.capital} onChange={(v) => set("capital", v)} wikiId="lpp-conversion" wikiTip="Avoir LPP total disponible au départ à la retraite (obligatoire + surobligatoire)." />
+              <NumField label={t("calc.retirement.field.capital")} value={form.capital} onChange={(v) => set("capital", v)} wikiId="lpp-conversion" wikiTip={t("calc.retirement.tip.capital")} />
               <div className="space-y-1.5">
                 <Label className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
-                  <span>Canton de retrait</span>
-                  <WikiTip articleId="lpp-conversion" tip="Canton de l'institution au moment du retrait — peut différer du domicile (ex. transfert vers Zoug)." />
+                  <span>{t("calc.retirement.field.canton")}</span>
+                  <WikiTip articleId="lpp-conversion" tip={t("calc.retirement.tip.canton")} />
                 </Label>
                 <Select value={form.canton} onValueChange={(v) => set("canton", v)}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
@@ -121,58 +119,57 @@ function RetirementCalc() {
                   </SelectContent>
                 </Select>
                 <p className="text-[10px] text-muted-foreground">
-                  Canton de l'institution au moment du retrait, qui peut différer du canton de domicile
-                  (transfert vers une institution en canton à fiscalité favorable, ex. Zoug).
+                  {t("calc.retirement.note.canton")}
                 </p>
               </div>
               <div className="space-y-1.5">
-                <Label className="text-xs font-medium text-muted-foreground">Situation civile</Label>
+                <Label className="text-xs font-medium text-muted-foreground">{t("calc.retirement.field.civil_status")}</Label>
                 <Select value={form.status} onValueChange={(v) => set("status", v as typeof form.status)}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="single">Célibataire</SelectItem>
-                    <SelectItem value="married">Marié·e</SelectItem>
-                    <SelectItem value="single_with_children">Famille monoparentale</SelectItem>
+                    <SelectItem value="single">{t("calc.status.single")}</SelectItem>
+                    <SelectItem value="married">{t("calc.status.married")}</SelectItem>
+                    <SelectItem value="single_with_children">{t("calc.status.single_with_children")}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
-              <NumField label="Taux de conversion (%)" value={form.conversionRate} onChange={(v) => set("conversionRate", v)} step={0.05} wikiId="lpp-conversion" wikiTip="Taux légal 2026 : 6.8 %. Certaines caisses appliquent déjà 5.5 % sur la part surobligatoire." />
-              <NumField label="Espérance de vie résiduelle (ans)" value={form.yearsAlive} onChange={(v) => set("yearsAlive", v)} wikiId="lpp-conversion" wikiTip="Durée de versement attendue de la rente. OFAS : ~22 ans à 65 ans hommes, ~24 ans femmes." />
-              <NumField label="Rendement net du capital placé (%/an)" value={form.selfReturnRate} onChange={(v) => set("selfReturnRate", v)} step={0.1} wikiId="lpp-conversion" wikiTip="Hypothèse de rendement net si vous prenez le capital et l'investissez vous-même." />
-              <NumField label="Taux marginal sur la rente (%)" value={form.rentMarginalRate} onChange={(v) => set("rentMarginalRate", v)} step={0.5} wikiId="lpp-conversion" wikiTip="La rente LPP est imposée à 100 % comme un revenu. Tranche marginale de votre revenu retraite total." />
+              <NumField label={t("calc.retirement.field.conversion_rate")} value={form.conversionRate} onChange={(v) => set("conversionRate", v)} step={0.05} wikiId="lpp-conversion" wikiTip={t("calc.retirement.tip.conversion_rate")} />
+              <NumField label={t("calc.retirement.field.life_years")} value={form.yearsAlive} onChange={(v) => set("yearsAlive", v)} wikiId="lpp-conversion" wikiTip={t("calc.retirement.tip.life_years")} />
+              <NumField label={t("calc.retirement.field.return_rate")} value={form.selfReturnRate} onChange={(v) => set("selfReturnRate", v)} step={0.1} wikiId="lpp-conversion" wikiTip={t("calc.retirement.tip.return_rate")} />
+              <NumField label={t("calc.retirement.field.marginal_rate")} value={form.rentMarginalRate} onChange={(v) => set("rentMarginalRate", v)} step={0.5} wikiId="lpp-conversion" wikiTip={t("calc.retirement.tip.marginal_rate")} />
             </div>
           </CalcCard>
         </div>
         <div className="space-y-4 md:col-span-2">
-          <CalcCard title="Impôt unique sur capital (1/5 du barème)">
+          <CalcCard title={t("calc.retirement.lump_tax.title")}>
             <Row>
-              <MoneyTile label="IFD" value={lumpTax.ifd} tip="Impôt fédéral direct, barème progressif fédéral identique dans toute la Suisse." />
-              <MoneyTile label="Cantonal" value={lumpTax.cantonal} tip="Part cantonale de l'impôt sur le revenu (barème du canton)." />
+              <MoneyTile label={t("calc.income_tax.tile.ifd")} value={lumpTax.ifd} tip={t("calc.income_tax.tip.ifd")} />
+              <MoneyTile label={t("calc.income_tax.tile.cantonal")} value={lumpTax.cantonal} tip={t("calc.income_tax.tip.cantonal")} />
             </Row>
             <div className="mt-3">
-              <MoneyTile label="Total impôt capital" value={lumpTax.total} tone="warning" big tip="Total de l'impôt unique sur le retrait du capital de prévoyance." />
+              <MoneyTile label={t("calc.retirement.lump_tax.total")} value={lumpTax.total} tone="warning" big tip={t("calc.retirement.lump_tax.total.tip")} />
             </div>
           </CalcCard>
         </div>
       </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <CalcCard title="Scénario rente">
+        <CalcCard title={t("calc.retirement.scen.annuity")}>
           <Row>
-            <MoneyTile label="Total brut versé" value={compare.totalRente} tip="Somme totale brute (salaire + dividendes) sortie de la société." />
-            <MoneyTile label="Net après impôts" value={compare.netAnnuity} tone="primary" big tip="Montant qui reste après application des impôts." />
+            <MoneyTile label={t("calc.retirement.scen.annuity.gross")} value={compare.totalRente} tip={t("calc.retirement.scen.annuity.gross.tip")} />
+            <MoneyTile label={t("calc.retirement.scen.annuity.net")} value={compare.netAnnuity} tone="primary" big tip={t("calc.retirement.scen.annuity.net.tip")} />
           </Row>
         </CalcCard>
-        <CalcCard title="Scénario capital">
+        <CalcCard title={t("calc.retirement.scen.lump")}>
           <Row>
-            <MoneyTile label="Capital après impôt" value={form.capital - lumpTax.total} tip="Capital net qui te reste après impôt unique sur le retrait." />
-            <MoneyTile label="Net projeté" value={compare.netLumpSum} tone="primary" big tip="Capital net projeté à l'échéance, frais et impôts déduits." />
+            <MoneyTile label={t("calc.retirement.scen.lump.after_tax")} value={form.capital - lumpTax.total} tip={t("calc.retirement.scen.lump.after_tax.tip")} />
+            <MoneyTile label={t("calc.retirement.scen.lump.projected")} value={compare.netLumpSum} tone="primary" big tip={t("calc.retirement.scen.lump.projected.tip")} />
           </Row>
         </CalcCard>
       </div>
 
       <div className="rounded-2xl border border-success/30 bg-success/5 p-5">
-        <div className="text-xs font-medium uppercase tracking-wider text-success-foreground/80">Recommandation</div>
+        <div className="text-xs font-medium uppercase tracking-wider text-success-foreground/80">{t("calc.retirement.reco.title")}</div>
         <p className="mt-1 text-sm">{reco}</p>
       </div>
 

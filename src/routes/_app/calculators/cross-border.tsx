@@ -7,7 +7,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Input } from "@/components/ui/input";
 import { NumField as BaseNumField } from "@/components/ui/num-field";
 import { Label } from "@/components/ui/label";
 import { Globe, Info, ArrowRightLeft } from "lucide-react";
@@ -21,6 +20,7 @@ import {
 } from "@/lib/tax/cross-border";
 import { CANTON_BY_CODE } from "@/lib/swiss/cantons";
 import { exportCrossBorderPdf } from "@/lib/pdf/reports";
+import { useT } from "@/contexts/LanguageContext";
 
 import { zodValidator, fallback } from "@tanstack/zod-adapter";
 import { z } from "zod";
@@ -42,6 +42,7 @@ export const Route = createFileRoute("/_app/calculators/cross-border")({
 const ELIGIBLE_CANTONS = [...FR_ACCORD_CANTONS, "GE", "TI"] as const;
 
 function CrossBorderCalc() {
+  const t = useT();
   const { clientId } = Route.useSearch();
   const { client, prefill } = usePrefillFromClient(clientId, "cross-border");
   const [form, setForm] = useState({
@@ -60,35 +61,32 @@ function CrossBorderCalc() {
   const result = useMemo(() => computeCrossBorder(form), [form]);
 
   const regimeBadge = isFrAccordCanton(form.workCanton)
-    ? "Accord 4.5 %"
+    ? t("calc.cross_border.regime.fr_accord")
     : form.workCanton === "GE"
-      ? "GE · IS genevoise"
+      ? t("calc.cross_border.regime.ge")
       : form.workCanton === "TI"
-        ? "TI · accord 2023"
-        : "Hors régime";
+        ? t("calc.cross_border.regime.ti")
+        : t("calc.cross_border.regime.none");
   const [guideOpen, setGuideOpen] = useState(false);
   const guideSteps: GuideStep[] = [
-    { title: "Bienvenue", body: "Calculateur dédié aux travailleurs frontaliers (accord franco-suisse)." },
-    { title: "Statut", body: "Frontalier de droit (rentre tous les jours) ou quasi-résident. Régime fiscal différent." },
-    { title: "Imposition", body: "Selon le canton (GE = imposition en Suisse, VD/NE/JU = imposition en France)." }
+    { title: t("calc.cross_border.guide.s1.title"), body: t("calc.cross_border.guide.s1.body") },
+    { title: t("calc.cross_border.guide.s2.title"), body: t("calc.cross_border.guide.s2.body") },
+    { title: t("calc.cross_border.guide.s3.title"), body: t("calc.cross_border.guide.s3.body") },
   ];
-
-
 
   return (
     <div className="grid grid-cols-1 gap-6 md:grid-cols-5">
-      <GuideMode open={guideOpen} onClose={() => setGuideOpen(false)} steps={guideSteps} title="Guide frontaliers" />
+      <GuideMode open={guideOpen} onClose={() => setGuideOpen(false)} steps={guideSteps} title={t("calc.cross_border.guide.title")} />
       <div className="flex justify-end"><GuideToggleButton onClick={() => setGuideOpen(true)} /></div>
-
 
       {client && <div className="md:col-span-5"><ClientLinkBanner client={client} /></div>}
       <div className="md:col-span-3">
         <CalcCard
-          title="Profil frontalier"
-          description="Calcul automatique du régime applicable (FR-CH 4.5 %, GE, TI)."
+          title={t("calc.cross_border.section.title")}
+          description={t("calc.cross_border.section.desc")}
         >
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <Field label="Canton de travail">
+            <Field label={t("calc.cross_border.field.work_canton")}>
               <Select value={form.workCanton} onValueChange={(v) => set("workCanton", v)}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
@@ -100,43 +98,43 @@ function CrossBorderCalc() {
                 </SelectContent>
               </Select>
             </Field>
-            <Field label="Régime applicable" wikiId="frontaliers" wikiTip="Le régime dépend du canton de travail : accord franco-suisse 4.5 % (VD/NE/JU/BS/BL/BE/SO/VS), Genève (IS genevoise rétrocédée), Tessin (accord 2023).">
+            <Field label={t("calc.cross_border.field.regime")} wikiId="frontaliers" wikiTip={t("calc.cross_border.tip.regime")}>
               <div className="flex h-10 items-center rounded-md border border-input bg-muted/40 px-3 text-sm">
                 <Globe className="mr-2 h-4 w-4 text-primary" />
                 {regimeBadge}
               </div>
             </Field>
             <NumField
-              label="Salaire annuel brut (CHF)"
+              label={t("calc.cross_border.field.gross")}
               value={form.grossAnnualSalary}
               onChange={(v) => set("grossAnnualSalary", v)}
             />
-            <Field label="Situation civile">
+            <Field label={t("calc.cross_border.field.civil_status")}>
               <Select
                 value={form.status}
                 onValueChange={(v) => set("status", v as "single" | "married")}
               >
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="single">Célibataire</SelectItem>
-                  <SelectItem value="married">Marié·e / pacsé·e</SelectItem>
+                  <SelectItem value="single">{t("calc.cross_border.status.single")}</SelectItem>
+                  <SelectItem value="married">{t("calc.cross_border.status.married")}</SelectItem>
                 </SelectContent>
               </Select>
             </Field>
             <NumField
-              label="Enfants à charge"
+              label={t("calc.cross_border.field.children")}
               value={form.children}
               onChange={(v) => set("children", v)}
             />
             {form.status === "married" && (
               <NumField
-                label="Salaire conjoint annuel (CHF)"
+                label={t("calc.cross_border.field.spouse_salary")}
                 value={form.spouseGrossSalary}
                 onChange={(v) => set("spouseGrossSalary", v)}
               />
             )}
             <NumField
-              label="Taux EUR/CHF"
+              label={t("calc.cross_border.field.eur_chf")}
               value={form.eurChfRate}
               onChange={(v) => set("eurChfRate", v)}
               step={0.01}
@@ -145,7 +143,7 @@ function CrossBorderCalc() {
         </CalcCard>
 
         <div className="mt-4">
-          <CalcCard title="Notes du régime">
+          <CalcCard title={t("calc.cross_border.notes.title")}>
             <ul className="space-y-2 text-sm text-muted-foreground">
               {result.notes.map((n, i) => (
                 <li key={i} className="flex gap-2">
@@ -166,13 +164,13 @@ function CrossBorderCalc() {
         </div>
         <CalcCard title={result.regimeLabel}>
           <Row>
-            <MoneyTile label="Net annuel" value={result.netAnnual} tone="success" big tip="Revenu net annuel après tous prélèvements (cotisations + impôts)." />
-            <PctTile label="Charge totale" value={result.totalRate} tone="primary" tip="Charge fiscale totale en pourcentage du revenu brut." />
+            <MoneyTile label={t("calc.cross_border.tile.net")} value={result.netAnnual} tone="success" big tip={t("calc.cross_border.tile.net.tip")} />
+            <PctTile label={t("calc.cross_border.tile.total_rate")} value={result.totalRate} tone="primary" tip={t("calc.cross_border.tile.total_rate.tip")} />
           </Row>
           <div className="mt-3 grid grid-cols-2 gap-3">
-            <MoneyTile label="Retenue Suisse" value={result.swissTax} hint={`${result.swissRate}%`} />
+            <MoneyTile label={t("calc.cross_border.tile.swiss_tax")} value={result.swissTax} hint={`${result.swissRate}%`} />
             <MoneyTile
-              label="Impôt résident"
+              label={t("calc.cross_border.tile.foreign_tax")}
               value={result.foreignTax}
               hint={`${result.foreignRate}%`}
             />
@@ -180,14 +178,16 @@ function CrossBorderCalc() {
         </CalcCard>
 
         {result.alternative && (
-          <CalcCard title="Comparatif alternatif">
+          <CalcCard title={t("calc.cross_border.alt.title")}>
             <div className="flex items-start gap-2 text-sm">
               <ArrowRightLeft className="mt-0.5 h-4 w-4 text-primary" />
               <div>
                 <div className="font-medium">{result.alternative.label}</div>
                 <div className="mt-1 text-muted-foreground">
-                  Total : {formatCHF(result.alternative.totalTax)} · Net :{" "}
-                  {formatCHF(result.alternative.netAnnual)}
+                  {t("calc.cross_border.alt.line", {
+                    total: formatCHF(result.alternative.totalTax),
+                    net: formatCHF(result.alternative.netAnnual),
+                  })}
                 </div>
                 <div
                   className={`mt-2 text-xs font-semibold ${
@@ -196,10 +196,9 @@ function CrossBorderCalc() {
                       : "text-destructive"
                   }`}
                 >
-                  Régime actuel{" "}
                   {result.alternative.delta > 0
-                    ? `gagne ${formatCHF(result.alternative.delta)}`
-                    : `coûte ${formatCHF(Math.abs(result.alternative.delta))} de plus`}
+                    ? t("calc.cross_border.alt.gain", { amount: formatCHF(result.alternative.delta) })
+                    : t("calc.cross_border.alt.cost", { amount: formatCHF(Math.abs(result.alternative.delta)) })}
                 </div>
               </div>
             </div>
