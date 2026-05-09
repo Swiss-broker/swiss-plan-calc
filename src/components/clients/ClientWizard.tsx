@@ -961,7 +961,9 @@ function StepPatrimoine({
   update,
   workStatus,
 }: StepProps & { workStatus: WorkStatus }) {
+  const t = useT();
   const rules = getWorkStatusRules(workStatus);
+  const shortLabel = t(`enum.work_status.${workStatus}`);
   const netSelfIncome = Number(form.gross_annual_salary) || 0;
   const cap3a = rules.hasLPP
     ? rules.pillar3aCap
@@ -973,16 +975,16 @@ function StepPatrimoine({
     <div className="space-y-6">
       {rules.hasLPP ? (
         <div>
-          <h3 className="text-sm font-semibold">2e pilier (LPP)</h3>
+          <h3 className="text-sm font-semibold">{t("wizard.lpp.title")}</h3>
           <div className="mt-3 grid gap-4 sm:grid-cols-2">
-            <Field label="Avoir LPP actuel">
+            <Field label={t("wizard.lpp.balance")}>
               <NumField
                 value={form.lpp_current_balance}
                 onChange={(v) => update("lpp_current_balance", v)}
                 suffix="CHF"
               />
             </Field>
-            <Field label="Salaire assuré LPP">
+            <Field label={t("wizard.lpp.insured")}>
               <NumField
                 value={form.lpp_insured_salary}
                 onChange={(v) => update("lpp_insured_salary", v)}
@@ -990,7 +992,7 @@ function StepPatrimoine({
               />
             </Field>
             {rules.canBuybackLPP && (
-              <Field label="Capacité de rachat LPP" hint="Maximum mentionné par la caisse">
+              <Field label={t("wizard.lpp.buyback")} hint={t("wizard.lpp.buyback.hint")}>
                 <NumField
                   value={form.lpp_max_buyback}
                   onChange={(v) => update("lpp_max_buyback", v)}
@@ -998,7 +1000,7 @@ function StepPatrimoine({
                 />
               </Field>
             )}
-            <Field label="Plan LPP">
+            <Field label={t("wizard.lpp.plan")}>
               <Select value={form.lpp_plan} onValueChange={(v) => update("lpp_plan", v as LppPlan)}>
                 <SelectTrigger>
                   <SelectValue />
@@ -1016,16 +1018,14 @@ function StepPatrimoine({
         </div>
       ) : !rules.isRetired ? (
         <div className="rounded-lg border border-dashed border-muted-foreground/30 bg-muted/20 p-3 text-xs text-muted-foreground">
-          Statut <strong>{rules.shortLabel}</strong> : pas d'affiliation LPP obligatoire.
-          {rules.isSelfEmployed
-            ? " Le client peut s'affilier facultativement à une institution de prévoyance."
-            : ""}
+          {t("wizard.lpp.no_aff", { label: shortLabel })}
+          {rules.isSelfEmployed ? t("wizard.lpp.self_optional") : ""}
         </div>
       ) : (
         <div>
-          <h3 className="text-sm font-semibold">2e pilier (LPP) · capital restant</h3>
+          <h3 className="text-sm font-semibold">{t("wizard.lpp.title_retired")}</h3>
           <div className="mt-3 grid gap-4 sm:grid-cols-2">
-            <Field label="Capital LPP non retiré">
+            <Field label={t("wizard.lpp.balance_remaining")}>
               <NumField
                 value={form.lpp_current_balance}
                 onChange={(v) => update("lpp_current_balance", v)}
@@ -1039,11 +1039,11 @@ function StepPatrimoine({
       <Separator />
       {cap3a > 0 ? (
         <div>
-          <h3 className="text-sm font-semibold">3e pilier (3a)</h3>
+          <h3 className="text-sm font-semibold">{t("wizard.p3a.title")}</h3>
           <div className="mt-3 grid gap-4 sm:grid-cols-2">
             <Field
-              label="Versement annuel 3a"
-              hint={`Plafond 2026 ${rules.shortLabel.toLowerCase()} : ${formatCHF(cap3a)}`}
+              label={t("wizard.p3a.contribution")}
+              hint={t("wizard.p3a.cap_hint", { label: shortLabel.toLowerCase(), amount: formatCHF(cap3a) })}
             >
               <NumField
                 value={form.pillar_3a_annual_contribution}
@@ -1053,24 +1053,24 @@ function StepPatrimoine({
             </Field>
           </div>
           <PensionAccountsEditor
-            label="Comptes 3a existants"
-            hint="Saisis chaque compte 3a (banque ou assurance) avec son solde actuel."
+            label={t("wizard.p3a.accounts.label")}
+            hint={t("wizard.p3a.accounts.hint")}
             value={form.pillar_3a_accounts}
             onChange={(v) => update("pillar_3a_accounts", v)}
           />
         </div>
       ) : (
         <div className="rounded-lg border border-dashed border-muted-foreground/30 bg-muted/20 p-3 text-xs text-muted-foreground">
-          Statut <strong>{rules.shortLabel}</strong> : versement 3a non applicable
-          {rules.isRetired ? " (au-delà de l'âge AVS)" : " (pas de revenu d'activité)"}.
+          {t("wizard.p3a.not_applicable", { label: shortLabel })}
+          {rules.isRetired ? t("wizard.p3a.reason.retired") : t("wizard.p3a.reason.no_income")}.
         </div>
       )}
 
       <Separator />
       <div>
-        <h3 className="text-sm font-semibold">Comptes de libre passage</h3>
+        <h3 className="text-sm font-semibold">{t("wizard.vested.title")}</h3>
         <p className="mt-1 text-xs text-muted-foreground">
-          Anciens 2e pilier transférés sur des comptes/polices de libre passage (changement d'emploi, indépendance, etc.).
+          {t("wizard.vested.desc")}
         </p>
         <PensionAccountsEditor
           value={form.vested_benefits_accounts}
@@ -1080,30 +1080,30 @@ function StepPatrimoine({
 
       <Separator />
       <div>
-        <h3 className="text-sm font-semibold">Patrimoine</h3>
+        <h3 className="text-sm font-semibold">{t("wizard.assets.title")}</h3>
         <div className="mt-3 grid gap-4 sm:grid-cols-2">
-          <Field label="Comptes bancaires">
+          <Field label={t("wizard.assets.bank")}>
             <NumField
               value={form.bank_accounts}
               onChange={(v) => update("bank_accounts", v)}
               suffix="CHF"
             />
           </Field>
-          <Field label="Titres / portefeuille">
+          <Field label={t("wizard.assets.securities")}>
             <NumField
               value={form.securities}
               onChange={(v) => update("securities", v)}
               suffix="CHF"
             />
           </Field>
-          <Field label="Bien immobilier (valeur fiscale)">
+          <Field label={t("wizard.assets.realestate")}>
             <NumField
               value={form.real_estate_value}
               onChange={(v) => update("real_estate_value", v)}
               suffix="CHF"
             />
           </Field>
-          <Field label="Dette hypothécaire">
+          <Field label={t("wizard.assets.mortgage")}>
             <NumField
               value={form.mortgage_debt}
               onChange={(v) => update("mortgage_debt", v)}
@@ -1127,6 +1127,7 @@ function PensionAccountsEditor({
   label?: string;
   hint?: string;
 }) {
+  const t = useT();
   const total = value.reduce((s, a) => s + (Number(a.balance) || 0), 0);
   const add = () => onChange([...value, { institution: "", balance: 0 }]);
   const remove = (i: number) => onChange(value.filter((_, idx) => idx !== i));
@@ -1138,21 +1139,21 @@ function PensionAccountsEditor({
       {label && <div className="text-xs font-medium text-muted-foreground">{label}</div>}
       {hint && <p className="text-xs text-muted-foreground">{hint}</p>}
       {value.length === 0 ? (
-        <p className="text-xs italic text-muted-foreground">Aucun compte enregistré.</p>
+        <p className="text-xs italic text-muted-foreground">{t("wizard.accounts.empty")}</p>
       ) : (
         <div className="space-y-2">
           {value.map((a, i) => (
             <div key={i} className="flex items-end gap-2">
               <div className="flex-1">
-                <Label className="text-[11px] text-muted-foreground">Institution</Label>
+                <Label className="text-[11px] text-muted-foreground">{t("wizard.accounts.institution")}</Label>
                 <Input
                   value={a.institution}
                   onChange={(e) => patch(i, { institution: e.target.value })}
-                  placeholder="UBS, Swiss Life, VIAC…"
+                  placeholder={t("wizard.accounts.institution.placeholder")}
                 />
               </div>
               <div className="w-40">
-                <Label className="text-[11px] text-muted-foreground">Solde</Label>
+                <Label className="text-[11px] text-muted-foreground">{t("wizard.accounts.balance")}</Label>
                 <NumField
                   value={String(a.balance || "")}
                   onChange={(v) => patch(i, { balance: Number(v) || 0 })}
@@ -1165,12 +1166,12 @@ function PensionAccountsEditor({
             </div>
           ))}
           <div className="text-right text-xs text-muted-foreground">
-            Total : <span className="font-medium text-foreground">{formatCHF(total)}</span>
+            {t("wizard.accounts.total")} <span className="font-medium text-foreground">{formatCHF(total)}</span>
           </div>
         </div>
       )}
       <Button type="button" variant="outline" size="sm" onClick={add}>
-        <Plus className="h-3.5 w-3.5" /> Ajouter un compte
+        <Plus className="h-3.5 w-3.5" /> {t("wizard.accounts.add")}
       </Button>
     </div>
   );
