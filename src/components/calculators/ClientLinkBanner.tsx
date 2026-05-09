@@ -7,8 +7,10 @@ import type { Client } from "@/lib/clients/types";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { getClientDisplayName } from "@/lib/clients/to-calculator-input";
+import { useT } from "@/contexts/LanguageContext";
 
 export function ClientLinkBanner({ client }: { client: Client }) {
+  const t = useT();
   return (
     <div
       className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border-2 border-primary/30 bg-primary/5 px-4 py-3"
@@ -21,21 +23,21 @@ export function ClientLinkBanner({ client }: { client: Client }) {
         </div>
         <div className="min-w-0">
           <div className="text-[11px] font-medium uppercase tracking-wider text-primary">
-            Simulation pour
+            {t("client_link.simulation_for")}
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <span className="text-sm font-semibold text-foreground">
               {getClientDisplayName(client)}
             </span>
             <Badge variant="outline" className="text-[10px]">
-              Pré-rempli depuis dossier
+              {t("client_link.prefilled_badge")}
             </Badge>
           </div>
         </div>
       </div>
       <Link to="/clients/$clientId" params={{ clientId: client.id }}>
         <Button variant="outline" size="sm">
-          <ArrowLeft className="h-4 w-4" /> Retour à la fiche
+          <ArrowLeft className="h-4 w-4" /> {t("client_link.back_to_file")}
         </Button>
       </Link>
     </div>
