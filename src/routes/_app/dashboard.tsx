@@ -26,6 +26,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useT, useLanguage } from "@/contexts/LanguageContext";
 import { formatDateShort } from "@/lib/i18n/format";
+import { t as translate } from "@/lib/i18n";
 
 export const Route = createFileRoute("/_app/dashboard")({
   head: () => ({ meta: [{ title: translate("dash.head.title") }] }),
