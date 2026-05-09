@@ -24,6 +24,7 @@ import {
 } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useT } from "@/contexts/LanguageContext";
 import type { SimulationKind } from "@/lib/history/types";
 
 export function SaveSimulationButton({
