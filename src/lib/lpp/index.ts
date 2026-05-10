@@ -158,8 +158,10 @@ export function projectLPP(input: LPPProjectionInput): LPPProjectionResult {
 }
 
 export interface LPPBuybackPlanInput {
-  /** Capacité de rachat totale (CHF) */
+  /** Capacité de rachat totale (CHF) — informatif (plafond caisse) */
   buybackCapacity: number;
+  /** Montant effectivement racheté (CHF). Si non fourni, on utilise buybackCapacity (compat). */
+  actualBuyback?: number;
   /** Sur combien d'années étaler */
   years: number;
   /** Situation fiscale du contribuable */
@@ -169,8 +171,16 @@ export interface LPPBuybackPlanInput {
 export interface LPPBuybackPlanResult {
   /** Versement annuel prévu */
   yearlyAmount: number;
+  /** Montant total effectivement racheté (CHF) */
+  totalBought: number;
   /** Économie d'impôt totale sur la période */
   totalTaxSavings: number;
+  /** Taux marginal effectif appliqué (impact fiscal moyen sur la 1re année) */
+  effectiveMarginalRate: number;
+  /** Taux marginal théorique baseline (avant rachat) */
+  baselineMarginalRate: number;
+  /** Revenu net imposable baseline (référence pour l'utilisateur) */
+  baselineTaxableIncome: number;
   /** Détail année par année */
   yearly: Array<{
     year: number;
@@ -187,11 +197,13 @@ export interface LPPBuybackPlanResult {
  * Pour chaque année, on calcule l'impôt avec et sans rachat.
  */
 export function simulateBuybackPlan(input: LPPBuybackPlanInput): LPPBuybackPlanResult {
-  const yearlyAmount = Math.round(input.buybackCapacity / input.years);
+  const totalBought = Math.max(0, input.actualBuyback ?? input.buybackCapacity);
+  const years = Math.max(1, input.years);
+  const yearlyAmount = Math.round(totalBought / years);
   const baseline = computeIncomeTax(input.taxInput);
   let totalSavings = 0;
 
-  const yearly = Array.from({ length: input.years }, (_, i) => {
+  const yearly = Array.from({ length: years }, (_, i) => {
     const scenario = computeIncomeTax({
       ...input.taxInput,
       lppBuyback: yearlyAmount,
@@ -206,15 +218,52 @@ export function simulateBuybackPlan(input: LPPBuybackPlanInput): LPPBuybackPlanR
     };
   });
 
+  // Taux marginal effectif observé sur le rachat de la 1re année.
+  const effectiveMarginalRate =
+    yearlyAmount > 0 && yearly[0]
+      ? Math.round((yearly[0].taxSavings / yearlyAmount) * 1000) / 10
+      : 0;
+
   return {
     yearlyAmount,
+    totalBought,
     totalTaxSavings: Math.round(totalSavings),
+    effectiveMarginalRate,
+    baselineMarginalRate: baseline.marginalRate,
+    baselineTaxableIncome: baseline.taxableIncomeCC,
     yearly,
     averageReturn:
-      input.buybackCapacity > 0
-        ? Math.round((totalSavings / input.buybackCapacity) * 1000) / 10
+      totalBought > 0
+        ? Math.round((totalSavings / totalBought) * 1000) / 10
         : 0,
   };
+}
+
+/**
+ * Calcule rétroactivement l'avoir LPP estimé d'un assuré qui a cotisé depuis
+ * `entryAge` jusqu'à son âge actuel, sur la base d'un salaire stable et d'un
+ * taux d'intérêt minimal LPP.
+ *
+ * Hypothèses :
+ * - salaire constant (sur le salaire courant) — communiqué clairement à l'UI
+ * - taux d'intérêt = LPP_INTEREST_MIN_2026 (1.25%)
+ * - bonifications légales selon barème par tranche d'âge
+ */
+export function estimateRetroactiveLppBalance(opts: {
+  entryAge: number;
+  currentAge: number;
+  insuredSalary: number;
+  interestRate?: number;
+}): number {
+  const start = Math.max(25, Math.floor(opts.entryAge));
+  const end = Math.max(start, Math.floor(opts.currentAge));
+  const rate = (opts.interestRate ?? LPP_INTEREST_MIN_2026) / 100;
+  let balance = 0;
+  for (let age = start; age < end; age++) {
+    const credit = opts.insuredSalary * lppCreditRate(age);
+    balance = balance * (1 + rate) + credit;
+  }
+  return Math.round(balance);
 }
 
 /**

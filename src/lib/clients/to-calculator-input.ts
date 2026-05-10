@@ -165,13 +165,19 @@ export function toLppInput(b: ClientBundle) {
   return {
     canton: b.client.canton ?? undefined,
     status: mapStatus(b.client, parseChildren(b.client.children).length > 0),
+    children: parseChildren(b.client.children).length,
+    confession: mapConfession(b.client),
     currentAge: ageFromDob(b.client.date_of_birth) ?? undefined,
     retirementAge: undefined,
     grossSalary: numOrUndef(b.client.gross_annual_salary),
+    spouseGrossSalary: numOrUndef(b.client.spouse_gross_annual_salary),
     insuredSalary: numOrUndef(b.pension?.lpp_insured_salary),
     currentBalance: numOrUndef(b.pension?.lpp_current_balance),
     buybackCapacity: numOrUndef(b.pension?.lpp_max_buyback),
     conversionRate: numOrUndef(b.pension?.lpp_conversion_rate),
+    pillar3aContributions: numOrUndef(b.pension?.pillar_3a_annual_contribution),
+    mortgageInterest: numOrUndef(b.assets?.mortgage_interest),
+    realEstateMaintenance: numOrUndef(b.assets?.real_estate_maintenance),
   };
 }
 
