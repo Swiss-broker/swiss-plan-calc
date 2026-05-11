@@ -1432,4 +1432,27 @@ export const de: Record<string, string> = {
   "opt.cat.withdrawal": "Bezug",
   "opt.footer": "Vorschläge berechnet auf Basis der Steuertarife 2026 und des Steuerstatus des Kunden. Für komplexe Fälle (NOV-Grenzgänger, Holdingstrukturen, internationale Einkommen) Konsistenz der Annahmen vor Übergabe an den Kunden prüfen.",
 
+  // === PDF customization + arrival years + vested search ===
+  "account.pdf.title": "PDF-Bericht-Anpassung",
+  "account.pdf.subtitle": "Ihre Farben und Hinweise erscheinen auf jedem generierten PDF.",
+  "account.pdf.primary_color": "Hauptfarbe",
+  "account.pdf.accent_color": "Akzentfarbe",
+  "account.pdf.footer_note": "Fusszeile",
+  "account.pdf.footer_note.placeholder": "z.B. Vertraulich · XYZ GmbH · 1204 Genf",
+  "account.pdf.footer_note.help": "Ersetzt den Standardtext am Seitenende.",
+  "account.pdf.preview": "Kopfzeilen-Vorschau",
+  "account.pdf.preview.cabinet_placeholder": "Maklerbüro",
+  "wizard.field.arrival_year_ch": "Ankunftsjahr in der Schweiz (Einwohner)",
+  "wizard.field.arrival_year_ch.hint": "Wird zur Berechnung der AHV-Beitragsjahre verwendet.",
+  "wizard.field.cross_border_start_year": "Beginn der Tätigkeit in der Schweiz (Grenzgänger)",
+  "wizard.field.cross_border_start_year.hint": "Erstes Arbeitsjahr in der Schweiz.",
+  "wizard.field.avs_contribution_start_year": "AHV-Beitragsbeginn (Override)",
+  "wizard.field.avs_contribution_start_year.hint": "Leer: automatisch (max. zwischen Ankunft CH und Alter 21).",
+  "wizard.field.avs_contribution_start_year.placeholder": "auto",
+  "calc.vested.search.title": "Vergessene BVG/Freizügigkeitsguthaben?",
+  "calc.vested.search.body": "Die Zentralstelle 2. Säule (Stiftung Auffangeinrichtung BVG) erfasst kostenlos nicht beanspruchte Vorsorgeguthaben. Offiziell, kostenlos, per Post oder online.",
+  "calc.vested.search.cta": "Guthaben suchen auf zentralstelle.ch",
+  "calc.lpp.search_tip": "Fehlende Guthaben? Kostenlose Suche bei der Zentralstelle 2. Säule:",
+  "calc.lpp.search_tip_cta": "zentralstelle.ch",
+
 };

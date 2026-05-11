@@ -31,6 +31,7 @@ export function exportIncomeTaxPdf(args: {
     ...args.header,
   } as PdfHeaderInfo);
 
+  pdf.situationBanner("SITUATION ACTUELLE — IMPÔTS 2026");
   pdf.section("Synthèse");
   pdf.paragraph(
     `Cette simulation estime votre charge fiscale annuelle pour l'année 2026 dans le canton de ${cantonName(input.canton)}. ` +
@@ -106,6 +107,8 @@ export function exportIncomeTaxPdf(args: {
     ["TOTAL", formatCHF(result.totalTax)],
   ]);
 
+  pdf.spacer(3);
+  pdf.projectionBanner("PROJECTION & OPTIMISATIONS");
   pdf.section("Pistes d'optimisation");
   const tips: string[] = [];
   const max3a = 7258;
@@ -248,6 +251,7 @@ export function exportLppPdf(args: {
     ...args.header,
   } as PdfHeaderInfo);
 
+  pdf.situationBanner("SITUATION ACTUELLE — AVOIR LPP");
   pdf.section("Synthèse de la projection");
   pdf.paragraph(
     `La projection LPP simule l'évolution de votre avoir de prévoyance jusqu'à l'âge de la retraite (${input.retirementAge} ans), ` +
@@ -255,6 +259,8 @@ export function exportLppPdf(args: {
       `de ${input.expectedReturnRate.toFixed(2)} %, des frais de gestion de ${input.feeRate.toFixed(2)} % et les éventuels rachats injectés. ` +
       `Le rendement net effectivement appliqué est donc de ${projection.netReturnRate.toFixed(2)} % par an.`,
   );
+  pdf.spacer(2);
+  pdf.projectionBanner(`PROJECTION À ${input.retirementAge} ANS`);
   pdf.metricsGrid([
     { label: "Capital projeté (net)", value: projection.projectedBalance, tone: "primary" },
     { label: "Rente annuelle", value: projection.annualPension, tone: "success" },

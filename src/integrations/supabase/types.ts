@@ -207,6 +207,8 @@ export type Database = {
         Row: {
           activity_rate: number | null
           archived: boolean
+          arrival_year_ch: number | null
+          avs_contribution_start_year: number | null
           bonus: number | null
           broker_id: string
           canton: string | null
@@ -218,6 +220,7 @@ export type Database = {
           confession: Database["public"]["Enums"]["confession"]
           country_of_residence: string | null
           created_at: string
+          cross_border_start_year: number | null
           date_of_birth: string | null
           email: string | null
           employer: string | null
@@ -245,6 +248,8 @@ export type Database = {
         Insert: {
           activity_rate?: number | null
           archived?: boolean
+          arrival_year_ch?: number | null
+          avs_contribution_start_year?: number | null
           bonus?: number | null
           broker_id: string
           canton?: string | null
@@ -256,6 +261,7 @@ export type Database = {
           confession?: Database["public"]["Enums"]["confession"]
           country_of_residence?: string | null
           created_at?: string
+          cross_border_start_year?: number | null
           date_of_birth?: string | null
           email?: string | null
           employer?: string | null
@@ -283,6 +289,8 @@ export type Database = {
         Update: {
           activity_rate?: number | null
           archived?: boolean
+          arrival_year_ch?: number | null
+          avs_contribution_start_year?: number | null
           bonus?: number | null
           broker_id?: string
           canton?: string | null
@@ -294,6 +302,7 @@ export type Database = {
           confession?: Database["public"]["Enums"]["confession"]
           country_of_residence?: string | null
           created_at?: string
+          cross_border_start_year?: number | null
           date_of_birth?: string | null
           email?: string | null
           employer?: string | null
@@ -410,6 +419,9 @@ export type Database = {
           id: string
           last_name: string | null
           logo_url: string | null
+          pdf_accent_color: string
+          pdf_footer_note: string | null
+          pdf_primary_color: string
           phone: string | null
           plan: Database["public"]["Enums"]["broker_plan"]
           preferred_language: Database["public"]["Enums"]["app_language"]
@@ -424,6 +436,9 @@ export type Database = {
           id: string
           last_name?: string | null
           logo_url?: string | null
+          pdf_accent_color?: string
+          pdf_footer_note?: string | null
+          pdf_primary_color?: string
           phone?: string | null
           plan?: Database["public"]["Enums"]["broker_plan"]
           preferred_language?: Database["public"]["Enums"]["app_language"]
@@ -438,6 +453,9 @@ export type Database = {
           id?: string
           last_name?: string | null
           logo_url?: string | null
+          pdf_accent_color?: string
+          pdf_footer_note?: string | null
+          pdf_primary_color?: string
           phone?: string | null
           plan?: Database["public"]["Enums"]["broker_plan"]
           preferred_language?: Database["public"]["Enums"]["app_language"]

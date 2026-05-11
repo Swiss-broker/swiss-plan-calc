@@ -1430,4 +1430,27 @@ export const fr: Record<string, string> = {
   "opt.cat.withdrawal": "Retrait",
   "opt.footer": "Suggestions calculées sur la base des barèmes fiscaux 2026 et du statut fiscal du client. Pour les cas complexes (frontaliers TOU, structures holding, revenus internationaux), valider la cohérence des hypothèses avant remise au client.",
 
+  // === PDF customization + arrival years + vested search ===
+  "account.pdf.title": "Personnalisation des rapports PDF",
+  "account.pdf.subtitle": "Vos couleurs et mentions apparaîtront dans tous les PDF générés.",
+  "account.pdf.primary_color": "Couleur principale",
+  "account.pdf.accent_color": "Couleur secondaire",
+  "account.pdf.footer_note": "Mention de pied de page",
+  "account.pdf.footer_note.placeholder": "ex. Document confidentiel · Cabinet XYZ Sàrl · 1204 Genève",
+  "account.pdf.footer_note.help": "Cette mention remplace le texte par défaut au bas de chaque page.",
+  "account.pdf.preview": "Aperçu de l'en-tête",
+  "account.pdf.preview.cabinet_placeholder": "Nom du cabinet",
+  "wizard.field.arrival_year_ch": "Année d'arrivée en Suisse (résident)",
+  "wizard.field.arrival_year_ch.hint": "Utilisée pour calculer les années de cotisation AVS.",
+  "wizard.field.cross_border_start_year": "Début d'activité en Suisse (frontalier)",
+  "wizard.field.cross_border_start_year.hint": "Première année de travail en Suisse.",
+  "wizard.field.avs_contribution_start_year": "Début cotisation AVS (override)",
+  "wizard.field.avs_contribution_start_year.hint": "Si vide : calculé automatiquement (max entre arrivée CH et 21 ans).",
+  "wizard.field.avs_contribution_start_year.placeholder": "auto",
+  "calc.vested.search.title": "Avoirs LPP/libre passage oubliés ?",
+  "calc.vested.search.body": "La Centrale du 2ᵉ pilier (Stiftung Auffangeinrichtung BVG) recense gratuitement les avoirs de prévoyance non réclamés. Démarche officielle, gratuite, courrier ou en ligne.",
+  "calc.vested.search.cta": "Rechercher mes avoirs sur zentralstelle.ch",
+  "calc.lpp.search_tip": "Avoir manquant ? Recherche gratuite sur la Centrale du 2ᵉ pilier :",
+  "calc.lpp.search_tip_cta": "zentralstelle.ch",
+
 };

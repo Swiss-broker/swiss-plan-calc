@@ -23,6 +23,7 @@ import { ExportPdfButton } from "@/components/calculators/ExportPdfButton";
 import { exportPillar3aPdf } from "@/lib/pdf/reports";
 import { SaveSimulationButton } from "@/components/calculators/SaveSimulationButton";
 import { useAuth } from "@/contexts/AuthContext";
+import { useBrokerPdfHeader } from "@/hooks/useBrokerPdfHeader";
 import { zodValidator, fallback } from "@tanstack/zod-adapter";
 import { z } from "zod";
 import { usePrefillFromClient, useHydrateFormFromPrefill } from "@/hooks/usePrefillFromClient";
@@ -104,9 +105,10 @@ function Pillar3aCalc() {
   );
 
   const { user } = useAuth();
+  const brokerHeader = useBrokerPdfHeader();
   const handleExport = () =>
     exportPillar3aPdf({
-      header: { brokerEmail: user?.email ?? undefined },
+      header: brokerHeader,
       input: form,
       taxSavings: savings,
       projection,

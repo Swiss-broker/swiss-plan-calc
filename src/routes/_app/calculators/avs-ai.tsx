@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { z } from "zod";
 import { zodValidator, fallback } from "@tanstack/zod-adapter";
 import {
@@ -54,27 +54,51 @@ function AvsAiCalc() {
   const { clientId } = Route.useSearch();
   const { client, prefill } = usePrefillFromClient(clientId, "avs-ai");
 
-  const [form, setForm] = useState({
-    birthYear: 1980,
-    gender: "male" as Gender,
-    contributionStartYear: 2003,
-    retirementYear: 2045,
-    averageAnnualIncome: 90_000,
-    departureYear: 0,
-    educationalYears: 0,
-    educationalShare: 100,
-    assistanceYears: 0,
-    assistanceShare: 100,
-    isCouple: false,
-    spouseBirthYear: 1982,
-    spouseGender: "female" as Gender,
-    spouseContributionStartYear: 2005,
-    spouseRetirementYear: 2046,
-    spouseAverageAnnualIncome: 70_000,
-  });
+  // Persistance localStorage en mode standalone (sans clientId) — l'utilisateur
+  // ne perd plus ses saisies quand il quitte/revient au calculateur.
+  const STORAGE_KEY = "avs.standalone.form.v1";
+  const initialForm = (() => {
+    const base = {
+      birthYear: 1980,
+      gender: "male" as Gender,
+      contributionStartYear: 2003,
+      retirementYear: 2045,
+      averageAnnualIncome: 90_000,
+      departureYear: 0,
+      educationalYears: 0,
+      educationalShare: 100,
+      assistanceYears: 0,
+      assistanceShare: 100,
+      isCouple: false,
+      spouseBirthYear: 1982,
+      spouseGender: "female" as Gender,
+      spouseContributionStartYear: 2005,
+      spouseRetirementYear: 2046,
+      spouseAverageAnnualIncome: 70_000,
+    };
+    if (clientId || typeof window === "undefined") return base;
+    try {
+      const raw = window.localStorage.getItem(STORAGE_KEY);
+      if (raw) return { ...base, ...JSON.parse(raw) };
+    } catch {
+      /* ignore */
+    }
+    return base;
+  })();
+  const [form, setForm] = useState<typeof initialForm>(initialForm);
 
-  const set = <K extends keyof typeof form>(k: K, v: (typeof form)[K]) =>
-    setForm((f) => ({ ...f, [k]: v }));
+  // Sauvegarde auto en mode standalone
+  useEffect(() => {
+    if (clientId || typeof window === "undefined") return;
+    try {
+      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(form));
+    } catch {
+      /* ignore */
+    }
+  }, [form, clientId]);
+
+  const set = <K extends keyof typeof initialForm>(k: K, v: (typeof initialForm)[K]) =>
+    setForm((f: typeof initialForm) => ({ ...f, [k]: v }));
 
   useHydrateFormFromPrefill(prefill, setForm);
 

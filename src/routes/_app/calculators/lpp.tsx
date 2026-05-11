@@ -40,6 +40,7 @@ import { ExportPdfButton } from "@/components/calculators/ExportPdfButton";
 import { exportLppPdf } from "@/lib/pdf/reports";
 import { SaveSimulationButton } from "@/components/calculators/SaveSimulationButton";
 import { useAuth } from "@/contexts/AuthContext";
+import { useBrokerPdfHeader } from "@/hooks/useBrokerPdfHeader";
 import { zodValidator, fallback } from "@tanstack/zod-adapter";
 import { z } from "zod";
 import { usePrefillFromClient, useHydrateFormFromPrefill } from "@/hooks/usePrefillFromClient";
@@ -167,9 +168,10 @@ function LppCalc() {
   );
 
   const { user } = useAuth();
+  const brokerHeader = useBrokerPdfHeader();
   const handleExport = () =>
     exportLppPdf({
-      header: { brokerEmail: user?.email ?? undefined },
+      header: brokerHeader,
       input: form,
       projection,
       buybackPlan,
@@ -252,6 +254,17 @@ function LppCalc() {
                     </p>
                   </div>
                 )}
+                <p className="mt-2 text-[11px] text-muted-foreground">
+                  💡 {t("calc.lpp.search_tip")}{" "}
+                  <a
+                    href="https://www.zentralstelle.ch/fr/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="font-medium text-primary underline-offset-2 hover:underline"
+                  >
+                    {t("calc.lpp.search_tip_cta")}
+                  </a>
+                </p>
               </div>
             )}
             <p className="mt-3 text-xs text-muted-foreground">

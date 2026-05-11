@@ -119,6 +119,25 @@ function VestedBenefitsCalc() {
       <GuideMode open={guideOpen} onClose={() => setGuideOpen(false)} steps={guideSteps} title={t("calc.vested.guide_title")} />
       <div className="flex justify-end"><GuideToggleButton onClick={() => setGuideOpen(true)} /></div>
 
+      {/* Bloc recherche officielle d'avoirs LPP/libre passage oubliés */}
+      <div className="rounded-xl border border-primary/30 bg-primary/5 p-4">
+        <div className="flex items-start gap-3">
+          <ShieldCheck className="mt-0.5 h-5 w-5 flex-shrink-0 text-primary" />
+          <div className="flex-1 space-y-2">
+            <h3 className="text-sm font-semibold">{t("calc.vested.search.title")}</h3>
+            <p className="text-sm text-muted-foreground">{t("calc.vested.search.body")}</p>
+            <a
+              href="https://www.zentralstelle.ch/fr/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1 text-sm font-medium text-primary underline-offset-4 hover:underline"
+            >
+              {t("calc.vested.search.cta")} →
+            </a>
+          </div>
+        </div>
+      </div>
+
       <div className="grid grid-cols-1 gap-6 md:grid-cols-5">
       {client && <div className="md:col-span-5"><ClientLinkBanner client={client} /></div>}
       <div className="md:col-span-2">

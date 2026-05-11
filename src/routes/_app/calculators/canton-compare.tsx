@@ -34,6 +34,7 @@ import { ExportPdfButton } from "@/components/calculators/ExportPdfButton";
 import { exportCantonComparePdf } from "@/lib/pdf/reports";
 import { SaveSimulationButton } from "@/components/calculators/SaveSimulationButton";
 import { useAuth } from "@/contexts/AuthContext";
+import { useBrokerPdfHeader } from "@/hooks/useBrokerPdfHeader";
 import { useT } from "@/contexts/LanguageContext";
 import { useClientDashboard } from "@/hooks/use-client-dashboard";
 import { useQuery } from "@tanstack/react-query";
@@ -181,9 +182,10 @@ function CantonCompareCalc() {
   const hasZG = data.some((d) => d.code === ZG_CODE);
 
   const { user } = useAuth();
+  const brokerHeader = useBrokerPdfHeader();
   const handleExport = () =>
     exportCantonComparePdf({
-      header: { brokerEmail: user?.email ?? undefined },
+      header: brokerHeader,
       input: form,
       rows: data,
     });

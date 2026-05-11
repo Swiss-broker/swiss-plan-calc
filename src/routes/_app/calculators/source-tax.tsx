@@ -18,6 +18,7 @@ import { ExportPdfButton } from "@/components/calculators/ExportPdfButton";
 import { exportSourceTaxPdf } from "@/lib/pdf/reports";
 import { SaveSimulationButton } from "@/components/calculators/SaveSimulationButton";
 import { useAuth } from "@/contexts/AuthContext";
+import { useBrokerPdfHeader } from "@/hooks/useBrokerPdfHeader";
 import { useT } from "@/contexts/LanguageContext";
 
 import { zodValidator, fallback } from "@tanstack/zod-adapter";
@@ -54,11 +55,12 @@ function SourceTaxCalc() {
     setForm((f) => ({ ...f, [k]: v }));
 
   const { user } = useAuth();
+  const brokerHeader = useBrokerPdfHeader();
   const crossBorderEligible = CROSS_BORDER_FR_CANTONS.includes(form.canton);
   const result = useMemo(() => computeSourceTax(form), [form]);
   const handleExport = () =>
     exportSourceTaxPdf({
-      header: { brokerEmail: user?.email ?? undefined },
+      header: brokerHeader,
       input: form,
       result,
     });

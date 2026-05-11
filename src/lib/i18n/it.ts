@@ -1430,4 +1430,27 @@ export const it: Record<string, string> = {
   "opt.cat.withdrawal": "Ritiro",
   "opt.footer": "Suggerimenti calcolati sulla base delle tariffe fiscali 2026 e dello stato fiscale del cliente. Per i casi complessi (frontalieri TOU, strutture holding, redditi internazionali), validare la coerenza delle ipotesi prima della consegna al cliente.",
 
+  // === PDF customization + arrival years + vested search ===
+  "account.pdf.title": "Personalizzazione report PDF",
+  "account.pdf.subtitle": "I tuoi colori e note appariranno su ogni PDF generato.",
+  "account.pdf.primary_color": "Colore principale",
+  "account.pdf.accent_color": "Colore secondario",
+  "account.pdf.footer_note": "Nota a piè di pagina",
+  "account.pdf.footer_note.placeholder": "es. Riservato · XYZ Sagl · 1204 Ginevra",
+  "account.pdf.footer_note.help": "Sostituisce il testo predefinito a fondo pagina.",
+  "account.pdf.preview": "Anteprima intestazione",
+  "account.pdf.preview.cabinet_placeholder": "Nome del cabinet",
+  "wizard.field.arrival_year_ch": "Anno di arrivo in Svizzera (residente)",
+  "wizard.field.arrival_year_ch.hint": "Usato per calcolare gli anni di contribuzione AVS.",
+  "wizard.field.cross_border_start_year": "Inizio attività in Svizzera (frontaliere)",
+  "wizard.field.cross_border_start_year.hint": "Primo anno di lavoro in Svizzera.",
+  "wizard.field.avs_contribution_start_year": "Inizio contribuzione AVS (override)",
+  "wizard.field.avs_contribution_start_year.hint": "Se vuoto: calcolato automaticamente (max tra arrivo CH e 21 anni).",
+  "wizard.field.avs_contribution_start_year.placeholder": "auto",
+  "calc.vested.search.title": "Avere LPP/libero passaggio dimenticati?",
+  "calc.vested.search.body": "La Centrale 2° pilastro (Stiftung Auffangeinrichtung BVG) censisce gratuitamente gli averi di previdenza non reclamati. Procedura ufficiale, gratuita, per posta o online.",
+  "calc.vested.search.cta": "Cerca i miei averi su zentralstelle.ch",
+  "calc.lpp.search_tip": "Averi mancanti? Ricerca gratuita presso la Centrale 2° pilastro:",
+  "calc.lpp.search_tip_cta": "zentralstelle.ch",
+
 };

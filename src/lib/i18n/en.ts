@@ -1430,4 +1430,27 @@ export const en: Record<string, string> = {
   "opt.cat.withdrawal": "Withdrawal",
   "opt.footer": "Suggestions calculated based on 2026 tax scales and the client's tax status. For complex cases (subsequent ordinary taxation cross-borderers, holding structures, international income), validate the consistency of assumptions before delivery to the client.",
 
+  // === PDF customization + arrival years + vested search ===
+  "account.pdf.title": "PDF report customization",
+  "account.pdf.subtitle": "Your colors and notes will appear on every generated PDF.",
+  "account.pdf.primary_color": "Primary color",
+  "account.pdf.accent_color": "Secondary color",
+  "account.pdf.footer_note": "Footer note",
+  "account.pdf.footer_note.placeholder": "e.g. Confidential · XYZ Brokerage Ltd · 1204 Geneva",
+  "account.pdf.footer_note.help": "Replaces the default text at the bottom of each page.",
+  "account.pdf.preview": "Header preview",
+  "account.pdf.preview.cabinet_placeholder": "Brokerage name",
+  "wizard.field.arrival_year_ch": "Arrival year in Switzerland (resident)",
+  "wizard.field.arrival_year_ch.hint": "Used to compute AVS contribution years.",
+  "wizard.field.cross_border_start_year": "Start of activity in Switzerland (cross-border)",
+  "wizard.field.cross_border_start_year.hint": "First year of work in Switzerland.",
+  "wizard.field.avs_contribution_start_year": "AVS contribution start (override)",
+  "wizard.field.avs_contribution_start_year.hint": "If empty: auto-calculated (max of arrival year and age 21).",
+  "wizard.field.avs_contribution_start_year.placeholder": "auto",
+  "calc.vested.search.title": "Forgotten LPP / vested benefits?",
+  "calc.vested.search.body": "The 2nd pillar Central Office (Stiftung Auffangeinrichtung BVG) freely tracks unclaimed pension assets. Official, free, by mail or online.",
+  "calc.vested.search.cta": "Search my assets on zentralstelle.ch",
+  "calc.lpp.search_tip": "Missing assets? Free search at the 2nd pillar Central Office:",
+  "calc.lpp.search_tip_cta": "zentralstelle.ch",
+
 };

@@ -16,6 +16,7 @@ import { ExportPdfButton } from "@/components/calculators/ExportPdfButton";
 import { exportRetirementPdf } from "@/lib/pdf/reports";
 import { SaveSimulationButton } from "@/components/calculators/SaveSimulationButton";
 import { useAuth } from "@/contexts/AuthContext";
+import { useBrokerPdfHeader } from "@/hooks/useBrokerPdfHeader";
 import { useT } from "@/contexts/LanguageContext";
 
 import { zodValidator, fallback } from "@tanstack/zod-adapter";
@@ -79,9 +80,10 @@ function RetirementCalc() {
         : t("calc.retirement.reco.mixed");
 
   const { user } = useAuth();
+  const brokerHeader = useBrokerPdfHeader();
   const handleExport = () =>
     exportRetirementPdf({
-      header: { brokerEmail: user?.email ?? undefined },
+      header: brokerHeader,
       input: form,
       lumpTax,
       compare,

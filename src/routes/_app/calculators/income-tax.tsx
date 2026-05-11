@@ -21,6 +21,7 @@ import { ExportPdfButton } from "@/components/calculators/ExportPdfButton";
 import { exportIncomeTaxPdf } from "@/lib/pdf/reports";
 import { SaveSimulationButton } from "@/components/calculators/SaveSimulationButton";
 import { useAuth } from "@/contexts/AuthContext";
+import { useBrokerPdfHeader } from "@/hooks/useBrokerPdfHeader";
 import { useT } from "@/contexts/LanguageContext";
 import { usePrefillFromClient, useHydrateFormFromPrefill } from "@/hooks/usePrefillFromClient";
 import { ClientLinkBanner } from "@/components/calculators/ClientLinkBanner";
@@ -73,6 +74,7 @@ function IncomeTaxCalculator() {
     setForm((f) => ({ ...f, [k]: v }));
 
   const { user } = useAuth();
+  const brokerHeader = useBrokerPdfHeader();
   const result = useMemo(() => computeIncomeTax(form), [form]);
   const optimizations = useMemo(
     () =>
@@ -89,7 +91,7 @@ function IncomeTaxCalculator() {
 
   const handleExport = () =>
     exportIncomeTaxPdf({
-      header: { brokerEmail: user?.email ?? undefined },
+      header: brokerHeader,
       input: form,
       result,
     });

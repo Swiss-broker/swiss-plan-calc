@@ -27,6 +27,9 @@ function AccountPage() {
     brokerage_name: "",
     phone: "",
     default_canton: "",
+    pdf_primary_color: "#0F4C81",
+    pdf_accent_color: "#3B82F6",
+    pdf_footer_note: "",
   });
 
   useEffect(() => {
@@ -34,7 +37,9 @@ function AccountPage() {
     (async () => {
       const { data, error } = await supabase
         .from("profiles")
-        .select("first_name,last_name,brokerage_name,phone,default_canton")
+        .select(
+          "first_name,last_name,brokerage_name,phone,default_canton,pdf_primary_color,pdf_accent_color,pdf_footer_note",
+        )
         .eq("id", user.id)
         .maybeSingle();
       if (error) toast.error(t("account.toast.load_error"));
@@ -45,6 +50,9 @@ function AccountPage() {
           brokerage_name: data.brokerage_name ?? "",
           phone: data.phone ?? "",
           default_canton: data.default_canton ?? "",
+          pdf_primary_color: data.pdf_primary_color ?? "#0F4C81",
+          pdf_accent_color: data.pdf_accent_color ?? "#3B82F6",
+          pdf_footer_note: data.pdf_footer_note ?? "",
         });
       }
       setLoading(false);
@@ -63,6 +71,9 @@ function AccountPage() {
         brokerage_name: profile.brokerage_name.trim() || null,
         phone: profile.phone.trim() || null,
         default_canton: profile.default_canton || null,
+        pdf_primary_color: profile.pdf_primary_color || "#0F4C81",
+        pdf_accent_color: profile.pdf_accent_color || "#3B82F6",
+        pdf_footer_note: profile.pdf_footer_note.trim() || null,
       })
       .eq("id", user.id);
     setSaving(false);
@@ -152,6 +163,83 @@ function AccountPage() {
               )}
           </div>
         </div>
+
+        {/* === Personnalisation des rapports PDF === */}
+        <div className="space-y-4 rounded-xl border border-dashed border-border bg-muted/30 p-4">
+          <div>
+            <h2 className="text-sm font-semibold">{t("account.pdf.title")}</h2>
+            <p className="text-xs text-muted-foreground">{t("account.pdf.subtitle")}</p>
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-1.5">
+              <Label htmlFor="pdf_primary_color">{t("account.pdf.primary_color")}</Label>
+              <div className="flex items-center gap-2">
+                <input
+                  id="pdf_primary_color"
+                  type="color"
+                  value={profile.pdf_primary_color}
+                  onChange={(e) => setProfile((p) => ({ ...p, pdf_primary_color: e.target.value }))}
+                  className="h-9 w-14 cursor-pointer rounded border border-input bg-transparent"
+                />
+                <Input
+                  value={profile.pdf_primary_color}
+                  onChange={(e) => setProfile((p) => ({ ...p, pdf_primary_color: e.target.value }))}
+                  className="font-mono text-xs"
+                />
+              </div>
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="pdf_accent_color">{t("account.pdf.accent_color")}</Label>
+              <div className="flex items-center gap-2">
+                <input
+                  id="pdf_accent_color"
+                  type="color"
+                  value={profile.pdf_accent_color}
+                  onChange={(e) => setProfile((p) => ({ ...p, pdf_accent_color: e.target.value }))}
+                  className="h-9 w-14 cursor-pointer rounded border border-input bg-transparent"
+                />
+                <Input
+                  value={profile.pdf_accent_color}
+                  onChange={(e) => setProfile((p) => ({ ...p, pdf_accent_color: e.target.value }))}
+                  className="font-mono text-xs"
+                />
+              </div>
+            </div>
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="pdf_footer_note">{t("account.pdf.footer_note")}</Label>
+            <Input
+              id="pdf_footer_note"
+              value={profile.pdf_footer_note}
+              onChange={(e) => setProfile((p) => ({ ...p, pdf_footer_note: e.target.value }))}
+              placeholder={t("account.pdf.footer_note.placeholder")}
+            />
+            <p className="text-xs text-muted-foreground">{t("account.pdf.footer_note.help")}</p>
+          </div>
+
+          {/* Aperçu live du header PDF */}
+          <div className="space-y-1.5">
+            <Label>{t("account.pdf.preview")}</Label>
+            <div
+              className="overflow-hidden rounded-lg border border-border"
+              style={{ background: profile.pdf_primary_color }}
+            >
+              <div className="px-4 py-3 text-white">
+                <div className="text-sm font-bold">
+                  {profile.brokerage_name || `${profile.first_name} ${profile.last_name}`.trim() || t("account.pdf.preview.cabinet_placeholder")}
+                </div>
+                <div className="text-[10px] opacity-90">
+                  {[
+                    `${profile.first_name} ${profile.last_name}`.trim(),
+                    user?.email,
+                    profile.phone,
+                  ].filter(Boolean).join(" · ")}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <div className="flex justify-end">
           <Button type="submit" disabled={saving} className="shadow-elegant">
             {saving && <Loader2 className="h-4 w-4 animate-spin" />}
