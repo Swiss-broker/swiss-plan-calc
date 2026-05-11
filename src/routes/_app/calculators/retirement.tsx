@@ -191,6 +191,9 @@ function RetirementCalc() {
       <div className="rounded-2xl border border-success/30 bg-success/5 p-5">
         <div className="text-xs font-medium uppercase tracking-wider text-success-foreground/80">{t("calc.retirement.reco.title")}</div>
         <p className="mt-1 text-sm">{reco}</p>
+        <p className="mt-2 text-[11px] text-muted-foreground">
+          Cette comparaison repose sur les hypothèses ci-dessus (espérance de vie, rendement, fiscalité). Une modification de ces paramètres peut changer la recommandation.
+        </p>
       </div>
 
       <div className="flex flex-wrap justify-end gap-2">
