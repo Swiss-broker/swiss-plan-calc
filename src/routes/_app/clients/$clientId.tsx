@@ -338,6 +338,10 @@ function ClientDetailPage() {
       <Tabs defaultValue="overview" className="mt-8">
         <TabsList className="flex h-auto w-full flex-wrap justify-start gap-1 bg-muted p-1">
           <TabsTrigger value="overview">Synthèse</TabsTrigger>
+          <TabsTrigger value="session" className="gap-1">
+            <ClipboardList className="h-3.5 w-3.5" />
+            Synthèse RDV
+          </TabsTrigger>
           <TabsTrigger value="optimizations">
             Optimisations
             {optimizations.length > 0 && (
