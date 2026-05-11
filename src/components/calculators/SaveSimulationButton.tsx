@@ -47,6 +47,14 @@ export function SaveSimulationButton({
   const [clientId, setClientId] = useState<string>("none");
   const [tagsRaw, setTagsRaw] = useState("");
 
+  // Pré-remplir depuis l'URL si on est lancé depuis une fiche client (?clientId=xxx)
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    const cid = params.get("clientId");
+    if (cid) setClientId(cid);
+  }, []);
+
   const { data: clients = [] } = useQuery({
     queryKey: ["clients-mini", user?.id],
     enabled: !!user && open,
