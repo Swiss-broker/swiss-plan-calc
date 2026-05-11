@@ -77,6 +77,7 @@ function AccountPage() {
         pdf_primary_color: profile.pdf_primary_color || "#0F4C81",
         pdf_accent_color: profile.pdf_accent_color || "#3B82F6",
         pdf_footer_note: profile.pdf_footer_note.trim() || null,
+        logo_url: profile.logo_url || null,
       })
       .eq("id", user.id);
     setSaving(false);
