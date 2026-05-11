@@ -23,12 +23,31 @@ export function useBrokerPdfHeader(): BrokerHeader {
       const { data } = await supabase
         .from("profiles")
         .select(
-          "first_name,last_name,brokerage_name,phone,pdf_primary_color,pdf_accent_color,pdf_footer_note",
+          "first_name,last_name,brokerage_name,phone,pdf_primary_color,pdf_accent_color,pdf_footer_note,logo_url",
         )
         .eq("id", user.id)
         .maybeSingle();
       if (cancelled || !data) return;
       const fullName = [data.first_name, data.last_name].filter(Boolean).join(" ").trim();
+      // Charger le logo en base64 pour jsPDF (CORS-safe via fetch)
+      let logoDataUrl: string | undefined;
+      if (data.logo_url) {
+        try {
+          const resp = await fetch(data.logo_url);
+          if (resp.ok) {
+            const blob = await resp.blob();
+            logoDataUrl = await new Promise<string>((resolve, reject) => {
+              const r = new FileReader();
+              r.onload = () => resolve(r.result as string);
+              r.onerror = reject;
+              r.readAsDataURL(blob);
+            });
+          }
+        } catch {
+          // logo inaccessible : on ignore silencieusement
+        }
+      }
+      if (cancelled) return;
       setProfile({
         brokerName: fullName || undefined,
         brokerEmail: user.email ?? undefined,
@@ -37,6 +56,7 @@ export function useBrokerPdfHeader(): BrokerHeader {
         primaryColor: data.pdf_primary_color ?? DEFAULT_PRIMARY,
         accentColor: data.pdf_accent_color ?? DEFAULT_ACCENT,
         footerNote: data.pdf_footer_note ?? undefined,
+        logoDataUrl,
       });
     })();
     return () => {
