@@ -1449,8 +1449,8 @@ export const en: Record<string, string> = {
   "wizard.field.avs_contribution_start_year.placeholder": "auto",
   "calc.vested.search.title": "Forgotten LPP / vested benefits?",
   "calc.vested.search.body": "The 2nd pillar Central Office (Stiftung Auffangeinrichtung BVG) freely tracks unclaimed pension assets. Official, free, by mail or online.",
-  "calc.vested.search.cta": "Search my assets on zentralstelle.ch",
+  "calc.vested.search.cta": "Search my assets on sfbvg.ch",
   "calc.lpp.search_tip": "Missing assets? Free search at the 2nd pillar Central Office:",
-  "calc.lpp.search_tip_cta": "zentralstelle.ch",
+  "calc.lpp.search_tip_cta": "sfbvg.ch",
 
 };

@@ -257,7 +257,7 @@ function LppCalc() {
                 <p className="mt-2 text-[11px] text-muted-foreground">
                   💡 {t("calc.lpp.search_tip")}{" "}
                   <a
-                    href="https://www.zentralstelle.ch/fr/"
+                    href="https://sfbvg.ch/fr/"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="font-medium text-primary underline-offset-2 hover:underline"

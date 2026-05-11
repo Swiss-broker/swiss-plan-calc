@@ -127,7 +127,7 @@ function VestedBenefitsCalc() {
             <h3 className="text-sm font-semibold">{t("calc.vested.search.title")}</h3>
             <p className="text-sm text-muted-foreground">{t("calc.vested.search.body")}</p>
             <a
-              href="https://www.zentralstelle.ch/fr/"
+              href="https://sfbvg.ch/fr/"
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-1 text-sm font-medium text-primary underline-offset-4 hover:underline"

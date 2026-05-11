@@ -1449,8 +1449,8 @@ export const it: Record<string, string> = {
   "wizard.field.avs_contribution_start_year.placeholder": "auto",
   "calc.vested.search.title": "Avere LPP/libero passaggio dimenticati?",
   "calc.vested.search.body": "La Centrale 2° pilastro (Stiftung Auffangeinrichtung BVG) censisce gratuitamente gli averi di previdenza non reclamati. Procedura ufficiale, gratuita, per posta o online.",
-  "calc.vested.search.cta": "Cerca i miei averi su zentralstelle.ch",
+  "calc.vested.search.cta": "Cerca i miei averi su sfbvg.ch",
   "calc.lpp.search_tip": "Averi mancanti? Ricerca gratuita presso la Centrale 2° pilastro:",
-  "calc.lpp.search_tip_cta": "zentralstelle.ch",
+  "calc.lpp.search_tip_cta": "sfbvg.ch",
 
 };

@@ -1451,8 +1451,8 @@ export const de: Record<string, string> = {
   "wizard.field.avs_contribution_start_year.placeholder": "auto",
   "calc.vested.search.title": "Vergessene BVG/Freizügigkeitsguthaben?",
   "calc.vested.search.body": "Die Zentralstelle 2. Säule (Stiftung Auffangeinrichtung BVG) erfasst kostenlos nicht beanspruchte Vorsorgeguthaben. Offiziell, kostenlos, per Post oder online.",
-  "calc.vested.search.cta": "Guthaben suchen auf zentralstelle.ch",
+  "calc.vested.search.cta": "Guthaben suchen auf sfbvg.ch",
   "calc.lpp.search_tip": "Fehlende Guthaben? Kostenlose Suche bei der Zentralstelle 2. Säule:",
-  "calc.lpp.search_tip_cta": "zentralstelle.ch",
+  "calc.lpp.search_tip_cta": "sfbvg.ch",
 
 };

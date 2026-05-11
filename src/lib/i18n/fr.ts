@@ -1449,8 +1449,8 @@ export const fr: Record<string, string> = {
   "wizard.field.avs_contribution_start_year.placeholder": "auto",
   "calc.vested.search.title": "Avoirs LPP/libre passage oubliés ?",
   "calc.vested.search.body": "La Centrale du 2ᵉ pilier (Stiftung Auffangeinrichtung BVG) recense gratuitement les avoirs de prévoyance non réclamés. Démarche officielle, gratuite, courrier ou en ligne.",
-  "calc.vested.search.cta": "Rechercher mes avoirs sur zentralstelle.ch",
+  "calc.vested.search.cta": "Rechercher mes avoirs sur sfbvg.ch",
   "calc.lpp.search_tip": "Avoir manquant ? Recherche gratuite sur la Centrale du 2ᵉ pilier :",
-  "calc.lpp.search_tip_cta": "zentralstelle.ch",
+  "calc.lpp.search_tip_cta": "sfbvg.ch",
 
 };
