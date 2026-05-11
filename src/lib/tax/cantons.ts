@@ -410,15 +410,38 @@ export function computeCantonalCommunal(opts: CCComputeOptions): CCComputeResult
   }
   const isMarried = opts.status === "married";
   const isSingleParent = opts.status === "single_with_children";
-  // Famille monoparentale ou marié → barème "married"
-  const bracketScale = isMarried || isSingleParent ? scale.married : scale.single;
 
   // Déductions sociales cantonales
   const socialDeductions =
     (opts.children ?? 0) * scale.childDeduction + (isMarried ? scale.marriedDeduction : 0);
   const adjusted = Math.max(0, opts.taxableIncome - socialDeductions);
 
-  const simple = applySimpleScale(adjusted, bracketScale);
+  // Choix du barème + splitting
+  const splittingMode = scale.splittingMode ?? "married_scale";
+  let simple: number;
+  let bracketScale: BracketStep[];
+  let marginalReference: number;
+
+  if ((isMarried || isSingleParent) && splittingMode !== "married_scale") {
+    // Splitting: impôt = 2 × barème_single(R / divisor)
+    const divisor =
+      splittingMode === "split_1.9" && isMarried
+        ? 1.9
+        : splittingMode === "split_1.85" || (splittingMode === "split_1.9" && isSingleParent)
+          ? 1.85
+          : 1.8;
+    bracketScale = scale.single;
+    simple = 2 * applySimpleScale(adjusted / divisor, bracketScale);
+    marginalReference = adjusted / divisor;
+  } else {
+    bracketScale = isMarried || isSingleParent ? scale.married : scale.single;
+    simple = applySimpleScale(adjusted, bracketScale);
+    marginalReference = adjusted;
+  }
+
+  // Calibration empirique pour aligner sur les calculateurs officiels 2026
+  const calibration = scale.calibrationFactor ?? 1.0;
+  simple = simple * calibration;
 
   const cantonalMult = opts.cantonalMultiplier ?? scale.cantonalMultiplier;
   const communalMult = opts.communalMultiplier ?? scale.communalMultiplierCapital;
@@ -432,13 +455,13 @@ export function computeCantonalCommunal(opts: CCComputeOptions): CCComputeResult
     church = simple * scale.churchRateProtestant;
   }
 
-  // Taux marginal estimé
+  // Taux marginal estimé (au revenu de référence post-splitting)
   let marginalBracket = bracketScale[0];
   for (const b of bracketScale) {
-    if (adjusted >= b.from) marginalBracket = b;
+    if (marginalReference >= b.from) marginalBracket = b;
     else break;
   }
-  const marginalRate = marginalBracket.rate * (cantonalMult + communalMult);
+  const marginalRate = marginalBracket.rate * calibration * (cantonalMult + communalMult);
 
   return {
     cantonal: Math.round(cantonal * 100) / 100,
