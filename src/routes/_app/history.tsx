@@ -81,6 +81,7 @@ function HistoryPage() {
   const qc = useQueryClient();
   const [search, setSearch] = useState("");
   const [kindFilter, setKindFilter] = useState<SimulationKind | "all">("all");
+  const [clientFilter, setClientFilter] = useState<string>("all"); // "all" | "none" | <clientId>
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [pendingDelete, setPendingDelete] = useState<HistoryEntry | null>(null);
   const [showCompare, setShowCompare] = useState(false);
