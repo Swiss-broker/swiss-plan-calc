@@ -126,16 +126,14 @@ function IncomeTaxCalculator() {
   const frCrossBorderRetention = isFrCrossBorder ? Math.round(form.grossSalary * 0.045) : 0;
 
   return (
-    <div className="grid grid-cols-1 gap-6 md:grid-cols-5">
+    <div className="space-y-6">
       <GuideMode open={guideOpen} onClose={() => setGuideOpen(false)} steps={guideSteps} title={t("calc.income_tax.guide.title")} />
       <div className="flex justify-end"><GuideToggleButton onClick={() => setGuideOpen(true)} /></div>
 
-      {client && (
-        <div className="md:col-span-5">
-          <ClientLinkBanner client={client} />
-        </div>
-      )}
-      <div className="md:col-span-3">
+      {client && <ClientLinkBanner client={client} />}
+
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
+      <div className="lg:col-span-7">
         <CalcCard title={t("calc.income_tax.section.situation")} description={t("calc.income_tax.section.situation.desc")}>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <Field label={t("calc.income_tax.field.canton")} wikiId="ifd-icc" wikiTip={t("calc.income_tax.tip.canton")}>
@@ -288,7 +286,7 @@ function IncomeTaxCalculator() {
         </CalcCard>
       </div>
 
-      <div className="space-y-4 md:col-span-2">
+      <div className="space-y-4 lg:col-span-5">
         {isFrCrossBorder && (
           <CalcCard title={t("calc.income_tax.fr_cb.title")} description={t("calc.income_tax.fr_cb.desc")}>
             <dl className="space-y-2 text-sm">
@@ -367,12 +365,11 @@ function IncomeTaxCalculator() {
           </>
         )}
       </div>
-
-      <div className="lg:col-span-5">
-        <OptimizationsPanel optimizations={optimizations} />
       </div>
 
-      <div className="flex flex-wrap justify-end gap-2 lg:col-span-5">
+      <OptimizationsPanel optimizations={optimizations} />
+
+      <div className="flex flex-wrap justify-end gap-2">
         <SaveSimulationButton
           kind="income_tax"
           inputs={form}

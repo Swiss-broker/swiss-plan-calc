@@ -73,12 +73,14 @@ function SourceTaxCalc() {
   ];
 
   return (
-    <div className="grid grid-cols-1 gap-6 md:grid-cols-5">
+    <div className="space-y-6">
       <GuideMode open={guideOpen} onClose={() => setGuideOpen(false)} steps={guideSteps} title={t("calc.source_tax.guide.title")} />
       <div className="flex justify-end"><GuideToggleButton onClick={() => setGuideOpen(true)} /></div>
 
-      {client && <div className="md:col-span-5"><ClientLinkBanner client={client} /></div>}
-      <div className="md:col-span-3">
+      {client && <ClientLinkBanner client={client} />}
+
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
+      <div className="lg:col-span-7">
         <CalcCard
           title={t("calc.source_tax.section.title")}
           description={t("calc.source_tax.section.desc")}
@@ -167,7 +169,7 @@ function SourceTaxCalc() {
         </CalcCard>
       </div>
 
-      <div className="space-y-4 md:col-span-2">
+      <div className="space-y-4 lg:col-span-5">
         <CalcCard title={t("calc.source_tax.result.title", { scale: result.scaleUsed })}>
           <Row>
             <PctTile label={t("calc.source_tax.result.rate")} value={result.rate} tone="primary" tip={t("calc.source_tax.result.rate.tip")} />
@@ -207,6 +209,7 @@ function SourceTaxCalc() {
           />
           <ExportPdfButton onClick={handleExport} />
         </div>
+      </div>
       </div>
     </div>
   );

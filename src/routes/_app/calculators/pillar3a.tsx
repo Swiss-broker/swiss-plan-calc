@@ -30,6 +30,7 @@ import { usePrefillFromClient, useHydrateFormFromPrefill } from "@/hooks/usePref
 import { ClientLinkBanner } from "@/components/calculators/ClientLinkBanner";
 import { GuideMode, GuideToggleButton, type GuideStep } from "@/components/calculators/GuideMode";
 import { WikiTip } from "@/components/calculators/WikiTip";
+import { FiscalSnapshotBanner } from "@/components/calculators/FiscalSnapshotBanner";
 import { useT } from "@/contexts/LanguageContext";
 
 const searchSchema = z.object({
@@ -143,6 +144,7 @@ function Pillar3aCalc() {
       <div className="flex justify-end"><GuideToggleButton onClick={() => setGuideOpen(true)} /></div>
 
       {client && <ClientLinkBanner client={client} />}
+      <FiscalSnapshotBanner clientId={clientId} />
 
       <div className="rounded-xl border border-primary/30 bg-primary/5 p-4 text-sm">
         <div className="font-semibold">{t("calc.p3a.intro_title")}</div>
