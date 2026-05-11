@@ -254,6 +254,17 @@ function LppCalc() {
                     </p>
                   </div>
                 )}
+                <p className="mt-2 text-[11px] text-muted-foreground">
+                  💡 {t("calc.lpp.search_tip")}{" "}
+                  <a
+                    href="https://www.zentralstelle.ch/fr/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="font-medium text-primary underline-offset-2 hover:underline"
+                  >
+                    {t("calc.lpp.search_tip_cta")}
+                  </a>
+                </p>
               </div>
             )}
             <p className="mt-3 text-xs text-muted-foreground">
