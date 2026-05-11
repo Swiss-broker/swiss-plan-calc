@@ -2,7 +2,7 @@
 // Pour la stratégie recommandée du comparateur dividende/salaire,
 // simule un plan de rachat LPP étalé sur 1 an, 5 ans et jusqu'à la retraite.
 // Affiche économie d'impôt, coût net et ROI fiscal.
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { CalcCard, MoneyTile } from "@/components/calculators/CalcUI";
 import { NumField } from "@/components/ui/num-field";
 import { Label } from "@/components/ui/label";
@@ -32,10 +32,16 @@ export function DirectorLppBuybackCard({
   const grossSalary = best.company.grossSalary;
   const insuredCap =
     inputs.lppPlan === "executive_1e" ? LPP_2026.oneEPlanCap : LPP_2026.maxInsuredSalary;
-  const insuredSalary = computeLppInsuredSalary(grossSalary, insuredCap);
+  const insuredSalary = useMemo(
+    () => computeLppInsuredSalary(grossSalary, insuredCap),
+    [grossSalary, insuredCap],
+  );
 
   // Estimation simple : capacité = 6 × salaire assuré − solde actuel (proxy)
-  const estimatedCapacity = Math.max(0, Math.round(insuredSalary * 6 - initialBalance));
+  const estimatedCapacity = useMemo(
+    () => Math.max(0, Math.round(insuredSalary * 6 - initialBalance)),
+    [insuredSalary, initialBalance],
+  );
   const [maxBuyback, setMaxBuyback] = useState(initialMaxBuyback ?? estimatedCapacity);
   const [actualBuyback, setActualBuyback] = useState(initialMaxBuyback ?? estimatedCapacity);
 
@@ -64,22 +70,46 @@ export function DirectorLppBuybackCard({
     [yearsToRetire, retirementAge],
   );
 
+  // Mémoïsation par horizon : évite de recalculer les 3 plans quand seul
+  // un paramètre indépendant change. simulateBuybackPlan ne dépend que de
+  // actualBuyback (pas de maxBuyback), donc on l'exclut des dépendances.
+  const sim1y = useMemo(
+    () => simulateBuybackPlan({ buybackCapacity: actualBuyback, actualBuyback, years: horizons[0].years, taxInput }),
+    [actualBuyback, horizons[0].years, taxInput],
+  );
+  const sim5y = useMemo(
+    () => simulateBuybackPlan({ buybackCapacity: actualBuyback, actualBuyback, years: horizons[1].years, taxInput }),
+    [actualBuyback, horizons[1].years, taxInput],
+  );
+  const simRet = useMemo(
+    () => simulateBuybackPlan({ buybackCapacity: actualBuyback, actualBuyback, years: horizons[2].years, taxInput }),
+    [actualBuyback, horizons[2].years, taxInput],
+  );
+
   const sims = useMemo(
-    () =>
-      horizons.map((h) => ({
-        ...h,
-        result: simulateBuybackPlan({
-          buybackCapacity: maxBuyback,
-          actualBuyback,
-          years: h.years,
-          taxInput,
-        }),
-      })),
-    [horizons, maxBuyback, actualBuyback, taxInput],
+    () => [
+      { ...horizons[0], result: sim1y },
+      { ...horizons[1], result: sim5y },
+      { ...horizons[2], result: simRet },
+    ],
+    [horizons, sim1y, sim5y, simRet],
   );
 
   // Recommandation : ROI fiscal le plus élevé
-  const best1 = sims.reduce((a, b) => (b.result.averageReturn > a.result.averageReturn ? b : a), sims[0]);
+  const best1 = useMemo(
+    () => sims.reduce((a, b) => (b.result.averageReturn > a.result.averageReturn ? b : a), sims[0]),
+    [sims],
+  );
+
+  const handleMaxChange = useCallback((v: string) => {
+    const n = Number(v) || 0;
+    setMaxBuyback(n);
+    setActualBuyback((prev) => Math.min(prev, n));
+  }, []);
+  const handleActualChange = useCallback(
+    (v: string) => setActualBuyback(Math.min(Number(v) || 0, maxBuyback)),
+    [maxBuyback],
+  );
 
   return (
     <CalcCard
@@ -99,17 +129,14 @@ export function DirectorLppBuybackCard({
           </div>
           <div>
             <Label className="text-xs font-medium text-muted-foreground">Capacité de rachat (CHF)</Label>
-            <NumField value={String(maxBuyback)} onChange={(v) => setMaxBuyback(Number(v) || 0)} />
+            <NumField value={String(maxBuyback)} onChange={handleMaxChange} />
             <p className="mt-1 text-[10px] text-muted-foreground">
               Estimée. Saisir le montant exact communiqué par la caisse.
             </p>
           </div>
           <div>
             <Label className="text-xs font-medium text-muted-foreground">Montant à racheter (CHF)</Label>
-            <NumField
-              value={String(actualBuyback)}
-              onChange={(v) => setActualBuyback(Math.min(Number(v) || 0, maxBuyback))}
-            />
+            <NumField value={String(actualBuyback)} onChange={handleActualChange} />
             <p className="mt-1 text-[10px] text-muted-foreground">≤ capacité de rachat.</p>
           </div>
         </div>
