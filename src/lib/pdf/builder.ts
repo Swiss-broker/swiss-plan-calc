@@ -12,6 +12,7 @@ export interface BrokerHeader {
   primaryColor?: string; // hex
   accentColor?: string; // hex
   footerNote?: string;
+  logoDataUrl?: string; // base64 data URL du logo cabinet (PNG/JPG)
 }
 
 export interface PdfHeaderInfo extends BrokerHeader {
