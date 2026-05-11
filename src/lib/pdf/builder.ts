@@ -104,7 +104,7 @@ export class ReportPdf {
 
     // Sous-titre sous le bandeau
     if (this.header.subtitle) {
-      doc.setTextColor(...muted);
+      doc.setTextColor(this.muted[0], this.muted[1], this.muted[2]);
       doc.setFont("helvetica", "normal");
       doc.setFontSize(10);
       doc.text(this.header.subtitle, margin, 40);
