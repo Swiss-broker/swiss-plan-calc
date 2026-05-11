@@ -743,6 +743,56 @@ function StepFiscal({ form, update, errors }: StepProps) {
           maxLength={80}
         />
       </Field>
+
+      {/* Années — résident / frontalier / cotisation AVS */}
+      <Field
+        label={t("wizard.field.arrival_year_ch")}
+        htmlFor="arr_year"
+        hint={t("wizard.field.arrival_year_ch.hint")}
+      >
+        <Input
+          id="arr_year"
+          type="number"
+          inputMode="numeric"
+          min={1900}
+          max={new Date().getFullYear()}
+          placeholder="2018"
+          value={form.arrival_year_ch}
+          onChange={(e) => update("arrival_year_ch", e.target.value)}
+        />
+      </Field>
+      <Field
+        label={t("wizard.field.cross_border_start_year")}
+        htmlFor="cb_year"
+        hint={t("wizard.field.cross_border_start_year.hint")}
+      >
+        <Input
+          id="cb_year"
+          type="number"
+          inputMode="numeric"
+          min={1900}
+          max={new Date().getFullYear()}
+          placeholder="2015"
+          value={form.cross_border_start_year}
+          onChange={(e) => update("cross_border_start_year", e.target.value)}
+        />
+      </Field>
+      <Field
+        label={t("wizard.field.avs_contribution_start_year")}
+        htmlFor="avs_year"
+        hint={t("wizard.field.avs_contribution_start_year.hint")}
+      >
+        <Input
+          id="avs_year"
+          type="number"
+          inputMode="numeric"
+          min={1900}
+          max={new Date().getFullYear()}
+          placeholder={t("wizard.field.avs_contribution_start_year.placeholder")}
+          value={form.avs_contribution_start_year}
+          onChange={(e) => update("avs_contribution_start_year", e.target.value)}
+        />
+      </Field>
     </div>
   );
 }
