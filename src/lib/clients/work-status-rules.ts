@@ -36,11 +36,7 @@ export function getWorkStatusRules(status: WorkStatus | null | undefined): WorkS
         canBuybackLPP: false,
         isRetired: false,
         isSelfEmployed: true,
-        hiddenCalculators: new Set([
-          "/calculators/lpp",
-          "/calculators/source-tax",
-          "/calculators/cross-border",
-        ]),
+        hiddenCalculators: NO_HIDE,
         shortLabel: "Indépendant",
       };
     case "mixed":
@@ -58,16 +54,11 @@ export function getWorkStatusRules(status: WorkStatus | null | undefined): WorkS
       return {
         hasSalary: false,
         hasLPP: false,
-        pillar3aCap: 0, // plus de cotisation 3a après l'âge AVS (sauf activité résiduelle)
+        pillar3aCap: 0,
         canBuybackLPP: false,
         isRetired: true,
         isSelfEmployed: false,
-        hiddenCalculators: new Set([
-          "/calculators/lpp",
-          "/calculators/source-tax",
-          "/calculators/cross-border",
-          "/calculators/pillar3a",
-        ]),
+        hiddenCalculators: NO_HIDE,
         shortLabel: "Retraité",
       };
     case "unemployed":
@@ -78,26 +69,18 @@ export function getWorkStatusRules(status: WorkStatus | null | undefined): WorkS
         canBuybackLPP: false,
         isRetired: false,
         isSelfEmployed: false,
-        hiddenCalculators: new Set([
-          "/calculators/lpp",
-          "/calculators/source-tax",
-          "/calculators/cross-border",
-          "/calculators/pillar3a",
-        ]),
+        hiddenCalculators: NO_HIDE,
         shortLabel: "Sans emploi",
       };
     case "student":
       return {
-        hasSalary: true, // job étudiant possible
-        hasLPP: false, // souvent sous le seuil LPP
-        pillar3aCap: PILLAR_3A_MAX_LPP_2026, // si revenu suffisant
+        hasSalary: true,
+        hasLPP: false,
+        pillar3aCap: PILLAR_3A_MAX_LPP_2026,
         canBuybackLPP: false,
         isRetired: false,
         isSelfEmployed: false,
-        hiddenCalculators: new Set([
-          "/calculators/lpp",
-          "/calculators/cross-border",
-        ]),
+        hiddenCalculators: NO_HIDE,
         shortLabel: "Étudiant",
       };
     case "director":
