@@ -56,6 +56,20 @@ export interface CantonTaxScale {
   wealthExemptionMarried: number;
   /** Nom du chef-lieu */
   capital: string;
+  /**
+   * Facteur de calibration empirique appliqué à l'impôt simple (défaut 1.0).
+   * Permet d'aligner la sortie du moteur sur les calculateurs officiels 2026
+   * sans réécrire ligne par ligne tous les paliers.
+   */
+  calibrationFactor?: number;
+  /**
+   * Mode splitting (couple / famille monoparentale).
+   * - "married_scale" (défaut) : utilise `married` directement.
+   * - "split_1.9" : impôt = 2 × barème_single(R/1.9) (modèle Genève couple).
+   * - "split_1.85" : modèle Genève famille monoparentale.
+   * - "split_1.8" : modèle Vaud (splitting partiel).
+   */
+  splittingMode?: "married_scale" | "split_1.9" | "split_1.85" | "split_1.8";
 }
 
 // =====================================================================
