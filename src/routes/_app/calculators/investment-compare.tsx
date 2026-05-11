@@ -183,14 +183,14 @@ function InvestmentCompareCalc() {
         <div className="h-72 w-full">
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={chartData} margin={{ top: 8, right: 16, left: 0, bottom: 8 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
               <XAxis
                 dataKey="year"
-                tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }}
+                tick={{ fontSize: 11, fill: "var(--muted-foreground)" }}
                 label={{ value: t("calc.invcompare.axis_years"), position: "insideBottom", offset: -2, fontSize: 11 }}
               />
               <YAxis
-                tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }}
+                tick={{ fontSize: 11, fill: "var(--muted-foreground)" }}
                 tickFormatter={(v: number) => new Intl.NumberFormat("fr-CH", { notation: "compact" }).format(v)}
               />
               <RTooltip
@@ -202,16 +202,16 @@ function InvestmentCompareCalc() {
                 type="monotone"
                 dataKey="a"
                 name={a.name || t("calc.invcompare.investment_a")}
-                stroke="hsl(var(--primary))"
-                strokeWidth={2.2}
+                stroke="var(--primary)"
+                strokeWidth={2.5}
                 dot={false}
               />
               <RLine
                 type="monotone"
                 dataKey="b"
                 name={b.name || t("calc.invcompare.investment_b")}
-                stroke="hsl(var(--accent-foreground))"
-                strokeWidth={2.2}
+                stroke="var(--accent)"
+                strokeWidth={2.5}
                 strokeDasharray="5 4"
                 dot={false}
               />
