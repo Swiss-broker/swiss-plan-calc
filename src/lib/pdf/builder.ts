@@ -256,7 +256,7 @@ export class ReportPdf {
       theme: "striped",
       headStyles: { fillColor: this.primary, textColor: 255, fontStyle: "bold", fontSize: 10 },
       styles: { fontSize: 9.5, cellPadding: 2 },
-      alternateRowStyles: { fillColor: [248, 250, 252] },
+      alternateRowStyles: { fillColor: [250, 251, 252] },
       didParseCell: (data) => {
         if (opts?.highlightLast && data.section === "body" && data.row.index === body.length - 1) {
           data.cell.styles.fontStyle = "bold";
