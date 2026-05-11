@@ -108,9 +108,12 @@ export function toSourceTaxInput(b: ClientBundle) {
     b.client.civil_status === "married" ||
     b.client.civil_status === "registered_partnership";
   const hasKids = parseChildren(b.client.children).length > 0;
-  // Barème par défaut si non renseigné dans la fiche
+  const spouseSalary = Number(b.client.spouse_gross_annual_salary ?? 0);
+  // Barème par défaut : C si marié biactif, B si marié monoactif, H si monoparental, A sinon.
   const defaultScale: "A" | "B" | "C" | "H" = married
-    ? "B"
+    ? spouseSalary > 0
+      ? "C"
+      : "B"
     : hasKids
       ? "H"
       : "A";
@@ -126,9 +129,8 @@ export function toSourceTaxInput(b: ClientBundle) {
     monthlyGross: b.client.gross_annual_salary
       ? Math.round(Number(b.client.gross_annual_salary) / 12)
       : undefined,
-    spouseMonthlyGross: b.client.spouse_gross_annual_salary
-      ? Math.round(Number(b.client.spouse_gross_annual_salary) / 12)
-      : undefined,
+    spouseMonthlyGross:
+      spouseSalary > 0 ? Math.round(spouseSalary / 12) : undefined,
     church: b.client.confession && b.client.confession !== "none" ? true : undefined,
     isCrossBorderFR:
       b.client.tax_status === "cross_border_fr_1983" ||

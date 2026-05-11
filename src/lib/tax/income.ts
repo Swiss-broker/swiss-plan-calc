@@ -281,8 +281,11 @@ export function computeIncomeTax(input: IncomeTaxInput): IncomeTaxBreakdown {
     donations;
 
   const taxableIncomeCC = Math.max(0, grossIncome - totalDeductions);
-  // Pour l'IFD, on applique la déduction enfants fédérale après calcul (cf. art. 35 LIFD)
-  const taxableIncomeIFD = taxableIncomeCC;
+  // IFD : déduction fédérale supplémentaire par enfant à charge (art. 35 LIFD)
+  // 6 700 CHF par enfant + rabais 259 CHF/enfant sur l'impôt après calcul.
+  const IFD_CHILD_INCOME_DEDUCTION = 6_700;
+  const ifdChildIncomeDed = (input.children ?? 0) * IFD_CHILD_INCOME_DEDUCTION;
+  const taxableIncomeIFD = Math.max(0, taxableIncomeCC - ifdChildIncomeDed);
 
   // IFD
   const ifdGross = computeIFD(taxableIncomeIFD, input.status);

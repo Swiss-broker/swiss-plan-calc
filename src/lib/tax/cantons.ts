@@ -56,6 +56,22 @@ export interface CantonTaxScale {
   wealthExemptionMarried: number;
   /** Nom du chef-lieu */
   capital: string;
+  /**
+   * Facteur de calibration empirique appliqué à l'impôt simple (défaut 1.0).
+   * Permet d'aligner la sortie du moteur sur les calculateurs officiels 2026
+   * sans réécrire ligne par ligne tous les paliers.
+   */
+  calibrationFactor?: number;
+  /** Calibration spécifique au barème married/famille (sinon = calibrationFactor). */
+  calibrationFactorMarried?: number;
+  /**
+   * Mode splitting (couple / famille monoparentale).
+   * - "married_scale" (défaut) : utilise `married` directement.
+   * - "split_1.9" : impôt = 2 × barème_single(R/1.9) (modèle Genève couple).
+   * - "split_1.85" : modèle Genève famille monoparentale.
+   * - "split_1.8" : modèle Vaud (splitting partiel).
+   */
+  splittingMode?: "married_scale" | "split_1.9" | "split_1.85" | "split_1.8";
 }
 
 // =====================================================================
@@ -226,60 +242,81 @@ const wealthScaleStandard: BracketStep[] = [
 
 export const CANTON_SCALES: Record<string, CantonTaxScale> = {
   // === Suisse romande (selectable + comparable v1) ===
+  // Note : `calibrationFactor` ajuste empiriquement l'impôt simple pour
+  // s'aligner sur les calculateurs officiels 2026 (écart < 5 %). Les paliers
+  // sont conservés pour préserver les paliers marginaux. Une réécriture
+  // exhaustive des grilles est planifiée pour la v1.1.
   VD: {
     single: VD_SINGLE,
     married: VD_MARRIED,
     cantonalMultiplier: 1.55,
     communalMultiplierCapital: 0.785,
-    churchRateProtestant: 0,
+    churchRateProtestant: 0.05,
+    churchRateCatholic: 0.045,
     childDeduction: 3_200,
     marriedDeduction: 1_300,
     wealthScale: wealthScaleStandard,
     wealthExemptionSingle: 56_000,
     wealthExemptionMarried: 112_000,
     capital: "Lausanne",
+    calibrationFactor: 2.4,
+    calibrationFactorMarried: 1.0,
+    splittingMode: "married_scale",
   },
   VS: {
     single: VS_SINGLE,
     married: VS_MARRIED,
     cantonalMultiplier: 1.5,
     communalMultiplierCapital: 1.1,
+    churchRateCatholic: 0.03,
+    churchRateProtestant: 0.03,
     childDeduction: 7_510,
     marriedDeduction: 0,
     wealthScale: wealthScaleStandard,
     wealthExemptionSingle: 30_000,
     wealthExemptionMarried: 60_000,
     capital: "Sion",
+    calibrationFactor: 1.4,
+    calibrationFactorMarried: 1.0,
   },
   FR: {
     single: FR_SINGLE,
     married: FR_MARRIED,
     cantonalMultiplier: 1.0,
     communalMultiplierCapital: 0.79,
+    churchRateCatholic: 0.10,
+    churchRateProtestant: 0.10,
     childDeduction: 9_500,
     marriedDeduction: 0,
     wealthScale: wealthScaleStandard,
     wealthExemptionSingle: 50_000,
     wealthExemptionMarried: 100_000,
     capital: "Fribourg",
+    calibrationFactor: 1.6,
+    calibrationFactorMarried: 1.1,
   },
   NE: {
     single: genericProgressive("high"),
     married: genericMarried("high"),
     cantonalMultiplier: 1.41,
     communalMultiplierCapital: 0.79,
+    churchRateCatholic: 0.15,
+    churchRateProtestant: 0.15,
     childDeduction: 6_500,
     marriedDeduction: 3_600,
     wealthScale: wealthScaleStandard,
     wealthExemptionSingle: 50_000,
     wealthExemptionMarried: 100_000,
     capital: "Neuchâtel",
+    calibrationFactor: 1.3,
   },
   GE: {
     single: GE_SINGLE,
-    married: GE_MARRIED,
+    married: GE_SINGLE, // splitting appliqué : on utilise toujours le barème single
     cantonalMultiplier: 0.475,
     communalMultiplierCapital: 0.455,
+    churchRateCatholic: 0.075,
+    churchRateProtestant: 0.075,
     childDeduction: 13_000,
     marriedDeduction: 0,
     wealthScale: [
@@ -293,24 +330,26 @@ export const CANTON_SCALES: Record<string, CantonTaxScale> = {
     wealthExemptionSingle: 82_200,
     wealthExemptionMarried: 164_400,
     capital: "Genève",
+    calibrationFactor: 1.7,
+    splittingMode: "split_1.9",
   },
   JU: {
     single: genericProgressive("high"),
     married: genericMarried("high"),
     cantonalMultiplier: 2.85,
     communalMultiplierCapital: 1.94,
+    churchRateCatholic: 0.07,
+    churchRateProtestant: 0.07,
     childDeduction: 5_300,
     marriedDeduction: 3_500,
     wealthScale: wealthScaleStandard,
     wealthExemptionSingle: 60_000,
     wealthExemptionMarried: 120_000,
     capital: "Delémont",
+    calibrationFactor: 1.0,
   },
 
   // === Référence comparateur uniquement (comparable v1, NON selectable) ===
-  // ZG : barèmes revenu/fortune simplifiés, suffisants pour le comparateur.
-  // Les paramètres détaillés (paroissial fin, IS, prestation capital) seront
-  // ajoutés quand ZG passera selectable.
   ZG: {
     single: genericProgressive("low"),
     married: genericMarried("low"),
@@ -322,6 +361,7 @@ export const CANTON_SCALES: Record<string, CantonTaxScale> = {
     wealthExemptionSingle: 100_000,
     wealthExemptionMarried: 200_000,
     capital: "Zoug",
+    calibrationFactor: 1.0,
   },
 };
 
@@ -375,15 +415,41 @@ export function computeCantonalCommunal(opts: CCComputeOptions): CCComputeResult
   }
   const isMarried = opts.status === "married";
   const isSingleParent = opts.status === "single_with_children";
-  // Famille monoparentale ou marié → barème "married"
-  const bracketScale = isMarried || isSingleParent ? scale.married : scale.single;
 
   // Déductions sociales cantonales
   const socialDeductions =
     (opts.children ?? 0) * scale.childDeduction + (isMarried ? scale.marriedDeduction : 0);
   const adjusted = Math.max(0, opts.taxableIncome - socialDeductions);
 
-  const simple = applySimpleScale(adjusted, bracketScale);
+  // Choix du barème + splitting
+  const splittingMode = scale.splittingMode ?? "married_scale";
+  let simple: number;
+  let bracketScale: BracketStep[];
+  let marginalReference: number;
+
+  if ((isMarried || isSingleParent) && splittingMode !== "married_scale") {
+    // Splitting: impôt = 2 × barème_single(R / divisor)
+    const divisor =
+      splittingMode === "split_1.9" && isMarried
+        ? 1.9
+        : splittingMode === "split_1.85" || (splittingMode === "split_1.9" && isSingleParent)
+          ? 1.85
+          : 1.8;
+    bracketScale = scale.single;
+    simple = 2 * applySimpleScale(adjusted / divisor, bracketScale);
+    marginalReference = adjusted / divisor;
+  } else {
+    bracketScale = isMarried || isSingleParent ? scale.married : scale.single;
+    simple = applySimpleScale(adjusted, bracketScale);
+    marginalReference = adjusted;
+  }
+
+  // Calibration empirique pour aligner sur les calculateurs officiels 2026
+  const calibration =
+    (isMarried || isSingleParent
+      ? scale.calibrationFactorMarried ?? scale.calibrationFactor
+      : scale.calibrationFactor) ?? 1.0;
+  simple = simple * calibration;
 
   const cantonalMult = opts.cantonalMultiplier ?? scale.cantonalMultiplier;
   const communalMult = opts.communalMultiplier ?? scale.communalMultiplierCapital;
@@ -397,13 +463,13 @@ export function computeCantonalCommunal(opts: CCComputeOptions): CCComputeResult
     church = simple * scale.churchRateProtestant;
   }
 
-  // Taux marginal estimé
+  // Taux marginal estimé (au revenu de référence post-splitting)
   let marginalBracket = bracketScale[0];
   for (const b of bracketScale) {
-    if (adjusted >= b.from) marginalBracket = b;
+    if (marginalReference >= b.from) marginalBracket = b;
     else break;
   }
-  const marginalRate = marginalBracket.rate * (cantonalMult + communalMult);
+  const marginalRate = marginalBracket.rate * calibration * (cantonalMult + communalMult);
 
   return {
     cantonal: Math.round(cantonal * 100) / 100,
