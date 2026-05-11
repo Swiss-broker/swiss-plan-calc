@@ -8,8 +8,8 @@ import { NumField } from "@/components/ui/num-field";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { formatCHF } from "@/lib/format";
-import { simulateBuybackPlan, computeLppInsuredSalary, LPP_2026_SOURCE_NOTE } from "@/lib/lpp";
-import { LPP_2026 } from "@/lib/lpp/parameters-2026";
+import { simulateBuybackPlan, computeLppInsuredSalary } from "@/lib/lpp";
+import { LPP_2026, LPP_2026_SOURCE_NOTE } from "@/lib/lpp/parameters-2026";
 import type { CompensationResult } from "@/lib/director-compensation/types";
 import { Sparkles, PiggyBank } from "lucide-react";
 
