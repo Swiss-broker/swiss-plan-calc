@@ -126,6 +126,9 @@ export function toSourceTaxInput(b: ClientBundle) {
     monthlyGross: b.client.gross_annual_salary
       ? Math.round(Number(b.client.gross_annual_salary) / 12)
       : undefined,
+    spouseMonthlyGross: b.client.spouse_gross_annual_salary
+      ? Math.round(Number(b.client.spouse_gross_annual_salary) / 12)
+      : undefined,
     church: b.client.confession && b.client.confession !== "none" ? true : undefined,
     isCrossBorderFR:
       b.client.tax_status === "cross_border_fr_1983" ||
