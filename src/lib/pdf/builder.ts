@@ -247,6 +247,36 @@ export class ReportPdf {
     return this;
   }
 
+  /** Bandeau "SITUATION ACTUELLE" — encadré gris clair. */
+  situationBanner(label = "SITUATION ACTUELLE") {
+    this.ensureSpace(10);
+    const { doc, margin, contentWidth } = this;
+    doc.setFillColor(241, 245, 249);
+    doc.setDrawColor(203, 213, 225);
+    doc.setLineWidth(0.3);
+    doc.roundedRect(margin, this.cursorY, contentWidth, 7, 1.5, 1.5, "FD");
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(10);
+    doc.setTextColor(...this.ink);
+    doc.text(label, margin + 3, this.cursorY + 4.8);
+    this.cursorY += 10;
+    return this;
+  }
+
+  /** Bandeau "PROJECTION" — encadré couleur primaire. */
+  projectionBanner(label = "PROJECTION") {
+    this.ensureSpace(10);
+    const { doc, margin, contentWidth, primary } = this;
+    doc.setFillColor(...primary);
+    doc.roundedRect(margin, this.cursorY, contentWidth, 7, 1.5, 1.5, "F");
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(10);
+    doc.setTextColor(255, 255, 255);
+    doc.text(label, margin + 3, this.cursorY + 4.8);
+    this.cursorY += 10;
+    return this;
+  }
+
   private drawFooter() {
     const { doc, margin, pageWidth, pageHeight, muted } = this;
     const pageCount = doc.getNumberOfPages();
@@ -257,11 +287,11 @@ export class ReportPdf {
     doc.setFont("helvetica", "normal");
     doc.setFontSize(8);
     doc.setTextColor(...muted);
-    doc.text(
-      "Document de travail · calculs basés sur les barèmes 2026 et les données saisies.",
-      margin,
-      pageHeight - 7,
-    );
+    const note =
+      this.header.footerNote?.trim() ||
+      "Document de travail · calculs basés sur les barèmes 2026 et les données saisies.";
+    const lines = doc.splitTextToSize(note, pageWidth - margin * 2 - 30) as string[];
+    doc.text(lines.slice(0, 2), margin, pageHeight - 7);
     doc.text(`Page ${current} / ${pageCount}`, pageWidth - margin, pageHeight - 7, { align: "right" });
   }
 
