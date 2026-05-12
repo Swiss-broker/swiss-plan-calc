@@ -549,11 +549,13 @@ function InsuredSalaryPanel({
       </span>
     );
   } else if (capped) {
+    const cappedResult = Math.max(0, insuredSalaryCap - COORD);
     recap = t("calc.lpp.recap_capped", {
       gross: fmtCHF(grossSalary),
       coord: fmtCHF(COORD),
       raw: fmtCHF(rawDiff),
       cap: fmtCHF(insuredSalaryCap),
+      result: fmtCHF(cappedResult),
     });
   } else {
     recap = t("calc.lpp.recap_under", {
