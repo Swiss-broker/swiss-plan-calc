@@ -257,8 +257,13 @@ export async function regeneratePdf(
       });
       return;
     }
-    case "investment_compare": {
-      // Pas de regénération PDF pour ce calculateur (autonome, pas d'historique côté serveur).
+    case "investment_compare":
+    case "avs_ai":
+    case "vested_benefits":
+    case "cross_border":
+    case "tou":
+    case "director_compensation": {
+      // Pas de regénération PDF pour ces calculateurs (lien profond + bouton Exporter dans la fiche).
       return;
     }
   }
