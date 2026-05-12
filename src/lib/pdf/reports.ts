@@ -501,8 +501,8 @@ export function exportCantonComparePdf(args: {
 }) {
   const { input, rows } = args;
   const pdf = new ReportPdf({
-    title: "Comparateur cantonal · Charge fiscale 2026",
-    subtitle: `Profil : ${formatCHF(input.grossSalary)} brut, ${STATUS_LABEL[input.status] ?? input.status}`,
+    title: t("pdf.canton.title", undefined, "Comparateur cantonal · Charge fiscale 2026"),
+    subtitle: `${formatCHF(input.grossSalary)} · ${STATUS_LABEL[input.status] ?? input.status}`,
     ...args.header,
   } as PdfHeaderInfo);
 
@@ -572,7 +572,7 @@ export function exportCrossBorderPdf(args: {
 }) {
   const { input, result } = args;
   const pdf = new ReportPdf({
-    title: "Frontalier · Simulation fiscale transfrontalière",
+    title: t("pdf.cross_border.title", undefined, "Frontalier · Simulation fiscale transfrontalière"),
     subtitle: result.regimeLabel,
     ...args.header,
   } as PdfHeaderInfo);
@@ -664,8 +664,8 @@ export function exportTouPdf(args: {
 }) {
   const { input, eligibility, comparison } = args;
   const pdf = new ReportPdf({
-    title: "TOU · Taxation Ordinaire Ultérieure",
-    subtitle: `Quasi-résident · ${cantonName(input.canton)}`,
+    title: t("pdf.tou.title", undefined, "TOU · Taxation Ordinaire Ultérieure"),
+    subtitle: t("pdf.tou.subtitle", { canton: cantonName(input.canton) }),
     ...args.header,
   } as PdfHeaderInfo);
 
@@ -757,8 +757,12 @@ export function exportVestedBenefitsPdf(args: {
 }) {
   const { input, projections, recommended } = args;
   const pdf = new ReportPdf({
-    title: "Libre passage · Stratégies de placement",
-    subtitle: `Capital ${formatCHF(input.initialBalance)} · horizon ${input.yearsToRetirement} ans · ${cantonName(input.withdrawalCanton)}`,
+    title: t("pdf.vested.title", undefined, "Libre passage · Stratégies de placement"),
+    subtitle: t("pdf.vested.subtitle", {
+      capital: formatCHF(input.initialBalance),
+      years: input.yearsToRetirement,
+      canton: cantonName(input.withdrawalCanton),
+    }),
     ...args.header,
   } as PdfHeaderInfo);
 
