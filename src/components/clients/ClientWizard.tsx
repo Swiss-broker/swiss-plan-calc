@@ -744,7 +744,7 @@ function StepFiscal({ form, update, errors }: StepProps) {
         />
       </Field>
 
-      {/* Années — résident / frontalier / cotisation AVS */}
+      {/* Années · résident / frontalier / cotisation AVS */}
       <Field
         label={t("wizard.field.arrival_year_ch")}
         htmlFor="arr_year"

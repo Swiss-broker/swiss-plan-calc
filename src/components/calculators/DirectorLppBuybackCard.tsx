@@ -1,4 +1,4 @@
-// Wave 3 — Module rachats LPP dirigeant
+// Wave 3 · Module rachats LPP dirigeant
 // Pour la stratégie recommandée du comparateur dividende/salaire,
 // simule un plan de rachat LPP étalé sur 1 an, 5 ans et jusqu'à la retraite.
 // Affiche économie d'impôt, coût net et ROI fiscal.
@@ -113,7 +113,7 @@ export function DirectorLppBuybackCard({
 
   return (
     <CalcCard
-      title="Rachats LPP dirigeant — optimisation fiscale"
+      title="Rachats LPP dirigeant · optimisation fiscale"
       description="Simule un rachat étalé (1 an / 5 ans / jusqu'à la retraite) sur la base du salaire recommandé."
     >
       <div className="space-y-5">

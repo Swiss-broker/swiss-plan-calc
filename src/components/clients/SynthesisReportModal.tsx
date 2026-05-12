@@ -1,4 +1,4 @@
-// Modale "Préparer dossier de synthèse PDF" — V1 française uniquement.
+// Modale "Préparer dossier de synthèse PDF" · V1 française uniquement.
 import { useEffect, useMemo, useState } from "react";
 import { Loader2, FileText } from "lucide-react";
 import { toast } from "sonner";
@@ -140,7 +140,7 @@ export function SynthesisReportModal({ open, onOpenChange, clientId, entries }: 
 
         <ScrollArea className="max-h-[60vh] pr-3">
           <div className="space-y-5 py-2">
-            {/* Section 1 — toujours inclus */}
+            {/* Section 1 · toujours inclus */}
             <section className="rounded-lg border bg-muted/30 p-3">
               <h4 className="mb-2 text-sm font-semibold">Informations générales</h4>
               <ul className="space-y-1 text-sm text-muted-foreground">
@@ -152,7 +152,7 @@ export function SynthesisReportModal({ open, onOpenChange, clientId, entries }: 
               </p>
             </section>
 
-            {/* Section 2 — simulations */}
+            {/* Section 2 · simulations */}
             <section>
               <div className="mb-2 flex items-center justify-between">
                 <h4 className="text-sm font-semibold">Simulations à inclure</h4>
@@ -164,7 +164,7 @@ export function SynthesisReportModal({ open, onOpenChange, clientId, entries }: 
               </div>
               {entries.length === 0 ? (
                 <div className="rounded-lg border border-dashed bg-card p-4 text-sm text-muted-foreground">
-                  Aucune simulation à inclure — lancez d'abord un calculateur depuis cette fiche.
+                  Aucune simulation à inclure · lancez d'abord un calculateur depuis cette fiche.
                 </div>
               ) : (
                 <ul className="space-y-2">
@@ -200,7 +200,7 @@ export function SynthesisReportModal({ open, onOpenChange, clientId, entries }: 
               )}
             </section>
 
-            {/* Section 3 — toujours inclus */}
+            {/* Section 3 · toujours inclus */}
             <section className="rounded-lg border bg-muted/30 p-3">
               <h4 className="mb-2 text-sm font-semibold">Pages de synthèse</h4>
               <ul className="space-y-1 text-sm text-muted-foreground">
@@ -211,7 +211,7 @@ export function SynthesisReportModal({ open, onOpenChange, clientId, entries }: 
 
             <Separator />
 
-            {/* Section 4 — options */}
+            {/* Section 4 · options */}
             <section className="space-y-3">
               <h4 className="text-sm font-semibold">Personnalisation</h4>
               <div>

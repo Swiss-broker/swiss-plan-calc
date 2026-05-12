@@ -63,7 +63,7 @@ export function SessionSummaryTab({ clientId, clientName }: { clientId: string; 
 
   return (
     <div className="space-y-6">
-      {/* BLOC 2 — Optimisations identifiées */}
+      {/* BLOC 2 · Optimisations identifiées */}
       <Card className="border-primary/30 bg-gradient-to-br from-primary/5 to-transparent">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base">
@@ -130,7 +130,7 @@ export function SessionSummaryTab({ clientId, clientName }: { clientId: string; 
         </CardContent>
       </Card>
 
-      {/* BLOC 1 — Liste chronologique */}
+      {/* BLOC 1 · Liste chronologique */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base">
@@ -153,7 +153,7 @@ export function SessionSummaryTab({ clientId, clientName }: { clientId: string; 
         </CardContent>
       </Card>
 
-      {/* BLOC 3 — Bouton préparer dossier de synthèse PDF */}
+      {/* BLOC 3 · Bouton préparer dossier de synthèse PDF */}
       <div className="flex justify-end">
         <Button
           size="lg"

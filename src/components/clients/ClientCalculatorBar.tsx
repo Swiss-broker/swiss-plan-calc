@@ -61,7 +61,7 @@ export function ClientCalculatorBar({ client }: { client: Client }) {
           ))}
         </div>
         <p className="mt-2 text-[10.5px] text-muted-foreground">
-          Les calculateurs grisés ne s'appliquent pas à ce profil — clic possible pour une simulation what-if.
+          Les calculateurs grisés ne s'appliquent pas à ce profil · clic possible pour une simulation what-if.
         </p>
       </div>
     </TooltipProvider>

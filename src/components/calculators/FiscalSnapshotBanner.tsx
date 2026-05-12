@@ -18,7 +18,7 @@ export function FiscalSnapshotBanner({ clientId }: { clientId?: string }) {
       <Activity className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
       <div className="flex-1">
         <div className="font-medium">
-          Dernière simulation fiscale ({sourceLabel}) — {date}
+          Dernière simulation fiscale ({sourceLabel}) · {date}
         </div>
         <div className="mt-0.5 text-muted-foreground">
           Taux moyen <strong>{snapshot.averageRate.toFixed(1)} %</strong> ·

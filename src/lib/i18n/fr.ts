@@ -1,4 +1,4 @@
-// Dictionnaire français — source de vérité.
+// Dictionnaire français · source de vérité.
 // Toute clé manquante dans une autre langue retombe ici via le fallback de t().
 
 export const fr: Record<string, string> = {
@@ -16,7 +16,7 @@ export const fr: Record<string, string> = {
     "📍 Comparaison sur les 6 cantons romands + Zoug (référence). 19 autres cantons disponibles prochainement.",
   "comparator.zg.badge": "Référence fiscalité optimisée",
   "comparator.zg.tooltip":
-    "Comparaison hors Suisse romande — non disponible comme canton de domicile en v1.",
+    "Comparaison hors Suisse romande · non disponible comme canton de domicile en v1.",
   "comparator.section.romand": "Cantons romands",
   "comparator.section.reference": "Référence hors Suisse romande",
 
@@ -144,7 +144,7 @@ export const fr: Record<string, string> = {
   "lang.en": "English",
   "lang.it": "Italiano",
 
-  // === Calculateurs — titres + descriptions ===
+  // === Calculateurs · titres + descriptions ===
   "calc.avs_ai.title": "1er pilier AVS/AI",
   "calc.avs_ai.desc":
     "Estimation rente individuelle ou couple, AVS21, plafonnement 3'780 CHF/mois.",
@@ -180,7 +180,7 @@ export const fr: Record<string, string> = {
   "calc.invcompare.desc":
     "Comparez deux placements côte à côte : capital final, gain net, fiscalité.",
   "calc.invcompare.subtitle":
-    "Deux placements côte à côte — capital final, gain net, impact des frais et de la fiscalité.",
+    "Deux placements côte à côte · capital final, gain net, impact des frais et de la fiscalité.",
   "calc.invcompare.investment_a": "Investissement A",
   "calc.invcompare.investment_b": "Investissement B",
   "calc.invcompare.default_a": "Investissement A",
@@ -230,7 +230,7 @@ export const fr: Record<string, string> = {
   "calc.invcompare.tip.fees_impact": "Montant cumulé prélevé en frais sur toute la durée.",
   "calc.invcompare.tip.tax_impact": "Impôt prélevé sur le gain au moment du retrait.",
   "calc.invcompare.tip.net": "Capital effectivement disponible après frais et impôt.",
-  "calc.invcompare.guide_title": "Guide — Comparateur d'investissements",
+  "calc.invcompare.guide_title": "Guide · Comparateur d'investissements",
   "calc.invcompare.step.welcome.t": "Comparer deux placements",
   "calc.invcompare.step.welcome.b":
     "Saisissez les paramètres de deux investissements pour comparer le capital final net après frais et fiscalité.",
@@ -275,11 +275,11 @@ export const fr: Record<string, string> = {
   "enum.permit.none": "Aucun",
 
   // === Enums : tax_status ===
-  "enum.tax_status.resident": "Résident(e) — taxation ordinaire",
+  "enum.tax_status.resident": "Résident(e) · taxation ordinaire",
   "enum.tax_status.source_taxed": "Imposé(e) à la source (permis B/L)",
-  "enum.tax_status.cross_border_fr_1983": "Frontalier(ère) français(e) — accord 1983",
+  "enum.tax_status.cross_border_fr_1983": "Frontalier(ère) français(e) · accord 1983",
   "enum.tax_status.cross_border_ge": "Frontalier(ère) Genève (IS au barème normal)",
-  "enum.tax_status.tou": "TOU — Taxation Ordinaire Ultérieure",
+  "enum.tax_status.tou": "TOU · Taxation Ordinaire Ultérieure",
 
   // === Enums : work_status ===
   "enum.work_status.employee": "Salarié",
@@ -296,7 +296,7 @@ export const fr: Record<string, string> = {
   "enum.lpp_plan.executive": "Plan cadres / 1e",
   "enum.lpp_plan.mixed": "Mixte",
 
-  // === Enums : legal_form (sociétés) — clés alignées sur l'enum DB ===
+  // === Enums : legal_form (sociétés) · clés alignées sur l'enum DB ===
   "enum.legal_form.sarl": "Sàrl",
   "enum.legal_form.sa": "SA",
   "enum.legal_form.cooperative": "Coopérative",
@@ -495,7 +495,7 @@ export const fr: Record<string, string> = {
   "history.kind.tou": "TOU / Quasi-résident",
   "history.kind.director_compensation": "Rémunération dirigeant",
 
-  // === LOT 1 — Calculateurs prévoyance (AVS/AHV · LPP/BVG · 3a · libre passage) ===
+  // === LOT 1 · Calculateurs prévoyance (AVS/AHV · LPP/BVG · 3a · libre passage) ===
   "pension.canton": "Canton",
   "pension.canton_residence": "Canton de domicile",
   "pension.civil_status": "Situation civile",
@@ -651,7 +651,7 @@ export const fr: Record<string, string> = {
   "calc.lpp.tip.children": "Les déductions enfant cantonales et le rabais IFD réduisent légèrement le taux marginal et donc l'économie fiscale du rachat.",
   "calc.lpp.actual_buyback.warning": "Le montant racheté dépasse la capacité maximale ({cap}). Il est plafonné à la capacité dans le calcul.",
   "calc.lpp.fiscal.title": "Situation fiscale (pour calcul précis)",
-  "calc.lpp.fiscal.help": "Ces données affinent le taux marginal effectif appliqué au rachat — surtout pour les couples mariés.",
+  "calc.lpp.fiscal.help": "Ces données affinent le taux marginal effectif appliqué au rachat · surtout pour les couples mariés.",
   "calc.lpp.field.spouse_salary": "Salaire brut du conjoint (CHF/an)",
   "calc.lpp.tip.spouse_salary": "Inclus dans le splitting fiscal des couples mariés. Sans cette donnée, l'économie fiscale est sous-estimée.",
   "calc.lpp.field.pillar3a_year": "Cotisations 3a versées (CHF/an)",
@@ -663,7 +663,7 @@ export const fr: Record<string, string> = {
   "calc.lpp.retro.toggle_help": "Estime votre avoir LPP cumulé à partir de l'âge auquel vous avez commencé à cotiser, en supposant un salaire stable et le taux d'intérêt minimal LPP.",
   "calc.lpp.retro.entry_age": "Âge d'arrivée / début cotisation LPP",
   "calc.lpp.retro.estimated": "Avoir estimé",
-  "calc.lpp.retro.note": "Calcul rétroactif depuis l'âge {from} — hypothèse de salaire stable et taux d'intérêt minimal LPP (1.25 %).",
+  "calc.lpp.retro.note": "Calcul rétroactif depuis l'âge {from} · hypothèse de salaire stable et taux d'intérêt minimal LPP (1.25 %).",
   "calc.lpp.evolution_card": "Évolution du capital LPP",
   "calc.lpp.evolution_desc": "Capital net (rendement − frais), capital sans rendement, et part des intérêts.",
   "calc.lpp.chart.balance": "Capital net",
@@ -860,13 +860,13 @@ export const fr: Record<string, string> = {
   "calc.income_tax.tip.lpp_buyback_capacity": "Différence entre l'avoir LPP cible et l'avoir actuel (figure sur le certificat LPP).",
   "calc.income_tax.field.p3a_balance": "Capital 3a accumulé (CHF)",
   "calc.income_tax.tip.p3a_balance": "Solde total cumulé sur vos comptes 3a (banque + assurance).",
-  "calc.income_tax.fr_cb.title": "Frontalier français — accord 1983",
+  "calc.income_tax.fr_cb.title": "Frontalier français · accord 1983",
   "calc.income_tax.fr_cb.desc": "Imposition principale en France.",
   "calc.income_tax.fr_cb.gross": "Revenu brut",
   "calc.income_tax.fr_cb.retention": "Retenue à la source suisse (4,5 %)",
   "calc.income_tax.fr_cb.fr_main": "→ Imposition principale en France",
   "calc.income_tax.fr_cb.note": "Cantons signataires de l'accord 1983 : VD, VS, NE, JU, FR, BE. La retenue suisse est rétrocédée à l'État français. L'imposition définitive du salaire est calculée par l'administration française au barème français (déclaration des revenus). Pour estimation côté français, utiliser le calculateur d'impôt français (V2 à venir).",
-  "calc.income_tax.source.title_ge": "Frontalier Genève — imposition à la source",
+  "calc.income_tax.source.title_ge": "Frontalier Genève · imposition à la source",
   "calc.income_tax.source.title": "Imposition à la source",
   "calc.income_tax.source.desc": "Barème IS canton {canton}.",
   "calc.income_tax.source.annual": "Impôt à la source / an",
@@ -943,13 +943,13 @@ export const fr: Record<string, string> = {
   "calc.retirement.guide.s2.title": "Taux de conversion",
   "calc.retirement.guide.s2.body": "Pour 2026 : 6.0 % sur la part obligatoire (en baisse continue). Vérifiez le taux de votre caisse.",
   "calc.retirement.guide.s3.title": "Hypothèses",
-  "calc.retirement.guide.s3.body": "Espérance de vie, rendement post-retraite, fiscalité du capital — paramètres clés du verdict.",
+  "calc.retirement.guide.s3.body": "Espérance de vie, rendement post-retraite, fiscalité du capital · paramètres clés du verdict.",
   "calc.retirement.section.title": "Hypothèses",
   "calc.retirement.section.desc": "Comparez le retrait en capital au versement en rente.",
   "calc.retirement.field.capital": "Capital LPP au moment de la retraite",
   "calc.retirement.tip.capital": "Avoir LPP total disponible au départ à la retraite (obligatoire + surobligatoire).",
   "calc.retirement.field.canton": "Canton de retrait",
-  "calc.retirement.tip.canton": "Canton de l'institution au moment du retrait — peut différer du domicile (ex. transfert vers Zoug).",
+  "calc.retirement.tip.canton": "Canton de l'institution au moment du retrait · peut différer du domicile (ex. transfert vers Zoug).",
   "calc.retirement.note.canton": "Canton de l'institution au moment du retrait, qui peut différer du canton de domicile (transfert vers une institution en canton à fiscalité favorable, ex. Zoug).",
   "calc.retirement.field.civil_status": "Situation civile",
   "calc.retirement.field.conversion_rate": "Taux de conversion (%)",
@@ -1194,7 +1194,7 @@ export const fr: Record<string, string> = {
   "notfound.cta": "Retour à l'accueil",
 
   // === Calculateur Dirigeant (director-compensation) ===
-  "calc.dir.head.title": "Comparateur salaire / dividende — SwissBroker Pro",
+  "calc.dir.head.title": "Comparateur salaire / dividende · SwissBroker Pro",
   "calc.dir.head.desc": "Comparez les stratégies de rémunération salaire / dividendes / réserves d'un dirigeant de société suisse.",
   "calc.dir.guide.title": "Guide Dirigeant",
   "calc.dir.guide.s1.title": "Bienvenue dans le comparateur Dirigeant",
@@ -1213,7 +1213,7 @@ export const fr: Record<string, string> = {
   "calc.dir.field.profit.hint": "Avant charges sociales et impôt société",
   "calc.dir.field.profit.tip": "Résultat de la société AVANT toute rémunération du dirigeant. C'est le « gâteau » à répartir entre salaire, dividende et réserves.",
   "calc.dir.field.reserve": "Réserve cible à conserver en société (CHF/an)",
-  "calc.dir.field.reserve.hint": "Optionnel — montant prélevé en priorité sur le bénéfice avant la répartition salaire/dividende.",
+  "calc.dir.field.reserve.hint": "Optionnel · montant prélevé en priorité sur le bénéfice avant la répartition salaire/dividende.",
   "calc.dir.field.reserve.tip": "Si renseigné, la réserve cible est déduite du bénéfice total avant le calcul des stratégies. Le reliquat est réparti entre salaire et dividendes.",
   "calc.dir.reserve.total_profit": "Bénéfice total",
   "calc.dir.reserve.minus": "− Réserve cible",
@@ -1297,9 +1297,9 @@ export const fr: Record<string, string> = {
   "calc.dir.warn.low_salary.body": "La part salaire ({pct} % du bénéfice) est inférieure à 50 %. L'AFC peut requalifier une partie des dividendes en salaire si la rémunération n'est pas conforme à l'usage de la branche.",
   "calc.dir.link.label": "Calcul lié",
   "calc.dir.legal.intro": "Méthodologie.",
-  "calc.dir.legal.body": "Calculs basés sur les barèmes fiscaux et sociaux 2026 (paramètres OFAS / AFC en vigueur). Les multiplicateurs communaux par défaut sont ceux du chef-lieu cantonal — la précision communale exhaustive arrive en V2. Pour les cas complexes (structures de groupe, holdings, revenus internationaux), valider la cohérence des hypothèses avant remise au client. Les notions de salaire usuel, dividende dissimulé et participation qualifiée relèvent de l'appréciation de l'AFC et du canton.",
+  "calc.dir.legal.body": "Calculs basés sur les barèmes fiscaux et sociaux 2026 (paramètres OFAS / AFC en vigueur). Les multiplicateurs communaux par défaut sont ceux du chef-lieu cantonal · la précision communale exhaustive arrive en V2. Pour les cas complexes (structures de groupe, holdings, revenus internationaux), valider la cohérence des hypothèses avant remise au client. Les notions de salaire usuel, dividende dissimulé et participation qualifiée relèvent de l'appréciation de l'AFC et du canton.",
 
-  // === LOT 6 — Wizard client ===
+  // === LOT 6 · Wizard client ===
   "wizard.head.new": "Nouveau client · SwissBroker Pro",
   "wizard.head.edit": "Modifier client · SwissBroker Pro",
   "wizard.title.new": "Nouveau client",
@@ -1400,7 +1400,7 @@ export const fr: Record<string, string> = {
   "wizard.accounts.institution.placeholder": "UBS, Swiss Life, VIAC…",
   "wizard.children.first_name.placeholder": "Prénom",
 
-  // === LOT 6 — Formulaire société ===
+  // === LOT 6 · Formulaire société ===
   "company_form.head.new": "Nouvelle société · SwissBroker Pro",
   "company_form.head.edit": "Modifier société · SwissBroker Pro",
   "company_form.title.new": "Nouvelle société",
@@ -1439,7 +1439,7 @@ export const fr: Record<string, string> = {
   "client_form.notfound": "Client introuvable",
   "client_form.notfound.back": "Retour à la liste",
 
-  // === LOT 6 — Comparateur de scénarios ===
+  // === LOT 6 · Comparateur de scénarios ===
   "scenarios.head.title": "Comparateur de scénarios · SwissBroker Pro",
   "scenarios.title": "Comparateur de scénarios",
   "scenarios.subtitle": "Sélectionnez jusqu'à 4 scénarios pour comparer impôts, taux et prévoyance côte à côte.",
@@ -1465,7 +1465,7 @@ export const fr: Record<string, string> = {
   "scenarios.mini.lpp": "Rachat LPP",
   "scenarios.back": "Retour à la fiche",
   "scenarios.cant_load": "Impossible de charger le dossier",
-  // Scénarios — labels + descriptions
+  // Scénarios · labels + descriptions
   "scenario.cat.vie": "Événements de vie",
   "scenario.cat.fiscal": "Fiscalité",
   "scenario.cat.prevoyance": "Prévoyance",
@@ -1500,7 +1500,7 @@ export const fr: Record<string, string> = {
   "scenario.part_time_80.label": "Passage à 80 %",
   "scenario.part_time_80.desc": "Réduction du salaire à 80 % du brut actuel.",
 
-  // === LOT 6 — Optimiseur (panel) ===
+  // === LOT 6 · Optimiseur (panel) ===
   "opt.title": "Suggestions d'optimisation",
   "opt.empty.title": "Aucune optimisation détectée",
   "opt.empty.hint": "Renseignez davantage d'informations (LPP, 3a, fortune, canton) pour obtenir des recommandations chiffrées.",

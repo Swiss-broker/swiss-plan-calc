@@ -22,7 +22,7 @@ const rootSearchSchema = z.object({
 });
 
 function NotFoundComponent() {
-  // translate() lit la langue active du module — pas de hook nécessaire ici.
+  // translate() lit la langue active du module · pas de hook nécessaire ici.
   const t = translate;
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">

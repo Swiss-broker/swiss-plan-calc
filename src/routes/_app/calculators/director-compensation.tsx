@@ -1,4 +1,4 @@
-// Phase 4.2 — Comparateur dividende / salaire / bénéfices (UI dirigeant).
+// Phase 4.2 · Comparateur dividende / salaire / bénéfices (UI dirigeant).
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";

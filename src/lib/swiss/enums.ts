@@ -1,6 +1,6 @@
-// Libellés FR pour les enums DB — utilisés dans les formulaires & fiches.
+// Libellés FR pour les enums DB · utilisés dans les formulaires & fiches.
 //
-// ⚠️ V2 — Multilingue : ces objets sont désormais des Proxy qui résolvent
+// ⚠️ V2 · Multilingue : ces objets sont désormais des Proxy qui résolvent
 // chaque libellé via `t('enum.<categorie>.<valeur>')` à l'accès. Les
 // call-sites existants `LABELS[value]` continuent de fonctionner sans
 // modification, et basculent automatiquement de langue.
@@ -63,11 +63,11 @@ export const PERMIT_LABELS = makeI18nLabels<Permit>("permit", {
 });
 
 export const TAX_STATUS_LABELS = makeI18nLabels<TaxStatus>("tax_status", {
-  resident: "Résident(e) — taxation ordinaire",
+  resident: "Résident(e) · taxation ordinaire",
   source_taxed: "Imposé(e) à la source (permis B/L)",
-  cross_border_fr_1983: "Frontalier(ère) français(e) — accord 1983",
+  cross_border_fr_1983: "Frontalier(ère) français(e) · accord 1983",
   cross_border_ge: "Frontalier(ère) Genève (IS au barème normal)",
-  tou: "TOU — Taxation Ordinaire Ultérieure",
+  tou: "TOU · Taxation Ordinaire Ultérieure",
 });
 
 export const WORK_STATUS_LABELS = makeI18nLabels<WorkStatus>("work_status", {
@@ -91,16 +91,16 @@ export const SOURCE_TAX_SCALES = ["A", "B", "C", "H", "L", "M", "N", "P", "Q", "
 export type SourceTaxScale = (typeof SOURCE_TAX_SCALES)[number];
 
 export const SOURCE_TAX_SCALE_LABELS: Record<SourceTaxScale, string> = {
-  A: "A — Célibataire sans enfant",
-  B: "B — Marié, un seul revenu",
-  C: "C — Marié, double revenu",
-  H: "H — Famille monoparentale",
-  L: "L — Frontalier célibataire (DE)",
-  M: "M — Frontalier marié 1 revenu (DE)",
-  N: "N — Frontalier marié 2 revenus (DE)",
-  P: "P — Frontalier monoparental (DE)",
-  Q: "Q — Frontalier C/D (DE)",
-  R: "R — Acteur / artiste",
-  S: "S — Sportif",
-  T: "T — Conférencier",
+  A: "A · Célibataire sans enfant",
+  B: "B · Marié, un seul revenu",
+  C: "C · Marié, double revenu",
+  H: "H · Famille monoparentale",
+  L: "L · Frontalier célibataire (DE)",
+  M: "M · Frontalier marié 1 revenu (DE)",
+  N: "N · Frontalier marié 2 revenus (DE)",
+  P: "P · Frontalier monoparental (DE)",
+  Q: "Q · Frontalier C/D (DE)",
+  R: "R · Acteur / artiste",
+  S: "S · Sportif",
+  T: "T · Conférencier",
 };

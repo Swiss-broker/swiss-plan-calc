@@ -1,4 +1,4 @@
-// Dictionnaire allemand (Schweizerdeutsch — Hochdeutsch CH) · ÉTAPE 2.
+// Dictionnaire allemand (Schweizerdeutsch · Hochdeutsch CH) · ÉTAPE 2.
 // Terminologie officielle suisse : AHV/IV, BVG, Säule 3a/3b, Quellensteuer,
 // Grenzgänger, ordentliche Besteuerung, NBU.
 // Source de vérité : src/lib/i18n/fr.ts. Toute clé manquante retombe sur FR.
@@ -18,7 +18,7 @@ export const de: Record<string, string> = {
     "📍 Vergleich auf den 6 Westschweizer Kantonen + Zug (Referenz). 19 weitere Kantone in Kürze verfügbar.",
   "comparator.zg.badge": "Referenz für optimierte Steuern",
   "comparator.zg.tooltip":
-    "Vergleich ausserhalb der Westschweiz — in v1 nicht als Wohnkanton verfügbar.",
+    "Vergleich ausserhalb der Westschweiz · in v1 nicht als Wohnkanton verfügbar.",
   "comparator.section.romand": "Westschweizer Kantone",
   "comparator.section.reference": "Referenz ausserhalb der Westschweiz",
 
@@ -146,7 +146,7 @@ export const de: Record<string, string> = {
   "lang.en": "Englisch",
   "lang.it": "Italienisch",
 
-  // === Calculateurs — titres + descriptions ===
+  // === Calculateurs · titres + descriptions ===
   "calc.avs_ai.title": "1. Säule AHV/IV",
   "calc.avs_ai.desc":
     "Schätzung Einzel- oder Paarrente, AHV21, Plafonierung 3'780 CHF/Monat.",
@@ -180,7 +180,7 @@ export const de: Record<string, string> = {
     "Vergleichen Sie Ihre Steuerlast in den 6 Westschweizer Kantonen (+ Zug als Referenz) auf einen Klick.",
   "calc.invcompare.title": "Anlagenvergleich",
   "calc.invcompare.desc": "Vergleichen Sie zwei Anlagen nebeneinander: Endkapital, Nettogewinn, Steuern.",
-  "calc.invcompare.subtitle": "Zwei Anlagen nebeneinander — Endkapital, Nettogewinn, Gebühren- und Steuereffekt.",
+  "calc.invcompare.subtitle": "Zwei Anlagen nebeneinander · Endkapital, Nettogewinn, Gebühren- und Steuereffekt.",
   "calc.invcompare.investment_a": "Anlage A",
   "calc.invcompare.investment_b": "Anlage B",
   "calc.invcompare.default_a": "Anlage A",
@@ -228,7 +228,7 @@ export const de: Record<string, string> = {
   "calc.invcompare.tip.fees_impact": "Insgesamt im Zeitraum erhobene Gebühren.",
   "calc.invcompare.tip.tax_impact": "Auf den Gewinn bei Auszahlung fällige Steuer.",
   "calc.invcompare.tip.net": "Tatsächlich verfügbares Kapital nach Gebühren und Steuern.",
-  "calc.invcompare.guide_title": "Anleitung — Anlagenvergleich",
+  "calc.invcompare.guide_title": "Anleitung · Anlagenvergleich",
   "calc.invcompare.step.welcome.t": "Zwei Anlagen vergleichen",
   "calc.invcompare.step.welcome.b": "Geben Sie die Parameter zweier Anlagen ein, um das Netto-Endkapital nach Gebühren und Steuern zu vergleichen.",
   "calc.invcompare.step.params.t": "Wichtige Parameter",
@@ -270,12 +270,12 @@ export const de: Record<string, string> = {
   "enum.permit.none": "Keiner",
 
   // === Enums : tax_status ===
-  "enum.tax_status.resident": "Ansässig — ordentliche Besteuerung",
+  "enum.tax_status.resident": "Ansässig · ordentliche Besteuerung",
   "enum.tax_status.source_taxed": "Quellenbesteuert (Ausweis B/L)",
   "enum.tax_status.cross_border_fr_1983":
-    "Französische(r) Grenzgänger(in) — Abkommen 1983",
+    "Französische(r) Grenzgänger(in) · Abkommen 1983",
   "enum.tax_status.cross_border_ge": "Grenzgänger(in) Genf (Quellensteuer ordentlicher Tarif)",
-  "enum.tax_status.tou": "NOV — Nachträgliche ordentliche Veranlagung",
+  "enum.tax_status.tou": "NOV · Nachträgliche ordentliche Veranlagung",
 
   // === Enums : work_status ===
   "enum.work_status.employee": "Arbeitnehmer(in)",
@@ -292,7 +292,7 @@ export const de: Record<string, string> = {
   "enum.lpp_plan.executive": "Kaderplan / 1e",
   "enum.lpp_plan.mixed": "Gemischt",
 
-  // === Enums : legal_form (sociétés) — clés alignées sur l'enum DB ===
+  // === Enums : legal_form (sociétés) · clés alignées sur l'enum DB ===
   "enum.legal_form.sarl": "GmbH",
   "enum.legal_form.sa": "AG",
   "enum.legal_form.cooperative": "Genossenschaft",
@@ -352,7 +352,7 @@ export const de: Record<string, string> = {
   "dash.recent.empty.title": "Los geht's!",
   "dash.recent.empty.desc": "Starten Sie einen Rechner und klicken Sie auf «Speichern», um Ihre Simulationen hier wiederzufinden.",
   "dash.wiki.title": "Wiki & Schulung",
-  "dash.wiki.desc": "Alle steuerlichen, sozialen und technischen Erklärungen. AHV, BVG, 3a/3b, Grenzgänger, Dividenden — alles an einem Ort.",
+  "dash.wiki.desc": "Alle steuerlichen, sozialen und technischen Erklärungen. AHV, BVG, 3a/3b, Grenzgänger, Dividenden · alles an einem Ort.",
   "dash.wiki.cta": "Wiki öffnen",
   "dash.tip.1": "Ein BVG-Einkauf von 20 000 CHF spart je nach Kanton typischerweise 5 000 bis 8 000 CHF Steuern.",
   "dash.tip.2": "Mit 3 bis 5 Säule-3a-Konten lässt sich der Bezug auf mehrere Jahre staffeln und die Steuer halbieren bis dritteln.",
@@ -491,7 +491,7 @@ export const de: Record<string, string> = {
   "history.kind.tou": "Nachträgliche ordentliche Veranlagung (NOV)",
   "history.kind.director_compensation": "Vergütung Geschäftsführer",
 
-  // === LOT 1 — Calculateurs prévoyance (AVS/AHV · LPP/BVG · 3a · libre passage) ===
+  // === LOT 1 · Calculateurs prévoyance (AVS/AHV · LPP/BVG · 3a · libre passage) ===
   "pension.canton": "Kanton",
   "pension.canton_residence": "Wohnkanton",
   "pension.civil_status": "Zivilstand",
@@ -647,7 +647,7 @@ export const de: Record<string, string> = {
   "calc.lpp.tip.children": "Kantonale Kinderabzüge und der DBSt-Kinderrabatt senken den Grenzsteuersatz und damit die Ersparnis des Einkaufs leicht.",
   "calc.lpp.actual_buyback.warning": "Der eingegebene Einkauf übersteigt die maximale Kapazität ({cap}). Er wird in der Berechnung auf die Kapazität gedeckelt.",
   "calc.lpp.fiscal.title": "Steuerliche Situation (für präzise Berechnung)",
-  "calc.lpp.fiscal.help": "Diese Angaben verfeinern den effektiven Grenzsteuersatz auf den Einkauf — besonders bei verheirateten Paaren.",
+  "calc.lpp.fiscal.help": "Diese Angaben verfeinern den effektiven Grenzsteuersatz auf den Einkauf · besonders bei verheirateten Paaren.",
   "calc.lpp.field.spouse_salary": "Bruttolohn Ehepartner (CHF/Jahr)",
   "calc.lpp.tip.spouse_salary": "Im Splitting verheirateter Paare berücksichtigt. Ohne diese Angabe wird die Steuerersparnis unterschätzt.",
   "calc.lpp.field.pillar3a_year": "Säule-3a-Beiträge (CHF/Jahr)",
@@ -659,7 +659,7 @@ export const de: Record<string, string> = {
   "calc.lpp.retro.toggle_help": "Schätzt Ihr aufgelaufenes BVG-Guthaben ab dem Alter, in dem Sie zu beitragen begannen, mit stabilem Lohn und BVG-Mindestzins.",
   "calc.lpp.retro.entry_age": "Alter bei Eintritt / Beitragsbeginn",
   "calc.lpp.retro.estimated": "Geschätztes Guthaben",
-  "calc.lpp.retro.note": "Rückwirkende Berechnung ab Alter {from} — Annahme stabiler Lohn und BVG-Mindestzins (1.25 %).",
+  "calc.lpp.retro.note": "Rückwirkende Berechnung ab Alter {from} · Annahme stabiler Lohn und BVG-Mindestzins (1.25 %).",
   "calc.lpp.evolution_card": "Entwicklung des BVG-Kapitals",
   "calc.lpp.evolution_desc": "Nettokapital (Rendite − Kosten), Kapital ohne Rendite und Zinsanteil.",
   "calc.lpp.chart.balance": "Nettokapital",
@@ -856,13 +856,13 @@ export const de: Record<string, string> = {
   "calc.income_tax.tip.lpp_buyback_capacity": "Differenz zwischen dem BVG-Sollguthaben und dem aktuellen Guthaben (steht auf dem BVG-Ausweis).",
   "calc.income_tax.field.p3a_balance": "Angespartes Säule-3a-Kapital (CHF)",
   "calc.income_tax.tip.p3a_balance": "Gesamtsaldo aller Säule-3a-Konten (Bank + Versicherung).",
-  "calc.income_tax.fr_cb.title": "Französischer Grenzgänger — Abkommen 1983",
+  "calc.income_tax.fr_cb.title": "Französischer Grenzgänger · Abkommen 1983",
   "calc.income_tax.fr_cb.desc": "Hauptbesteuerung in Frankreich.",
   "calc.income_tax.fr_cb.gross": "Bruttoeinkommen",
   "calc.income_tax.fr_cb.retention": "Schweizer Quellensteuer (4,5 %)",
   "calc.income_tax.fr_cb.fr_main": "→ Hauptbesteuerung in Frankreich",
   "calc.income_tax.fr_cb.note": "Unterzeichnerkantone des Abkommens 1983: VD, VS, NE, JU, FR, BE. Die Schweizer Quellensteuer wird an Frankreich abgeführt. Die endgültige Besteuerung des Lohns erfolgt durch die französischen Behörden zum französischen Tarif. Für die Schätzung auf französischer Seite ist ein französischer Steuerrechner zu verwenden (V2 folgt).",
-  "calc.income_tax.source.title_ge": "Grenzgänger Genf — Quellensteuer",
+  "calc.income_tax.source.title_ge": "Grenzgänger Genf · Quellensteuer",
   "calc.income_tax.source.title": "Quellensteuer",
   "calc.income_tax.source.desc": "Quellensteuertarif Kanton {canton}.",
   "calc.income_tax.source.annual": "Quellensteuer / Jahr",
@@ -1190,7 +1190,7 @@ export const de: Record<string, string> = {
   "notfound.cta": "Zurück zur Startseite",
 
   // === Geschäftsführer-Vergütung ===
-  "calc.dir.head.title": "Lohn-/Dividendenvergleich — SwissBroker Pro",
+  "calc.dir.head.title": "Lohn-/Dividendenvergleich · SwissBroker Pro",
   "calc.dir.head.desc": "Vergleichen Sie Vergütungsstrategien Lohn / Dividenden / Reserven für einen Geschäftsführer einer Schweizer Gesellschaft.",
   "calc.dir.guide.title": "Leitfaden Geschäftsführer",
   "calc.dir.guide.s1.title": "Willkommen im Geschäftsführer-Vergleich",
@@ -1209,7 +1209,7 @@ export const de: Record<string, string> = {
   "calc.dir.field.profit.hint": "Vor Sozialabgaben und Gewinnsteuer",
   "calc.dir.field.profit.tip": "Ergebnis der Gesellschaft VOR jeglicher Vergütung des Geschäftsführers. Das ist der „Kuchen“, der zwischen Lohn, Dividende und Reserven verteilt wird.",
   "calc.dir.field.reserve": "Zielreserve in der Gesellschaft (CHF/Jahr)",
-  "calc.dir.field.reserve.hint": "Optional — Betrag, der vor der Lohn/Dividenden-Verteilung vom Gewinn abgezogen wird.",
+  "calc.dir.field.reserve.hint": "Optional · Betrag, der vor der Lohn/Dividenden-Verteilung vom Gewinn abgezogen wird.",
   "calc.dir.field.reserve.tip": "Falls erfasst, wird die Zielreserve vom Gesamtgewinn abgezogen, bevor die Strategien berechnet werden. Der Rest wird zwischen Lohn und Dividenden aufgeteilt.",
   "calc.dir.reserve.total_profit": "Gesamtgewinn",
   "calc.dir.reserve.minus": "− Zielreserve",
@@ -1293,9 +1293,9 @@ export const de: Record<string, string> = {
   "calc.dir.warn.low_salary.body": "Der Lohnanteil ({pct} % des Gewinns) liegt unter 50 %. Die ESTV kann einen Teil der Dividenden in Lohn umqualifizieren, falls die Vergütung nicht branchenüblich ist.",
   "calc.dir.link.label": "Verknüpfte Berechnung",
   "calc.dir.legal.intro": "Methodik.",
-  "calc.dir.legal.body": "Berechnungen basieren auf den Steuer- und Sozialtarifen 2026 (Parameter BSV / ESTV). Standard-Gemeindesteuerfüsse sind diejenigen des Kantonshauptorts — die vollständige Gemeindegenauigkeit folgt in V2. Für komplexe Fälle (Konzernstrukturen, Holdings, internationale Einkommen) Konsistenz der Annahmen vor Übergabe an den Kunden prüfen. Begriffe wie üblicher Lohn, verdeckte Gewinnausschüttung und qualifizierte Beteiligung unterliegen der Beurteilung der ESTV und des Kantons.",
+  "calc.dir.legal.body": "Berechnungen basieren auf den Steuer- und Sozialtarifen 2026 (Parameter BSV / ESTV). Standard-Gemeindesteuerfüsse sind diejenigen des Kantonshauptorts · die vollständige Gemeindegenauigkeit folgt in V2. Für komplexe Fälle (Konzernstrukturen, Holdings, internationale Einkommen) Konsistenz der Annahmen vor Übergabe an den Kunden prüfen. Begriffe wie üblicher Lohn, verdeckte Gewinnausschüttung und qualifizierte Beteiligung unterliegen der Beurteilung der ESTV und des Kantons.",
 
-  // === LOT 6 — Wizard Kunde ===
+  // === LOT 6 · Wizard Kunde ===
   "wizard.head.new": "Neuer Kunde · SwissBroker Pro",
   "wizard.head.edit": "Kunde bearbeiten · SwissBroker Pro",
   "wizard.title.new": "Neuer Kunde",
@@ -1396,7 +1396,7 @@ export const de: Record<string, string> = {
   "wizard.accounts.institution.placeholder": "UBS, Swiss Life, VIAC…",
   "wizard.children.first_name.placeholder": "Vorname",
 
-  // === LOT 6 — Firmenformular ===
+  // === LOT 6 · Firmenformular ===
   "company_form.head.new": "Neue Firma · SwissBroker Pro",
   "company_form.head.edit": "Firma bearbeiten · SwissBroker Pro",
   "company_form.title.new": "Neue Firma",
@@ -1435,7 +1435,7 @@ export const de: Record<string, string> = {
   "client_form.notfound": "Kunde nicht gefunden",
   "client_form.notfound.back": "Zurück zur Liste",
 
-  // === LOT 6 — Szenarienvergleich ===
+  // === LOT 6 · Szenarienvergleich ===
   "scenarios.head.title": "Szenarienvergleich · SwissBroker Pro",
   "scenarios.title": "Szenarienvergleich",
   "scenarios.subtitle": "Wählen Sie bis zu 4 Szenarien aus, um Steuern, Sätze und Vorsorge nebeneinander zu vergleichen.",
@@ -1495,7 +1495,7 @@ export const de: Record<string, string> = {
   "scenario.part_time_80.label": "Wechsel auf 80 %",
   "scenario.part_time_80.desc": "Lohn auf 80 % des aktuellen Bruttolohns reduziert.",
 
-  // === LOT 6 — Optimierungs-Panel ===
+  // === LOT 6 · Optimierungs-Panel ===
   "opt.title": "Optimierungsvorschläge",
   "opt.empty.title": "Keine Optimierung erkannt",
   "opt.empty.hint": "Geben Sie weitere Informationen an (BVG, 3a, Vermögen, Kanton), um bezifferte Empfehlungen zu erhalten.",

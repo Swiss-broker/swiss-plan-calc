@@ -6,7 +6,7 @@ export interface Country {
   name: string; // libellé FR
 }
 
-// Pays voisins / fréquents — épinglés en tête de liste.
+// Pays voisins / fréquents · épinglés en tête de liste.
 export const PRIORITY_COUNTRIES: Country[] = [
   { code: "CH", name: "Suisse" },
   { code: "FR", name: "France" },
@@ -16,7 +16,7 @@ export const PRIORITY_COUNTRIES: Country[] = [
   { code: "LI", name: "Liechtenstein" },
 ];
 
-// Reste de l'UE (hors voisins déjà priorisés) — alphabétique.
+// Reste de l'UE (hors voisins déjà priorisés) · alphabétique.
 export const EU_COUNTRIES: Country[] = [
   { code: "BE", name: "Belgique" },
   { code: "BG", name: "Bulgarie" },
@@ -43,7 +43,7 @@ export const EU_COUNTRIES: Country[] = [
   { code: "SE", name: "Suède" },
 ];
 
-// Reste du monde — alphabétique (sélection des nationalités les plus fréquentes
+// Reste du monde · alphabétique (sélection des nationalités les plus fréquentes
 // pour le marché suisse romand : Royaume-Uni, USA, Canada, Brésil, etc.).
 export const OTHER_COUNTRIES: Country[] = [
   { code: "ZA", name: "Afrique du Sud" },

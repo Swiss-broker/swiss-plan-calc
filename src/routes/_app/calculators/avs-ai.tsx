@@ -55,7 +55,7 @@ function AvsAiCalc() {
   const { clientId } = Route.useSearch();
   const { client, prefill } = usePrefillFromClient(clientId, "avs-ai");
 
-  // Persistance localStorage en mode standalone (sans clientId) — l'utilisateur
+  // Persistance localStorage en mode standalone (sans clientId) · l'utilisateur
   // ne perd plus ses saisies quand il quitte/revient au calculateur.
   const STORAGE_KEY = "avs.standalone.form.v1";
   const initialForm = (() => {

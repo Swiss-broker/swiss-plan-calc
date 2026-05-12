@@ -33,7 +33,7 @@ export function exportIncomeTaxPdf(args: {
     ...args.header,
   } as PdfHeaderInfo);
 
-  pdf.situationBanner("SITUATION ACTUELLE — IMPÔTS 2026");
+  pdf.situationBanner("SITUATION ACTUELLE · IMPÔTS 2026");
   pdf.section("Synthèse");
   pdf.paragraph(
     `Cette simulation estime votre charge fiscale annuelle pour l'année 2026 dans le canton de ${cantonName(input.canton)}. ` +
@@ -253,7 +253,7 @@ export function exportLppPdf(args: {
     ...args.header,
   } as PdfHeaderInfo);
 
-  pdf.situationBanner("SITUATION ACTUELLE — AVOIR LPP");
+  pdf.situationBanner("SITUATION ACTUELLE · AVOIR LPP");
   pdf.section("Synthèse de la projection");
   pdf.paragraph(
     `La projection LPP simule l'évolution de votre avoir de prévoyance jusqu'à l'âge de la retraite (${input.retirementAge} ans), ` +

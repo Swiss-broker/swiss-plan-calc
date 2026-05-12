@@ -2,7 +2,7 @@
  * Tests garde-fous · scope V1 Suisse romande
  *
  * Format vitest. Pour exécuter : `bunx vitest run src/lib/swiss/cantons.test.ts`
- * (vitest n'est pas installé par défaut — voir docs/SCOPE.md).
+ * (vitest n'est pas installé par défaut · voir docs/SCOPE.md).
  *
  * Ces tests vérifient les invariants critiques de la restriction de scope :
  * 1. La cohérence flags ↔ codes typés (déjà assertée au boot, doublée ici).
@@ -24,7 +24,7 @@ import {
 import { CANTON_SCALES } from "../tax/cantons";
 import { computeIncomeTax } from "../tax/income";
 
-describe("Scope V1 — invariants cantons romands", () => {
+describe("Scope V1 · invariants cantons romands", () => {
   it("expose exactement 6 cantons sélectionnables (Suisse romande)", () => {
     expect([...SELECTABLE_CANTON_CODES].sort()).toEqual(
       ["FR", "GE", "JU", "NE", "VD", "VS"].sort(),

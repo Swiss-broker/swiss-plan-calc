@@ -1,4 +1,4 @@
-// Dizionario italiano · ÉTAPE 3 — vocabolario svizzero ufficiale (LPP/AVS/Imposta alla fonte).
+// Dizionario italiano · ÉTAPE 3 · vocabolario svizzero ufficiale (LPP/AVS/Imposta alla fonte).
 // Basato su bsv.admin.ch/it, estv.admin.ch/it, ahv-iv.ch/it.
 // Fonte di verità di fallback: src/lib/i18n/fr.ts.
 
@@ -17,7 +17,7 @@ export const it: Record<string, string> = {
     "📍 Confronto sui 6 cantoni romandi + Zugo (riferimento). Altri 19 cantoni disponibili prossimamente.",
   "comparator.zg.badge": "Riferimento per fiscalità ottimizzata",
   "comparator.zg.tooltip":
-    "Confronto fuori dalla Svizzera romanda — non disponibile come cantone di domicilio nella v1.",
+    "Confronto fuori dalla Svizzera romanda · non disponibile come cantone di domicilio nella v1.",
   "comparator.section.romand": "Cantoni romandi",
   "comparator.section.reference": "Riferimento fuori dalla Svizzera romanda",
 
@@ -145,7 +145,7 @@ export const it: Record<string, string> = {
   "lang.en": "Inglese",
   "lang.it": "Italiano",
 
-  // === Calcolatori — titoli + descrizioni ===
+  // === Calcolatori · titoli + descrizioni ===
   "calc.avs_ai.title": "1° pilastro AVS/AI",
   "calc.avs_ai.desc":
     "Stima rendita individuale o di coppia, AVS21, plafond 3'780 CHF/mese.",
@@ -179,7 +179,7 @@ export const it: Record<string, string> = {
     "Confronta il tuo carico fiscale nei 6 cantoni romandi (+ Zugo come riferimento) in un clic.",
   "calc.invcompare.title": "Comparatore di investimenti",
   "calc.invcompare.desc": "Confronta due investimenti fianco a fianco: capitale finale, guadagno netto, fiscalità.",
-  "calc.invcompare.subtitle": "Due investimenti a confronto — capitale finale, guadagno netto, impatto di costi e fiscalità.",
+  "calc.invcompare.subtitle": "Due investimenti a confronto · capitale finale, guadagno netto, impatto di costi e fiscalità.",
   "calc.invcompare.investment_a": "Investimento A",
   "calc.invcompare.investment_b": "Investimento B",
   "calc.invcompare.default_a": "Investimento A",
@@ -227,7 +227,7 @@ export const it: Record<string, string> = {
   "calc.invcompare.tip.fees_impact": "Importo totale prelevato come costi sull'intero periodo.",
   "calc.invcompare.tip.tax_impact": "Imposta dovuta sul guadagno al momento del prelievo.",
   "calc.invcompare.tip.net": "Capitale effettivamente disponibile dopo costi e imposte.",
-  "calc.invcompare.guide_title": "Guida — Comparatore di investimenti",
+  "calc.invcompare.guide_title": "Guida · Comparatore di investimenti",
   "calc.invcompare.step.welcome.t": "Confrontare due investimenti",
   "calc.invcompare.step.welcome.b": "Inserisci i parametri di due investimenti per confrontare il capitale finale netto dopo costi e imposte.",
   "calc.invcompare.step.params.t": "Parametri chiave",
@@ -269,11 +269,11 @@ export const it: Record<string, string> = {
   "enum.permit.none": "Nessuno",
 
   // === Enums : tax_status ===
-  "enum.tax_status.resident": "Residente — tassazione ordinaria",
+  "enum.tax_status.resident": "Residente · tassazione ordinaria",
   "enum.tax_status.source_taxed": "Imposto alla fonte (permesso B/L)",
-  "enum.tax_status.cross_border_fr_1983": "Frontaliere francese — accordo 1983",
-  "enum.tax_status.cross_border_ge": "Frontaliere Ginevra (imposta alla fonte — tariffa ordinaria)",
-  "enum.tax_status.tou": "TOU — Tassazione ordinaria ulteriore",
+  "enum.tax_status.cross_border_fr_1983": "Frontaliere francese · accordo 1983",
+  "enum.tax_status.cross_border_ge": "Frontaliere Ginevra (imposta alla fonte · tariffa ordinaria)",
+  "enum.tax_status.tou": "TOU · Tassazione ordinaria ulteriore",
 
   // === Enums : work_status ===
   "enum.work_status.employee": "Dipendente",
@@ -489,7 +489,7 @@ export const it: Record<string, string> = {
   "history.kind.tou": "Tassazione ordinaria ulteriore (TOU)",
   "history.kind.director_compensation": "Remunerazione dirigente",
 
-  // === LOT 1 — Calculateurs prévoyance (AVS/AHV · LPP/BVG · 3a · libre passage) ===
+  // === LOT 1 · Calculateurs prévoyance (AVS/AHV · LPP/BVG · 3a · libre passage) ===
   "pension.canton": "Cantone",
   "pension.canton_residence": "Cantone di domicilio",
   "pension.civil_status": "Stato civile",
@@ -645,7 +645,7 @@ export const it: Record<string, string> = {
   "calc.lpp.tip.children": "Le deduzioni cantonali per figli e il ribasso IFD per figli riducono leggermente l'aliquota marginale e dunque il risparmio fiscale del riscatto.",
   "calc.lpp.actual_buyback.warning": "L'importo del riscatto supera la capacità massima ({cap}). Viene limitato alla capacità nel calcolo.",
   "calc.lpp.fiscal.title": "Situazione fiscale (per calcolo preciso)",
-  "calc.lpp.fiscal.help": "Questi dati affinano l'aliquota marginale effettiva applicata al riscatto — soprattutto per le coppie sposate.",
+  "calc.lpp.fiscal.help": "Questi dati affinano l'aliquota marginale effettiva applicata al riscatto · soprattutto per le coppie sposate.",
   "calc.lpp.field.spouse_salary": "Salario lordo del coniuge (CHF/anno)",
   "calc.lpp.tip.spouse_salary": "Incluso nello splitting fiscale delle coppie sposate. Senza questo dato il risparmio fiscale è sottostimato.",
   "calc.lpp.field.pillar3a_year": "Contributi pilastro 3a (CHF/anno)",
@@ -657,7 +657,7 @@ export const it: Record<string, string> = {
   "calc.lpp.retro.toggle_help": "Stima il vostro avere LPP cumulato a partire dall'età di inizio dei contributi, ipotizzando un salario stabile e il tasso di interesse minimo LPP.",
   "calc.lpp.retro.entry_age": "Età di arrivo / inizio contributi LPP",
   "calc.lpp.retro.estimated": "Avere stimato",
-  "calc.lpp.retro.note": "Calcolo retroattivo dall'età {from} — ipotesi di salario stabile e tasso d'interesse minimo LPP (1.25 %).",
+  "calc.lpp.retro.note": "Calcolo retroattivo dall'età {from} · ipotesi di salario stabile e tasso d'interesse minimo LPP (1.25 %).",
   "calc.lpp.evolution_card": "Evoluzione del capitale LPP",
   "calc.lpp.evolution_desc": "Capitale netto (rendimento − costi), capitale senza rendimento e quota degli interessi.",
   "calc.lpp.chart.balance": "Capitale netto",
@@ -854,13 +854,13 @@ export const it: Record<string, string> = {
   "calc.income_tax.tip.lpp_buyback_capacity": "Differenza tra l'avere LPP obiettivo e quello attuale (figura sul certificato LPP).",
   "calc.income_tax.field.p3a_balance": "Capitale 3a accumulato (CHF)",
   "calc.income_tax.tip.p3a_balance": "Saldo totale dei tuoi conti 3a (banca + assicurazione).",
-  "calc.income_tax.fr_cb.title": "Frontaliere francese — accordo 1983",
+  "calc.income_tax.fr_cb.title": "Frontaliere francese · accordo 1983",
   "calc.income_tax.fr_cb.desc": "Tassazione principale in Francia.",
   "calc.income_tax.fr_cb.gross": "Reddito lordo",
   "calc.income_tax.fr_cb.retention": "Ritenuta alla fonte svizzera (4,5 %)",
   "calc.income_tax.fr_cb.fr_main": "→ Tassazione principale in Francia",
   "calc.income_tax.fr_cb.note": "Cantoni firmatari dell'accordo 1983: VD, VS, NE, JU, FR, BE. La ritenuta svizzera viene retrocessa allo Stato francese. La tassazione definitiva è effettuata dalle autorità francesi secondo la tariffa francese (V2 in arrivo).",
-  "calc.income_tax.source.title_ge": "Frontaliere Ginevra — imposta alla fonte",
+  "calc.income_tax.source.title_ge": "Frontaliere Ginevra · imposta alla fonte",
   "calc.income_tax.source.title": "Imposta alla fonte",
   "calc.income_tax.source.desc": "Tariffa imposta alla fonte, cantone {canton}.",
   "calc.income_tax.source.annual": "Imposta alla fonte / anno",
@@ -943,7 +943,7 @@ export const it: Record<string, string> = {
   "calc.retirement.field.capital": "Capitale LPP al pensionamento",
   "calc.retirement.tip.capital": "Avere LPP totale disponibile al pensionamento (obbligatoria + sovraobbligatoria).",
   "calc.retirement.field.canton": "Cantone di prelievo",
-  "calc.retirement.tip.canton": "Cantone dell'istituto al momento del prelievo — può differire dal domicilio (es. trasferimento a Zugo).",
+  "calc.retirement.tip.canton": "Cantone dell'istituto al momento del prelievo · può differire dal domicilio (es. trasferimento a Zugo).",
   "calc.retirement.note.canton": "Cantone dell'istituto al prelievo; può differire dal domicilio (trasferimento in un cantone con fiscalità favorevole, es. Zugo).",
   "calc.retirement.field.civil_status": "Stato civile",
   "calc.retirement.field.conversion_rate": "Aliquota di conversione (%)",
@@ -1188,7 +1188,7 @@ export const it: Record<string, string> = {
   "notfound.cta": "Torna alla home",
 
   // === Calcolatore Dirigente ===
-  "calc.dir.head.title": "Comparatore stipendio / dividendo — SwissBroker Pro",
+  "calc.dir.head.title": "Comparatore stipendio / dividendo · SwissBroker Pro",
   "calc.dir.head.desc": "Confronta le strategie di remunerazione stipendio / dividendi / riserve di un dirigente di società svizzera.",
   "calc.dir.guide.title": "Guida Dirigente",
   "calc.dir.guide.s1.title": "Benvenuto nel comparatore Dirigente",
@@ -1207,7 +1207,7 @@ export const it: Record<string, string> = {
   "calc.dir.field.profit.hint": "Prima di oneri sociali e imposta società",
   "calc.dir.field.profit.tip": "Risultato della società PRIMA di qualsiasi remunerazione del dirigente. È la « torta » da ripartire tra stipendio, dividendo e riserve.",
   "calc.dir.field.reserve": "Riserva obiettivo da mantenere in società (CHF/anno)",
-  "calc.dir.field.reserve.hint": "Opzionale — importo prelevato in via prioritaria sull'utile prima della ripartizione stipendio/dividendo.",
+  "calc.dir.field.reserve.hint": "Opzionale · importo prelevato in via prioritaria sull'utile prima della ripartizione stipendio/dividendo.",
   "calc.dir.field.reserve.tip": "Se inserita, la riserva obiettivo è dedotta dall'utile totale prima del calcolo delle strategie. Il residuo è ripartito tra stipendio e dividendi.",
   "calc.dir.reserve.total_profit": "Utile totale",
   "calc.dir.reserve.minus": "− Riserva obiettivo",
@@ -1291,9 +1291,9 @@ export const it: Record<string, string> = {
   "calc.dir.warn.low_salary.body": "La quota stipendio ({pct} % dell'utile) è inferiore al 50 %. L'AFC può riqualificare una parte dei dividendi come stipendio se la remunerazione non è conforme all'uso del settore.",
   "calc.dir.link.label": "Calcolo collegato",
   "calc.dir.legal.intro": "Metodologia.",
-  "calc.dir.legal.body": "Calcoli basati sulle tariffe fiscali e sociali 2026 (parametri UFAS / AFC in vigore). I moltiplicatori comunali predefiniti sono quelli del capoluogo cantonale — la precisione comunale completa arriva nella V2. Per i casi complessi (strutture di gruppo, holding, redditi internazionali), validare la coerenza delle ipotesi prima della consegna al cliente. Le nozioni di stipendio usuale, dividendo dissimulato e partecipazione qualificata rientrano nell'apprezzamento dell'AFC e del cantone.",
+  "calc.dir.legal.body": "Calcoli basati sulle tariffe fiscali e sociali 2026 (parametri UFAS / AFC in vigore). I moltiplicatori comunali predefiniti sono quelli del capoluogo cantonale · la precisione comunale completa arriva nella V2. Per i casi complessi (strutture di gruppo, holding, redditi internazionali), validare la coerenza delle ipotesi prima della consegna al cliente. Le nozioni di stipendio usuale, dividendo dissimulato e partecipazione qualificata rientrano nell'apprezzamento dell'AFC e del cantone.",
 
-  // === LOT 6 — Wizard cliente ===
+  // === LOT 6 · Wizard cliente ===
   "wizard.head.new": "Nuovo cliente · SwissBroker Pro",
   "wizard.head.edit": "Modifica cliente · SwissBroker Pro",
   "wizard.title.new": "Nuovo cliente",
@@ -1394,7 +1394,7 @@ export const it: Record<string, string> = {
   "wizard.accounts.institution.placeholder": "UBS, Swiss Life, VIAC…",
   "wizard.children.first_name.placeholder": "Nome",
 
-  // === LOT 6 — Modulo società ===
+  // === LOT 6 · Modulo società ===
   "company_form.head.new": "Nuova società · SwissBroker Pro",
   "company_form.head.edit": "Modifica società · SwissBroker Pro",
   "company_form.title.new": "Nuova società",
@@ -1433,7 +1433,7 @@ export const it: Record<string, string> = {
   "client_form.notfound": "Cliente non trovato",
   "client_form.notfound.back": "Torna alla lista",
 
-  // === LOT 6 — Comparatore di scenari ===
+  // === LOT 6 · Comparatore di scenari ===
   "scenarios.head.title": "Comparatore di scenari · SwissBroker Pro",
   "scenarios.title": "Comparatore di scenari",
   "scenarios.subtitle": "Selezionare fino a 4 scenari per confrontare imposte, tassi e previdenza fianco a fianco.",
@@ -1493,7 +1493,7 @@ export const it: Record<string, string> = {
   "scenario.part_time_80.label": "Passaggio all'80 %",
   "scenario.part_time_80.desc": "Riduzione dello stipendio all'80 % del lordo attuale.",
 
-  // === LOT 6 — Pannello ottimizzazione ===
+  // === LOT 6 · Pannello ottimizzazione ===
   "opt.title": "Suggerimenti di ottimizzazione",
   "opt.empty.title": "Nessuna ottimizzazione rilevata",
   "opt.empty.hint": "Inserire ulteriori informazioni (LPP, 3a, sostanza, cantone) per ottenere raccomandazioni quantificate.",

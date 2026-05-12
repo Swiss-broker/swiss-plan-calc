@@ -1,6 +1,6 @@
 // Référence des cantons suisses (code ISO 3166-2:CH + nom français)
 //
-// === SCOPE V1 — Suisse romande ===
+// === SCOPE V1 · Suisse romande ===
 //
 // La v1 du produit cible exclusivement la Suisse romande. Pour préserver
 // l'architecture multi-cantons (extension v1.5/v2 sans refonte), tous les

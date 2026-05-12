@@ -1,4 +1,4 @@
-// Articles wiki — multilingue. FR = source de vérité, DE = traduction officielle.
+// Articles wiki · multilingue. FR = source de vérité, DE = traduction officielle.
 // Pour ajouter une langue : dupliquer FR et traduire titles + body.
 
 import type { ReactNode } from "react";
@@ -13,7 +13,7 @@ export type WikiArticle = {
 };
 
 // =====================================================================
-// FR — source de vérité
+// FR · source de vérité
 // =====================================================================
 const FR: WikiArticle[] = [
   {
@@ -252,7 +252,7 @@ const FR: WikiArticle[] = [
 ];
 
 // =====================================================================
-// DE — Schweizerdeutsch (Hochdeutsch CH), Terminologie offiziell
+// DE · Schweizerdeutsch (Hochdeutsch CH), Terminologie offiziell
 // =====================================================================
 const DE: WikiArticle[] = [
   {
@@ -491,7 +491,7 @@ const DE: WikiArticle[] = [
 ];
 
 // =====================================================================
-// EN — Swiss English, official terminology
+// EN · Swiss English, official terminology
 // =====================================================================
 const EN: WikiArticle[] = [
   {
@@ -730,7 +730,7 @@ const EN: WikiArticle[] = [
 ];
 
 // =====================================================================
-// IT — Italiano svizzero, terminologia ufficiale
+// IT · Italiano svizzero, terminologia ufficiale
 // =====================================================================
 const IT: WikiArticle[] = [
   {

@@ -221,7 +221,7 @@ function LppCalc() {
               <NumField label={t("calc.lpp.field.extra_credit")} value={form.extraCreditRate} onChange={(v) => set("extraCreditRate", v)} step={0.5} wikiId="lpp-credits" wikiTip={t("calc.lpp.tip.extra_credit")} />
             </div>
 
-            {/* Mode rétroactif — visible uniquement si avoir LPP courant = 0 */}
+            {/* Mode rétroactif · visible uniquement si avoir LPP courant = 0 */}
             {form.currentBalance === 0 && (
               <div className="mt-4 rounded-lg border border-warning/30 bg-warning/5 p-3">
                 <div className="flex items-center justify-between gap-3">

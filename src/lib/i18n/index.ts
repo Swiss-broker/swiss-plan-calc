@@ -1,8 +1,8 @@
 // Système i18n · v2 (4 langues, fallback FR).
 //
 // API :
-//   t(key, params?, fallback?)             — utilisable hors composant React
-//   useT() / useLanguage()                 — hooks réactifs (depuis LanguageContext)
+//   t(key, params?, fallback?)             · utilisable hors composant React
+//   useT() / useLanguage()                 · hooks réactifs (depuis LanguageContext)
 //
 // Architecture : la langue active est stockée dans `active.ts` (module-level),
 // synchronisée par <LanguageProvider>. La fonction `t()` lit cette valeur à

@@ -1,4 +1,4 @@
-// English dictionary · ÉTAPE 3 — official Swiss vocabulary (BVG/AHV/Withholding tax).
+// English dictionary · ÉTAPE 3 · official Swiss vocabulary (BVG/AHV/Withholding tax).
 // Based on bsv.admin.ch/en, estv.admin.ch/en, ahv-iv.ch/en glossaries.
 // Source of truth fallback: src/lib/i18n/fr.ts.
 
@@ -17,7 +17,7 @@ export const en: Record<string, string> = {
     "📍 Comparison covering the 6 French-speaking cantons + Zug (reference). 19 other cantons coming soon.",
   "comparator.zg.badge": "Reference for optimised taxation",
   "comparator.zg.tooltip":
-    "Comparison outside French-speaking Switzerland — not available as canton of residence in v1.",
+    "Comparison outside French-speaking Switzerland · not available as canton of residence in v1.",
   "comparator.section.romand": "French-speaking cantons",
   "comparator.section.reference": "Reference outside French-speaking Switzerland",
 
@@ -145,7 +145,7 @@ export const en: Record<string, string> = {
   "lang.en": "English",
   "lang.it": "Italian",
 
-  // === Calculators — titles + descriptions ===
+  // === Calculators · titles + descriptions ===
   "calc.avs_ai.title": "1st pillar AHV/IV",
   "calc.avs_ai.desc":
     "Estimate of individual or couple pension, AHV21, capped at CHF 3,780/month.",
@@ -179,7 +179,7 @@ export const en: Record<string, string> = {
     "Compare your tax burden across the 6 French-speaking cantons (+ Zug as reference) in one click.",
   "calc.invcompare.title": "Investment comparator",
   "calc.invcompare.desc": "Compare two investments side by side: final capital, net gain, taxes.",
-  "calc.invcompare.subtitle": "Two investments side by side — final capital, net gain, fees and tax impact.",
+  "calc.invcompare.subtitle": "Two investments side by side · final capital, net gain, fees and tax impact.",
   "calc.invcompare.investment_a": "Investment A",
   "calc.invcompare.investment_b": "Investment B",
   "calc.invcompare.default_a": "Investment A",
@@ -227,7 +227,7 @@ export const en: Record<string, string> = {
   "calc.invcompare.tip.fees_impact": "Total fees deducted over the period.",
   "calc.invcompare.tip.tax_impact": "Tax due on the gain at withdrawal.",
   "calc.invcompare.tip.net": "Capital actually available after fees and tax.",
-  "calc.invcompare.guide_title": "Guide — Investment comparator",
+  "calc.invcompare.guide_title": "Guide · Investment comparator",
   "calc.invcompare.step.welcome.t": "Compare two investments",
   "calc.invcompare.step.welcome.b": "Enter the parameters of two investments to compare the net final capital after fees and taxes.",
   "calc.invcompare.step.params.t": "Key parameters",
@@ -269,11 +269,11 @@ export const en: Record<string, string> = {
   "enum.permit.none": "None",
 
   // === Enums : tax_status ===
-  "enum.tax_status.resident": "Resident — ordinary taxation",
+  "enum.tax_status.resident": "Resident · ordinary taxation",
   "enum.tax_status.source_taxed": "Withholding-taxed (B/L permit)",
-  "enum.tax_status.cross_border_fr_1983": "French cross-border worker — 1983 Agreement",
-  "enum.tax_status.cross_border_ge": "Geneva cross-border worker (withholding tax — standard scale)",
-  "enum.tax_status.tou": "TOU — Subsequent ordinary assessment",
+  "enum.tax_status.cross_border_fr_1983": "French cross-border worker · 1983 Agreement",
+  "enum.tax_status.cross_border_ge": "Geneva cross-border worker (withholding tax · standard scale)",
+  "enum.tax_status.tou": "TOU · Subsequent ordinary assessment",
 
   // === Enums : work_status ===
   "enum.work_status.employee": "Employee",
@@ -489,7 +489,7 @@ export const en: Record<string, string> = {
   "history.kind.tou": "Subsequent ordinary assessment (TOU)",
   "history.kind.director_compensation": "Director compensation",
 
-  // === LOT 1 — Calculateurs prévoyance (AVS/AHV · LPP/BVG · 3a · libre passage) ===
+  // === LOT 1 · Calculateurs prévoyance (AVS/AHV · LPP/BVG · 3a · libre passage) ===
   "pension.canton": "Canton",
   "pension.canton_residence": "Canton of residence",
   "pension.civil_status": "Marital status",
@@ -645,7 +645,7 @@ export const en: Record<string, string> = {
   "calc.lpp.tip.children": "Cantonal child deductions and the FDT child rebate slightly reduce the marginal rate and thus the buy-back tax savings.",
   "calc.lpp.actual_buyback.warning": "The buy-back amount exceeds the maximum capacity ({cap}). It is capped at the capacity in the calculation.",
   "calc.lpp.fiscal.title": "Tax situation (for accurate calculation)",
-  "calc.lpp.fiscal.help": "These inputs refine the effective marginal rate applied to the buy-back — especially for married couples.",
+  "calc.lpp.fiscal.help": "These inputs refine the effective marginal rate applied to the buy-back · especially for married couples.",
   "calc.lpp.field.spouse_salary": "Spouse gross salary (CHF/year)",
   "calc.lpp.tip.spouse_salary": "Included in the splitting of married couples. Without this input, tax savings are underestimated.",
   "calc.lpp.field.pillar3a_year": "Pillar 3a contributions (CHF/year)",
@@ -657,7 +657,7 @@ export const en: Record<string, string> = {
   "calc.lpp.retro.toggle_help": "Estimates your accumulated BVG balance from the age you started contributing, assuming a stable salary and the BVG minimum interest rate.",
   "calc.lpp.retro.entry_age": "Age of arrival / start of BVG contributions",
   "calc.lpp.retro.estimated": "Estimated balance",
-  "calc.lpp.retro.note": "Retroactive calculation from age {from} — assumption: stable salary and BVG minimum interest rate (1.25 %).",
+  "calc.lpp.retro.note": "Retroactive calculation from age {from} · assumption: stable salary and BVG minimum interest rate (1.25 %).",
   "calc.lpp.evolution_card": "BVG capital evolution",
   "calc.lpp.evolution_desc": "Net capital (return − fees), capital without return, and interest share.",
   "calc.lpp.chart.balance": "Net capital",
@@ -854,13 +854,13 @@ export const en: Record<string, string> = {
   "calc.income_tax.tip.lpp_buyback_capacity": "Difference between target BVG balance and current balance (shown on BVG certificate).",
   "calc.income_tax.field.p3a_balance": "Accumulated Pillar 3a capital (CHF)",
   "calc.income_tax.tip.p3a_balance": "Total balance across your Pillar 3a accounts (bank + insurance).",
-  "calc.income_tax.fr_cb.title": "French cross-border worker — 1983 agreement",
+  "calc.income_tax.fr_cb.title": "French cross-border worker · 1983 agreement",
   "calc.income_tax.fr_cb.desc": "Primary taxation in France.",
   "calc.income_tax.fr_cb.gross": "Gross income",
   "calc.income_tax.fr_cb.retention": "Swiss withholding tax (4.5 %)",
   "calc.income_tax.fr_cb.fr_main": "→ Primary taxation in France",
   "calc.income_tax.fr_cb.note": "Signatory cantons of the 1983 agreement: VD, VS, NE, JU, FR, BE. The Swiss withholding tax is paid back to France. Final taxation is determined by the French authorities under the French scale. For French-side estimation, use a French tax calculator (V2 coming).",
-  "calc.income_tax.source.title_ge": "Geneva cross-border worker — withholding tax",
+  "calc.income_tax.source.title_ge": "Geneva cross-border worker · withholding tax",
   "calc.income_tax.source.title": "Withholding tax",
   "calc.income_tax.source.desc": "Withholding-tax scale, canton {canton}.",
   "calc.income_tax.source.annual": "Withholding tax / year",
@@ -937,13 +937,13 @@ export const en: Record<string, string> = {
   "calc.retirement.guide.s2.title": "Conversion rate",
   "calc.retirement.guide.s2.body": "For 2026: 6.0 % on mandatory share (continuing decline). Check your pension fund's rate.",
   "calc.retirement.guide.s3.title": "Assumptions",
-  "calc.retirement.guide.s3.body": "Life expectancy, post-retirement return, lump-sum taxation — the key parameters.",
+  "calc.retirement.guide.s3.body": "Life expectancy, post-retirement return, lump-sum taxation · the key parameters.",
   "calc.retirement.section.title": "Assumptions",
   "calc.retirement.section.desc": "Compare lump-sum withdrawal with annuity payments.",
   "calc.retirement.field.capital": "BVG capital at retirement",
   "calc.retirement.tip.capital": "Total BVG savings available at retirement (mandatory + extra-mandatory).",
   "calc.retirement.field.canton": "Withdrawal canton",
-  "calc.retirement.tip.canton": "Canton of the pension institution at withdrawal — may differ from domicile (e.g. transfer to Zug).",
+  "calc.retirement.tip.canton": "Canton of the pension institution at withdrawal · may differ from domicile (e.g. transfer to Zug).",
   "calc.retirement.note.canton": "Canton of the institution at withdrawal; may differ from domicile (transfer to a tax-friendly canton, e.g. Zug).",
   "calc.retirement.field.civil_status": "Civil status",
   "calc.retirement.field.conversion_rate": "Conversion rate (%)",
@@ -1188,7 +1188,7 @@ export const en: Record<string, string> = {
   "notfound.cta": "Back to home",
 
   // === Director compensation calculator ===
-  "calc.dir.head.title": "Salary / dividend comparator — SwissBroker Pro",
+  "calc.dir.head.title": "Salary / dividend comparator · SwissBroker Pro",
   "calc.dir.head.desc": "Compare salary / dividends / reserves compensation strategies for a Swiss company director.",
   "calc.dir.guide.title": "Director guide",
   "calc.dir.guide.s1.title": "Welcome to the director comparator",
@@ -1207,7 +1207,7 @@ export const en: Record<string, string> = {
   "calc.dir.field.profit.hint": "Before social charges and corporate tax",
   "calc.dir.field.profit.tip": "Company result BEFORE any director compensation. That is the pie to share between salary, dividend and reserves.",
   "calc.dir.field.reserve": "Target reserve to keep in the company (CHF/yr)",
-  "calc.dir.field.reserve.hint": "Optional — amount taken first from profit before salary/dividend allocation.",
+  "calc.dir.field.reserve.hint": "Optional · amount taken first from profit before salary/dividend allocation.",
   "calc.dir.field.reserve.tip": "If filled, the target reserve is deducted from total profit before strategies are computed. The remainder is split between salary and dividends.",
   "calc.dir.reserve.total_profit": "Total profit",
   "calc.dir.reserve.minus": "− Target reserve",
@@ -1291,9 +1291,9 @@ export const en: Record<string, string> = {
   "calc.dir.warn.low_salary.body": "The salary share ({pct}% of profit) is below 50%. The FTA may requalify part of the dividends as salary if compensation is not in line with industry practice.",
   "calc.dir.link.label": "Linked calculation",
   "calc.dir.legal.intro": "Methodology.",
-  "calc.dir.legal.body": "Calculations based on 2026 tax and social scales (FSIO / FTA parameters in force). Default municipal multipliers are those of the cantonal capital — full municipal precision arrives in V2. For complex cases (group structures, holdings, international income), validate the consistency of assumptions before delivery to the client. Concepts of usual salary, concealed dividend and qualified holding are subject to the assessment of the FTA and the canton.",
+  "calc.dir.legal.body": "Calculations based on 2026 tax and social scales (FSIO / FTA parameters in force). Default municipal multipliers are those of the cantonal capital · full municipal precision arrives in V2. For complex cases (group structures, holdings, international income), validate the consistency of assumptions before delivery to the client. Concepts of usual salary, concealed dividend and qualified holding are subject to the assessment of the FTA and the canton.",
 
-  // === LOT 6 — Client wizard ===
+  // === LOT 6 · Client wizard ===
   "wizard.head.new": "New client · SwissBroker Pro",
   "wizard.head.edit": "Edit client · SwissBroker Pro",
   "wizard.title.new": "New client",
@@ -1394,7 +1394,7 @@ export const en: Record<string, string> = {
   "wizard.accounts.institution.placeholder": "UBS, Swiss Life, VIAC…",
   "wizard.children.first_name.placeholder": "First name",
 
-  // === LOT 6 — Company form ===
+  // === LOT 6 · Company form ===
   "company_form.head.new": "New company · SwissBroker Pro",
   "company_form.head.edit": "Edit company · SwissBroker Pro",
   "company_form.title.new": "New company",
@@ -1433,7 +1433,7 @@ export const en: Record<string, string> = {
   "client_form.notfound": "Client not found",
   "client_form.notfound.back": "Back to list",
 
-  // === LOT 6 — Scenario comparator ===
+  // === LOT 6 · Scenario comparator ===
   "scenarios.head.title": "Scenario comparator · SwissBroker Pro",
   "scenarios.title": "Scenario comparator",
   "scenarios.subtitle": "Select up to 4 scenarios to compare taxes, rates and pension side by side.",
@@ -1493,7 +1493,7 @@ export const en: Record<string, string> = {
   "scenario.part_time_80.label": "Switch to 80 %",
   "scenario.part_time_80.desc": "Reduce salary to 80 % of current gross.",
 
-  // === LOT 6 — Optimizer panel ===
+  // === LOT 6 · Optimizer panel ===
   "opt.title": "Optimization suggestions",
   "opt.empty.title": "No optimization detected",
   "opt.empty.hint": "Provide more information (BVG, 3a, wealth, canton) to obtain quantified recommendations.",

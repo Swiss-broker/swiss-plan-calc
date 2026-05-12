@@ -416,8 +416,8 @@ function exportInvestmentComparePdf(args: {
     const winner = comparison.winner === "a" ? a : b;
     const loser = comparison.winner === "a" ? b : a;
     pdf.metricsGrid([
-      { label: t("calc.invcompare.res.net") + " — " + a.input.name, value: a.finalNetCapital, tone: comparison.winner === "a" ? "success" : "primary" },
-      { label: t("calc.invcompare.res.net") + " — " + b.input.name, value: b.finalNetCapital, tone: comparison.winner === "b" ? "success" : "primary" },
+      { label: t("calc.invcompare.res.net") + " · " + a.input.name, value: a.finalNetCapital, tone: comparison.winner === "a" ? "success" : "primary" },
+      { label: t("calc.invcompare.res.net") + " · " + b.input.name, value: b.finalNetCapital, tone: comparison.winner === "b" ? "success" : "primary" },
       { label: "Δ " + t("calc.invcompare.summary_title"), value: formatCHF(comparison.netDifference), tone: "success" },
       { label: t("calc.invcompare.in_favor_of", { name: winner.input.name }), value: formatPct(comparison.pctAdvantage), tone: "success" },
     ]);

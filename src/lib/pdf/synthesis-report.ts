@@ -62,10 +62,10 @@ export function exportSynthesisReportPdf(args: SynthesisReportArgs): void {
     ...args.header,
   } as PdfHeaderInfo);
 
-  // ---------- PAGE 1 — COVER ----------
+  // ---------- PAGE 1 · COVER ----------
   drawCoverPage(pdf, fullName, options.customNote, args.header);
 
-  // ---------- PAGE 2 — PROFIL CLIENT ----------
+  // ---------- PAGE 2 · PROFIL CLIENT ----------
   pdf.newPage();
   drawClientProfile(pdf, client, pension, assets, company);
 
@@ -164,7 +164,7 @@ function drawCoverPage(
   doc.setFont("helvetica", "italic");
   doc.setFontSize(9);
   doc.setTextColor(...muted);
-  doc.text("Document confidentiel — Usage interne", pageWidth / 2, pageHeight - 25, {
+  doc.text("Document confidentiel · Usage interne", pageWidth / 2, pageHeight - 25, {
     align: "center",
   });
 }
@@ -252,7 +252,7 @@ function drawSimulationPage(pdf: ReportPdf, entry: HistoryEntry, includeCharts: 
   pdf.section(kindLabel);
   pdf.paragraph(entry.title, { italic: true, muted: true });
 
-  // Section 1 — paramètres
+  // Section 1 · paramètres
   const params = formatInputs(entry);
   if (params.length) {
     pdf.spacer(2);
@@ -260,7 +260,7 @@ function drawSimulationPage(pdf: ReportPdf, entry: HistoryEntry, includeCharts: 
     pdf.kvTable(params);
   }
 
-  // Section 2 — résultats clés
+  // Section 2 · résultats clés
   const metrics = formatMetrics(entry);
   if (metrics.length) {
     pdf.spacer(2);
@@ -268,12 +268,12 @@ function drawSimulationPage(pdf: ReportPdf, entry: HistoryEntry, includeCharts: 
     pdf.metricsGrid(metrics);
   }
 
-  // Section 3 — graphique simplifié si pertinent
+  // Section 3 · graphique simplifié si pertinent
   if (includeCharts) {
     drawSimpleChart(pdf, entry);
   }
 
-  // Section 4 — commentaire
+  // Section 4 · commentaire
   const comment = buildComment(entry);
   if (comment) {
     pdf.spacer(2);
@@ -560,7 +560,7 @@ function drawComparisonPage(
   pension: ClientPension | null,
   _assets: ClientAssets | null,
 ) {
-  pdf.section("Synthèse globale — Situation avant et après optimisation");
+  pdf.section("Synthèse globale · Situation avant et après optimisation");
   pdf.paragraph(
     "Ce tableau agrège les résultats de l'ensemble des simulations sélectionnées et chiffre l'impact global des optimisations identifiées.",
     { muted: true, italic: true },
@@ -706,7 +706,7 @@ function drawConclusionPage(pdf: ReportPdf, entries: HistoryEntry[]) {
       if (g.type === "none") continue;
       const amount =
         g.type === "annual" ? `${formatCHF(g.amount)} / an` : formatCHF(g.amount);
-      pdf.paragraph(`${n}. ${g.label} — Gain estimé : ${amount}.${g.details ? ` ${g.details}.` : ""}`);
+      pdf.paragraph(`${n}. ${g.label} · Gain estimé : ${amount}.${g.details ? ` ${g.details}.` : ""}`);
       n++;
     }
   }

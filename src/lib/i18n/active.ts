@@ -1,5 +1,5 @@
 // Stockage module-level de la langue active.
-// Lu par t() et formatNumberCH() à chaque appel — synchronisé par LanguageProvider.
+// Lu par t() et formatNumberCH() à chaque appel · synchronisé par LanguageProvider.
 
 import type { AppLanguage } from "./types";
 
@@ -21,7 +21,7 @@ export function loadStoredLanguage(): AppLanguage | null {
     const v = window.localStorage.getItem(STORAGE_KEY);
     if (v === "fr" || v === "de" || v === "en" || v === "it") return v;
   } catch {
-    /* localStorage indisponible — ignore */
+    /* localStorage indisponible · ignore */
   }
   return null;
 }

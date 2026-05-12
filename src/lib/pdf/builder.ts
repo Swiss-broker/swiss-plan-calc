@@ -231,7 +231,7 @@ export class ReportPdf {
     if (this.header.brokerEmail) contactParts.push(this.header.brokerEmail);
     if (this.header.brokerPhone) contactParts.push(this.header.brokerPhone);
 
-    // Zone titre droite réserve 70 mm — la zone identité prend ce qui reste
+    // Zone titre droite réserve 70 mm · la zone identité prend ce qui reste
     const titleZoneW = 70;
     const identityMaxW = Math.max(40, pageWidth - margin - textX - titleZoneW - 6);
 
@@ -443,7 +443,7 @@ export class ReportPdf {
     return this;
   }
 
-  /** Bandeau "SITUATION ACTUELLE" — fond gris clair, filet vertical. */
+  /** Bandeau "SITUATION ACTUELLE" · fond gris clair, filet vertical. */
   situationBanner(label?: string) {
     const text = label ?? t("pdf.banner.current", undefined, "SITUATION ACTUELLE");
     this.ensureSpace(10);
@@ -460,7 +460,7 @@ export class ReportPdf {
     return this;
   }
 
-  /** Bandeau "PROJECTION" — fond couleur primaire, plat. */
+  /** Bandeau "PROJECTION" · fond couleur primaire, plat. */
   projectionBanner(label?: string) {
     const text = label ?? t("pdf.banner.projection", undefined, "PROJECTION");
     this.ensureSpace(10);

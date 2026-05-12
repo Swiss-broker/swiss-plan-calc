@@ -180,7 +180,7 @@ function SourceTaxCalc() {
           </div>
           {form.scale === "C" && (
             <div className="mt-3 rounded-md border border-primary/20 bg-primary/5 p-2 text-[11px] text-foreground">
-              Barème <strong>{result.scaleUsed}</strong> — taux déterminé sur le revenu mensuel combiné du ménage : <strong>{result.combinedMonthly.toLocaleString("fr-CH")} CHF</strong>, appliqué au salaire propre.
+              Barème <strong>{result.scaleUsed}</strong> · taux déterminé sur le revenu mensuel combiné du ménage : <strong>{result.combinedMonthly.toLocaleString("fr-CH")} CHF</strong>, appliqué au salaire propre.
             </div>
           )}
           <div className="mt-3 flex gap-2 rounded-md border border-border/60 bg-muted/30 p-2 text-[11px] text-muted-foreground">
