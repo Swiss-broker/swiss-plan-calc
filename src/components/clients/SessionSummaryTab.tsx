@@ -1,5 +1,6 @@
 // Onglet "Synthèse RDV" sur la fiche client.
 // Liste les simulations rattachées + agrège les gains chiffrables.
+import { useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -26,10 +27,12 @@ import { aggregateGains } from "@/lib/simulations/extract-gain";
 import { formatCHF } from "@/lib/format";
 import { formatDateShort } from "@/lib/i18n/format";
 import { useT } from "@/contexts/LanguageContext";
+import { SynthesisReportModal } from "./SynthesisReportModal";
 
 export function SessionSummaryTab({ clientId, clientName }: { clientId: string; clientName: string }) {
   const t = useT();
   const qc = useQueryClient();
+  const [reportOpen, setReportOpen] = useState(false);
 
   const { data: entries = [], isLoading } = useQuery({
     queryKey: ["client-simulations", clientId],
