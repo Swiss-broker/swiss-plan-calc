@@ -367,28 +367,6 @@ export class ReportPdf {
     return this;
   }
 
-  table(head: string[], body: Array<Array<string | number>>, opts?: { highlightLast?: boolean }) {
-    autoTable(this.doc, {
-      startY: this.cursorY,
-      margin: { left: this.margin, right: this.margin },
-      head: [head],
-      body: body as RowInput[],
-      theme: "striped",
-      headStyles: { fillColor: this.primary, textColor: 255, fontStyle: "bold", fontSize: 10 },
-      styles: { fontSize: 9.5, cellPadding: 2 },
-      alternateRowStyles: { fillColor: [250, 251, 252] },
-      didParseCell: (data) => {
-        if (opts?.highlightLast && data.section === "body" && data.row.index === body.length - 1) {
-          data.cell.styles.fontStyle = "bold";
-          data.cell.styles.fillColor = [219, 234, 254];
-        }
-      },
-      didDrawPage: () => this.drawFooter(),
-    });
-    this.cursorY = (this.doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 4;
-    return this;
-  }
-
   /** Grille de tuiles : libellé + valeur (CHF) en grand, style "card" moderne */
   metricsGrid(items: Array<{ label: string; value: number | string; tone?: "primary" | "success" | "warning" }>) {
     const cols = items.length <= 2 ? items.length : items.length === 3 ? 3 : 2;
