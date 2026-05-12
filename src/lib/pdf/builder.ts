@@ -436,7 +436,8 @@ export class ReportPdf {
   }
 
   /** Bandeau "SITUATION ACTUELLE" — fond gris clair, filet vertical. */
-  situationBanner(label = "SITUATION ACTUELLE") {
+  situationBanner(label?: string) {
+    const text = label ?? t("pdf.banner.current", undefined, "SITUATION ACTUELLE");
     this.ensureSpace(10);
     const { doc, margin, contentWidth } = this;
     doc.setFillColor(...this.surface);
@@ -446,13 +447,14 @@ export class ReportPdf {
     doc.setFont("helvetica", "bold");
     doc.setFontSize(9.5);
     doc.setTextColor(...this.ink);
-    doc.text(label, margin + 4, this.cursorY + 4.8);
+    doc.text(text, margin + 4, this.cursorY + 4.8);
     this.cursorY += 10;
     return this;
   }
 
   /** Bandeau "PROJECTION" — fond couleur primaire, plat. */
-  projectionBanner(label = "PROJECTION") {
+  projectionBanner(label?: string) {
+    const text = label ?? t("pdf.banner.projection", undefined, "PROJECTION");
     this.ensureSpace(10);
     const { doc, margin, contentWidth, primary } = this;
     doc.setFillColor(...primary);
@@ -460,7 +462,7 @@ export class ReportPdf {
     doc.setFont("helvetica", "bold");
     doc.setFontSize(9.5);
     doc.setTextColor(255, 255, 255);
-    doc.text(label, margin + 4, this.cursorY + 4.8);
+    doc.text(text, margin + 4, this.cursorY + 4.8);
     this.cursorY += 10;
     return this;
   }
@@ -477,7 +479,11 @@ export class ReportPdf {
     doc.setTextColor(...muted);
     const note =
       this.header.footerNote?.trim() ||
-      "Document de travail · calculs basés sur les barèmes 2026 et les données saisies.";
+      t(
+        "pdf.footer.default_note",
+        undefined,
+        "Document de travail · calculs basés sur les barèmes 2026 et les données saisies.",
+      );
     const cabinetCenter = this.header.brokerageName?.trim() || this.header.brokerName?.trim() || "";
     const noteMaxW = pageWidth / 2 - margin - 20;
     const noteLines = doc.splitTextToSize(note, noteMaxW) as string[];
@@ -486,7 +492,12 @@ export class ReportPdf {
       doc.text(cabinetCenter, pageWidth / 2, pageHeight - 7, { align: "center" });
     }
     doc.setFont("helvetica", "bold");
-    doc.text(`Page ${current} / ${pageCount}`, pageWidth - margin, pageHeight - 7, { align: "right" });
+    doc.text(
+      t("pdf.footer.page", { current, total: pageCount }, `Page ${current} / ${pageCount}`),
+      pageWidth - margin,
+      pageHeight - 7,
+      { align: "right" },
+    );
   }
 
   finalize() {
