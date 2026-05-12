@@ -69,6 +69,41 @@ export function extractKpis(kind: SimulationKind, summary: SummaryShape): Histor
         { label: "Net B", value: num(summary.bFinalNet), unit: "CHF" },
         { label: "Gagnant", value: String(summary.winner ?? "—") },
       ];
+    case "avs_ai":
+      return [
+        { label: "Rente mensuelle", value: num(summary.monthlyPension), unit: "CHF" },
+        { label: "Rente annuelle", value: num(summary.annualPension), unit: "CHF" },
+        { label: "Années cotisées", value: num(summary.effectiveYears) },
+        { label: "Années manquantes", value: num(summary.missingYears) },
+      ];
+    case "vested_benefits":
+      return [
+        { label: "Stratégie recommandée", value: String(summary.recommendedStrategy ?? "—") },
+        { label: "Capital final (recommandé)", value: num(summary.recommendedFinalBalance), unit: "CHF" },
+        { label: "Écart vs sécurité", value: num(summary.gainVsSecurity), unit: "CHF" },
+        { label: "Années jusqu'à la retraite", value: num(summary.yearsToRetirement) },
+      ];
+    case "cross_border":
+      return [
+        { label: "Régime", value: String(summary.regimeLabel ?? "—") },
+        { label: "Net annuel", value: num(summary.netAnnual), unit: "CHF" },
+        { label: "Impôt total", value: num(summary.totalTax), unit: "CHF" },
+        { label: "Taux global", value: Number(num(summary.totalRate).toFixed(2)), unit: "%" },
+      ];
+    case "tou":
+      return [
+        { label: "Éligible TOU", value: String(summary.eligibleForTOU ? "Oui" : "Non") },
+        { label: "Part suisse", value: Number(num(summary.swissShare).toFixed(2)), unit: "%" },
+        { label: "Économie TOU", value: num(summary.touSaving), unit: "CHF" },
+        { label: "Recommandation", value: String(summary.recommendation ?? "—") },
+      ];
+    case "director_compensation":
+      return [
+        { label: "Stratégie recommandée", value: String(summary.recommendedLabel ?? "—") },
+        { label: "Net dirigeant (reco.)", value: num(summary.recommendedDirectorNet), unit: "CHF" },
+        { label: "Net actuel", value: num(summary.currentDirectorNet), unit: "CHF" },
+        { label: "Gain annuel", value: num(summary.gainAnnual), unit: "CHF" },
+      ];
   }
 }
 
