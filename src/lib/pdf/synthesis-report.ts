@@ -333,7 +333,7 @@ function formatInputs(entry: HistoryEntry): Array<[string, string]> {
     case "source_tax":
       pushStr(rows, "Canton", i.canton ? cantonName(String(i.canton)) : undefined);
       pushIfChf(rows, "Revenu brut", i.grossIncome ?? i.income);
-      pushStr(rows, "Statut familial", i.status as string | undefined);
+      pushStr(rows, "Statut familial", localizeStatus(i.status));
       break;
     case "retirement":
       pushIfChf(rows, "Capital LPP", i.capital);
