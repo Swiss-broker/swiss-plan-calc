@@ -128,6 +128,22 @@ export class ReportPdf {
 
   constructor(public header: PdfHeaderInfo) {
     this.doc = new jsPDF({ unit: "mm", format: "a4" });
+    // Monkey-patch doc.text pour sanitiser TOUT texte écrit dans le PDF
+    // (y compris via jspdf-autotable). Garantit l'absence de glyphes
+    // manquants (Ã pour σ) et d'artefacts d'espacement liés à l'encodage
+    // UTF-16 fallback de jsPDF lorsqu'un caractère hors WinAnsi est rencontré.
+    const origText = this.doc.text.bind(this.doc);
+    (this.doc as unknown as { text: (...a: unknown[]) => jsPDF }).text = (
+      ...args: unknown[]
+    ) => {
+      const t = args[0];
+      if (typeof t === "string") {
+        args[0] = sanitizePdfText(t);
+      } else if (Array.isArray(t)) {
+        args[0] = t.map((s) => (typeof s === "string" ? sanitizePdfText(s) : s));
+      }
+      return (origText as (...a: unknown[]) => jsPDF)(...args);
+    };
     this.pageWidth = this.doc.internal.pageSize.getWidth();
     this.pageHeight = this.doc.internal.pageSize.getHeight();
     this.contentWidth = this.pageWidth - this.margin * 2;
