@@ -259,7 +259,7 @@ function DirectorCompensationCalc() {
                 recommended: recommendation.best,
                 current: currentResult,
                 clientName: linkedClient ? `${linkedClient.first_name} ${linkedClient.last_name}` : null,
-                companyName: linkedCompany?.name ?? null,
+                companyName: linkedCompany?.legal_name ?? null,
               })
             }
           />
