@@ -55,6 +55,7 @@ const DEFAULT_A: InvestmentInput = {
   annualFeeRate: 0,
   durationYears: 20,
   exitTaxRate: 22,
+  interestMode: "compound",
 };
 
 const DEFAULT_B: InvestmentInput = {
@@ -67,6 +68,7 @@ const DEFAULT_B: InvestmentInput = {
   annualFeeRate: 0.8,
   durationYears: 20,
   exitTaxRate: 22,
+  interestMode: "compound",
 };
 
 function InvestmentCompareCalc() {
