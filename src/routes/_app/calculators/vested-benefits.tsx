@@ -31,6 +31,7 @@ import {
 } from "@/lib/lpp/vested";
 import { formatCHF } from "@/lib/format";
 import { exportVestedBenefitsPdf } from "@/lib/pdf/reports";
+import { SaveSimulationButton } from "@/components/calculators/SaveSimulationButton";
 
 import { zodValidator, fallback } from "@tanstack/zod-adapter";
 import { z } from "zod";
