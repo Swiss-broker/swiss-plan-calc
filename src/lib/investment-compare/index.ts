@@ -32,6 +32,8 @@ export interface InvestmentInput {
   durationYears: number;
   /** Taux d'imposition à la sortie (%) appliqué au gain brut. */
   exitTaxRate: number;
+  /** Mode d'intérêts : composés (réinvestis) ou simples (sur capital versé uniquement). */
+  interestMode?: "compound" | "simple";
 }
 
 export interface InvestmentYearPoint {
