@@ -32,6 +32,8 @@ export interface InvestmentInput {
   durationYears: number;
   /** Taux d'imposition à la sortie (%) appliqué au gain brut. */
   exitTaxRate: number;
+  /** Mode d'intérêts : composés (réinvestis) ou simples (sur capital versé uniquement). */
+  interestMode?: "compound" | "simple";
 }
 
 export interface InvestmentYearPoint {
@@ -87,9 +89,13 @@ export function simulateInvestment(input: InvestmentInput): InvestmentResult {
   const grossRate = input.grossReturnRate / 100;
 
   const series: InvestmentYearPoint[] = [];
+  const mode = input.interestMode ?? "compound";
   let capital = Math.max(0, input.initialCapital || 0);
   let capitalNoFees = capital;
   let contributed = capital;
+  // Pour le mode simple : on accumule les intérêts à part, ils ne capitalisent pas.
+  let simpleInterest = 0;
+  let simpleInterestNoFees = 0;
 
   series.push({
     year: 0,
@@ -99,10 +105,19 @@ export function simulateInvestment(input: InvestmentInput): InvestmentResult {
   });
 
   for (let y = 1; y <= years; y++) {
-    // Versement en début d'année puis capitalisation.
-    capital = (capital + yearlyContrib) * (1 + netRate);
-    capitalNoFees = (capitalNoFees + yearlyContrib) * (1 + grossRate);
-    contributed += yearlyContrib;
+    if (mode === "compound") {
+      // Versement en début d'année puis capitalisation.
+      capital = (capital + yearlyContrib) * (1 + netRate);
+      capitalNoFees = (capitalNoFees + yearlyContrib) * (1 + grossRate);
+      contributed += yearlyContrib;
+    } else {
+      // Intérêts simples : versement ajouté au principal, intérêt calculé sur le principal cumulé seulement.
+      contributed += yearlyContrib;
+      simpleInterest += contributed * netRate;
+      simpleInterestNoFees += contributed * grossRate;
+      capital = contributed + simpleInterest;
+      capitalNoFees = contributed + simpleInterestNoFees;
+    }
     const gainSoFar = Math.max(0, capital - contributed);
     const taxIfExit = gainSoFar * (input.exitTaxRate / 100);
     series.push({

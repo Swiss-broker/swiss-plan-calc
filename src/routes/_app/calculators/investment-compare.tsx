@@ -55,6 +55,7 @@ const DEFAULT_A: InvestmentInput = {
   annualFeeRate: 0,
   durationYears: 20,
   exitTaxRate: 22,
+  interestMode: "compound",
 };
 
 const DEFAULT_B: InvestmentInput = {
@@ -67,6 +68,7 @@ const DEFAULT_B: InvestmentInput = {
   annualFeeRate: 0.8,
   durationYears: 20,
   exitTaxRate: 22,
+  interestMode: "compound",
 };
 
 function InvestmentCompareCalc() {
@@ -280,6 +282,23 @@ function InvestmentCard({
             </Select>
           </div>
 
+          <div className="space-y-1.5">
+            <Label className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+              {t("calc.invcompare.field.interest_mode")}
+              <HelpDot tip={t("calc.invcompare.tip.interest_mode")} />
+            </Label>
+            <Select
+              value={value.interestMode ?? "compound"}
+              onValueChange={(v) => set("interestMode", v as "compound" | "simple")}
+            >
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="compound">{t("calc.invcompare.mode.compound")}</SelectItem>
+                <SelectItem value="simple">{t("calc.invcompare.mode.simple")}</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
           <NumField
             label={t("calc.invcompare.field.duration")}
             value={value.durationYears}
@@ -449,6 +468,7 @@ function exportInvestmentComparePdf(args: {
       [t("calc.invcompare.field.return"), formatPct(a.input.grossReturnRate), formatPct(b.input.grossReturnRate)],
       [t("calc.invcompare.field.fees"), formatPct(a.input.annualFeeRate), formatPct(b.input.annualFeeRate)],
       [t("calc.invcompare.field.exit_tax"), formatPct(a.input.exitTaxRate), formatPct(b.input.exitTaxRate)],
+      [t("calc.invcompare.field.interest_mode"), t(`calc.invcompare.mode.${a.input.interestMode ?? "compound"}`), t(`calc.invcompare.mode.${b.input.interestMode ?? "compound"}`)],
       ["—", "—", "—"],
       [t("calc.invcompare.res.gross"), formatCHF(a.finalGrossCapital), formatCHF(b.finalGrossCapital)],
       [t("calc.invcompare.res.gain"), formatCHF(a.grossGain), formatCHF(b.grossGain)],
