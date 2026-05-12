@@ -192,7 +192,22 @@ function TOUCalc() {
       </div>
 
       <div className="space-y-4 md:col-span-2">
-        <div className="flex justify-end">
+        <div className="flex justify-end gap-2">
+          <SaveSimulationButton
+            kind="tou"
+            inputs={form}
+            summary={{
+              swissShare: eligibility.swissShare,
+              eligibleForTOU: eligibility.eligibleForTOU,
+              sourceTax: comparison.sourceTax,
+              ordinaryTax: comparison.ordinaryTax,
+              delta: comparison.delta,
+              touSaving: comparison.delta < 0 ? Math.abs(comparison.delta) : 0,
+              recommendation: comparison.recommendation,
+              marginalRate: comparison.marginalRate,
+            }}
+            defaultTitle={`TOU ${form.canton} · ${form.grossSalary} CHF`}
+          />
           <ExportPdfButton
             onClick={() =>
               exportTouPdf({
