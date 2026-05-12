@@ -38,7 +38,13 @@ function fmt(lang: AppLanguage, decimals: number): Intl.NumberFormat {
 /** Formate un nombre selon la langue active (ou la langue passée). */
 export function formatNumberCH(value: number, decimals = 0, lang?: AppLanguage): string {
   if (!Number.isFinite(value)) return "—";
-  return fmt(lang ?? getActiveLanguage(), decimals).format(value);
+  const activeLang = lang ?? getActiveLanguage();
+  const out = fmt(activeLang, decimals).format(value);
+  // Pour les locales suisses (FR/DE/IT-CH), Intl émet U+202F comme
+  // séparateur de milliers. On le remplace par l'apostrophe ASCII pour
+  // garantir un rendu correct dans jsPDF (police Helvetica WinAnsi).
+  if (activeLang === "en") return out;
+  return out.replace(/[\u00A0\u202F\u2009\u2007 ](?=\d)/g, "'");
 }
 
 /** Formate un montant en CHF (ex FR/DE/IT: "47'200 CHF"; EN: "47,200 CHF"). */
