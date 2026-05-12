@@ -28,8 +28,8 @@ export function exportIncomeTaxPdf(args: {
 }) {
   const { input, result } = args;
   const pdf = new ReportPdf({
-    title: "Rapport d'imposition revenu & fortune",
-    subtitle: `Canton de ${cantonName(input.canton)} · barèmes 2026`,
+    title: t("pdf.income.title", undefined, "Rapport d'imposition revenu & fortune"),
+    subtitle: t("pdf.income.subtitle", { canton: cantonName(input.canton) }),
     ...args.header,
   } as PdfHeaderInfo);
 
@@ -168,8 +168,8 @@ export function exportSourceTaxPdf(args: {
 }) {
   const { input, result } = args;
   const pdf = new ReportPdf({
-    title: "Impôt à la source · simulation",
-    subtitle: `Canton de ${cantonName(input.canton)} · barème ${input.scale}`,
+    title: t("pdf.source.title", undefined, "Impôt à la source · simulation"),
+    subtitle: t("pdf.source.subtitle", { canton: cantonName(input.canton), scale: input.scale }),
     ...args.header,
   } as PdfHeaderInfo);
 
@@ -248,8 +248,8 @@ export function exportLppPdf(args: {
 }) {
   const { input, projection, buybackPlan } = args;
   const pdf = new ReportPdf({
-    title: "Prévoyance professionnelle (LPP) · Projection complète",
-    subtitle: `Capital et rachats · horizon ${input.retirementAge} ans`,
+    title: t("pdf.lpp.title", undefined, "Prévoyance professionnelle (LPP) · Projection complète"),
+    subtitle: t("pdf.lpp.subtitle", { age: input.retirementAge }),
     ...args.header,
   } as PdfHeaderInfo);
 
@@ -348,8 +348,8 @@ export function exportPillar3aPdf(args: {
 }) {
   const { input, taxSavings, projection, staggered } = args;
   const pdf = new ReportPdf({
-    title: "Pilier 3a · Stratégie complète",
-    subtitle: `Cotisation, projection et retrait étalé · ${cantonName(input.canton)}`,
+    title: t("pdf.pillar3a.title", undefined, "Pilier 3a · Stratégie complète"),
+    subtitle: t("pdf.pillar3a.subtitle", { canton: cantonName(input.canton) }),
     ...args.header,
   } as PdfHeaderInfo);
 
@@ -426,8 +426,8 @@ export function exportRetirementPdf(args: {
 }) {
   const { input, lumpTax, compare, reco } = args;
   const pdf = new ReportPdf({
-    title: "Rente ou capital ? · Décision retraite",
-    subtitle: `Capital LPP de ${formatCHF(input.capital)} · ${cantonName(input.canton)}`,
+    title: t("pdf.retirement.title", undefined, "Rente ou capital ? · Décision retraite"),
+    subtitle: t("pdf.retirement.subtitle", { capital: formatCHF(input.capital), canton: cantonName(input.canton) }),
     ...args.header,
   } as PdfHeaderInfo);
 
