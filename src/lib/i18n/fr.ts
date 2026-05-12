@@ -608,7 +608,7 @@ export const fr: Record<string, string> = {
   "calc.lpp.const.min_coord": "Salaire coord. minimum",
   "calc.lpp.const.min_coord_tip": "Plancher OFAS 2026.",
   "calc.lpp.below_entry": "Salaire inférieur au seuil d'entrée LPP ({val}). Affiliation LPP non obligatoire.",
-  "calc.lpp.recap_capped": "{gross} − {coord} = {raw}, plafonné à {cap}",
+  "calc.lpp.recap_capped": "Salaire plafonné à {cap} (brut {gross}) − {coord} = {result}",
   "calc.lpp.recap_under": "{gross} − {coord} = {val} (sous plafond {cap})",
   "calc.lpp.field.expected_return": "Rendement brut (%/an)",
   "calc.lpp.field.fees": "Frais TER + admin (%/an)",

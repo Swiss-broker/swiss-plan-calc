@@ -604,7 +604,7 @@ export const de: Record<string, string> = {
   "calc.lpp.const.min_coord": "Mindestkoordinierter Lohn",
   "calc.lpp.const.min_coord_tip": "BSV-Untergrenze 2026.",
   "calc.lpp.below_entry": "Lohn unter der BVG-Eintrittsschwelle ({val}). BVG-Anschluss nicht obligatorisch.",
-  "calc.lpp.recap_capped": "{gross} − {coord} = {raw}, plafoniert auf {cap}",
+  "calc.lpp.recap_capped": "Lohn plafoniert auf {cap} (brutto {gross}) − {coord} = {result}",
   "calc.lpp.recap_under": "{gross} − {coord} = {val} (unter Plafond {cap})",
   "calc.lpp.field.expected_return": "Bruttorendite (%/Jahr)",
   "calc.lpp.field.fees": "TER + Administrationskosten (%/Jahr)",

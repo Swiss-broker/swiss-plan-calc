@@ -602,7 +602,7 @@ export const en: Record<string, string> = {
   "calc.lpp.const.min_coord": "Min. coordinated salary",
   "calc.lpp.const.min_coord_tip": "FSIO floor 2026.",
   "calc.lpp.below_entry": "Salary below the BVG entry threshold ({val}). BVG affiliation not mandatory.",
-  "calc.lpp.recap_capped": "{gross} − {coord} = {raw}, capped at {cap}",
+  "calc.lpp.recap_capped": "Salary capped at {cap} (gross {gross}) − {coord} = {result}",
   "calc.lpp.recap_under": "{gross} − {coord} = {val} (below ceiling {cap})",
   "calc.lpp.field.expected_return": "Gross return (%/yr)",
   "calc.lpp.field.fees": "TER + admin fees (%/yr)",
