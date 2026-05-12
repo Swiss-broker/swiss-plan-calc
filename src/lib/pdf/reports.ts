@@ -789,12 +789,12 @@ export function exportVestedBenefitsPdf(args: {
 
   pdf.section("Comparatif des 3 stratégies");
   pdf.table(
-    ["Stratégie", "Rdt net annualisé", "Capital final", "Fourchette ±1σ", "Impôt sortie", "Net après impôt"],
+    ["Stratégie", "Rdt net annualisé", "Capital final", "Fourchette ±1 écart-type", "Impôt sortie", "Net après impôt"],
     projections.map((p) => [
       p.strategy.label,
       `${p.netReturn} %`,
       formatCHF(p.finalBalance),
-      `${formatCHF(p.finalLow)} → ${formatCHF(p.finalHigh)}`,
+      `${formatCHF(p.finalLow)}  vers  ${formatCHF(p.finalHigh)}`,
       p.estimatedExitTax !== undefined ? formatCHF(p.estimatedExitTax) : "—",
       p.estimatedExitTax !== undefined ? formatCHF(p.finalBalance - p.estimatedExitTax) : formatCHF(p.finalBalance),
     ]),
@@ -810,8 +810,8 @@ export function exportVestedBenefitsPdf(args: {
       ["Volatilité (écart-type)", `${p.strategy.volatility} %`],
       ["Rendement net annualisé", `${p.netReturn} %`],
       ["Capital final projeté", formatCHF(p.finalBalance)],
-      ["Fourchette basse (-1σ)", formatCHF(p.finalLow)],
-      ["Fourchette haute (+1σ)", formatCHF(p.finalHigh)],
+      ["Fourchette basse (-1 écart-type)", formatCHF(p.finalLow)],
+      ["Fourchette haute (+1 écart-type)", formatCHF(p.finalHigh)],
       ["Gains nets cumulés", formatCHF(p.totalGains)],
       ...(p.estimatedExitTax !== undefined
         ? ([
@@ -831,7 +831,7 @@ export function exportVestedBenefitsPdf(args: {
 
   pdf.section("Avertissements");
   pdf.paragraph(
-    "Les rendements espérés sont des moyennes long terme nettes de frais ; les fourchettes ±1σ couvrent ~68 % des scénarios statistiquement probables. " +
+    "Les rendements espérés sont des moyennes long terme nettes de frais ; les fourchettes ±1 écart-type couvrent ~68 % des scénarios statistiquement probables. " +
       "Performance passée non garantie. L'impôt sur prestation en capital est estimé à partir des barèmes cantonaux 2026 et de l'IFD séparé (1/5 du barème ordinaire) ; " +
       "il varie selon la commune, l'état civil et la confession.",
     { italic: true, muted: true },
