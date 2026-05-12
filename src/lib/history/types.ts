@@ -6,7 +6,12 @@ export type SimulationKind =
   | "pillar3a"
   | "retirement"
   | "canton_compare"
-  | "investment_compare";
+  | "investment_compare"
+  | "avs_ai"
+  | "vested_benefits"
+  | "cross_border"
+  | "tou"
+  | "director_compensation";
 
 export interface HistoryEntry {
   id: string;
@@ -38,6 +43,11 @@ const KIND_LABELS_FR: Record<SimulationKind, string> = {
   retirement: "Rente vs capital",
   canton_compare: "Comparateur cantonal",
   investment_compare: "Comparateur d'investissements",
+  avs_ai: "Rente AVS/AI (1er pilier)",
+  vested_benefits: "Libre passage",
+  cross_border: "Frontaliers",
+  tou: "TOU / Quasi-résident",
+  director_compensation: "Rémunération dirigeant",
 };
 
 // Proxy i18n : `KIND_LABELS[k]` reste valide partout, mais résout via t() au runtime.
@@ -56,4 +66,9 @@ export const KIND_ROUTES: Record<SimulationKind, string> = {
   retirement: "/calculators/retirement",
   canton_compare: "/calculators/canton-compare",
   investment_compare: "/calculators/investment-compare",
+  avs_ai: "/calculators/avs-ai",
+  vested_benefits: "/calculators/vested-benefits",
+  cross_border: "/calculators/cross-border",
+  tou: "/calculators/tou",
+  director_compensation: "/calculators/director-compensation",
 };
