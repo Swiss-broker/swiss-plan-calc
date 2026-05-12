@@ -1,5 +1,6 @@
 // Onglet "Synthèse RDV" sur la fiche client.
 // Liste les simulations rattachées + agrège les gains chiffrables.
+import { useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -26,10 +27,12 @@ import { aggregateGains } from "@/lib/simulations/extract-gain";
 import { formatCHF } from "@/lib/format";
 import { formatDateShort } from "@/lib/i18n/format";
 import { useT } from "@/contexts/LanguageContext";
+import { SynthesisReportModal } from "./SynthesisReportModal";
 
 export function SessionSummaryTab({ clientId, clientName }: { clientId: string; clientName: string }) {
   const t = useT();
   const qc = useQueryClient();
+  const [reportOpen, setReportOpen] = useState(false);
 
   const { data: entries = [], isLoading } = useQuery({
     queryKey: ["client-simulations", clientId],
@@ -150,18 +153,25 @@ export function SessionSummaryTab({ clientId, clientName }: { clientId: string; 
         </CardContent>
       </Card>
 
-      {/* BLOC 3 — Bouton préparer dossier (placeholder) */}
+      {/* BLOC 3 — Bouton préparer dossier de synthèse PDF */}
       <div className="flex justify-end">
         <Button
           size="lg"
           className="gap-2 shine"
-          onClick={() => toast.info(t("client.session.coming_soon_toast"))}
+          onClick={() => setReportOpen(true)}
           disabled={entries.length === 0}
         >
           <FileText className="h-4 w-4" />
           {t("client.session.prepare_pdf_button", { name: clientName })}
         </Button>
       </div>
+
+      <SynthesisReportModal
+        open={reportOpen}
+        onOpenChange={setReportOpen}
+        clientId={clientId}
+        entries={entries}
+      />
     </div>
   );
 }

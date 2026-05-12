@@ -286,7 +286,7 @@ export class ReportPdf {
     }
   }
 
-  private ensureSpace(needed: number) {
+  ensureSpace(needed: number) {
     if (this.cursorY + needed > this.pageHeight - 18) {
       this.doc.addPage();
       this.cursorY = this.margin + 5;
@@ -432,6 +432,14 @@ export class ReportPdf {
 
   spacer(mm = 4) {
     this.cursorY += mm;
+    return this;
+  }
+
+  /** Force le passage à une nouvelle page en redessinant l'en-tête standard. */
+  newPage() {
+    this.doc.addPage();
+    this.drawHeader();
+    this.cursorY = this.headerH + 10;
     return this;
   }
 
