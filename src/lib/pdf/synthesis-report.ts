@@ -214,13 +214,15 @@ function drawCoverPage(
   const blockX = margin + 20;
   const blockW = pageWidth - margin * 2 - 40;
   const blockY = pdf.cursorY;
+  const todayIso = new Date().toISOString();
   const lines: Array<[string, string]> = [
-    ["Date du dossier", dateFR(new Date().toISOString())],
-    ["Préparé par", header?.brokerName || "—"],
-    ["Cabinet", header?.brokerageName || "—"],
+    ["Date du dossier", dateFR(todayIso)],
+    ["Données arrêtées au", dateFR(todayIso)],
+    ["Préparé par", header?.brokerName || "Non renseigné"],
+    ["Cabinet", header?.brokerageName || "Non renseigné"],
     [
       "Coordonnées",
-      [header?.brokerPhone, header?.brokerEmail].filter(Boolean).join(" · ") || "—",
+      [header?.brokerPhone, header?.brokerEmail].filter(Boolean).join(" · ") || "Non renseignées",
     ],
   ];
   const blockH = lines.length * 9 + 12;
