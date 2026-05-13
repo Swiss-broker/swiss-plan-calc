@@ -32,18 +32,18 @@ export function getCalculatorRelevance(c: Client, route: CalcRoute): Relevance {
 
   switch (route) {
     case "/calculators/lpp":
-      if (ws === "retired") return { relevant: false, reason: "Client retraité — plus de cotisation LPP." };
-      if (ws === "unemployed") return { relevant: false, reason: "Client sans emploi — pas d'affiliation LPP active." };
+      if (ws === "retired") return { relevant: false, reason: "Client retraité, plus de cotisation LPP." };
+      if (ws === "unemployed") return { relevant: false, reason: "Client sans emploi, pas d'affiliation LPP active." };
       if (ws === "self_employed")
-        return { relevant: false, reason: "Indépendant pur — affiliation LPP facultative, non obligatoire." };
+        return { relevant: false, reason: "Indépendant pur : affiliation LPP facultative, non obligatoire." };
       if (ws === "student")
-        return { relevant: false, reason: "Étudiant — généralement sous le seuil LPP (CHF 22'680)." };
+        return { relevant: false, reason: "Étudiant : généralement sous le seuil LPP (CHF 22'680)." };
       return OK;
 
     case "/calculators/pillar3a":
-      if (ws === "retired") return { relevant: false, reason: "Client retraité — plus de cotisation 3a possible." };
+      if (ws === "retired") return { relevant: false, reason: "Client retraité, plus de cotisation 3a possible." };
       if (ws === "unemployed")
-        return { relevant: false, reason: "Sans revenu d'activité — pas de cotisation 3a déductible." };
+        return { relevant: false, reason: "Sans revenu d'activité, pas de cotisation 3a déductible." };
       return OK;
 
     case "/calculators/source-tax":
@@ -57,7 +57,7 @@ export function getCalculatorRelevance(c: Client, route: CalcRoute): Relevance {
     case "/calculators/director-compensation":
       if (ws !== "director") return { relevant: false, reason: "Réservé aux clients dirigeants de société." };
       if (!c.company_id)
-        return { relevant: false, reason: "Aucune société rattachée à ce client — préfill impossible." };
+        return { relevant: false, reason: "Aucune société rattachée à ce client : préfill impossible." };
       return OK;
 
     case "/calculators/tou":
