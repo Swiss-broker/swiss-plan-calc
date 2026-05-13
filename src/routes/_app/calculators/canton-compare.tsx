@@ -115,7 +115,9 @@ function CantonCompareCalc() {
     setForm((f) => ({ ...f, [k]: v }));
 
   const [mode, setMode] = useState<CompareMode>("annual");
-  const projectedLPPCapital = dashboard?.lpp?.projectedCapitalAt65 ?? 0;
+  const projectedLPPCapital =
+    (dashboard?.lpp?.projectedCapitalAt65 ?? 0) +
+    (dashboard?.lpp?.buybackCapacity ?? 0);
   const lumpSumStatus: "single" | "married" | "single_with_children" =
     form.status === "married"
       ? "married"
