@@ -1,88 +1,78 @@
-# Correction du comparateur cantonal lié à la fiche client
+# Audit du projet — points à améliorer
 
-Tu signales deux problèmes précis depuis la fiche client → bouton "Comparateur cantonal" :
-1. Le **salaire brut** affiché ne tient pas compte du bonus (13ᵉ) ni des autres revenus.
-2. Le mode **prestation en capital** ignore le **rachat LPP** dans le capital projeté à 65 ans.
+Globalement le socle est solide (calculateurs cantonaux, fiche client, prefill, synthèse PDF, comparateur d'investissements intégré). Voici ce que j'améliorerais, par ordre de priorité.
 
-## Diagnostic
+## 1. Cohérence des calculs (priorité haute)
 
-### Bug 1 — revenus tronqués (mode annuel)
+**a. Source unique de vérité pour le revenu imposable**
+Aujourd'hui plusieurs endroits recomposent le revenu (salaire + bonus + 13e + autres) : `to-calculator-input.ts`, `canton-compare`, formulaire impôts, prévoyance. Risque d'écarts entre écrans.
+→ Centraliser dans `src/lib/clients/income.ts` : `getGrossIncome(client)`, `getTaxableIncome(client, deductions)`. Tous les calculateurs l'appellent.
 
-Dans `src/lib/clients/to-calculator-input.ts`, `toCantonCompareInput` mappe uniquement `client.gross_annual_salary` :
+**b. Impôt sur prestation 2e pilier — vérifier tous les cantons**
+On a corrigé la prise en compte du montant projeté LPP+rachats. À auditer : barèmes par canton, séparation capital/rente, prise en compte de l'âge et de l'état civil dans `tax-prestation`.
 
-```ts
-grossSalary: numOrUndef(b.client.gross_annual_salary),
-```
+**c. Comparateur cantonal — déductions sociales**
+Vérifier que AVS/AI/APG, AC, LAA, LPP sont déduites de manière homogène avant impôt cantonal/communal/fédéral pour les 26 cantons.
 
-Le formulaire du comparateur n'a qu'un seul champ "Salaire brut" (volontairement minimaliste). Bonus (10 000) et autres revenus (6 000) sont donc **perdus** lors du préremplissage → le calcul tourne sur 100 000 au lieu de 116 000.
+**d. Arrondis & devises**
+Standardiser via `src/lib/format/money.ts` (CHF, 2 décimales, arrondi bancaire) au lieu d'arrondis ad-hoc.
 
-**À noter** : les autres mappers sont déjà corrects sur ce point (income-tax, tou, AVS additionnent bonus/other). Le bug est isolé au comparateur cantonal.
+## 2. Suivi client (priorité haute)
 
-### Bug 2 — rachat LPP non pris en compte (mode prestation en capital)
+**a. Historique des simulations versionné**
+Aujourd'hui on sauvegarde une simulation par calculateur. Ajouter : versions horodatées, libellé ("avant rachat", "scénario A"), possibilité de comparer 2 versions côte à côte.
 
-Dans `src/routes/_app/calculators/canton-compare.tsx` (l.118) :
+**b. Indicateurs de fraîcheur**
+Badge "données client modifiées depuis la dernière simulation" sur `ClientCalculatorBar` pour inviter à rafraîchir.
 
-```ts
-const projectedLPPCapital = dashboard?.lpp?.projectedCapitalAt65 ?? 0;
-```
+**c. Synthèse PDF — table des matières + page de garde**
+Ajouter sommaire cliquable, page de garde avec logo conseiller, signature et date de validité.
 
-`projectedCapitalAt65` est la projection LPP **sans rachat**. La capacité de rachat est exposée séparément (`dashboard.lpp.buybackCapacity`) mais n'est jamais agrégée → l'imposition de prestation en capital sous-évalue la base.
+**d. Export Excel des simulations**
+Pour les conseillers qui veulent retravailler les chiffres.
 
-## Corrections
+## 3. Sécurité (priorité haute)
 
-### 1. `src/lib/clients/to-calculator-input.ts`
+**a. Audit RLS systématique**
+Lancer le scanner sur toutes les tables (`clients`, `simulations`, `synthesis_reports`...) et vérifier que chaque policy filtre par `auth.uid()`. Aujourd'hui je n'ai pas la garantie que toutes les tables sont couvertes.
 
-Dans `toCantonCompareInput`, agréger les revenus comme dans le mapper income-tax :
+**b. Rôles dans une table dédiée**
+Si des rôles existent (admin, conseiller), s'assurer qu'ils sont dans `user_roles` + fonction `has_role()` SECURITY DEFINER, jamais sur `profiles`.
 
-```ts
-const totalIncome =
-  Number(b.client.gross_annual_salary ?? 0) +
-  Number(b.client.bonus ?? 0) +
-  Number(b.client.other_income ?? 0);
+**c. Validation côté serveur**
+Toutes les server functions doivent valider les entrées avec Zod (montants > 0, années plausibles, canton dans liste blanche). À auditer.
 
-return {
-  // …
-  grossSalary: totalIncome > 0 ? totalIncome : undefined,
-  // …
-};
-```
+**d. PII dans les logs**
+Vérifier qu'aucun `console.log` ne sort nom/AVS/revenu en clair côté serveur.
 
-### 2. `src/routes/_app/calculators/canton-compare.tsx`
+**e. Rate limiting sur génération PDF**
+Les générations PDF sont coûteuses — protéger contre l'abus.
 
-Inclure le rachat LPP planifié dans le capital projeté :
+## 4. UX & qualité (priorité moyenne)
 
-```ts
-const projectedLPPCapital =
-  (dashboard?.lpp?.projectedCapitalAt65 ?? 0) +
-  (dashboard?.lpp?.buybackCapacity ?? 0);
-```
+- Validation visuelle dans les formulaires (revenu négatif, âge incohérent)
+- Tooltips explicatifs sur les champs fiscaux complexes (rachat LPP, pilier 3a max)
+- Mode "comparaison rapide" entre 2 scénarios sur la même fiche client
+- i18n : vérifier que les 4 langues (fr/de/it/en) sont à jour sur les nouveaux libellés du comparateur d'investissements
 
-### 3. i18n `src/lib/i18n/{fr,en,de,it}.ts`
+## 5. Tests (priorité moyenne)
 
-Préciser le libellé du sous-titre du mode "prestation en capital" pour rendre l'agrégation transparente :
+- Couverture des fonctions de calcul fiscal par canton (snapshots de référence)
+- Tests d'intégration prefill → calculateur → synthèse
+- Tests de non-régression sur 2-3 profils clients types
 
-- FR : « Capital projeté à 65 ans **incluant rachats LPP planifiés** : {amount} »
-- EN/DE/IT équivalents
+## 6. Performance (priorité basse)
 
-Et clarifier le libellé du champ "Salaire brut" du comparateur :
-- FR : « Salaire brut **total** (incl. bonus et autres revenus) »
+- Lazy-load des routes calculateurs lourds
+- Mémoïser les calculs cantonaux dans `canton-compare` (recalcul à chaque keystroke aujourd'hui ?)
 
-## Vérifications
+---
 
-1. **Tests unitaires** : `bunx vitest run --reporter=dot` → les 30 tests doivent rester verts (aucun moteur touché).
-2. **QA browser automatisée** :
-   - Créer/ouvrir un client : salaire 100 000 + bonus 10 000 + autres 6 000.
-   - Cliquer "Comparateur cantonal" depuis la fiche.
-   - Vérifier que le champ "Salaire brut" affiche **116 000**.
-   - Activer le mode "Prestation en capital" et vérifier que le capital affiché = projection LPP + rachat.
-   - Comparer une ligne (ex. GE) avec le calculateur impôt revenu standalone à 116 000 → cohérence.
+## Ce que je propose comme prochaine étape
 
-## Fichiers touchés
+Dis-moi lequel de ces blocs tu veux que j'attaque en premier. Ma recommandation :
+1. **Section 1a** (source unique du revenu) — élimine la classe de bugs que tu rencontres
+2. **Section 3a + 3b** (audit RLS + rôles) — sécurité avant tout
+3. **Section 2a** (historique versionné des simulations) — vraie valeur métier
 
-- `src/lib/clients/to-calculator-input.ts`
-- `src/routes/_app/calculators/canton-compare.tsx`
-- `src/lib/i18n/fr.ts`, `en.ts`, `de.ts`, `it.ts`
-
-## Hors scope (à confirmer)
-
-Tu mentionnes aussi « les calculateurs ne sont pas liés entre eux apparemment et d'autres choses ». J'ai déjà vérifié les mappers des autres calculateurs (income-tax, TOU, AVS, source, frontalier, LPP, 3a, libre passage, retraite) : ils transmettent correctement les champs disponibles dans la fiche. Si tu as **un cas précis** où un champ manque ou un montant ne remonte pas, indique-le moi (calculateur + champ + ce que tu as saisi vs. ce que tu vois) et je l'inclus dans la correction.
+Sinon, si pour toi tout est fonctionnellement OK aujourd'hui, on peut s'arrêter là et ne traiter que les bugs au cas par cas.
