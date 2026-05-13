@@ -473,10 +473,20 @@ function formatMetrics(
       if (num(s.currentDirectorNet)) out.push({ label: "Net dirigeant actuel", value: num(s.currentDirectorNet) });
       if (num(s.gainAnnual)) out.push({ label: "Gain annuel", value: num(s.gainAnnual), tone: "primary" });
       break;
-    case "investment_compare":
+    case "investment_compare": {
+      const i = (entry.inputs ?? {}) as Record<string, unknown>;
+      const a = (i.a ?? {}) as Record<string, unknown>;
+      const b = (i.b ?? {}) as Record<string, unknown>;
+      const nameA = str(a.name) || "A";
+      const nameB = str(b.name) || "B";
+      if (num(s.aFinalNet)) out.push({ label: `Capital net · ${nameA}`, value: num(s.aFinalNet) });
+      if (num(s.bFinalNet)) out.push({ label: `Capital net · ${nameB}`, value: num(s.bFinalNet) });
       if (num(s.netDifference)) out.push({ label: "Différence nette", value: num(s.netDifference), tone: "primary" });
-      if (str(s.winner)) out.push({ label: "Avantage", value: str(s.winner)! });
+      if (num(s.pctAdvantage)) out.push({ label: "Avantage relatif", value: formatPct(num(s.pctAdvantage)), tone: "success" });
+      const w = str(s.winner);
+      if (w && w !== "tie") out.push({ label: "Stratégie gagnante", value: w === "a" ? nameA : nameB, tone: "success" });
       break;
+    }
   }
   return out;
 }
