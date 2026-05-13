@@ -340,10 +340,46 @@ function formatInputs(entry: HistoryEntry): Array<[string, string]> {
       pushIfPct(rows, "Taux de conversion", i.conversionRate);
       pushIf(rows, "Âge", i.age);
       break;
-    case "investment_compare":
-      pushIfChf(rows, "Capital initial", i.initialCapital);
-      pushIf(rows, "Horizon (années)", i.years);
+    case "investment_compare": {
+      const a = (i.a ?? {}) as Record<string, unknown>;
+      const b = (i.b ?? {}) as Record<string, unknown>;
+      const nameA = str(a.name) || "Investissement A";
+      const nameB = str(b.name) || "Investissement B";
+      const freqLabel = (f: unknown) =>
+        f === "monthly" ? "Mensuel" : f === "annual" ? "Annuel" : "Aucun";
+      const typeLabel = (t: unknown) => {
+        switch (t) {
+          case "life_insurance": return "Assurance-vie";
+          case "fund": return "Fonds de placement";
+          case "etf": return "ETF";
+          case "savings": return "Épargne / dépôt";
+          case "pillar_3a": return "3e pilier A";
+          case "pillar_3b": return "3e pilier B";
+          default: return "Autre";
+        }
+      };
+      const modeLabel = (m: unknown) => (m === "simple" ? "Intérêts simples" : "Intérêts composés");
+      pushStr(rows, "Hypothèse A", nameA);
+      pushStr(rows, "Hypothèse B", nameB);
+      pushStr(rows, `Type · ${nameA}`, typeLabel(a.type));
+      pushStr(rows, `Type · ${nameB}`, typeLabel(b.type));
+      pushIf(rows, "Horizon (années)", a.durationYears ?? b.durationYears);
+      pushIfChf(rows, `Capital initial · ${nameA}`, a.initialCapital);
+      pushIfChf(rows, `Capital initial · ${nameB}`, b.initialCapital);
+      pushStr(rows, `Fréquence versement · ${nameA}`, freqLabel(a.contributionFrequency));
+      pushStr(rows, `Fréquence versement · ${nameB}`, freqLabel(b.contributionFrequency));
+      pushIfChf(rows, `Versement périodique · ${nameA}`, a.periodicContribution);
+      pushIfChf(rows, `Versement périodique · ${nameB}`, b.periodicContribution);
+      pushIfPct(rows, `Rendement brut · ${nameA}`, a.grossReturnRate);
+      pushIfPct(rows, `Rendement brut · ${nameB}`, b.grossReturnRate);
+      pushIfPct(rows, `Frais annuels · ${nameA}`, a.annualFeeRate);
+      pushIfPct(rows, `Frais annuels · ${nameB}`, b.annualFeeRate);
+      pushIfPct(rows, `Imposition à la sortie · ${nameA}`, a.exitTaxRate);
+      pushIfPct(rows, `Imposition à la sortie · ${nameB}`, b.exitTaxRate);
+      pushStr(rows, `Mode de capitalisation · ${nameA}`, modeLabel(a.interestMode));
+      pushStr(rows, `Mode de capitalisation · ${nameB}`, modeLabel(b.interestMode));
       break;
+    }
     case "avs_ai":
       pushIf(rows, "Années cotisées", i.contributionYears);
       pushIfChf(rows, "Revenu annuel moyen", i.averageIncome);
