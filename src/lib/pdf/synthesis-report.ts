@@ -507,6 +507,19 @@ function drawSimpleChart(pdf: ReportPdf, entry: HistoryEntry) {
           right: { label: "Optimisé", value: num(s.recommendedDirectorNet) },
         };
       break;
+    case "investment_compare": {
+      const i = (entry.inputs ?? {}) as Record<string, unknown>;
+      const a = (i.a ?? {}) as Record<string, unknown>;
+      const b = (i.b ?? {}) as Record<string, unknown>;
+      const aNet = num(s.aFinalNet);
+      const bNet = num(s.bFinalNet);
+      if (aNet && bNet)
+        pair = {
+          left: { label: str(a.name) || "A", value: aNet },
+          right: { label: str(b.name) || "B", value: bNet },
+        };
+      break;
+    }
     case "cross_border":
       if (num(s.currentTax) && num(s.alternativeTax))
         pair = {
