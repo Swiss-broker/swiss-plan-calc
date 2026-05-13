@@ -152,7 +152,7 @@ function ChipLink({
 
   const tooltipText = !relevant
     ? reason
-    : "La fiche client a été modifiée depuis la dernière simulation — pensez à la relancer.";
+    : "La fiche client a été modifiée depuis la dernière simulation. Pensez à la relancer.";
 
   return (
     <Tooltip>
