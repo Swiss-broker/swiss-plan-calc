@@ -238,19 +238,9 @@ function buildPillar3a(
   const yearsToRetire =
     age !== null ? Math.max(0, RETIREMENT_AGE_DEFAULT - age) : 0;
 
-  let projected = 0;
-  if (yearsToRetire > 0 && current > 0) {
-    try {
-      const proj = projectPillar3a({
-        currentBalance: 0,
-        yearlyContribution: current,
-        years: yearsToRetire,
-      });
-      projected = proj.finalBalance;
-    } catch {
-      projected = current * yearsToRetire;
-    }
-  }
+  // Délègue à la projection centrale (inclut le solde 3a existant).
+  const central = projectClient3a(b);
+  const projected = central?.projectedCapitalAt65 ?? 0;
 
   let savings = 0;
   if (current > 0 && taxInput) {
