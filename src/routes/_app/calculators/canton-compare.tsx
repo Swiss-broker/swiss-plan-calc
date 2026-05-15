@@ -317,6 +317,56 @@ function CantonCompareCalc() {
         </CalcCard>
       )}
 
+      {clientId && mode === "lump_sum" && (
+        <CalcCard
+          title="Capitaux retirés à la retraite"
+          description="L'impôt sur prestation en capital s'applique sur le total retiré (2e pilier + 3a) selon un barème séparé (1/5 du barème ordinaire fédéral + cantonal)."
+        >
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div className="space-y-1.5">
+              <Label className="text-xs font-medium text-muted-foreground">
+                Capital LPP projeté à la retraite
+              </Label>
+              <BaseNumField
+                value={String(lppCapital)}
+                onChange={(v) => setLppCapitalOverride(Number(v) || 0)}
+                suffix="CHF"
+              />
+              <p className="text-[11px] text-muted-foreground">
+                {lppSource === "sim" && lppSimDate
+                  ? `Depuis simulation LPP du ${lppSimDate}. Modifiable.`
+                  : lppSource === "fallback"
+                    ? "Estimation par défaut (aucune simulation LPP enregistrée). Modifiable."
+                    : "Aucune projection disponible. Saisissez la valeur manuellement."}
+              </p>
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs font-medium text-muted-foreground">
+                Capital 3e pilier A projeté
+              </Label>
+              <BaseNumField
+                value={String(p3aCapital)}
+                onChange={(v) => setP3aCapitalOverride(Number(v) || 0)}
+                suffix="CHF"
+              />
+              <p className="text-[11px] text-muted-foreground">
+                {p3aSource === "sim" && p3aSimDate
+                  ? `Depuis simulation 3a du ${p3aSimDate}. Modifiable.`
+                  : "Aucune simulation 3a enregistrée. Saisissez la valeur si pertinent."}
+              </p>
+            </div>
+          </div>
+          <div className="mt-4 rounded-lg border border-primary/30 bg-primary/5 p-3">
+            <div className="text-xs uppercase tracking-wide text-muted-foreground">
+              Capital total imposable (LPP + 3a)
+            </div>
+            <div className="mt-1 text-2xl font-semibold tabular-nums text-foreground">
+              {formatCHF(projectedLPPCapital)}
+            </div>
+          </div>
+        </CalcCard>
+      )}
+
       <CalcCard
         title={t("calc.canton_compare.profile.title")}
         description={
