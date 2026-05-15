@@ -32,7 +32,7 @@ const searchSchema = z.object({
 
 export const Route = createFileRoute("/_app/calculators/overtime")({
   validateSearch: zodValidator(searchSchema),
-  head: () => ({ meta: [{ title: "Heures supplémentaires frontaliers · SwissBroker Pro" }] }),
+  head: () => ({ meta: [{ title: "Heures supp · SwissBroker Pro" }] }),
   component: OvertimeCalc,
 });
 
