@@ -115,9 +115,78 @@ function CantonCompareCalc() {
     setForm((f) => ({ ...f, [k]: v }));
 
   const [mode, setMode] = useState<CompareMode>("annual");
-  const projectedLPPCapital =
-    (dashboard?.lpp?.projectedCapitalAt65 ?? 0) +
-    (dashboard?.lpp?.buybackCapacity ?? 0);
+
+  // Source unique de vérité : dernière simulation LPP / 3a sauvegardée pour ce client.
+  const { data: latestLpp } = useQuery({
+    enabled: !!clientId,
+    queryKey: ["latest-sim", clientId, "lpp"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("simulation_history")
+        .select("summary, created_at")
+        .eq("client_id", clientId!)
+        .eq("kind", "lpp")
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+  });
+  const { data: latest3a } = useQuery({
+    enabled: !!clientId,
+    queryKey: ["latest-sim", clientId, "pillar3a"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("simulation_history")
+        .select("summary, created_at")
+        .eq("client_id", clientId!)
+        .eq("kind", "pillar3a")
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const lppFromSim = Number(
+    (latestLpp?.summary as Record<string, unknown> | undefined)?.projectedBalance ?? 0,
+  );
+  const p3aFromSim = Number(
+    (latest3a?.summary as Record<string, unknown> | undefined)?.finalBalance ?? 0,
+  );
+  const lppFallback = dashboard?.lpp?.projectedCapitalAt65 ?? 0;
+
+  const [lppCapitalOverride, setLppCapitalOverride] = useState<number | null>(null);
+  const [p3aCapitalOverride, setP3aCapitalOverride] = useState<number | null>(null);
+
+  // Hydratation 1 fois quand les données arrivent
+  useEffect(() => {
+    if (lppCapitalOverride === null && (lppFromSim > 0 || lppFallback > 0)) {
+      setLppCapitalOverride(lppFromSim > 0 ? lppFromSim : lppFallback);
+    }
+  }, [lppFromSim, lppFallback, lppCapitalOverride]);
+  useEffect(() => {
+    if (p3aCapitalOverride === null && p3aFromSim > 0) {
+      setP3aCapitalOverride(p3aFromSim);
+    }
+  }, [p3aFromSim, p3aCapitalOverride]);
+
+  const lppCapital = lppCapitalOverride ?? (lppFromSim > 0 ? lppFromSim : lppFallback);
+  const p3aCapital = p3aCapitalOverride ?? p3aFromSim;
+  const projectedLPPCapital = Math.max(0, lppCapital + p3aCapital);
+
+  const lppSource: "sim" | "fallback" | "none" =
+    lppFromSim > 0 ? "sim" : lppFallback > 0 ? "fallback" : "none";
+  const p3aSource: "sim" | "none" = p3aFromSim > 0 ? "sim" : "none";
+  const lppSimDate = latestLpp?.created_at
+    ? new Date(latestLpp.created_at).toLocaleDateString("fr-CH")
+    : null;
+  const p3aSimDate = latest3a?.created_at
+    ? new Date(latest3a.created_at).toLocaleDateString("fr-CH")
+    : null;
+
   const lumpSumStatus: "single" | "married" | "single_with_children" =
     form.status === "married"
       ? "married"
