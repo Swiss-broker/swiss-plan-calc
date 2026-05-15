@@ -25,12 +25,14 @@ import {
   type IncomeTaxInput,
 } from "@/lib/tax/income";
 import {
-  projectLPP,
   annuityVsLumpSum,
   capitalWithdrawalTax,
-  LPP_CONVERSION_RATE_2026,
 } from "@/lib/lpp";
 import { projectPillar3a } from "@/lib/pillar3";
+import {
+  projectClientLPP,
+  projectClient3a,
+} from "./lpp-projection";
 import { computeSourceTax } from "@/lib/tax/source";
 import { CANTON_SCALES } from "@/lib/tax/cantons";
 import {
