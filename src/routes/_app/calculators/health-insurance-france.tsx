@@ -30,7 +30,7 @@ const searchSchema = z.object({
 
 export const Route = createFileRoute("/_app/calculators/health-insurance-france")({
   validateSearch: zodValidator(searchSchema),
-  head: () => ({ meta: [{ title: "Assurance santé frontaliers · SwissBroker Pro" }] }),
+  head: () => ({ meta: [{ title: "CNTFS / LAMal · SwissBroker Pro" }] }),
   component: HealthInsuranceFranceCalc,
 });
 
