@@ -1029,7 +1029,7 @@ export function exportOvertimePdf(args: {
 }) {
   const { input, result } = args;
   const pdf = new ReportPdf({
-    title: "Heures supplémentaires · frontaliers",
+    title: "Heures supp",
     subtitle: `${cantonName(input.workCanton)} · ${input.taxStatus}`,
     ...args.header,
   } as PdfHeaderInfo);
