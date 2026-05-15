@@ -32,11 +32,11 @@ describe("Scope V1 · invariants cantons romands", () => {
     expect(getSelectableCantons()).toHaveLength(6);
   });
 
-  it("expose exactement 7 cantons comparables (romands + ZG)", () => {
+  it("expose exactement 8 cantons comparables (romands + ZG + SZ)", () => {
     expect([...COMPARABLE_CANTON_CODES].sort()).toEqual(
-      ["FR", "GE", "JU", "NE", "VD", "VS", "ZG"].sort(),
+      ["FR", "GE", "JU", "NE", "SZ", "VD", "VS", "ZG"].sort(),
     );
-    expect(getComparableCantons()).toHaveLength(7);
+    expect(getComparableCantons()).toHaveLength(8);
   });
 
   it("ZG est comparable mais PAS sélectable (référence uniquement)", () => {
@@ -44,8 +44,13 @@ describe("Scope V1 · invariants cantons romands", () => {
     expect(isSelectableCanton("ZG")).toBe(false);
   });
 
+  it("SZ est comparable mais PAS sélectable (référence uniquement)", () => {
+    expect(isComparableCanton("SZ")).toBe(true);
+    expect(isSelectableCanton("SZ")).toBe(false);
+  });
+
   it("aucun canton hors scope ne fuite dans selectable/comparable", () => {
-    const outOfScope = ["ZH", "BS", "BE", "SZ", "TI", "AG", "LU", "GR"];
+    const outOfScope = ["ZH", "BS", "BE", "TI", "AG", "LU", "GR"];
     for (const c of outOfScope) {
       expect(isSelectableCanton(c)).toBe(false);
       expect(isComparableCanton(c)).toBe(false);
@@ -101,7 +106,7 @@ describe("Fixtures fiscales · profil 120k single, sans enfant, sans fortune", (
     const results = getComparableCantons().map((c) =>
       computeIncomeTax({ canton: c.code, ...baseInput }),
     );
-    expect(results).toHaveLength(7);
+    expect(results).toHaveLength(8);
     expect(results.every((r) => r.totalTax > 0)).toBe(true);
   });
 });

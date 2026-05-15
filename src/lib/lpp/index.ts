@@ -348,6 +348,7 @@ export function capitalWithdrawalTax(opts: {
     JU: 0.055,
     VS: 0.050,
     ZG: 0.025,
+    SZ: 0.030,
   };
   const cantonalRate = CANTON_LUMP_SUM_RATE[opts.canton] ?? 0.045;
   const cantonalApprox = opts.capital * cantonalRate;

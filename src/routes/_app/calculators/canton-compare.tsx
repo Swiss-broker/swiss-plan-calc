@@ -46,6 +46,8 @@ import type {
 } from "@/lib/clients/types";
 
 const ZG_CODE = "ZG";
+const SZ_CODE = "SZ";
+const REFERENCE_CODES: ReadonlySet<string> = new Set([ZG_CODE, SZ_CODE]);
 
 import { zodValidator, fallback } from "@tanstack/zod-adapter";
 import { z } from "zod";
@@ -179,7 +181,7 @@ function CantonCompareCalc() {
             name: c.name,
             total: r.totalTax,
             effective: r.effectiveRate,
-            isReference: c.code === ZG_CODE,
+            isReference: REFERENCE_CODES.has(c.code),
           });
         } else {
           const tt = capitalWithdrawalTax({
@@ -196,28 +198,28 @@ function CantonCompareCalc() {
             name: c.name,
             total: tt.total,
             effective,
-            isReference: c.code === ZG_CODE,
+            isReference: REFERENCE_CODES.has(c.code),
           });
         }
       } catch (e) {
         console.warn(`[canton-compare] Calcul ignoré pour ${c.code}`, e);
       }
     }
-    const romands = rows.filter((r) => r.code !== ZG_CODE).sort((a, b) => a.total - b.total);
-    const zg = rows.filter((r) => r.code === ZG_CODE);
-    return [...romands, ...zg];
+    const romands = rows.filter((r) => !REFERENCE_CODES.has(r.code)).sort((a, b) => a.total - b.total);
+    const refs = rows.filter((r) => REFERENCE_CODES.has(r.code)).sort((a, b) => a.total - b.total);
+    return [...romands, ...refs];
   }, [form, comparable, mode, projectedLPPCapital, lumpSumStatus]);
 
   const referenceTax = data.find((d) => d.code === form.referenceCanton)?.total ?? 0;
   const cheapestRomand = useMemo(
     () =>
       data
-        .filter((d) => d.code !== ZG_CODE)
+        .filter((d) => !REFERENCE_CODES.has(d.code))
         .reduce<Row | null>((acc, r) => (!acc || r.total < acc.total ? r : acc), null),
     [data],
   );
-  const romandsCount = data.filter((d) => d.code !== ZG_CODE).length;
-  const hasZG = data.some((d) => d.code === ZG_CODE);
+  const romandsCount = data.filter((d) => !REFERENCE_CODES.has(d.code)).length;
+  const hasReferences = data.some((d) => REFERENCE_CODES.has(d.code));
 
   const { user } = useAuth();
   const brokerHeader = useBrokerPdfHeader();
@@ -301,7 +303,7 @@ function CantonCompareCalc() {
               />
               <p className="text-[11px] text-muted-foreground">
                 {lppFromFiche > 0
-                  ? `D'après la fiche client (rendement ${dashboard?.lpp ? "1,5" : "—"}%, conversion ${
+                  ? `Source : Projection fiche client (rendement 1,25%, projection sur cotisations régulières sans rachats, conversion ${
                       dashboard?.lpp ? "6,8" : "—"
                     }%). Modifiable pour what-if.`
                   : "Aucune projection disponible : complétez l'avoir LPP dans la fiche client."}
@@ -445,24 +447,21 @@ function CantonCompareCalc() {
               <Bar dataKey="total" radius={[0, 6, 6, 0]}>
                 {data.map((d) => {
                   const isCheapest = cheapestRomand?.code === d.code;
-                  const isZG = d.code === ZG_CODE;
-                  const fill = isCheapest || isZG ? "var(--success)" : "var(--primary)";
-                  return <Cell key={d.code} fill={fill} fillOpacity={isZG ? 0.65 : 1} />;
+                  const isRef = REFERENCE_CODES.has(d.code);
+                  const fill = isCheapest || isRef ? "var(--success)" : "var(--primary)";
+                  return <Cell key={d.code} fill={fill} fillOpacity={isRef ? 0.65 : 1} />;
                 })}
               </Bar>
             </BarChart>
           </ResponsiveContainer>
         </div>
 
-        {hasZG && (
+        {hasReferences && (
           <div className="mt-3 flex flex-wrap items-start gap-2 rounded-md border border-dashed border-success/40 bg-success/5 p-2 text-xs">
             <Sparkles className="mt-0.5 h-3.5 w-3.5 shrink-0 text-success" aria-hidden />
-            <span className="font-semibold text-foreground shrink-0">ZG · Zoug</span>
+            <span className="font-semibold text-foreground shrink-0">ZG · Zoug · SZ · Schwyz</span>
             <span className="min-w-0 flex-1 text-muted-foreground break-words">
-              <span className="sm:hidden">{t("calc.canton_compare.zg.short")}</span>
-              <span className="hidden sm:inline">
-                {t("calc.canton_compare.zg.long", { count: romandsCount })}
-              </span>
+              Cantons à fiscalité avantageuse affichés en référence (hors 6 cantons romands principaux). Profil identique : {romandsCount} cantons romands comparés.
             </span>
           </div>
         )}

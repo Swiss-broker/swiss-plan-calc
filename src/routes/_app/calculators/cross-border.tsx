@@ -36,11 +36,11 @@ const searchSchema = z.object({
 
 export const Route = createFileRoute("/_app/calculators/cross-border")({
   validateSearch: zodValidator(searchSchema),
-  head: () => ({ meta: [{ title: "Frontaliers · SwissBroker Pro" }] }),
+  head: () => ({ meta: [{ title: "Frontaliers FR · SwissBroker Pro" }] }),
   component: CrossBorderCalc,
 });
 
-const ELIGIBLE_CANTONS = [...FR_ACCORD_CANTONS, "GE", "TI"] as const;
+const ELIGIBLE_CANTONS = [...FR_ACCORD_CANTONS, "GE"] as const;
 
 function CrossBorderCalc() {
   const t = useT();
@@ -65,9 +65,7 @@ function CrossBorderCalc() {
     ? t("calc.cross_border.regime.fr_accord")
     : form.workCanton === "GE"
       ? t("calc.cross_border.regime.ge")
-      : form.workCanton === "TI"
-        ? t("calc.cross_border.regime.ti")
-        : t("calc.cross_border.regime.none");
+      : t("calc.cross_border.regime.none");
   const [guideOpen, setGuideOpen] = useState(false);
   const guideSteps: GuideStep[] = [
     { title: t("calc.cross_border.guide.s1.title"), body: t("calc.cross_border.guide.s1.body") },

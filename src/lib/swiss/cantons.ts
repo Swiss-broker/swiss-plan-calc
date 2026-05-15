@@ -33,6 +33,7 @@ export const CANTONS: Canton[] = [
 
   // === Référence comparateur · comparable seulement (v1) ===
   { code: "ZG", name: "Zoug", selectable: false, comparable: true },
+  { code: "SZ", name: "Schwyz", selectable: false, comparable: true },
 
   // === Cantons hors scope v1 (prévus v1.5+) ===
   { code: "AG", name: "Argovie", selectable: false, comparable: false },
@@ -49,7 +50,6 @@ export const CANTONS: Canton[] = [
   { code: "SG", name: "Saint-Gall", selectable: false, comparable: false },
   { code: "SH", name: "Schaffhouse", selectable: false, comparable: false },
   { code: "SO", name: "Soleure", selectable: false, comparable: false },
-  { code: "SZ", name: "Schwytz", selectable: false, comparable: false },
   { code: "TG", name: "Thurgovie", selectable: false, comparable: false },
   { code: "TI", name: "Tessin", selectable: false, comparable: false },
   { code: "UR", name: "Uri", selectable: false, comparable: false },
@@ -118,6 +118,7 @@ export const SELECTABLE_CANTON_CODES = [
 export const COMPARABLE_CANTON_CODES = [
   ...SELECTABLE_CANTON_CODES,
   "ZG",
+  "SZ",
 ] as const;
 
 /** Code canton sélectionnable (domicile/travail). */

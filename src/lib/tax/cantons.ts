@@ -363,6 +363,22 @@ export const CANTON_SCALES: Record<string, CantonTaxScale> = {
     capital: "Zoug",
     calibrationFactor: 1.0,
   },
+  // Schwyz · canton à fiscalité avantageuse, ajouté en référence
+  // (commune par défaut : Schwyz, multiplicateur communal 2026 ≈ 1.45 sur
+  // un cantonal très bas → produit globalement < ZG sur certains profils).
+  SZ: {
+    single: genericProgressive("low"),
+    married: genericMarried("low"),
+    cantonalMultiplier: 1.7, // Steuerfuss canton SZ 2026 (170%)
+    communalMultiplierCapital: 1.45, // commune de Schwyz 2026
+    childDeduction: 9_000,
+    marriedDeduction: 5_400,
+    wealthScale: wealthScaleStandard,
+    wealthExemptionSingle: 100_000,
+    wealthExemptionMarried: 200_000,
+    capital: "Schwyz",
+    calibrationFactor: 0.45, // calibre l'impôt simple (modèle générique low)
+  },
 };
 
 /** Calcule l'impôt simple à partir d'un barème (un palier progressif standard). */

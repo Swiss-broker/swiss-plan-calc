@@ -159,9 +159,9 @@ export const de: Record<string, string> = {
   "calc.vested.title": "Freizügigkeit",
   "calc.vested.desc":
     "Strategien Sicherheit / Ausgewogen / Dynamisch, Nettoprojektion nach Gebühren und Steuern.",
-  "calc.cross_border.title": "Grenzgänger FR / IT",
+  "calc.cross_border.title": "Grenzgänger FR",
   "calc.cross_border.desc":
-    "4.5%-Regime (8 Kantone), Sonderfall Genf, Italo-Schweizer Abkommen Tessin 2023.",
+    "Französisch-schweizerisches 4.5%-Regime (Romandie ausser Genf) und Genfer Spezialregime (Quellensteuer + Rückerstattung).",
   "calc.income_tax.title": "Einkommens- & Vermögenssteuer",
   "calc.income_tax.desc":
     "DBSt + StG alle Kantone, Schweizer Standardabzüge, Grenz- & Effektivsatz.",
@@ -1025,10 +1025,10 @@ export const de: Record<string, string> = {
   "calc.cross_border.guide.s3.title": "Besteuerung",
   "calc.cross_border.guide.s3.body": "Je nach Kanton (GE = Besteuerung in der Schweiz, VD/NE/JU = Besteuerung in Frankreich).",
   "calc.cross_border.section.title": "Profil Grenzgänger",
-  "calc.cross_border.section.desc": "Automatische Berechnung des anwendbaren Regimes (FR-CH 4.5 %, GE, TI).",
+  "calc.cross_border.section.desc": "Automatische Bestimmung des anwendbaren Regimes (französisch-schweizerisches 4.5% oder Genf).",
   "calc.cross_border.field.work_canton": "Arbeitskanton",
   "calc.cross_border.field.regime": "Anwendbares Regime",
-  "calc.cross_border.tip.regime": "Das Regime hängt vom Arbeitskanton ab: französisch-schweizerisches Abkommen 4.5 % (VD/NE/JU/BS/BL/BE/SO/VS), Genf (Genfer Quellensteuer mit Rückerstattung), Tessin (Abkommen 2023).",
+  "calc.cross_border.tip.regime": "Das Regime hängt vom Arbeitskanton ab: französisch-schweizerisches Abkommen 4.5 % (VD, VS, FR, NE, JU) oder Genf (Genfer Quellensteuer mit Rückerstattung).",
   "calc.cross_border.regime.fr_accord": "Abkommen 4.5 %",
   "calc.cross_border.regime.ge": "GE · Genfer Quellensteuer",
   "calc.cross_border.regime.ti": "TI · Abkommen 2023",
@@ -1077,7 +1077,7 @@ export const de: Record<string, string> = {
   "calc.canton_compare.field.wealth": "Reinvermögen (CHF)",
   "calc.canton_compare.tip.wealth": "Kantonal steuerbares Vermögen. BVG-/3a-Guthaben steuerfrei, solange nicht bezogen.",
   "calc.canton_compare.field.reference": "Referenzkanton",
-  "calc.canton_compare.scope_notice.html": "Vergleich der <strong>6 Westschweizer Kantone</strong> (GE, VD, VS, FR, NE, JU) + <strong>Zug</strong> als steuerliche Referenz. 19 weitere Kantone in Kürze verfügbar (ZH, BS, BE, SZ, …).",
+  "calc.canton_compare.scope_notice.html": "Vergleich der <strong>6 Westschweizer Kantone</strong> (GE, VD, VS, FR, NE, JU) + <strong>Zug und Schwyz</strong> als steuerliche Referenz. 18 weitere Kantone in Kürze verfügbar (ZH, BS, BE, …).",
   "calc.canton_compare.ranking.title": "Rangliste nach Gesamtsteuerbelastung",
   "calc.canton_compare.zg.short": "Referenz optimierte Steuern",
   "calc.canton_compare.zg.long": "Referenz optimierte Steuern (ausserhalb Wohnsitz v1, {count} Westschweizer Kantone darüber)",

@@ -158,9 +158,9 @@ export const it: Record<string, string> = {
   "calc.vested.title": "Libero passaggio",
   "calc.vested.desc":
     "Strategie sicurezza / equilibrata / dinamica, proiezione netta da spese e imposte.",
-  "calc.cross_border.title": "Frontalieri FR / IT",
+  "calc.cross_border.title": "Frontalieri FR",
   "calc.cross_border.desc":
-    "Regime 4,5 % (8 cantoni), specificità di Ginevra, accordo italo-svizzero Ticino 2023.",
+    "Regime franco-svizzero 4,5 % (Romandia salvo Ginevra) e regime specifico Ginevra (imposta alla fonte + retrocessione).",
   "calc.income_tax.title": "Imposta su reddito e sostanza",
   "calc.income_tax.desc":
     "IFD + ICC tutti i cantoni, deduzioni standard svizzere, aliquota marginale ed effettiva.",
@@ -1023,10 +1023,10 @@ export const it: Record<string, string> = {
   "calc.cross_border.guide.s3.title": "Tassazione",
   "calc.cross_border.guide.s3.body": "Secondo il cantone (GE = tassazione in Svizzera, VD/NE/JU = tassazione in Francia).",
   "calc.cross_border.section.title": "Profilo frontaliere",
-  "calc.cross_border.section.desc": "Calcolo automatico del regime applicabile (FR-CH 4.5 %, GE, TI).",
+  "calc.cross_border.section.desc": "Determinazione automatica del regime applicabile (franco-svizzero 4.5 % o Ginevra).",
   "calc.cross_border.field.work_canton": "Cantone di lavoro",
   "calc.cross_border.field.regime": "Regime applicabile",
-  "calc.cross_border.tip.regime": "Il regime dipende dal cantone di lavoro: accordo franco-svizzero 4.5 % (VD/NE/JU/BS/BL/BE/SO/VS), Ginevra (imposta alla fonte ginevrina retrocessa), Ticino (accordo 2023).",
+  "calc.cross_border.tip.regime": "Il regime dipende dal cantone di lavoro: accordo franco-svizzero 4.5 % (VD, VS, FR, NE, JU) o Ginevra (imposta alla fonte ginevrina retrocessa).",
   "calc.cross_border.regime.fr_accord": "Accordo 4.5 %",
   "calc.cross_border.regime.ge": "GE · Imposta alla fonte ginevrina",
   "calc.cross_border.regime.ti": "TI · accordo 2023",
@@ -1075,7 +1075,7 @@ export const it: Record<string, string> = {
   "calc.canton_compare.field.wealth": "Sostanza netta (CHF)",
   "calc.canton_compare.tip.wealth": "Sostanza imponibile cantonale. Averi LPP / 3a esenti finché non prelevati.",
   "calc.canton_compare.field.reference": "Cantone di riferimento",
-  "calc.canton_compare.scope_notice.html": "Confronto sui <strong>6 cantoni romandi</strong> (GE, VD, VS, FR, NE, JU) + <strong>Zugo</strong> come riferimento fiscale. Altri 19 cantoni disponibili a breve (ZH, BS, BE, SZ, …).",
+  "calc.canton_compare.scope_notice.html": "Confronto sui <strong>6 cantoni romandi</strong> (GE, VD, VS, FR, NE, JU) + <strong>Zugo e Svitto</strong> come riferimento fiscale. Altri 18 cantoni disponibili a breve (ZH, BS, BE, …).",
   "calc.canton_compare.ranking.title": "Classifica per carico fiscale totale",
   "calc.canton_compare.zg.short": "Riferimento fiscalità ottimizzata",
   "calc.canton_compare.zg.long": "Riferimento fiscalità ottimizzata (fuori scopo domicilio v1, {count} cantoni romandi sopra)",

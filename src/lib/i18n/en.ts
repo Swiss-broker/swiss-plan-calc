@@ -158,9 +158,9 @@ export const en: Record<string, string> = {
   "calc.vested.title": "Vested benefits",
   "calc.vested.desc":
     "Security / balanced / dynamic strategies, projection net of fees and taxes.",
-  "calc.cross_border.title": "FR / IT cross-border workers",
+  "calc.cross_border.title": "FR cross-border workers",
   "calc.cross_border.desc":
-    "4.5% scheme (8 cantons), Geneva specifics, Italy-Switzerland Ticino agreement 2023.",
+    "Franco-Swiss 4.5% scheme (Romandy except Geneva) and Geneva-specific regime (withholding + refund).",
   "calc.income_tax.title": "Income & wealth tax",
   "calc.income_tax.desc":
     "DFT + cantonal/communal tax, all cantons, standard Swiss deductions, marginal & effective rate.",
@@ -1023,10 +1023,10 @@ export const en: Record<string, string> = {
   "calc.cross_border.guide.s3.title": "Taxation",
   "calc.cross_border.guide.s3.body": "Depending on canton (GE = taxation in Switzerland, VD/NE/JU = taxation in France).",
   "calc.cross_border.section.title": "Cross-border profile",
-  "calc.cross_border.section.desc": "Automatic determination of the applicable regime (FR-CH 4.5 %, GE, TI).",
+  "calc.cross_border.section.desc": "Automatic determination of the applicable regime (Franco-Swiss 4.5% or Geneva).",
   "calc.cross_border.field.work_canton": "Canton of work",
   "calc.cross_border.field.regime": "Applicable regime",
-  "calc.cross_border.tip.regime": "The regime depends on the canton of work: Franco-Swiss agreement 4.5 % (VD/NE/JU/BS/BL/BE/SO/VS), Geneva (Geneva withholding with refund), Ticino (2023 agreement).",
+  "calc.cross_border.tip.regime": "The regime depends on the canton of work: Franco-Swiss agreement 4.5% (VD, VS, FR, NE, JU) or Geneva (Geneva withholding with refund).",
   "calc.cross_border.regime.fr_accord": "4.5 % agreement",
   "calc.cross_border.regime.ge": "GE · Geneva withholding",
   "calc.cross_border.regime.ti": "TI · 2023 agreement",
@@ -1075,7 +1075,7 @@ export const en: Record<string, string> = {
   "calc.canton_compare.field.wealth": "Net wealth (CHF)",
   "calc.canton_compare.tip.wealth": "Cantonally taxable wealth. BVG/3a savings exempt until withdrawn.",
   "calc.canton_compare.field.reference": "Reference canton",
-  "calc.canton_compare.scope_notice.html": "Comparison across the <strong>6 French-speaking cantons</strong> (GE, VD, VS, FR, NE, JU) + <strong>Zug</strong> as a tax reference. 19 other cantons coming soon (ZH, BS, BE, SZ, …).",
+  "calc.canton_compare.scope_notice.html": "Comparison across the <strong>6 French-speaking cantons</strong> (GE, VD, VS, FR, NE, JU) + <strong>Zug and Schwyz</strong> as a tax reference. 18 other cantons coming soon (ZH, BS, BE, …).",
   "calc.canton_compare.ranking.title": "Ranking by total tax burden",
   "calc.canton_compare.zg.short": "Optimised-tax reference",
   "calc.canton_compare.zg.long": "Optimised-tax reference (outside v1 domicile scope, {count} French-speaking cantons above)",

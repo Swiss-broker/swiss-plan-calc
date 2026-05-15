@@ -27,7 +27,7 @@ export const RETIREMENT_AGE_DEFAULT = 65;
 
 /** Hypothèses de projection LPP "fiche client". Identiques partout. */
 export const DASHBOARD_LPP_DEFAULTS = {
-  expectedReturnRate: 1.5, // %
+  expectedReturnRate: 1.25, // % — référence officielle 2026 (courtier)
   feeRate: 0, // %
   salaryGrowthRate: 1, // %
 } as const;

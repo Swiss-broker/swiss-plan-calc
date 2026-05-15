@@ -77,7 +77,7 @@ describe("projectClientLPP — déterminisme et cohérence", () => {
 
   it("expose les hypothèses utilisées", () => {
     const r = projectClientLPP(makeBundle({}));
-    expect(r?.assumptions.expectedReturnRate).toBe(1.5);
+    expect(r?.assumptions.expectedReturnRate).toBe(1.25);
     expect(r?.assumptions.feeRate).toBe(0);
     expect(r?.assumptions.salaryGrowthRate).toBe(1);
     expect(r?.assumptions.retirementAge).toBe(65);

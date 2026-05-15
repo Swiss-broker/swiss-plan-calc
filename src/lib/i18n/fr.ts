@@ -13,7 +13,7 @@ export const fr: Record<string, string> = {
 
   // === Comparateur cantonal ===
   "comparator.scope.notice":
-    "📍 Comparaison sur les 6 cantons romands + Zoug (référence). 19 autres cantons disponibles prochainement.",
+    "📍 Comparaison sur les 6 cantons romands + Zoug et Schwyz (référence). 18 autres cantons disponibles prochainement.",
   "comparator.zg.badge": "Référence fiscalité optimisée",
   "comparator.zg.tooltip":
     "Comparaison hors Suisse romande · non disponible comme canton de domicile en v1.",
@@ -157,9 +157,9 @@ export const fr: Record<string, string> = {
   "calc.vested.title": "Libre passage",
   "calc.vested.desc":
     "Stratégies sécurité / équilibre / dynamique, projection nette frais et impôts.",
-  "calc.cross_border.title": "Frontaliers FR / IT",
+  "calc.cross_border.title": "Frontaliers FR",
   "calc.cross_border.desc":
-    "Régime 4.5 % (8 cantons), Genève spécifique, accord italo-suisse Tessin 2023.",
+    "Régime franco-suisse 4.5 % (cantons romands sauf GE) et régime spécifique Genève (IS + rétrocession).",
   "calc.income_tax.title": "Impôt revenu & fortune",
   "calc.income_tax.desc":
     "IFD + ICC tous cantons, déductions standard suisses, taux marginal & effectif.",
@@ -1029,10 +1029,10 @@ export const fr: Record<string, string> = {
   "calc.cross_border.guide.s3.title": "Imposition",
   "calc.cross_border.guide.s3.body": "Selon le canton (GE = imposition en Suisse, VD/NE/JU = imposition en France).",
   "calc.cross_border.section.title": "Profil frontalier",
-  "calc.cross_border.section.desc": "Calcul automatique du régime applicable (FR-CH 4.5 %, GE, TI).",
+  "calc.cross_border.section.desc": "Détermination automatique du régime applicable (accord franco-suisse 4.5 % ou Genève).",
   "calc.cross_border.field.work_canton": "Canton de travail",
   "calc.cross_border.field.regime": "Régime applicable",
-  "calc.cross_border.tip.regime": "Le régime dépend du canton de travail : accord franco-suisse 4.5 % (VD/NE/JU/BS/BL/BE/SO/VS), Genève (IS genevoise rétrocédée), Tessin (accord 2023).",
+  "calc.cross_border.tip.regime": "Le régime dépend du canton de travail : accord franco-suisse 4.5 % (VD, VS, FR, NE, JU) ou Genève (IS genevoise rétrocédée).",
   "calc.cross_border.regime.fr_accord": "Accord 4.5 %",
   "calc.cross_border.regime.ge": "GE · IS genevoise",
   "calc.cross_border.regime.ti": "TI · accord 2023",
@@ -1081,7 +1081,7 @@ export const fr: Record<string, string> = {
   "calc.canton_compare.field.wealth": "Fortune nette (CHF)",
   "calc.canton_compare.tip.wealth": "Fortune imposable cantonale. Avoirs LPP / 3a exonérés tant que non retirés.",
   "calc.canton_compare.field.reference": "Canton de référence",
-  "calc.canton_compare.scope_notice.html": "Comparaison sur les <strong>6 cantons romands</strong> (GE, VD, VS, FR, NE, JU) + <strong>Zoug</strong> à titre de référence fiscale. 19 autres cantons disponibles prochainement (ZH, BS, BE, SZ, …).",
+  "calc.canton_compare.scope_notice.html": "Comparaison sur les <strong>6 cantons romands</strong> (GE, VD, VS, FR, NE, JU) + <strong>Zoug et Schwyz</strong> à titre de référence fiscale. 18 autres cantons disponibles prochainement (ZH, BS, BE, …).",
   "calc.canton_compare.ranking.title": "Classement par charge fiscale totale",
   "calc.canton_compare.zg.short": "Référence fiscalité optimisée",
   "calc.canton_compare.zg.long": "Référence fiscalité optimisée (hors scope domicile v1, {count} cantons romands au-dessus)",
@@ -1159,7 +1159,7 @@ export const fr: Record<string, string> = {
   "landing.cta.desc": "Inscription en 30 secondes. Aucune carte bancaire. Tout est gratuit pendant la phase de lancement.",
   "landing.cta.button": "Créer mon compte courtier",
   "landing.footer.brand": "SwissBroker Pro · Conçu en Suisse",
-  "landing.footer.scope": "Suisse romande · Frontaliers FR / IT / DE / AT",
+  "landing.footer.scope": "Suisse romande · Frontaliers FR",
 
   // === Auth (signup / signin) ===
   "auth.head.title": "Connexion · SwissBroker Pro",
