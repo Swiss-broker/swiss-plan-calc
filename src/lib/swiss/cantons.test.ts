@@ -106,7 +106,7 @@ describe("Fixtures fiscales · profil 120k single, sans enfant, sans fortune", (
     const results = getComparableCantons().map((c) =>
       computeIncomeTax({ canton: c.code, ...baseInput }),
     );
-    expect(results).toHaveLength(7);
+    expect(results).toHaveLength(8);
     expect(results.every((r) => r.totalTax > 0)).toBe(true);
   });
 });
