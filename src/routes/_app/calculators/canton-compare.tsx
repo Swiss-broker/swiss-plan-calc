@@ -301,7 +301,7 @@ function CantonCompareCalc() {
               />
               <p className="text-[11px] text-muted-foreground">
                 {lppFromFiche > 0
-                  ? `D'après la fiche client (rendement ${dashboard?.lpp ? "1,5" : "—"}%, conversion ${
+                  ? `Source : Projection fiche client (rendement 1,25%, projection sur cotisations régulières sans rachats, conversion ${
                       dashboard?.lpp ? "6,8" : "—"
                     }%). Modifiable pour what-if.`
                   : "Aucune projection disponible : complétez l'avoir LPP dans la fiche client."}
