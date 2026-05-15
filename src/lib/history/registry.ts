@@ -104,6 +104,20 @@ export function extractKpis(kind: SimulationKind, summary: SummaryShape): Histor
         { label: "Net actuel", value: num(summary.currentDirectorNet), unit: "CHF" },
         { label: "Gain annuel", value: num(summary.gainAnnual), unit: "CHF" },
       ];
+    case "health_insurance_france":
+      return [
+        { label: "Régime recommandé", value: String(summary.recommended ?? "—") },
+        { label: "Cotisation annuelle", value: num(summary.recommendedAnnualCHF), unit: "CHF" },
+        { label: "Économie vs pire option", value: num(summary.savingsVsWorstCHF), unit: "CHF" },
+        { label: "RFR estimé (EUR)", value: num(summary.rfrEUR) },
+      ];
+    case "overtime":
+      return [
+        { label: "Net heures sup", value: num(summary.netOvertimeCHF), unit: "CHF" },
+        { label: "Impôt total heures sup", value: num(summary.totalTaxOnOvertime), unit: "CHF" },
+        { label: "Économie fiscale", value: num(summary.taxSavings), unit: "CHF" },
+        { label: "Heures sup brutes", value: num(summary.overtimeCHF), unit: "CHF" },
+      ];
   }
 }
 
@@ -262,7 +276,9 @@ export async function regeneratePdf(
     case "vested_benefits":
     case "cross_border":
     case "tou":
-    case "director_compensation": {
+    case "director_compensation":
+    case "health_insurance_france":
+    case "overtime": {
       // Pas de regénération PDF pour ces calculateurs (lien profond + bouton Exporter dans la fiche).
       return;
     }

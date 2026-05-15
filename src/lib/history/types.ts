@@ -11,7 +11,9 @@ export type SimulationKind =
   | "vested_benefits"
   | "cross_border"
   | "tou"
-  | "director_compensation";
+  | "director_compensation"
+  | "health_insurance_france"
+  | "overtime";
 
 export interface HistoryEntry {
   id: string;
@@ -48,6 +50,8 @@ const KIND_LABELS_FR: Record<SimulationKind, string> = {
   cross_border: "Frontaliers",
   tou: "TOU / Quasi-résident",
   director_compensation: "Rémunération dirigeant",
+  health_insurance_france: "Assurance santé frontaliers (CMU/CNTFS)",
+  overtime: "Heures supplémentaires frontaliers",
 };
 
 // Proxy i18n : `KIND_LABELS[k]` reste valide partout, mais résout via t() au runtime.
@@ -71,4 +75,6 @@ export const KIND_ROUTES: Record<SimulationKind, string> = {
   cross_border: "/calculators/cross-border",
   tou: "/calculators/tou",
   director_compensation: "/calculators/director-compensation",
+  health_insurance_france: "/calculators/health-insurance-france",
+  overtime: "/calculators/overtime",
 };
