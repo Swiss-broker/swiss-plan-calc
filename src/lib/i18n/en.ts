@@ -1075,7 +1075,7 @@ export const en: Record<string, string> = {
   "calc.canton_compare.field.wealth": "Net wealth (CHF)",
   "calc.canton_compare.tip.wealth": "Cantonally taxable wealth. BVG/3a savings exempt until withdrawn.",
   "calc.canton_compare.field.reference": "Reference canton",
-  "calc.canton_compare.scope_notice.html": "Comparison across the <strong>6 French-speaking cantons</strong> (GE, VD, VS, FR, NE, JU) + <strong>Zug</strong> as a tax reference. 19 other cantons coming soon (ZH, BS, BE, SZ, …).",
+  "calc.canton_compare.scope_notice.html": "Comparison across the <strong>6 French-speaking cantons</strong> (GE, VD, VS, FR, NE, JU) + <strong>Zug and Schwyz</strong> as a tax reference. 18 other cantons coming soon (ZH, BS, BE, …).",
   "calc.canton_compare.ranking.title": "Ranking by total tax burden",
   "calc.canton_compare.zg.short": "Optimised-tax reference",
   "calc.canton_compare.zg.long": "Optimised-tax reference (outside v1 domicile scope, {count} French-speaking cantons above)",
