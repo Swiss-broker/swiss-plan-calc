@@ -49,6 +49,7 @@ import { FiscalSnapshotBanner } from "@/components/calculators/FiscalSnapshotBan
 import { GuideMode, GuideToggleButton, type GuideStep } from "@/components/calculators/GuideMode";
 import { WikiTip } from "@/components/calculators/WikiTip";
 import { useT } from "@/contexts/LanguageContext";
+import { useClientDashboard } from "@/hooks/use-client-dashboard";
 
 const searchSchema = z.object({
   clientId: fallback(z.string().uuid().optional(), undefined),
