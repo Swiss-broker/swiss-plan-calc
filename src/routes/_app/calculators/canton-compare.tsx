@@ -214,12 +214,12 @@ function CantonCompareCalc() {
   const cheapestRomand = useMemo(
     () =>
       data
-        .filter((d) => d.code !== ZG_CODE)
+        .filter((d) => !REFERENCE_CODES.has(d.code))
         .reduce<Row | null>((acc, r) => (!acc || r.total < acc.total ? r : acc), null),
     [data],
   );
-  const romandsCount = data.filter((d) => d.code !== ZG_CODE).length;
-  const hasZG = data.some((d) => d.code === ZG_CODE);
+  const romandsCount = data.filter((d) => !REFERENCE_CODES.has(d.code)).length;
+  const hasReferences = data.some((d) => REFERENCE_CODES.has(d.code));
 
   const { user } = useAuth();
   const brokerHeader = useBrokerPdfHeader();
