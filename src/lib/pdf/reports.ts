@@ -971,7 +971,7 @@ export function exportHealthFrancePdf(args: {
         ? "CNTFS (France)"
         : "Assurance privée suisse";
   const pdf = new ReportPdf({
-    title: "Assurance santé frontaliers",
+    title: "CNTFS / LAMal",
     subtitle: `Régime recommandé : ${recoLabel}`,
     ...args.header,
   } as PdfHeaderInfo);
@@ -1029,7 +1029,7 @@ export function exportOvertimePdf(args: {
 }) {
   const { input, result } = args;
   const pdf = new ReportPdf({
-    title: "Heures supplémentaires · frontaliers",
+    title: "Heures supp",
     subtitle: `${cantonName(input.workCanton)} · ${input.taxStatus}`,
     ...args.header,
   } as PdfHeaderInfo);

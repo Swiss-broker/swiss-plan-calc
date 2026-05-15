@@ -50,8 +50,8 @@ const KIND_LABELS_FR: Record<SimulationKind, string> = {
   cross_border: "Frontaliers",
   tou: "TOU / Quasi-résident",
   director_compensation: "Rémunération dirigeant",
-  health_insurance_france: "Assurance santé frontaliers (CMU/CNTFS)",
-  overtime: "Heures supplémentaires frontaliers",
+  health_insurance_france: "CNTFS / LAMal",
+  overtime: "Heures supp",
 };
 
 // Proxy i18n : `KIND_LABELS[k]` reste valide partout, mais résout via t() au runtime.
