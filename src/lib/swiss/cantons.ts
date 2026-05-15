@@ -50,7 +50,6 @@ export const CANTONS: Canton[] = [
   { code: "SG", name: "Saint-Gall", selectable: false, comparable: false },
   { code: "SH", name: "Schaffhouse", selectable: false, comparable: false },
   { code: "SO", name: "Soleure", selectable: false, comparable: false },
-  { code: "SZ", name: "Schwytz", selectable: false, comparable: false },
   { code: "TG", name: "Thurgovie", selectable: false, comparable: false },
   { code: "TI", name: "Tessin", selectable: false, comparable: false },
   { code: "UR", name: "Uri", selectable: false, comparable: false },
