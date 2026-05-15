@@ -447,24 +447,21 @@ function CantonCompareCalc() {
               <Bar dataKey="total" radius={[0, 6, 6, 0]}>
                 {data.map((d) => {
                   const isCheapest = cheapestRomand?.code === d.code;
-                  const isZG = d.code === ZG_CODE;
-                  const fill = isCheapest || isZG ? "var(--success)" : "var(--primary)";
-                  return <Cell key={d.code} fill={fill} fillOpacity={isZG ? 0.65 : 1} />;
+                  const isRef = REFERENCE_CODES.has(d.code);
+                  const fill = isCheapest || isRef ? "var(--success)" : "var(--primary)";
+                  return <Cell key={d.code} fill={fill} fillOpacity={isRef ? 0.65 : 1} />;
                 })}
               </Bar>
             </BarChart>
           </ResponsiveContainer>
         </div>
 
-        {hasZG && (
+        {hasReferences && (
           <div className="mt-3 flex flex-wrap items-start gap-2 rounded-md border border-dashed border-success/40 bg-success/5 p-2 text-xs">
             <Sparkles className="mt-0.5 h-3.5 w-3.5 shrink-0 text-success" aria-hidden />
-            <span className="font-semibold text-foreground shrink-0">ZG · Zoug</span>
+            <span className="font-semibold text-foreground shrink-0">ZG · Zoug · SZ · Schwyz</span>
             <span className="min-w-0 flex-1 text-muted-foreground break-words">
-              <span className="sm:hidden">{t("calc.canton_compare.zg.short")}</span>
-              <span className="hidden sm:inline">
-                {t("calc.canton_compare.zg.long", { count: romandsCount })}
-              </span>
+              Cantons à fiscalité avantageuse affichés en référence (hors 6 cantons romands principaux). Profil identique : {romandsCount} cantons romands comparés.
             </span>
           </div>
         )}
