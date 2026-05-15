@@ -28,7 +28,7 @@ import {
   annuityVsLumpSum,
   capitalWithdrawalTax,
 } from "@/lib/lpp";
-import { projectPillar3a } from "@/lib/pillar3";
+
 import {
   projectClientLPP,
   projectClient3a,
