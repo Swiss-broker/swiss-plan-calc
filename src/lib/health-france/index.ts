@@ -92,7 +92,7 @@ export function computeHealthFrance(input: HealthFranceInput): HealthFranceResul
   const notes = [
     `Revenu fiscal de référence estimé : ${rfrEUR.toLocaleString("fr-FR")} EUR (taux ${rate} CHF/EUR).`,
     `Seuil d'exonération CMU appliqué : ${cmuThresholdEUR.toLocaleString("fr-FR")} EUR.`,
-    "Les barèmes CMU et CNTFS évoluent chaque année. Calculs basés sur les paramètres connus pour 2026. À valider avec votre conseiller fiscal pour les cas particuliers (changement de statut, départ en cours d'année, etc.).",
+    "Les barèmes CMU et CNTFS évoluent chaque année. Calculs basés sur les paramètres connus pour 2026.",
   ];
 
   return {

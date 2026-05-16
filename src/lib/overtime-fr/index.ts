@@ -103,7 +103,7 @@ export function computeOvertime(input: OvertimeInput): OvertimeResult {
     : 0;
 
   notes.push(
-    "Les règles fiscales évoluent. Plafond d'exonération à vérifier pour l'année en cours. À valider avec votre conseiller fiscal.",
+    "Les règles fiscales évoluent. Plafond d'exonération à vérifier pour l'année en cours.",
   );
 
   return {
