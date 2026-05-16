@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { z } from "zod";
 import { zodValidator, fallback } from "@tanstack/zod-adapter";
-import { Shield, Info } from "lucide-react";
+import { Shield, Info, ChevronDown } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -13,6 +13,11 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { NumField as BaseNumField } from "@/components/ui/num-field";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 import { CalcCard, MoneyTile, Row } from "@/components/calculators/CalcUI";
 import { ExportPdfButton } from "@/components/calculators/ExportPdfButton";
 import { SaveSimulationButton } from "@/components/calculators/SaveSimulationButton";
