@@ -114,10 +114,11 @@ export function extractKpis(kind: SimulationKind, summary: SummaryShape): Histor
     case "overtime":
       return [
         { label: "Économie fiscale", value: num(summary.taxSavingsCHF ?? summary.taxSavings), unit: "CHF" },
-        { label: "Salaire exonéré", value: num(summary.exemptSalaryRetainedEUR), unit: "EUR" },
-        { label: "Heures exonérées", value: num(summary.exemptHoursRetained), unit: "h" },
-        { label: "Heures annuelles", value: num(summary.annualHours), unit: "h" },
+        { label: "Salaire exonéré (CHF)", value: num(summary.exemptSalaryRetainedCHF), unit: "CHF" },
+        { label: "Heures exonérées", value: num(summary.exemptHoursRetained) },
+        { label: "Heures annuelles", value: num(summary.annualHours) },
       ];
+
 
   }
 }
