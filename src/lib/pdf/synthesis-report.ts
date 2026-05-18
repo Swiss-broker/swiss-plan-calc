@@ -479,7 +479,6 @@ function formatInputs(entry: HistoryEntry): Array<[string, string]> {
       pushIfChf(rows, "Salaire suisse brut", i.swissGrossSalaryCHF);
       pushStr(rows, "Situation civile", i.civilStatus === "married" ? "Marié·e / pacsé·e" : "Célibataire");
       pushIf(rows, "Enfants à charge", i.childrenCount);
-      if (num(i.spouseFrenchSalaryEUR)) rows.push(["Salaire conjoint (EUR)", String(num(i.spouseFrenchSalaryEUR))]);
       if (num(i.chfToEurRate)) rows.push(["Taux CHF→EUR", String(i.chfToEurRate)]);
       break;
     case "overtime":
