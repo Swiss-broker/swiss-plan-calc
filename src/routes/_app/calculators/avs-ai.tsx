@@ -29,6 +29,7 @@ import { GuideMode, GuideToggleButton, type GuideStep } from "@/components/calcu
 import { WikiTip } from "@/components/calculators/WikiTip";
 import { SaveSimulationButton } from "@/components/calculators/SaveSimulationButton";
 import { useT } from "@/contexts/LanguageContext";
+import { parseChildren, ageFromDob } from "@/lib/clients/types";
 
 const searchSchema = z.object({
   clientId: fallback(z.string().uuid().optional(), undefined),
