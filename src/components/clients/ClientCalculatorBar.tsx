@@ -46,7 +46,7 @@ const CHIPS: CalcChip[] = [
   { to: "/calculators/pillar3a", kind: "pillar3a", label: "3e pilier A & B", icon: PiggyBank },
   { to: "/calculators/vested-benefits", kind: "vested_benefits", label: "Libre passage", icon: Vault },
   { to: "/calculators/cross-border", kind: "cross_border", label: "Frontalier", icon: Globe2 },
-  { to: "/calculators/health-insurance-france", kind: "health_insurance_france", label: "CNTFS / LAMal", icon: ShieldPlus },
+  { to: "/calculators/health-insurance-france", kind: "health_insurance_france", label: "CMU / LAMal", icon: ShieldPlus },
   { to: "/calculators/overtime", kind: "overtime", label: "Heures supp", icon: Clock },
   { to: "/calculators/income-tax", kind: "income_tax", label: "Impôt revenu", icon: Receipt },
   { to: "/calculators/source-tax", kind: "source_tax", label: "Impôt à la source", icon: Coins },

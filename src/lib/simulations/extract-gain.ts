@@ -157,11 +157,11 @@ export function extractGain(entry: HistoryEntry): ExtractedGain {
       const amount = num(summary.savingsCHF);
       if (amount <= 0) return none();
       const reco = s(summary.recommended);
-      const recoLabel = reco === "LAMAL" ? "LAMal" : "CMU/CNTFS";
+      const recoLabel = reco === "LAMAL" ? "LAMal" : "CMU";
       return {
         type: "annual",
         amount: Math.round(amount),
-        label: `Assurance santé frontalier (${recoLabel})`,
+        label: `Droit d'option santé : CMU vs LAMal (${recoLabel})`,
         details: "Économie annuelle vs autre option",
       };
     }

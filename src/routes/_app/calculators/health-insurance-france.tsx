@@ -10,7 +10,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { NumField as BaseNumField } from "@/components/ui/num-field";
 import {
@@ -35,7 +34,7 @@ const searchSchema = z.object({
 
 export const Route = createFileRoute("/_app/calculators/health-insurance-france")({
   validateSearch: zodValidator(searchSchema),
-  head: () => ({ meta: [{ title: "CMU/CNTFS vs LAMal · SwissBroker Pro" }] }),
+  head: () => ({ meta: [{ title: "Assurance santé frontaliers (CMU vs LAMal) · SwissBroker Pro" }] }),
   component: HealthInsuranceFranceCalc,
 });
 
@@ -44,8 +43,6 @@ function HealthInsuranceFranceCalc() {
   const { client, prefill } = usePrefillFromClient(clientId, "health-insurance-france");
   const [form, setForm] = useState<HealthFranceInput>({
     swissGrossSalaryCHF: 95_000,
-    spouseFrenchSalaryEUR: 0,
-    spouseHasOwnCoverage: false,
     civilStatus: "single",
     childrenCount: 0,
     chfToEurRate: 1.05,
@@ -58,7 +55,7 @@ function HealthInsuranceFranceCalc() {
 
   const result = useMemo(() => computeHealthFrance(form), [form]);
 
-  const recoLabel = result.recommended === "CMU_CNTFS" ? "CMU/CNTFS (France)" : "LAMal (Suisse)";
+  const recoLabel = result.recommended === "CMU" ? "CMU (France)" : "LAMal (Suisse)";
 
   return (
     <div className="grid grid-cols-1 gap-6 md:grid-cols-5">
@@ -70,7 +67,7 @@ function HealthInsuranceFranceCalc() {
       <div className="md:col-span-3 space-y-4">
         <CalcCard
           title="Profil du frontalier"
-          description="Données utilisées pour estimer la cotisation CMU/CNTFS (URSSAF) et la comparer à la prime LAMal suisse."
+          description="Comparez la cotisation CMU (régime français géré par le CNTFS via l'URSSAF) et l'assurance privée suisse (LAMal)."
         >
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <NumField
@@ -78,7 +75,7 @@ function HealthInsuranceFranceCalc() {
               value={form.swissGrossSalaryCHF}
               onChange={(v) => set("swissGrossSalaryCHF", v)}
             />
-            <Field label="Situation civile">
+            <Field label="Situation civile (info contextuelle)">
               <Select
                 value={form.civilStatus}
                 onValueChange={(v) => set("civilStatus", v as "single" | "married")}
@@ -91,30 +88,10 @@ function HealthInsuranceFranceCalc() {
               </Select>
             </Field>
             <NumField
-              label="Nombre d'enfants à charge"
+              label="Enfants à charge (info contextuelle)"
               value={form.childrenCount}
               onChange={(v) => set("childrenCount", v)}
             />
-            {form.civilStatus === "married" && (
-              <>
-                <NumField
-                  label="Salaire annuel conjoint (EUR)"
-                  value={form.spouseFrenchSalaryEUR}
-                  onChange={(v) => set("spouseFrenchSalaryEUR", v)}
-                />
-                <Field label="Conjoint a sa propre couverture santé ?">
-                  <div className="flex h-9 items-center gap-2">
-                    <Switch
-                      checked={form.spouseHasOwnCoverage}
-                      onCheckedChange={(v) => set("spouseHasOwnCoverage", v)}
-                    />
-                    <span className="text-xs text-muted-foreground">
-                      {form.spouseHasOwnCoverage ? "Oui" : "Non"}
-                    </span>
-                  </div>
-                </Field>
-              </>
-            )}
             <NumField
               label="Taux de change CHF → EUR"
               value={form.chfToEurRate}
@@ -126,6 +103,13 @@ function HealthInsuranceFranceCalc() {
               value={form.taxYear}
               onChange={(v) => set("taxYear", v)}
             />
+          </div>
+          <div className="mt-3 flex items-start gap-2 rounded-md border bg-muted/30 p-3 text-xs text-muted-foreground">
+            <Info className="mt-0.5 h-4 w-4 flex-shrink-0 text-primary" />
+            <span>
+              La cotisation CMU frontalier est <strong>individuelle</strong> : la situation civile et les enfants
+              à charge n'impactent ni l'abattement ni l'assiette. Ces champs sont conservés pour la fiche client.
+            </span>
           </div>
         </CalcCard>
 
@@ -179,17 +163,17 @@ function HealthInsuranceFranceCalc() {
               big
             />
             <MoneyTile
-              label={result.recommended === "CMU_CNTFS" ? "Économie annuelle vs LAMal" : "Économie annuelle vs CMU/CNTFS"}
+              label={result.recommended === "CMU" ? "Économie annuelle vs LAMal" : "Économie annuelle vs CMU"}
               value={result.savingsCHF}
               tone="primary"
             />
           </Row>
           <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
             <MoneyTile
-              label="CMU/CNTFS (France)"
+              label="CMU (France)"
               value={result.cmuAnnualCHF}
               hint={`${result.cmuAnnualEUR.toLocaleString("fr-FR")} EUR`}
-              tone={result.recommended === "CMU_CNTFS" ? "success" : "default"}
+              tone={result.recommended === "CMU" ? "success" : "default"}
             />
             <MoneyTile
               label="LAMal (Suisse)"
@@ -200,15 +184,20 @@ function HealthInsuranceFranceCalc() {
           <div className="mt-3 flex items-start gap-2 rounded-md border bg-muted/30 p-3 text-xs text-muted-foreground">
             <Shield className="mt-0.5 h-4 w-4 flex-shrink-0 text-primary" />
             <span>
-              RFR estimé : {result.rfrEUR.toLocaleString("fr-FR")} EUR · Abattement :{" "}
-              {result.abatementEUR.toLocaleString("fr-FR")} EUR ({result.partsFiscales} part
-              {result.partsFiscales > 1 ? "s" : ""} fiscale{result.partsFiscales > 1 ? "s" : ""}).
+              RFR estimé : {result.rfrEUR.toLocaleString("fr-FR")} EUR · PASS 2026 :{" "}
+              {result.passEUR.toLocaleString("fr-FR")} EUR · Abattement (25%) :{" "}
+              {result.abatementEUR.toLocaleString("fr-FR")} EUR.
             </span>
+          </div>
+          <div className="mt-3 rounded-md border bg-muted/20 p-3 text-xs text-muted-foreground">
+            Le choix entre CMU et LAMal dépend aussi du lieu principal de consultation médicale
+            (France ou Suisse) et de la couverture des ayants droit. Le droit d'option doit être
+            exercé dans les 3 mois après le début de l'activité frontalière.
           </div>
         </CalcCard>
 
         <CalcCard title="Détail du calcul">
-          <BreakdownSection title="CMU/CNTFS — Cotisation Subsidiaire Maladie (URSSAF)" lines={result.cmuBreakdown} />
+          <BreakdownSection title="CMU — Cotisation maladie frontalier (URSSAF / CNTFS)" lines={result.cmuBreakdown} />
           <BreakdownSection title="LAMal — assurance maladie suisse" lines={result.lamalBreakdown} />
         </CalcCard>
       </div>

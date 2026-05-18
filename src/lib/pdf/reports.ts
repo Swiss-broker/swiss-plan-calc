@@ -964,9 +964,9 @@ export function exportHealthFrancePdf(args: {
   result: import("@/lib/health-france").HealthFranceResult;
 }) {
   const { input, result } = args;
-  const recoLabel = result.recommended === "CMU_CNTFS" ? "CMU/CNTFS (France)" : "LAMal (Suisse)";
+  const recoLabel = result.recommended === "CMU" ? "CMU (France)" : "LAMal (Suisse)";
   const pdf = new ReportPdf({
-    title: "CMU/CNTFS vs LAMal",
+    title: "CMU vs LAMal",
     subtitle: `Option recommandée : ${recoLabel}`,
     ...args.header,
   } as PdfHeaderInfo);
@@ -977,7 +977,7 @@ export function exportHealthFrancePdf(args: {
     { label: "Cotisation annuelle (recommandé)", value: result.recommendedAnnualCHF, tone: "success" },
     { label: "Économie annuelle vs autre option", value: result.savingsCHF, tone: "primary" },
     { label: "RFR estimé (EUR)", value: result.rfrEUR },
-    { label: "Abattement (EUR)", value: result.abatementEUR },
+    { label: "Abattement (25% PASS, EUR)", value: result.abatementEUR },
   ]);
 
   pdf.section("Profil");
@@ -985,8 +985,6 @@ export function exportHealthFrancePdf(args: {
     ["Salaire suisse brut", formatCHF(input.swissGrossSalaryCHF)],
     ["Situation civile", input.civilStatus === "married" ? "Marié·e / pacsé·e" : "Célibataire"],
     ["Enfants à charge", String(input.childrenCount ?? 0)],
-    ["Salaire conjoint (EUR)", String(input.spouseFrenchSalaryEUR ?? 0)],
-    ["Conjoint avec couverture propre", input.spouseHasOwnCoverage ? "Oui" : "Non"],
     ["Taux CHF→EUR", String(input.chfToEurRate)],
     ["Année fiscale", String(input.taxYear)],
   ]);
@@ -995,7 +993,7 @@ export function exportHealthFrancePdf(args: {
   pdf.table(
     ["Option", "CHF/an", "EUR/an", ""],
     [
-      ["CMU/CNTFS (France)", formatCHF(result.cmuAnnualCHF), `${result.cmuAnnualEUR} EUR`, result.recommended === "CMU_CNTFS" ? "★" : ""],
+      ["CMU (France)", formatCHF(result.cmuAnnualCHF), `${result.cmuAnnualEUR} EUR`, result.recommended === "CMU" ? "★" : ""],
       ["LAMal (Suisse)", formatCHF(result.lamalAnnualCHF), "—", result.recommended === "LAMAL" ? "★" : ""],
     ],
   );
@@ -1005,7 +1003,7 @@ export function exportHealthFrancePdf(args: {
 
   pdf.section("Avertissements");
   pdf.callout(
-    "Calculs indicatifs basés sur les barèmes 2026 connus. CMU/CNTFS et LAMal évoluent annuellement. Le choix entre CMU/CNTFS et LAMal résulte du droit d'option unique exercé au début de l'activité frontalière.",
+    "Calculs indicatifs basés sur les barèmes 2026 connus (PASS 2026 = 47'100 EUR, taux CMU 8%). La cotisation CMU est gérée et collectée par le CNTFS via l'URSSAF. Le droit d'option CMU vs LAMal doit être exercé dans les 3 mois suivant le début de l'activité frontalière.",
     "warning",
   );
 

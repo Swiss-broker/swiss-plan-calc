@@ -160,9 +160,9 @@ export const fr: Record<string, string> = {
   "calc.cross_border.title": "Frontaliers FR",
   "calc.cross_border.desc":
     "Régime franco-suisse 4.5 % (cantons romands sauf GE) et régime spécifique Genève (IS + rétrocession).",
-  "calc.health_france.title": "Calculateur CNTFS / LAMal",
+  "calc.health_france.title": "Assurance santé frontaliers (CMU vs LAMal)",
   "calc.health_france.desc":
-    "Compare CMU, CNTFS et LAMal pour un frontalier français selon salaire, famille et couverture.",
+    "Compare la cotisation CMU (régime français géré par le CNTFS via l'URSSAF) et la prime LAMal pour un frontalier français.",
   "calc.overtime.title": "Calculateur heures supp",
   "calc.overtime.desc":
     "Estime l'impact fiscal des heures supplémentaires pour les frontaliers français.",

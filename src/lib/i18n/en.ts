@@ -161,9 +161,9 @@ export const en: Record<string, string> = {
   "calc.cross_border.title": "FR cross-border workers",
   "calc.cross_border.desc":
     "Franco-Swiss 4.5% scheme (Romandy except Geneva) and Geneva-specific regime (withholding + refund).",
-  "calc.health_france.title": "CNTFS / LAMal calculator",
+  "calc.health_france.title": "Cross-border health insurance (CMU vs LAMal)",
   "calc.health_france.desc":
-    "Compares CMU, CNTFS and LAMal for French cross-border workers by income, family and coverage.",
+    "Compares the French CMU contribution (managed by CNTFS via URSSAF) and the Swiss LAMal premium for a French cross-border worker.",
   "calc.overtime.title": "Overtime calculator",
   "calc.overtime.desc":
     "Estimates the tax impact of overtime for French cross-border workers.",

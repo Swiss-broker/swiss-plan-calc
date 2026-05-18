@@ -1,89 +1,76 @@
-# Cohérence inter-calculateurs — diagnostic et plan
+## État actuel vs ta spec
 
-## Avertissement honnête
+La refonte précédente a déjà fait **70%** du job :
+- ✅ 2 options seulement (plus de 3ᵉ tuile)
+- ✅ Recommandation chiffrée CMU vs LAMal
+- ✅ Détail du calcul repliable
+- ✅ PDF + historique + synthèse RDV alignés sur 2 options
 
-Je ne peux pas livrer en un seul passage : (a) audit des 12 calculateurs, (b) refactor central, (c) refonte de canton-compare, (d) tests preview avec captures sur chaque paire. Je propose un découpage en 2 livraisons. Cette plan couvre **la livraison 1** (le bug bloquant + la fondation centrale). La livraison 2 audite et migre les autres calculateurs.
+Mais il reste **3 écarts importants** vs ta spec officielle.
 
----
+## Ce qui reste à corriger
 
-## Diagnostic — pourquoi 221'416 ≠ 554'925
+### 1. ❌ Bug majeur sur l'abattement (formule fiscalement fausse)
 
-Trois sources de vérité **différentes** coexistent aujourd'hui pour « capital LPP projeté à la retraite » :
+Actuellement le code fait : `abattement = 27'000 € × nombre de parts fiscales`.
+C'est **faux** pour la cotisation CMU frontalier, qui est **individuelle** :
+- Abattement = **25% du PASS**, forfaitaire, **PAS multiplié par les parts**.
+- PASS 2026 = **47'100 €** (à confirmer côté Urssaf/ameli au moment de coder).
+- Donc abattement effectif = **11'775 €** quelle que soit la situation familiale.
 
-1. **Page LPP** (`src/routes/_app/calculators/lpp.tsx`, l.132-142) : recalcule en live via `projectLPP(form)` à partir du **formulaire local** — donc avec rendement / frais / rachats / extraCredit que le courtier vient de saisir.
-2. **Dashboard client** (`src/lib/client-dashboard/index.ts`, `buildLPP` l.210-260) : appelle `projectLPP` avec **seulement 5 champs** (age, balance, salaire assuré, conversionRate). Tout le reste tombe sur les **défauts** de `projectLPP` (rendement 1.5%, croissance salaire 1%, frais 0, pas de rachat, pas d'extraCredit).
-3. **Canton-compare** (`src/routes/_app/calculators/canton-compare.tsx`, l.159-178) : lit en priorité la **dernière simulation sauvegardée** dans `simulation_history` (`projectedBalance` de l'`inputs`/`summary`), avec fallback sur le dashboard. Une simulation sauvegardée est un **snapshot figé** qui contient les rachats / rendement / extraCredit du moment où le courtier a cliqué « Sauvegarder ».
+Conséquence sur le cas test 95'000 CHF aujourd'hui : on calcule 5'820 € au lieu de **7'038 €** (6'703 CHF). LAMal sort gagnant dans les deux cas, mais le chiffre CMU est sous-estimé de ~1'200 €/an.
 
-Sur le client TEST :
-- 554'925 vient d'une **simulation LPP sauvegardée** (probablement avec rachats planifiés et/ou rendement plus élevé) lue par canton-compare.
-- 221'416 est le **recalcul live** sur la page LPP avec les valeurs courantes du formulaire (probablement rachats remis à 0, ou rendement par défaut).
+### 2. ❌ Libellés "CNTFS" encore visibles partout
 
-Les deux chiffres sont « corrects » dans leur monde, mais il n'y a **pas de source unique**.
+Toujours présents dans :
+- Titre du calculateur (`head meta`), titre de carte recommandée, sous-titre, tuile, encart détail
+- `src/components/clients/ClientCalculatorBar.tsx` (label "CNTFS / LAMal")
+- `src/lib/i18n/fr.ts | en.ts | de.ts | it.ts` (titre + description)
+- `src/lib/pdf/synthesis-report.ts` (3 occurrences)
+- `src/lib/pdf/reports.ts` (titre PDF "CMU/CNTFS vs LAMal")
+- `src/lib/simulations/extract-gain.ts` (label "CMU/CNTFS")
 
----
+Spec : ne plus utiliser "CNTFS" comme régime. Garder uniquement la mention "CMU (gérée par le CNTFS via l'URSSAF)" dans la note pédagogique.
 
-## Principe de la correction (validé par votre cahier des charges)
+### 3. ❌ Parts fiscales utilisées à tort
 
-La **fiche client** (+ `client_pension`/`client_assets`) est la source unique de vérité pour les **inputs**. Les **projections** dérivent d'une fonction centrale `computeClientDashboard(bundle)` (déjà existante : `src/lib/client-dashboard/index.ts`) qui doit être :
-- la **seule** voie pour obtenir capital LPP projeté, capital 3a projeté, taux marginal, revenu déterminant.
-- appelée par tous les calculateurs **comme valeur d'affichage de référence** (« d'après la fiche »).
+Le champ "situation civile" et "enfants à charge" pilotent encore le calcul (via parts fiscales). À transformer en **info contextuelle uniquement** (les enfants/conjoint n'impactent ni l'abattement ni l'assiette CMU). Le bloc conjoint (salaire conjoint EUR, couverture propre) doit disparaître du calcul CMU — on garde au mieux un libellé informatif.
 
-Les simulations sauvegardées (`simulation_history`) deviennent des **what-if** consultables, **jamais** la source qui alimente un autre calculateur en silence.
+## Plan d'implémentation
 
----
+### A. Moteur `src/lib/health-france/index.ts`
+1. Ajouter constante `PASS_2026_EUR = 47_100` (vérifier valeur officielle Urssaf au moment du build, ajuster si nécessaire).
+2. Remplacer `cmuAbatementPerPartEUR` par `cmuAbatementRate = 0.25` (× PASS).
+3. Supprimer la fonction `computeParts()` et le champ `partsFiscales` du résultat.
+4. Retirer `spouseFrenchSalaryEUR` / `spouseHasOwnCoverage` du calcul (champs conservés en input mais ignorés, ou supprimés totalement — voir question).
+5. Mettre à jour le `cmuBreakdown` pour refléter les 4 étapes de ta spec (RFR → PASS → abattement → assiette → cotisation).
+6. Ajouter une note explicite "déclaration individuelle, basée sur revenus N-2".
 
-## Livraison 1 (ce tour)
+### B. UI `src/routes/_app/calculators/health-insurance-france.tsx`
+1. Renommer le titre → `"Assurance santé frontaliers (CMU vs LAMal)"`.
+2. Sous-titre carte profil → `"Comparez la cotisation CMU (régime français géré par le CNTFS via l'URSSAF) et l'assurance privée suisse (LAMal)."`.
+3. Renommer tuile "CMU/CNTFS (France)" → **"CMU (France)"**.
+4. Renommer section détail → **"CMU — Cotisation maladie frontalier (Urssaf)"**.
+5. Bloc conjoint : soit le retirer, soit le marquer "info contextuelle, sans impact sur la cotisation CMU".
+6. Ajouter la phrase de recommandation officielle (droit d'option dans les 3 mois, lieu de consultation, ayants droit).
 
-### A. Aligner la projection centrale sur la projection « page LPP »
+### C. i18n (4 langues)
+Renommer dans `fr.ts | en.ts | de.ts | it.ts` :
+- `calc.health_france.title` → "Assurance santé frontaliers (CMU vs LAMal)" / "Cross-border health insurance (CMU vs LAMal)" / "Krankenversicherung Grenzgänger (CMU vs LAMal)" / "Assicurazione malattia frontalieri (CMU vs LAMal)".
+- Description : remplacer la mention "CMU, CNTFS et LAMal" par "CMU (gérée par le CNTFS) vs LAMal".
 
-`buildLPP` du dashboard ignore aujourd'hui plusieurs paramètres présents en fiche client :
-- `lpp_max_buyback` (capacité de rachat) — non injecté dans la projection
-- pas de champ « rendement attendu » / « frais » / « croissance salaire » en fiche → on garde les défauts mais on les rend **explicites et identiques partout** via une constante exportée `DASHBOARD_LPP_PROJECTION_DEFAULTS`.
+### D. Surfaces dérivées
+- `ClientCalculatorBar.tsx` → label "CMU / LAMal".
+- `extract-gain.ts` → label "Droit d'option santé : CMU vs LAMal".
+- `pdf/reports.ts` → titre PDF "CMU vs LAMal", retirer "CNTFS" du titre/situation.
+- `pdf/synthesis-report.ts` → remplacer "CMU/CNTFS" par "CMU" partout, garder une seule mention "(gérée par le CNTFS via l'URSSAF)" dans la phrase narrative.
 
-Action :
-- Extraire dans `src/lib/client-dashboard/lpp-projection.ts` une fonction unique `projectClientLPP(bundle, opts?)` qui retourne `{ projectedBalance, annualPension, monthlyPension, currentCapital, buybackCapacity, assumptions }`. Elle expose les **hypothèses utilisées** (rendement, frais, etc.) pour affichage.
-- `buildLPP` du dashboard appelle cette fonction.
-- Idem `project3a` → `projectClient3a(bundle)`.
+### E. Cas test de validation (après code)
+Inputs : 95'000 CHF, taux 1.05, LAMal 3'600 → attendu : RFR 99'750 €, abattement 11'775 €, assiette 87'975 €, cotisation **7'038 € ≈ 6'703 CHF**, reco = **LAMal**, économie ≈ 3'100 CHF/an.
 
-### B. Canton-compare lit la projection centrale, pas l'historique
+## Question avant de coder
 
-Dans `canton-compare.tsx` :
-- **Supprimer** la lecture de `simulation_history` comme source primaire.
-- La valeur initiale du capital LPP / 3a vient **uniquement** de `projectClientLPP(bundle)` / `projectClient3a(bundle)`.
-- Garder le champ éditable (override what-if) mais afficher clairement « Source : fiche client » avec les hypothèses (rendement %, conversion %).
-- Bouton « Réinitialiser depuis la fiche » qui re-hydrate.
+Deux points où je veux ton OK explicite avant d'implémenter :
 
-### C. Page LPP affiche un avertissement de divergence
-
-Sur `lpp.tsx`, si le `form` actuel produit un capital différent de celui de la projection centrale (parce que le courtier a saisi un rendement, des rachats, etc. différents), afficher un encart discret : « Cette simulation diverge de la fiche : X CHF vs Y CHF (fiche). [Mettre à jour la fiche] ». Pas de blocage — c'est l'usage normal du what-if.
-
-### D. Tests
-
-- Tests unitaires pour `projectClientLPP` : déterministe, mêmes inputs → mêmes outputs.
-- Vérification manuelle preview : ouvrir LPP puis canton-compare sur le client TEST — chiffre identique au franc près tant qu'on ne touche pas au formulaire LPP.
-
----
-
-## Livraison 2 (tour suivant — à votre demande)
-
-Audit en tableau des 12 calculateurs : pour chacun, lister
-1. inputs lus de la fiche (via `to-calculator-input.ts`)
-2. projections / valeurs calculées localement qui devraient venir du dashboard central
-3. duplications à éliminer
-
-Puis migration calculateur par calculateur vers `useClientDashboard()` pour toute valeur partagée (taux marginal, revenu déterminant, projection 3a, etc.).
-
----
-
-## Détails techniques
-
-Fichiers touchés en livraison 1 :
-- **nouveau** `src/lib/client-dashboard/lpp-projection.ts` — `projectClientLPP`, `projectClient3a`, defaults exportés
-- **modifié** `src/lib/client-dashboard/index.ts` — `buildLPP` / `build3a` délèguent
-- **modifié** `src/routes/_app/calculators/canton-compare.tsx` — supprime la lecture `simulation_history`, lit le dashboard
-- **modifié** `src/routes/_app/calculators/lpp.tsx` — ajoute l'encart de divergence
-- **nouveaux tests** `src/lib/client-dashboard/lpp-projection.test.ts`
-
-Risque : la livraison 1 va **faire baisser** le chiffre affiché dans canton-compare (de 554'925 vers ~221'416 sur TEST), parce que la projection centrale ignore aujourd'hui les rachats que la simulation LPP sauvegardée contenait. C'est le **comportement correct** : si le courtier veut intégrer des rachats planifiés, il doit les saisir en fiche (champ `lpp_max_buyback` existe déjà mais n'est pas projeté — la livraison 1 corrige ça). Je vous le signale parce que ça va modifier des chiffres qui s'affichaient avant.
-
-Validez ce plan (ou indiquez ajustements) et je passe à l'implémentation.
+1. **Champs conjoint** (salaire conjoint EUR + "conjoint a sa propre couverture") : je les **supprime complètement** du formulaire, ou je les garde **affichés mais désactivés/marqués "info"** ?
+2. **Vérification PASS 2026** : je fige `47'100 €` (valeur communément admise pour 2026) ou tu veux que je relance un `websearch` Urssaf/ameli avant d'écrire la constante ?
