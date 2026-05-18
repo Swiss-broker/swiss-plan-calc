@@ -106,7 +106,7 @@ export function extractKpis(kind: SimulationKind, summary: SummaryShape): Histor
       ];
     case "health_insurance_france":
       return [
-        { label: "Option recommandée", value: summary.recommended === "LAMAL" ? "LAMal (Suisse)" : "CMU/CNTFS (France)" },
+        { label: "Option recommandée", value: summary.recommended === "LAMAL" ? "LAMal (Suisse)" : "CMU (France)" },
         { label: "Cotisation annuelle", value: num(summary.recommendedAnnualCHF), unit: "CHF" },
         { label: "Économie vs autre option", value: num(summary.savingsCHF), unit: "CHF" },
         { label: "RFR estimé (EUR)", value: num(summary.rfrEUR) },
