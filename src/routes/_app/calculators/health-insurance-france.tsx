@@ -46,8 +46,9 @@ function HealthInsuranceFranceCalc() {
     civilStatus: "single",
     childrenCount: 0,
     chfToEurRate: 1.05,
-    lamalAnnualCHF: 3_600,
-    taxYear: new Date().getFullYear(),
+    taxYear: 2026,
+    lamalAdultMonthlyCHF: 200,
+    lamalChildMonthlyCHF: 49.4,
   });
   useHydrateFormFromPrefill(prefill, setForm);
   const set = <K extends keyof HealthFranceInput>(k: K, v: HealthFranceInput[K]) =>
@@ -71,7 +72,7 @@ function HealthInsuranceFranceCalc() {
         >
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <NumField
-              label="Salaire suisse brut annuel (CHF)"
+              label="Salaire suisse brut annuel N-2 (CHF)"
               value={form.swissGrossSalaryCHF}
               onChange={(v) => set("swissGrossSalaryCHF", v)}
             />
@@ -88,7 +89,7 @@ function HealthInsuranceFranceCalc() {
               </Select>
             </Field>
             <NumField
-              label="Enfants à charge (info contextuelle)"
+              label="Enfants à charge (impacte LAMal)"
               value={form.childrenCount}
               onChange={(v) => set("childrenCount", v)}
             />
@@ -107,21 +108,31 @@ function HealthInsuranceFranceCalc() {
           <div className="mt-3 flex items-start gap-2 rounded-md border bg-muted/30 p-3 text-xs text-muted-foreground">
             <Info className="mt-0.5 h-4 w-4 flex-shrink-0 text-primary" />
             <span>
-              La cotisation CMU frontalier est <strong>individuelle</strong> : la situation civile et les enfants
-              à charge n'impactent ni l'abattement ni l'assiette. Ces champs sont conservés pour la fiche client.
+              Le salaire indiqué doit correspondre au <strong>revenu N-2</strong> (pour {form.taxYear} = revenus {form.taxYear - 2}).
+              La cotisation CMU est <strong>individuelle</strong> : situation civile et enfants n'impactent ni l'abattement
+              ni l'assiette. Les enfants sont pris en compte pour la prime LAMal.
             </span>
           </div>
         </CalcCard>
 
         <CalcCard
-          title="Prime LAMal (alternative suisse)"
-          description="Prime annuelle estimée de l'assurance maladie suisse de base. À ajuster selon canton, caisse et franchise."
+          title="Tarifs LAMal (modifiables)"
+          description="Tarifs indicatifs. Ajustez selon la caisse maladie, la franchise et le canton de domicile en France."
         >
-          <NumField
-            label="Prime annuelle LAMal (CHF)"
-            value={form.lamalAnnualCHF ?? 0}
-            onChange={(v) => set("lamalAnnualCHF", v)}
-          />
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <NumField
+              label="Tarif adulte (CHF/mois)"
+              value={form.lamalAdultMonthlyCHF ?? 200}
+              onChange={(v) => set("lamalAdultMonthlyCHF", v)}
+              step={1}
+            />
+            <NumField
+              label="Tarif enfant (CHF/mois)"
+              value={form.lamalChildMonthlyCHF ?? 49.4}
+              onChange={(v) => set("lamalChildMonthlyCHF", v)}
+              step={0.1}
+            />
+          </div>
         </CalcCard>
 
         <CalcCard title="Notes">
@@ -184,9 +195,9 @@ function HealthInsuranceFranceCalc() {
           <div className="mt-3 flex items-start gap-2 rounded-md border bg-muted/30 p-3 text-xs text-muted-foreground">
             <Shield className="mt-0.5 h-4 w-4 flex-shrink-0 text-primary" />
             <span>
-              RFR estimé : {result.rfrEUR.toLocaleString("fr-FR")} EUR · PASS 2026 :{" "}
-              {result.passEUR.toLocaleString("fr-FR")} EUR · Abattement (25%) :{" "}
-              {result.abatementEUR.toLocaleString("fr-FR")} EUR.
+              RFR estimé (revenus N-2) : {result.rfrEUR.toLocaleString("fr-FR")} EUR · Abattement{" "}
+              {form.taxYear} : {result.abatementEUR.toLocaleString("fr-FR")} EUR · Assiette :{" "}
+              {result.cmuBaseEUR.toLocaleString("fr-FR")} EUR × 8%.
             </span>
           </div>
           <div className="mt-3 rounded-md border bg-muted/20 p-3 text-xs text-muted-foreground">
