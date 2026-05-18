@@ -94,6 +94,13 @@ function LppCalc() {
     pillar3aContributions: 0,
     healthInsurancePremiums: 0,
     confession: "none" as NonNullable<IncomeTaxInput["confession"]>,
+    // Rentes LPP du certificat (invalidité / orphelin / veuf-veuve)
+    disabilityAmount: 0,
+    disabilityPeriod: "year" as "year" | "month",
+    orphanAmount: 0,
+    orphanPeriod: "year" as "year" | "month",
+    widowAmount: 0,
+    widowPeriod: "year" as "year" | "month",
   });
   useHydrateFormFromPrefill(prefill, setForm);
   const [insuredSalaryManual, setInsuredSalaryManual] = useState(false);
