@@ -1,21 +1,19 @@
-// CMU/CNTFS — assurance santé pour frontaliers français travaillant en Suisse.
+// CMU — Cotisation maladie pour frontaliers français travaillant en Suisse
+// ayant exercé le droit d'option vers la Sécurité sociale française.
+// La cotisation est gérée et collectée par le CNTFS via l'URSSAF.
+// CMU et CNTFS désignent donc le MÊME régime (CNTFS = organisme collecteur).
+//
 // Paramètres 2026.
-//
-// NOTE IMPORTANTE :
-// "CMU" et "CNTFS" désignent le MÊME régime (Cotisation Subsidiaire Maladie
-// gérée par l'URSSAF pour les frontaliers ayant exercé le droit d'option vers
-// la Sécurité sociale française). On parle donc d'UNE SEULE cotisation, comparée
-// à l'option alternative : rester sur la LAMal (assurance maladie suisse).
-//
-// Source : URSSAF — https://www.urssaf.fr — 8% du RFR au-dessus de l'abattement
-// par part fiscale (≈ 27'000 EUR / part en 2026).
+// Formule : (RFR personnel − abattement) × 8%
+// Abattement = 25% du PASS 2026 (forfaitaire, individuel, NON multiplié par
+// les parts fiscales — la déclaration est individuelle pour chaque frontalier).
+// PASS 2026 = 47'100 EUR (Plafond Annuel de la Sécurité Sociale).
+// Sources : urssaf.fr, ameli.fr (section travailleur frontalier suisse), frontalier.org
 
 export interface HealthFranceInput {
   swissGrossSalaryCHF: number;
-  spouseFrenchSalaryEUR: number;
-  spouseHasOwnCoverage: boolean;
   civilStatus: "single" | "married";
-  childrenCount: number;
+  childrenCount: number; // info contextuelle uniquement, n'impacte pas la cotisation CMU
   chfToEurRate: number;
   lamalAnnualCHF?: number;
   taxYear: number;
@@ -29,34 +27,29 @@ export interface BreakdownLine {
 
 export interface HealthFranceResult {
   rfrEUR: number;
-  partsFiscales: number;
+  passEUR: number;
   abatementEUR: number;
   cmuBaseEUR: number;
   cmuAnnualEUR: number;
   cmuAnnualCHF: number;
   lamalAnnualCHF: number;
-  recommended: "CMU_CNTFS" | "LAMAL";
+  recommended: "CMU" | "LAMAL";
   recommendedAnnualCHF: number;
-  savingsCHF: number; // économie annuelle de l'option recommandée vs l'autre
+  savingsCHF: number;
   cmuBreakdown: BreakdownLine[];
   lamalBreakdown: BreakdownLine[];
   notes: string[];
 }
 
 export const HEALTH_FRANCE_PARAMS_2026 = {
+  // Plafond Annuel de la Sécurité Sociale française 2026
+  passEUR: 47_100,
+  // Cotisation CMU
   cmuRate: 0.08,
-  cmuAbatementPerPartEUR: 27_000,
+  cmuAbatementRate: 0.25, // 25% du PASS, forfaitaire et individuel
+  // Prime LAMal moyenne annuelle célibataire Suisse romande (indicatif)
   lamalDefaultSingleCHF: 3_600,
-  lamalDefaultCoupleCHF: 7_200,
-  lamalPerChildCHF: 1_200,
 };
-
-function computeParts(civilStatus: "single" | "married", children: number): number {
-  const base = civilStatus === "married" ? 2 : 1;
-  const kids = Math.max(0, children);
-  const childParts = kids <= 2 ? kids * 0.5 : 1 + (kids - 2);
-  return base + childParts;
-}
 
 const fmtEUR = (n: number) => `${Math.round(n).toLocaleString("fr-FR")} EUR`;
 const fmtCHF = (n: number) => `${Math.round(n).toLocaleString("fr-CH")} CHF`;
@@ -68,61 +61,54 @@ export function computeHealthFrance(input: HealthFranceInput): HealthFranceResul
   const eurFromChf = (chf: number) => chf * rate;
   const chfFromEur = (eur: number) => eur / rate;
 
+  // RFR personnel estimé à partir du salaire suisse brut (revenus N-2 réels en pratique)
   const swissEUR = eurFromChf(input.swissGrossSalaryCHF);
-  const spouseEUR =
-    input.civilStatus === "married" && !input.spouseHasOwnCoverage
-      ? Math.max(0, input.spouseFrenchSalaryEUR)
-      : 0;
-  const rfrEUR = Math.round(swissEUR + spouseEUR);
+  const rfrEUR = Math.round(swissEUR);
 
-  // CMU/CNTFS — cotisation subsidiaire URSSAF
-  const partsFiscales = computeParts(input.civilStatus, input.childrenCount);
-  const abatementEUR = Math.round(p.cmuAbatementPerPartEUR * partsFiscales);
+  // Abattement forfaitaire = 25% du PASS, INDIVIDUEL (pas de parts fiscales)
+  const passEUR = p.passEUR;
+  const abatementEUR = Math.round(passEUR * p.cmuAbatementRate);
   const cmuBaseEUR = Math.max(0, rfrEUR - abatementEUR);
   const cmuAnnualEUR = Math.round(cmuBaseEUR * p.cmuRate);
   const cmuAnnualCHF = Math.round(chfFromEur(cmuAnnualEUR));
 
-  // LAMal — prime estimée selon profil si non renseignée
-  const defaultLamal =
-    (input.civilStatus === "married" ? p.lamalDefaultCoupleCHF : p.lamalDefaultSingleCHF) +
-    Math.max(0, input.childrenCount) * p.lamalPerChildCHF;
   const lamalAnnualCHF =
     input.lamalAnnualCHF && input.lamalAnnualCHF > 0
       ? Math.round(input.lamalAnnualCHF)
-      : defaultLamal;
+      : p.lamalDefaultSingleCHF;
 
-  const recommended: "CMU_CNTFS" | "LAMAL" =
-    cmuAnnualCHF <= lamalAnnualCHF ? "CMU_CNTFS" : "LAMAL";
-  const recommendedAnnualCHF = recommended === "CMU_CNTFS" ? cmuAnnualCHF : lamalAnnualCHF;
+  const recommended: "CMU" | "LAMAL" =
+    cmuAnnualCHF <= lamalAnnualCHF ? "CMU" : "LAMAL";
+  const recommendedAnnualCHF = recommended === "CMU" ? cmuAnnualCHF : lamalAnnualCHF;
   const savingsCHF = Math.abs(lamalAnnualCHF - cmuAnnualCHF);
 
   const cmuBreakdown: BreakdownLine[] = [
-    { label: "Salaire suisse brut", value: `${fmtCHF(input.swissGrossSalaryCHF)} × ${rate} = ${fmtEUR(swissEUR)}` },
-    ...(spouseEUR > 0 ? [{ label: "Revenu conjoint ajouté", value: fmtEUR(spouseEUR) }] : []),
-    { label: "RFR estimé", value: fmtEUR(rfrEUR) },
-    { label: "Parts fiscales", value: partsFiscales.toString() },
-    { label: "Abattement (27'000 €/part)", value: fmtEUR(abatementEUR) },
-    { label: "Assiette de cotisation", value: `${fmtEUR(rfrEUR)} − ${fmtEUR(abatementEUR)} = ${fmtEUR(cmuBaseEUR)}` },
-    { label: "Taux CMU/CNTFS", value: fmtPct(p.cmuRate) },
-    { label: "Cotisation annuelle", value: `${fmtEUR(cmuBaseEUR)} × ${fmtPct(p.cmuRate)} = ${fmtEUR(cmuAnnualEUR)} (≈ ${fmtCHF(cmuAnnualCHF)})` },
+    { label: "Étape 1 — Salaire suisse brut", value: `${fmtCHF(input.swissGrossSalaryCHF)} × ${rate} = ${fmtEUR(swissEUR)}` },
+    { label: "RFR personnel estimé", value: fmtEUR(rfrEUR) },
+    { label: "Étape 2 — PASS 2026", value: fmtEUR(passEUR) },
+    { label: "Abattement (25% du PASS)", value: `${fmtEUR(passEUR)} × 25% = ${fmtEUR(abatementEUR)}` },
+    { label: "Étape 3 — Assiette de cotisation", value: `${fmtEUR(rfrEUR)} − ${fmtEUR(abatementEUR)} = ${fmtEUR(cmuBaseEUR)}` },
+    { label: "Étape 4 — Taux CMU", value: fmtPct(p.cmuRate) },
+    { label: "Cotisation CMU annuelle", value: `${fmtEUR(cmuBaseEUR)} × ${fmtPct(p.cmuRate)} = ${fmtEUR(cmuAnnualEUR)} (≈ ${fmtCHF(cmuAnnualCHF)})` },
   ];
 
   const lamalBreakdown: BreakdownLine[] = [
     { label: "Prime annuelle LAMal", value: fmtCHF(lamalAnnualCHF) },
-    { label: "Couverture", value: "Assurance maladie suisse de base obligatoire (sans droit d'option)" },
-    { label: "À ajuster selon", value: "canton de résidence, caisse, franchise, profil familial" },
+    { label: "Couverture", value: "Assurance maladie suisse de base obligatoire" },
+    { label: "À ajuster selon", value: "canton de résidence, caisse, franchise" },
+    { label: "Complémentaires", value: "Possibles en sus (LCA, dentaire, etc.)" },
   ];
 
   const notes = [
-    "CMU et CNTFS désignent le même régime : la Cotisation Subsidiaire Maladie gérée par l'URSSAF pour les frontaliers ayant exercé le droit d'option vers la Sécurité sociale française.",
-    `RFR estimé : ${rfrEUR.toLocaleString("fr-FR")} EUR (taux ${rate} CHF/EUR).`,
-    `Abattement : ${p.cmuAbatementPerPartEUR.toLocaleString("fr-FR")} EUR × ${partsFiscales} part(s) = ${abatementEUR.toLocaleString("fr-FR")} EUR.`,
-    "Le choix CMU/CNTFS vs LAMal est définitif au moment de la prise de fonction frontalier (droit d'option unique).",
+    "La cotisation CMU frontalier est INDIVIDUELLE : chaque frontalier déclare ses propres revenus, le foyer fiscal n'intervient pas.",
+    "L'abattement (25% du PASS = 11'775 € en 2026) est forfaitaire — il n'est PAS multiplié par les parts fiscales.",
+    "La cotisation est basée sur les revenus N-2 déclarés à l'URSSAF. Estimation ici à partir du salaire suisse actuel.",
+    "Le droit d'option CMU vs LAMal doit être exercé dans les 3 mois suivant la prise de fonction frontalier — choix définitif tant que la situation ne change pas.",
   ];
 
   return {
     rfrEUR,
-    partsFiscales,
+    passEUR,
     abatementEUR,
     cmuBaseEUR,
     cmuAnnualEUR,
