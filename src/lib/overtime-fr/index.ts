@@ -1,6 +1,14 @@
-// Heures supplémentaires — fiscalité côté Suisse + côté France pour les frontaliers.
-// Pour les frontaliers du régime 1983, exonération d'impôt sur le revenu en France
-// jusqu'à un plafond annuel (7'500 EUR en 2026, à valider).
+// Heures supplémentaires — méthode officielle française 2026 pour frontaliers.
+//
+// Méthode :
+//   1. heures_annuelles      = heures_hebdo × 52
+//   2. heures_exonérables    = min(max(0, heures_annuelles − 1840), 368)
+//   3. salaire_exo_théorique = salaire_net_annuel_EUR × (heures_exo / heures_annuelles)
+//   4. salaire_exo_retenu    = min(salaire_exo_théorique, 7'500 €)
+//   5. économie              = salaire_exo_retenu × taux_marginal_IR_FR
+//
+// Hypothèse : l'exonération est française. Côté Suisse l'impôt est dû normalement,
+// donc aucune économie suisse n'est ajoutée ici.
 
 export type OvertimeTaxStatus =
   | "cross_border_fr_1983"
@@ -8,118 +16,151 @@ export type OvertimeTaxStatus =
   | "source_taxed"
   | "tou";
 
+export type SalaryCurrency = "EUR" | "CHF";
+
 export interface OvertimeInput {
   taxStatus: OvertimeTaxStatus;
   workCanton: string;
-  baseAnnualSalaryCHF: number;
-  overtimeAmountCHF: number;
+  /** Heures hebdomadaires de travail (défaut 42). */
+  weeklyHours: number;
+  /** Salaire net annuel imposable saisi par l'utilisateur. */
+  annualNetSalary: number;
+  /** Devise de saisie du salaire. */
+  salaryCurrency: SalaryCurrency;
+  /** Taux CHF → EUR (combien d'EUR pour 1 CHF). Défaut 1.05. */
+  chfToEurRate: number;
+  /** Taux marginal IR France estimé (%). */
+  estimatedFrenchMarginalRate: number;
   civilStatus: "single" | "married";
   childrenCount: number;
-  spouseEmployed: boolean;
+  spouseEmployed?: boolean;
   spouseAnnualSalaryCHF?: number;
-  chfToEurRate: number;
-  estimatedFrenchMarginalRate: number;
   [key: string]: unknown;
 }
 
 export interface OvertimeResult {
   status: OvertimeTaxStatus;
-  overtimeCHF: number;
-  /** Plafond d'exonération France appliqué (EUR). */
-  exemptionCapEUR: number;
+  hasFrenchExemption: boolean;
+  // Heures
+  weeklyHours: number;
+  annualHours: number;
+  hoursThreshold: number; // 1840
+  hoursCap: number; // 368
+  exemptHoursTheoretical: number;
+  exemptHoursRetained: number;
+  // Salaire
+  annualNetSalaryEUR: number;
+  annualNetSalaryCHF: number;
+  exemptSalaryTheoreticalEUR: number;
+  exemptSalaryCapEUR: number; // 7500
+  exemptSalaryRetainedEUR: number;
+  exemptSalaryRetainedCHF: number;
+  // Économie
+  marginalRatePct: number;
+  taxSavingsEUR: number;
+  taxSavingsCHF: number;
+  notes: string[];
+  // Compat fields (anciens consommateurs : PDF / historique / extract-gain)
+  overtimeCHF: number; // = exemptSalaryRetainedCHF (montant pertinent)
+  netOvertimeCHF: number; // = exemptSalaryRetainedCHF
+  exemptionCapEUR: number; // = exemptSalaryCapEUR
   exemptedAmountEUR: number;
   exemptedAmountCHF: number;
-  swissTaxOnOvertime: number;
+  swissTaxOnOvertime: number; // 0 (exonération côté FR uniquement)
   swissRate: number;
-  frenchTaxOnOvertime: number;
+  frenchTaxOnOvertime: number; // évité (= économie)
   frenchRate: number;
-  totalTaxOnOvertime: number;
-  netOvertimeCHF: number;
-  taxSavings: number;
-  notes: string[];
-  hasFrenchExemption: boolean;
+  totalTaxOnOvertime: number; // 0
+  taxSavings: number; // CHF
 }
 
-// Plafond 2026 d'exonération heures supplémentaires (paramètre modifiable).
-export const FRENCH_OVERTIME_EXEMPTION_CAP_EUR_2026 = 7_500;
-// Retenue Suisse accord 1983 : 4.5% du salaire brut (libératoire en France pour
-// l'impôt mais s'applique uniformément sur les heures sup également).
-const SWISS_RATE_FR_ACCORD = 4.5;
+export const OVERTIME_PARAMS_2026 = {
+  hoursThreshold: 1_840,
+  hoursCapPerYear: 368,
+  salaryCapEUR: 7_500,
+  defaultWeeklyHours: 42,
+  defaultChfToEurRate: 1.05,
+} as const;
+
+// Maintenu pour compat avec d'anciens imports
+export const FRENCH_OVERTIME_EXEMPTION_CAP_EUR_2026 = OVERTIME_PARAMS_2026.salaryCapEUR;
 
 export function computeOvertime(input: OvertimeInput): OvertimeResult {
-  const overtime = Math.max(0, Math.round(input.overtimeAmountCHF));
-  const rate = input.chfToEurRate > 0 ? input.chfToEurRate : 1.05;
+  const P = OVERTIME_PARAMS_2026;
+  const rate = input.chfToEurRate > 0 ? input.chfToEurRate : P.defaultChfToEurRate;
+  const weeklyHours = Math.max(0, input.weeklyHours || 0);
+  const annualHours = Math.round(weeklyHours * 52);
+
+  const exemptHoursTheoretical = Math.max(0, annualHours - P.hoursThreshold);
+  const exemptHoursRetained = Math.min(exemptHoursTheoretical, P.hoursCapPerYear);
+
+  const salaryRaw = Math.max(0, input.annualNetSalary || 0);
+  const annualNetSalaryEUR =
+    input.salaryCurrency === "EUR" ? salaryRaw : salaryRaw * rate;
+  const annualNetSalaryCHF =
+    input.salaryCurrency === "CHF" ? salaryRaw : rate > 0 ? salaryRaw / rate : 0;
+
+  const exemptSalaryTheoreticalEUR =
+    annualHours > 0 ? annualNetSalaryEUR * (exemptHoursRetained / annualHours) : 0;
+  const exemptSalaryRetainedEUR = Math.min(exemptSalaryTheoreticalEUR, P.salaryCapEUR);
+  const exemptSalaryRetainedCHF = rate > 0 ? exemptSalaryRetainedEUR / rate : 0;
+
+  const hasFrenchExemption = input.taxStatus === "cross_border_fr_1983";
+  const marg = Math.max(0, input.estimatedFrenchMarginalRate || 0);
+  const taxSavingsEUR = hasFrenchExemption ? (exemptSalaryRetainedEUR * marg) / 100 : 0;
+  const taxSavingsCHF = rate > 0 ? taxSavingsEUR / rate : 0;
+
   const notes: string[] = [];
-  const exemptionCapEUR = FRENCH_OVERTIME_EXEMPTION_CAP_EUR_2026;
-  let swissTax = 0;
-  let swissRate = 0;
-  let frenchTax = 0;
-  let frenchRate = 0;
-  let exemptedEUR = 0;
-  let hasFrenchExemption = false;
-
-  switch (input.taxStatus) {
-    case "cross_border_fr_1983": {
-      hasFrenchExemption = true;
-      swissRate = SWISS_RATE_FR_ACCORD;
-      swissTax = Math.round((overtime * swissRate) / 100);
-      const overtimeEUR = overtime * rate;
-      exemptedEUR = Math.min(overtimeEUR, exemptionCapEUR);
-      const taxableEUR = Math.max(0, overtimeEUR - exemptedEUR);
-      const marg = Math.max(0, input.estimatedFrenchMarginalRate);
-      frenchRate = marg;
-      frenchTax = Math.round((taxableEUR * marg) / 100 / rate);
-      notes.push(
-        `Régime frontalier 1983 (${input.workCanton}) : retenue Suisse libératoire ${swissRate}% + impôt français au barème progressif.`,
-        `Exonération heures supplémentaires France : jusqu'à ${exemptionCapEUR.toLocaleString("fr-FR")} EUR/an. Taux marginal estimé : ${marg}%.`,
-      );
-      break;
-    }
-    case "cross_border_ge": {
-      // Imposition à la source GE — barème ordinaire, pas d'exonération spécifique.
-      swissRate = 12; // approximation barème IS GE pour heures sup
-      swissTax = Math.round((overtime * swissRate) / 100);
-      notes.push(
-        "Frontalier Genève : imposition à la source genevoise selon barème. Pas d'exonération spécifique aux heures sup dans ce régime.",
-      );
-      break;
-    }
-    case "source_taxed":
-    case "tou": {
-      swissRate = 15; // approximation taux marginal IS suisse
-      swissTax = Math.round((overtime * swissRate) / 100);
-      notes.push(
-        "Imposition à la source / TOU : heures sup taxées au taux marginal suisse, pas d'exonération spécifique.",
-      );
-      break;
-    }
+  if (hasFrenchExemption) {
+    notes.push(
+      "Régime frontalier 1983 : exonération d'impôt sur le revenu en France pour la part heures supplémentaires, dans la limite de 7'500 € net/an et 368 h/an.",
+    );
+  } else if (input.taxStatus === "cross_border_ge") {
+    notes.push(
+      "Frontalier Genève : imposition à la source genevoise selon le barème, pas d'exonération spécifique aux heures supplémentaires applicable côté France.",
+    );
+  } else {
+    notes.push(
+      "Statut hors régime frontalier 1983 : l'exonération française heures sup ne s'applique pas. Le calcul est affiché à titre indicatif.",
+    );
   }
-
-  const totalTax = swissTax + frenchTax;
-  const netOvertime = Math.max(0, overtime - totalTax);
-  // Gain fiscal grâce à l'exonération = ce qui aurait été dû en France sans exonération.
-  const taxSavings = hasFrenchExemption
-    ? Math.round((exemptedEUR * input.estimatedFrenchMarginalRate) / 100 / rate)
-    : 0;
-
   notes.push(
-    "Les règles fiscales évoluent. Plafond d'exonération à vérifier pour l'année en cours.",
+    "Documents nécessaires : certificat de salaire suisse annuel, relevé annuel d'heures de travail, attestation employeur (heures hebdomadaires), formulaire fiscal français 2041-AE.",
+  );
+  notes.push(
+    "Plafonds 2026 : 368 h/an et 7'500 € de revenu net exonéré. Méthode officielle française pour les frontaliers.",
   );
 
   return {
     status: input.taxStatus,
-    overtimeCHF: overtime,
-    exemptionCapEUR,
-    exemptedAmountEUR: Math.round(exemptedEUR),
-    exemptedAmountCHF: Math.round(exemptedEUR / rate),
-    swissTaxOnOvertime: swissTax,
-    swissRate,
-    frenchTaxOnOvertime: frenchTax,
-    frenchRate,
-    totalTaxOnOvertime: totalTax,
-    netOvertimeCHF: netOvertime,
-    taxSavings,
-    notes,
     hasFrenchExemption,
+    weeklyHours,
+    annualHours,
+    hoursThreshold: P.hoursThreshold,
+    hoursCap: P.hoursCapPerYear,
+    exemptHoursTheoretical,
+    exemptHoursRetained,
+    annualNetSalaryEUR: Math.round(annualNetSalaryEUR),
+    annualNetSalaryCHF: Math.round(annualNetSalaryCHF),
+    exemptSalaryTheoreticalEUR: Math.round(exemptSalaryTheoreticalEUR),
+    exemptSalaryCapEUR: P.salaryCapEUR,
+    exemptSalaryRetainedEUR: Math.round(exemptSalaryRetainedEUR),
+    exemptSalaryRetainedCHF: Math.round(exemptSalaryRetainedCHF),
+    marginalRatePct: marg,
+    taxSavingsEUR: Math.round(taxSavingsEUR),
+    taxSavingsCHF: Math.round(taxSavingsCHF),
+    notes,
+    // Compat
+    overtimeCHF: Math.round(exemptSalaryRetainedCHF),
+    netOvertimeCHF: Math.round(exemptSalaryRetainedCHF),
+    exemptionCapEUR: P.salaryCapEUR,
+    exemptedAmountEUR: Math.round(exemptSalaryRetainedEUR),
+    exemptedAmountCHF: Math.round(exemptSalaryRetainedCHF),
+    swissTaxOnOvertime: 0,
+    swissRate: 0,
+    frenchTaxOnOvertime: Math.round(taxSavingsCHF),
+    frenchRate: marg,
+    totalTaxOnOvertime: 0,
+    taxSavings: Math.round(taxSavingsCHF),
   };
 }

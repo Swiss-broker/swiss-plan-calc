@@ -1034,43 +1034,69 @@ export function exportOvertimePdf(args: {
     ...args.header,
   } as PdfHeaderInfo);
 
-  pdf.situationBanner("FISCALITÉ HEURES SUP · 2026");
+  pdf.situationBanner("FISCALITÉ HEURES SUP · 2026 — MÉTHODE OFFICIELLE FR");
   pdf.section("Synthèse");
   pdf.metricsGrid([
-    { label: "Net perçu sur heures sup", value: result.netOvertimeCHF, tone: "success" },
-    { label: "Économie fiscale (exonération)", value: result.taxSavings, tone: "primary" },
-    { label: "Impôt total", value: result.totalTaxOnOvertime, tone: "warning" },
-    { label: "Heures sup brutes", value: result.overtimeCHF },
+    { label: "Économie fiscale (CHF)", value: result.taxSavingsCHF, tone: "success" },
+    { label: "Économie fiscale (EUR)", value: result.taxSavingsEUR, tone: "primary" },
+    { label: "Salaire exonéré retenu (EUR)", value: result.exemptSalaryRetainedEUR },
+    { label: "Heures exonérées", value: result.exemptHoursRetained },
   ]);
 
   pdf.section("Paramètres");
   pdf.kvTable([
-    ["Statut fiscal", input.taxStatus],
+    ["Statut fiscal", String(input.taxStatus)],
     ["Canton de travail", `${input.workCanton} · ${cantonName(input.workCanton)}`],
-    ["Salaire de base", formatCHF(input.baseAnnualSalaryCHF)],
-    ["Heures sup brutes", formatCHF(input.overtimeAmountCHF)],
+    ["Heures hebdomadaires", `${input.weeklyHours} h`],
+    [
+      "Salaire net annuel imposable",
+      `${Number(input.annualNetSalary).toLocaleString("fr-CH")} ${input.salaryCurrency}`,
+    ],
+    ["Taux CHF → EUR", String(input.chfToEurRate)],
     ["Situation civile", input.civilStatus === "married" ? "Marié·e / pacsé·e" : "Célibataire"],
     ["Enfants", String(input.childrenCount ?? 0)],
-    ["Conjoint salarié", input.spouseEmployed ? `Oui (${formatCHF(input.spouseAnnualSalaryCHF ?? 0)})` : "Non"],
-    ["Taux CHF→EUR", String(input.chfToEurRate)],
     ["Taux marginal IR FR estimé", `${input.estimatedFrenchMarginalRate}%`],
   ]);
 
-  pdf.section("Détail fiscal");
+  pdf.section("Calcul des heures");
   pdf.kvTable([
-    ["Impôt Suisse", `${formatCHF(result.swissTaxOnOvertime)} (${result.swissRate}%)`],
-    ["Impôt France", result.hasFrenchExemption ? `${formatCHF(result.frenchTaxOnOvertime)} (${result.frenchRate}% sur la part > plafond)` : "Non applicable"],
-    ["Plafond exonération France", `${result.exemptionCapEUR.toLocaleString("fr-FR")} EUR`],
-    ["Montant exonéré", `${formatCHF(result.exemptedAmountCHF)} (${result.exemptedAmountEUR.toLocaleString("fr-FR")} EUR)`],
-    ["Charge effective", input.overtimeAmountCHF > 0 ? formatPct((result.totalTaxOnOvertime / input.overtimeAmountCHF) * 100) : "—"],
+    ["Heures annuelles travaillées", `${result.annualHours} h`],
+    ["Seuil fiscal FR reconnu", `${result.hoursThreshold} h`],
+    ["Heures exonérables théoriques", `${result.exemptHoursTheoretical} h`],
+    ["Plafond légal", `${result.hoursCap} h/an`],
+    ["Heures exonérables retenues", `${result.exemptHoursRetained} h`],
   ]);
+
+  pdf.section("Calcul du salaire exonéré");
+  pdf.kvTable([
+    ["Salaire net annuel (EUR)", `${result.annualNetSalaryEUR.toLocaleString("fr-FR")} EUR`],
+    ["Salaire net annuel (CHF)", formatCHF(result.annualNetSalaryCHF)],
+    [
+      "Part théorique exonérable",
+      `${result.exemptSalaryTheoreticalEUR.toLocaleString("fr-FR")} EUR`,
+    ],
+    ["Plafond fiscal légal", `${result.exemptSalaryCapEUR.toLocaleString("fr-FR")} EUR`],
+    [
+      "Montant exonéré retenu",
+      `${result.exemptSalaryRetainedEUR.toLocaleString("fr-FR")} EUR (${formatCHF(result.exemptSalaryRetainedCHF)})`,
+    ],
+  ]);
+
+  pdf.section("Économie fiscale");
+  pdf.kvTable([
+    ["Taux marginal IR FR", `${result.marginalRatePct}%`],
+    ["Économie (EUR)", `${result.taxSavingsEUR.toLocaleString("fr-FR")} EUR`],
+    ["Économie (CHF)", formatCHF(result.taxSavingsCHF)],
+    ["Exonération applicable", result.hasFrenchExemption ? "Oui" : "Non"],
+  ]);
+  void formatPct;
 
   pdf.section("Notes");
   for (const n of result.notes) pdf.paragraph(n);
 
   pdf.section("Avertissements");
   pdf.callout(
-    "Plafond d'exonération heures supplémentaires France à vérifier chaque année. Les taux marginaux sont des estimations. À valider avec un conseiller fiscal.",
+    "Plafonds 2026 : 368 h/an et 7'500 € de revenu net exonéré. Méthode officielle française pour les frontaliers. À valider pour les cas particuliers (temps partiel, contrats spéciaux, etc.).",
     "warning",
   );
 

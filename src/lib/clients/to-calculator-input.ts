@@ -367,12 +367,16 @@ export function toOvertimeInput(b: ClientBundle) {
   const isCouple =
     b.client.civil_status === "married" ||
     b.client.civil_status === "registered_partnership";
+  // Estimation : net imposable ≈ 80% du brut (charges sociales suisses).
+  const estimatedNetCHF = main !== undefined ? Math.round(main * 0.8) : undefined;
   return {
     workCanton: b.client.canton ?? undefined,
-    baseAnnualSalaryCHF: main,
+    annualNetSalary: estimatedNetCHF,
+    salaryCurrency: estimatedNetCHF !== undefined ? ("CHF" as const) : undefined,
     civilStatus: isCouple ? ("married" as const) : ("single" as const),
     childrenCount,
     spouseEmployed: spouse !== undefined && spouse > 0 ? true : undefined,
     spouseAnnualSalaryCHF: spouse,
   };
 }
+
