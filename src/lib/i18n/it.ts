@@ -1612,4 +1612,23 @@ export const it: Record<string, string> = {
   "pdf.director.fname": "comparatore_dirigente",
 
   "pdf.export": "Esporta in PDF",
+
+  "calc.section.prevoyance": "Previdenza",
+  "calc.section.prevoyance.desc":
+    "Calcolo delle prestazioni di vecchiaia, invalidità e superstiti",
+  "calc.section.fiscalite": "Fiscalità",
+  "calc.section.fiscalite.desc":
+    "Imposta sul reddito/patrimonio, alla fonte, TOU, frontalieri",
+  "calc.section.strategie": "Strategia & supporto decisionale",
+  "calc.section.strategie.desc":
+    "Ottimizzazioni per dirigenti e strumenti di confronto",
+  "calc.group.lpp.title": "2° pilastro (LPP)",
+  "calc.group.lpp.desc":
+    "Proiezione del capitale, riscatti, libero passaggio, rendite certificato",
+  "calc.group.fiscalite.title": "Fiscalità svizzera",
+  "calc.group.fiscalite.desc":
+    "Imposta reddito & patrimonio, alla fonte, TOU, frontalieri FR",
+  "calc.group.decision.title": "Supporto decisionale",
+  "calc.group.decision.desc":
+    "Comparatore cantonale, rendita vs capitale, comparatore investimenti",
 };
