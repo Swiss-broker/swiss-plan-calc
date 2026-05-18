@@ -955,7 +955,7 @@ export function exportDirectorCompensationPdf(args: {
 }
 
 // ============================================================================
-// SANTÉ FRONTALIERS (CMU / CNTFS)
+// SANTÉ FRONTALIERS (CMU/CNTFS vs LAMal)
 // ============================================================================
 
 export function exportHealthFrancePdf(args: {
@@ -964,25 +964,20 @@ export function exportHealthFrancePdf(args: {
   result: import("@/lib/health-france").HealthFranceResult;
 }) {
   const { input, result } = args;
-  const recoLabel =
-    result.recommended === "CMU"
-      ? "CMU (France)"
-      : result.recommended === "CNTFS"
-        ? "CNTFS (France)"
-        : "Assurance privée suisse";
+  const recoLabel = result.recommended === "CMU_CNTFS" ? "CMU/CNTFS (France)" : "LAMal (Suisse)";
   const pdf = new ReportPdf({
-    title: "CNTFS / LAMal",
-    subtitle: `Régime recommandé : ${recoLabel}`,
+    title: "CMU/CNTFS vs LAMal",
+    subtitle: `Option recommandée : ${recoLabel}`,
     ...args.header,
   } as PdfHeaderInfo);
 
-  pdf.situationBanner("COMPARATIF CMU / CNTFS / PRIVÉ · 2026");
+  pdf.situationBanner("DROIT D'OPTION FRONTALIER · 2026");
   pdf.section("Synthèse");
   pdf.metricsGrid([
     { label: "Cotisation annuelle (recommandé)", value: result.recommendedAnnualCHF, tone: "success" },
-    { label: "Économie vs option la plus chère", value: result.savingsVsWorstCHF, tone: "primary" },
+    { label: "Économie annuelle vs autre option", value: result.savingsCHF, tone: "primary" },
     { label: "RFR estimé (EUR)", value: result.rfrEUR },
-    { label: "Seuil exonération CMU (EUR)", value: result.cmuThresholdEUR },
+    { label: "Abattement (EUR)", value: result.abatementEUR },
   ]);
 
   pdf.section("Profil");
@@ -996,22 +991,21 @@ export function exportHealthFrancePdf(args: {
     ["Année fiscale", String(input.taxYear)],
   ]);
 
-  pdf.section("Comparatif des régimes");
-  const rows: Array<[string, string, string, string]> = [
-    ["CMU", formatCHF(result.cmuAnnualCHF), `${result.cmuAnnualEUR} EUR`, result.recommended === "CMU" ? "★" : ""],
-    ["CNTFS (approx.)", formatCHF(result.cntfsAnnualCHF), `${result.cntfsAnnualEUR} EUR`, result.recommended === "CNTFS" ? "★" : ""],
-  ];
-  if (result.privateAnnualCHF !== null) {
-    rows.push(["Assurance privée CH", formatCHF(result.privateAnnualCHF), "—", result.recommended === "PRIVATE" ? "★" : ""]);
-  }
-  pdf.table(["Régime", "CHF/an", "EUR/an", ""], rows);
+  pdf.section("Comparatif");
+  pdf.table(
+    ["Option", "CHF/an", "EUR/an", ""],
+    [
+      ["CMU/CNTFS (France)", formatCHF(result.cmuAnnualCHF), `${result.cmuAnnualEUR} EUR`, result.recommended === "CMU_CNTFS" ? "★" : ""],
+      ["LAMal (Suisse)", formatCHF(result.lamalAnnualCHF), "—", result.recommended === "LAMAL" ? "★" : ""],
+    ],
+  );
 
   pdf.section("Notes");
   for (const n of result.notes) pdf.paragraph(n);
 
   pdf.section("Avertissements");
   pdf.callout(
-    "Calculs indicatifs basés sur les barèmes 2026 connus. CMU et CNTFS évoluent annuellement. À valider avec un conseiller fiscal pour les cas particuliers (changement de statut, mi-année, etc.).",
+    "Calculs indicatifs basés sur les barèmes 2026 connus. CMU/CNTFS et LAMal évoluent annuellement. Le choix entre CMU/CNTFS et LAMal résulte du droit d'option unique exercé au début de l'activité frontalière.",
     "warning",
   );
 

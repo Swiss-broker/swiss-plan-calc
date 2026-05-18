@@ -577,11 +577,12 @@ function formatMetrics(
     }
     case "health_insurance_france": {
       const reco = str(s.recommended);
-      if (reco) out.push({ label: "Régime recommandé", value: reco === "CMU" ? "CMU" : reco === "CNTFS" ? "CNTFS" : "Assurance privée CH", tone: "primary" });
+      const recoLabel = reco === "LAMAL" ? "LAMal (Suisse)" : reco ? "CMU/CNTFS (France)" : "—";
+      if (reco) out.push({ label: "Option recommandée", value: recoLabel, tone: "primary" });
       if (num(s.recommendedAnnualCHF)) out.push({ label: "Cotisation annuelle (recommandé)", value: num(s.recommendedAnnualCHF), tone: "success" });
-      if (num(s.savingsVsWorstCHF)) out.push({ label: "Économie vs option la plus chère", value: num(s.savingsVsWorstCHF), tone: "success" });
-      if (num(s.cmuAnnualCHF)) out.push({ label: "CMU", value: num(s.cmuAnnualCHF) });
-      if (num(s.cntfsAnnualCHF)) out.push({ label: "CNTFS", value: num(s.cntfsAnnualCHF) });
+      if (num(s.savingsCHF)) out.push({ label: "Économie vs autre option", value: num(s.savingsCHF), tone: "success" });
+      if (num(s.cmuAnnualCHF)) out.push({ label: "CMU/CNTFS", value: num(s.cmuAnnualCHF) });
+      if (num(s.lamalAnnualCHF)) out.push({ label: "LAMal", value: num(s.lamalAnnualCHF) });
       break;
     }
     case "overtime": {
@@ -750,11 +751,12 @@ function buildComment(entry: HistoryEntry): string | null {
     case "health_insurance_france": {
       const reco = str(s.recommended);
       const cot = num(s.recommendedAnnualCHF);
-      const sav = num(s.savingsVsWorstCHF);
+      const sav = num(s.savingsCHF);
       if (!reco || !cot) return entry.note?.trim() || null;
-      const recoLabel = reco === "CMU" ? "CMU" : reco === "CNTFS" ? "CNTFS" : "assurance privée suisse";
-      const savTxt = sav > 0 ? ` Économie annuelle vs option la plus chère : ${formatCHF(sav)}.` : "";
-      return `Pour ce profil de frontalier, le régime ${recoLabel} ressort comme le plus avantageux avec une cotisation annuelle estimée à ${formatCHF(cot)}.${savTxt} Calculs basés sur les barèmes 2026 connus, à valider avec le conseiller fiscal.${entry.note ? ` ${entry.note.trim()}` : ""}`;
+      const recoLabel = reco === "LAMAL" ? "LAMal (Suisse)" : "CMU/CNTFS (France)";
+      const otherLabel = reco === "LAMAL" ? "CMU/CNTFS" : "LAMal";
+      const savTxt = sav > 0 ? ` Économie annuelle vs ${otherLabel} : ${formatCHF(sav)}.` : "";
+      return `Pour ce profil de frontalier, l'option ${recoLabel} ressort comme la plus avantageuse avec une cotisation annuelle estimée à ${formatCHF(cot)}.${savTxt} CMU et CNTFS désignent le même régime (Cotisation Subsidiaire Maladie URSSAF). Calculs basés sur les barèmes 2026.${entry.note ? ` ${entry.note.trim()}` : ""}`;
     }
     case "overtime": {
       const net = num(s.netOvertimeCHF);

@@ -154,14 +154,15 @@ export function extractGain(entry: HistoryEntry): ExtractedGain {
       };
     }
     case "health_insurance_france": {
-      const amount = num(summary.savingsVsWorstCHF);
+      const amount = num(summary.savingsCHF);
       if (amount <= 0) return none();
       const reco = s(summary.recommended);
+      const recoLabel = reco === "LAMAL" ? "LAMal" : "CMU/CNTFS";
       return {
         type: "annual",
         amount: Math.round(amount),
-        label: `Assurance santé frontalier (${reco ?? "régime optimisé"})`,
-        details: "Économie annuelle vs option la plus chère",
+        label: `Assurance santé frontalier (${recoLabel})`,
+        details: "Économie annuelle vs autre option",
       };
     }
     case "overtime": {
