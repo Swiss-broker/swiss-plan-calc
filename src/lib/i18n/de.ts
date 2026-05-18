@@ -1614,4 +1614,23 @@ export const de: Record<string, string> = {
   "pdf.director.fname": "geschaeftsfuehrer_vergleich",
 
   "pdf.export": "Als PDF exportieren",
+
+  "calc.section.prevoyance": "Vorsorge",
+  "calc.section.prevoyance.desc":
+    "Berechnung von Alters-, Invaliden- und Hinterlassenenleistungen",
+  "calc.section.fiscalite": "Steuern",
+  "calc.section.fiscalite.desc":
+    "Einkommens-/Vermögenssteuer, Quellensteuer, TOU, Grenzgänger",
+  "calc.section.strategie": "Strategie & Entscheidungshilfe",
+  "calc.section.strategie.desc":
+    "Optimierungen für Geschäftsführer und Vergleichstools",
+  "calc.group.lpp.title": "2. Säule (BVG)",
+  "calc.group.lpp.desc":
+    "Kapitalprojektion, Einkäufe, Freizügigkeit, Zertifikatsrenten",
+  "calc.group.fiscalite.title": "Schweizer Steuern",
+  "calc.group.fiscalite.desc":
+    "Einkommens- & Vermögenssteuer, Quellensteuer, TOU, Grenzgänger FR",
+  "calc.group.decision.title": "Entscheidungshilfe",
+  "calc.group.decision.desc":
+    "Kantonsvergleich, Rente vs. Kapital, Anlagenvergleich",
 };
