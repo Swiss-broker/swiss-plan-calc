@@ -577,11 +577,12 @@ function formatMetrics(
     }
     case "health_insurance_france": {
       const reco = str(s.recommended);
-      if (reco) out.push({ label: "Régime recommandé", value: reco === "CMU" ? "CMU" : reco === "CNTFS" ? "CNTFS" : "Assurance privée CH", tone: "primary" });
+      const recoLabel = reco === "LAMAL" ? "LAMal (Suisse)" : reco ? "CMU/CNTFS (France)" : "—";
+      if (reco) out.push({ label: "Option recommandée", value: recoLabel, tone: "primary" });
       if (num(s.recommendedAnnualCHF)) out.push({ label: "Cotisation annuelle (recommandé)", value: num(s.recommendedAnnualCHF), tone: "success" });
-      if (num(s.savingsVsWorstCHF)) out.push({ label: "Économie vs option la plus chère", value: num(s.savingsVsWorstCHF), tone: "success" });
-      if (num(s.cmuAnnualCHF)) out.push({ label: "CMU", value: num(s.cmuAnnualCHF) });
-      if (num(s.cntfsAnnualCHF)) out.push({ label: "CNTFS", value: num(s.cntfsAnnualCHF) });
+      if (num(s.savingsCHF)) out.push({ label: "Économie vs autre option", value: num(s.savingsCHF), tone: "success" });
+      if (num(s.cmuAnnualCHF)) out.push({ label: "CMU/CNTFS", value: num(s.cmuAnnualCHF) });
+      if (num(s.lamalAnnualCHF)) out.push({ label: "LAMal", value: num(s.lamalAnnualCHF) });
       break;
     }
     case "overtime": {
