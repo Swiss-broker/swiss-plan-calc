@@ -66,6 +66,10 @@ function TaxGlobalCalc() {
   const showFrontalierBlock =
     result.regime === "cross_border_ge" || result.regime === "cross_border_fr_1983";
   const showTouBlock = result.regime === "source_taxed" || result.regime === "tou";
+  const isFrontalier = showFrontalierBlock;
+  const isCouple = form.civilStatus === "married" || form.civilStatus === "registered_partnership";
+  const isCohabiting = form.civilStatus === "cohabiting";
+
 
   return (
     <div className="space-y-6">
@@ -83,13 +87,21 @@ function TaxGlobalCalc() {
               </Badge>
             </div>
             <p className="mt-1 text-sm opacity-90">{t("calc.global.subtitle")}</p>
-            <div className="mt-3 inline-flex items-center gap-2 rounded-full bg-white/15 px-3 py-1 text-xs font-semibold">
-              <span className="opacity-80">{t("calc.global.regime.detected")} :</span>
-              <span>{result.regimeLabel}</span>
+            <div className="mt-3 flex flex-wrap items-center gap-2">
+              <div className="inline-flex items-center gap-2 rounded-full bg-white/15 px-3 py-1 text-xs font-semibold">
+                <span className="opacity-80">{t("calc.global.regime.detected")} :</span>
+                <span>{result.regimeLabel}</span>
+              </div>
+              {isFrontalier && (
+                <Badge className="bg-amber-400 text-amber-950 hover:bg-amber-400/90">
+                  🇫🇷→🇨🇭 {t("calc.global.badge.frontalier")}
+                </Badge>
+              )}
             </div>
           </div>
         </div>
       </CalcCard>
+
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-5">
         {/* LEFT — Fiche client */}
@@ -161,14 +173,20 @@ function TaxGlobalCalc() {
                     <Field label={t("calc.global.field.civil_status")}>
                       <Select
                         value={form.civilStatus}
+
                         onValueChange={(v) =>
-                          set("civilStatus", v as "single" | "married")
+                          set("civilStatus", v as TaxGlobalInput["civilStatus"])
                         }
                       >
                         <SelectTrigger><SelectValue /></SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="single">Célibataire</SelectItem>
-                          <SelectItem value="married">Marié / partenariat</SelectItem>
+                          <SelectItem value="single">{t("enum.civil_status.single")}</SelectItem>
+                          <SelectItem value="married">{t("enum.civil_status.married")}</SelectItem>
+                          <SelectItem value="registered_partnership">{t("enum.civil_status.registered_partnership")}</SelectItem>
+                          <SelectItem value="cohabiting">{t("enum.civil_status.cohabiting")}</SelectItem>
+                          <SelectItem value="divorced">{t("enum.civil_status.divorced")}</SelectItem>
+                          <SelectItem value="separated">{t("enum.civil_status.separated")}</SelectItem>
+                          <SelectItem value="widowed">{t("enum.civil_status.widowed")}</SelectItem>
                         </SelectContent>
                       </Select>
                     </Field>
@@ -198,7 +216,7 @@ function TaxGlobalCalc() {
                       value={form.age ?? 40}
                       onChange={(v) => set("age", v)}
                     />
-                    {form.civilStatus === "married" && (
+                    {isCouple && (
                       <Field label={t("calc.global.field.spouse_employed")}>
                         <div className="flex h-10 items-center">
                           <Switch
@@ -209,8 +227,14 @@ function TaxGlobalCalc() {
                       </Field>
                     )}
                   </div>
+                  {isCohabiting && (
+                    <p className="mt-3 rounded-md border border-amber-500/30 bg-amber-500/5 p-2 text-xs text-amber-700 dark:text-amber-300">
+                      {t("calc.global.note.cohabiting")}
+                    </p>
+                  )}
                 </AccordionContent>
               </AccordionItem>
+
 
               <AccordionItem value="income">
                 <AccordionTrigger>{t("calc.global.section.income")}</AccordionTrigger>
@@ -228,7 +252,7 @@ function TaxGlobalCalc() {
                       onChange={(v) => set("bonus", v)}
                       suffix="CHF"
                     />
-                    {form.civilStatus === "married" && (
+                    {isCouple && (
                       <NumField
                         label={t("calc.global.field.spouse_salary")}
                         value={form.spouseGrossSalary}
@@ -414,7 +438,29 @@ function TaxGlobalCalc() {
                 value={result.marginalRate}
               />
             </div>
+            {isFrontalier && (
+              <div className="mt-3 grid grid-cols-2 gap-3">
+                <MoneyTile
+                  label={t("calc.global.tile.swiss_part")}
+                  value={result.swissShareCHF}
+                />
+                <MoneyTile
+                  label={t("calc.global.tile.foreign_part")}
+                  value={result.foreignShareCHF}
+                />
+                <MoneyTile
+                  label={t("calc.global.tile.social")}
+                  value={result.socialChargesCHF}
+                  tone="warning"
+                />
+                <MoneyTile
+                  label={t("calc.global.tile.gross")}
+                  value={result.grossIncomeCHF}
+                />
+              </div>
+            )}
           </CalcCard>
+
 
           {/* Breakdown — ordinaire */}
           {result.income && (

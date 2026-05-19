@@ -16,12 +16,22 @@ export type Regime =
   | "tou" // quasi-résident éligible TOU
   | "unknown";
 
+/** Statuts civils complets — alignés avec l'enum DB + concubinage (non persisté). */
+export type GlobalCivilStatus =
+  | "single"
+  | "married"
+  | "registered_partnership"
+  | "cohabiting" // concubinage : imposition séparée en CH
+  | "divorced"
+  | "separated"
+  | "widowed";
+
 export interface TaxGlobalInput {
   // === Identité & ménage ===
   canton: string;
   countryOfResidence: string; // "CH", "FR", ...
   permit: "swiss" | "C" | "B" | "L" | "G" | "Ci" | "F" | "other";
-  civilStatus: "single" | "married";
+  civilStatus: GlobalCivilStatus;
   spouseEmployed: boolean;
   children: number;
   confession: "none" | "catholic" | "protestant" | "other";
@@ -68,8 +78,18 @@ export interface TaxGlobalResult {
   health?: HealthFranceResult;
 
   // KPI consolidés
+  /** Impôt total (CH + étranger) — n'inclut PAS les charges sociales / santé */
   totalTaxCHF: number;
+  /** Charges sociales hors impôt (LAMal / CMU) — séparé pour clarté */
+  socialChargesCHF: number;
+  /** Revenu brut de référence utilisé pour les taux */
+  grossIncomeCHF: number;
+  /** Net annuel = brut − impôt − charges sociales */
   netAnnualCHF: number;
+  /** Part suisse (impôt CH retenu) */
+  swissShareCHF: number;
+  /** Part étrangère (impôt pays de résidence) */
+  foreignShareCHF: number;
   effectiveRate: number;
   marginalRate: number;
   notes: string[];

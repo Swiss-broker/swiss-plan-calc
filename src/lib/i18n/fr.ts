@@ -265,6 +265,12 @@ export const fr: Record<string, string> = {
   "enum.civil_status.divorced": "Divorcé(e)",
   "enum.civil_status.widowed": "Veuf / Veuve",
   "enum.civil_status.separated": "Séparé(e)",
+  "enum.civil_status.cohabiting": "Concubinage",
+  "calc.global.badge.frontalier": "Frontalier",
+  "calc.global.note.cohabiting": "Concubinage : en Suisse, chaque partenaire est imposé séparément (barème célibataire). Aucun cumul de revenus.",
+  "calc.global.tile.social": "Charges santé (LAMal/CMU)",
+  "calc.global.tile.gross": "Revenu brut",
+
 
   // === Enums : confession ===
   "enum.confession.none": "Sans confession",

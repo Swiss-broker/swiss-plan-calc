@@ -1,7 +1,7 @@
 // Détection automatique du régime fiscal à partir de l'input unifié.
 // Réutilise les règles déjà encodées dans le projet (suggestTaxStatus, cross-border).
 
-import type { TaxGlobalInput, Regime } from "./types";
+import type { TaxGlobalInput, Regime, GlobalCivilStatus } from "./types";
 import { isFrAccordCanton } from "@/lib/tax/cross-border";
 
 export interface RegimeDetection {
@@ -9,6 +9,26 @@ export interface RegimeDetection {
   regimeLabel: string;
   reason: string;
 }
+
+/** Couple fiscal (CH) : seulement mariage + partenariat enregistré. */
+export function isCoupleStatus(s: GlobalCivilStatus): boolean {
+  return s === "married" || s === "registered_partnership";
+}
+
+/** Convertit un statut "global" vers le statut attendu par les moteurs (income/source). */
+export function toTaxStatus(
+  s: GlobalCivilStatus,
+  children: number,
+): "single" | "married" | "single_with_children" {
+  if (isCoupleStatus(s)) return "married";
+  return children > 0 ? "single_with_children" : "single";
+}
+
+/** Statut binaire FR (frontalier) : couple = mariage/partenariat seulement. */
+export function toFrenchStatus(s: GlobalCivilStatus): "single" | "married" {
+  return isCoupleStatus(s) ? "married" : "single";
+}
+
 
 export function detectRegime(input: TaxGlobalInput): RegimeDetection {
   const country = (input.countryOfResidence || "").toUpperCase();

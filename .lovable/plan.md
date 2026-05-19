@@ -1,122 +1,80 @@
-## Calculateur Fiscal Suisse Global — Fusion des 4 calculateurs
+## 1. États civils complets
 
-### Objectif
-Remplacer dans l'UI les 4 calculateurs fiscaux (Frontalier FR, Revenu/Fortune, Source, TOU/Quasi-résident) par **UN SEUL** module `/calculators/tax-global` qui :
-- Détecte automatiquement le régime fiscal du client
-- Affiche dynamiquement uniquement les champs utiles
-- Lance tous les calculs en parallèle
-- Compare les scénarios (statut actuel vs TOU vs permis C vs optimisations)
+Les enums DB existent déjà avec : `single`, `married`, `registered_partnership`, `divorced`, `widowed`, `separated` (voir `CIVIL_STATUS_LABELS`). Le calculateur Global n'accepte aujourd'hui que `single | married`.
 
-**La logique métier des 4 moteurs est 100% conservée** — on l'orchestre, on ne la réécrit pas.
+À faire :
+- Étendre `TaxGlobalInput.civilStatus` à toute la liste DB + `cohabiting` (concubinage).
+- UI : remplacer le `<Select>` par la liste complète (Célibataire, Marié(e), Partenariat enregistré, Concubinage, Divorcé(e), Séparé(e), Veuf/Veuve).
+- Mapping fiscal correct (règle CH) dans un helper unique `toTaxStatus(civilStatus, children)` :
+  - `married`, `registered_partnership` → barème couple (statut `married` côté moteurs).
+  - `single`, `divorced`, `widowed`, `separated`, `cohabiting` + enfants à charge → `single_with_children`.
+  - Sinon → `single`.
+- Champ "conjoint actif" et "salaire conjoint" affichés uniquement si statut couple (`married` ou `registered_partnership`). Pour `cohabiting`, afficher une note : "Imposition séparée en Suisse — chaque partenaire déclare seul."
+- Le prefill depuis fiche client passe déjà par DB enum donc plus de perte d'info.
 
----
+## 2. Indicateur "Frontalier" clair
 
-### 1. Moteur orchestrateur (`src/lib/tax-global/`)
+Quand `countryOfResidence !== "CH"` ET canton de travail saisi :
+- Le hero badge affiche déjà `regimeLabel`. On ajoute en plus un **chip "🇫🇷→🇨🇭 Frontalier"** dédié à côté du badge "Régime détecté", coloré (accent), visible au premier coup d'œil.
+- Section accordéon "Frontalier" : déjà ouverte automatiquement (`defaultValue` étendu) quand `showFrontalierBlock`.
+- Tuile résultat dédiée "Part Suisse / Part Étrangère" toujours visible en mode frontalier avec montants + % détaillés (déjà partiellement présent, à compléter).
 
-```
-src/lib/tax-global/
-  profile.ts      // détection auto du régime (réutilise suggestTaxStatus + règles)
-  engine.ts       // appelle les moteurs existants selon le régime
-  scenarios.ts    // génère les scénarios comparés
-  types.ts        // TaxGlobalInput unifié + TaxGlobalResult
-```
+## 3. Audit complet des calculs
 
-**Détection** :
-- permis G + résidence FR + canton GE → frontalier GE
-- permis G + résidence FR + canton accord 1983 → frontalier FR
-- permis B/L + résident CH → source (+ proposer TOU si éligible)
-- permis C / suisse + résident CH → ordinaire (revenu + fortune)
-- Flags additionnels : `hasRealEstate`, `hasLpp`, `has3a`, `selfEmployed`...
+Bugs identifiés à corriger :
 
-**Orchestrateur** : selon le régime, appelle parmi
-- `computeIncomeTax` (lib/tax/income)
-- `computeSourceTax` (lib/tax/source)
-- `computeCrossBorder` (lib/tax/cross-border)
-- `computeTou` (lib/tax/tou)
-- `computeHealthFrance` (lib/health-france) — CMU vs LAMal pour frontaliers
-- `computeOvertimeFr` (lib/overtime-fr) — heures sup frontaliers
+**a) Frontalier — `marginalRate` toujours à 0.**
+Calculer le taux marginal réel = dérivée du `frenchIncomeTax` à la tranche du revenu imposable (taux de la dernière tranche atteinte × parts/parts). Renvoyé par `computeCrossBorder`.
 
-Aucun moteur n'est modifié.
+**b) Frontalier — Mélange impôt et LAMal/CMU dans `totalTaxCHF`.**
+Aujourd'hui `total = crossBorder.totalTax + health.recommendedAnnualCHF`. C'est trompeur : la santé n'est pas un impôt.
+- `totalTaxCHF` ne contient QUE l'impôt (CH + FR).
+- Nouveau champ `socialChargesCHF` = LAMal/CMU recommandée.
+- KPI "Net annuel" = `gross - totalTaxCHF - socialChargesCHF` (charges sociales déduites du net réel).
+- Tuile dédiée "Couverture santé" affiche le coût séparément.
 
----
+**c) Source / TOU — `effectiveRate` calculé sur `gross` incluant `otherIncome` mais source n'impose que le salaire.**
+- Aligner : `effectiveRate = source.annualTax / (salaire imposé à la source uniquement)`.
+- Si TOU avantageux et retenu : recalculer `effectiveRate` sur le revenu mondial CH.
 
-### 2. Page unique `/calculators/tax-global`
+**d) Résident ordinaire — `foreignIncome` ignoré dans le moteur income.**
+Le moteur income ne le prend pas, mais en taxation ordinaire CH le revenu mondial sert au **taux effectif** (méthode d'exonération avec réserve de progression).
+- Ajouter une note explicite si `foreignIncome > 0` : "Revenu étranger exonéré mais retenu pour le taux effectif — à déclarer manuellement."
+- Afficher la part suisse / part étrangère dans tous les régimes (pas seulement TOU).
 
-`src/routes/_app/calculators/tax-global.tsx` — layout 3 zones :
+**e) Cross-border GE — `swissTax` arrondi à l'entier puis utilisé pour `swissRate`.**
+OK mais `foreignTax` côté GE = `frenchIncomeTax × 0.05` est une approximation très grossière du résiduel (taux effectif). À remplacer par le calcul exact : impôt FR sur revenu mondial − crédit d'impôt = max(0, FR_tax(mondial) × (revenuFR_hors_CH / mondial)). Si pas de revenu hors CH → 0.
 
-**Gauche (3/5) — Fiche client unique en accordéons**
-- Identité & ménage (canton, permis, état civil, enfants, religion, pays)
-- Revenus (salaire, bonus, locatifs, dividendes, indépendant, étrangers)
-- Patrimoine (mobilière, immobilière, crypto, titres, liquidités)
-- Optimisations (rachats LPP, 3a, intérêts hypo, pensions, garde, frais réels, dons)
+**f) `netAnnualCHF` — base inconsistante selon régime.**
+- Résident ordinaire : `gross = grossSalary + bonus + spouseGrossSalary + otherIncome + rentalIncome + imputedRent` (manque actuellement spouse/rental/imputed).
+- Source : `gross = salaireBrut + bonus + spouseGrossSalary (si conjoint actif)`.
+- Frontalier : `gross = salaireBrut + bonus` (le conjoint, s'il travaille en FR, n'est pas dans le brut CH).
+Unifier via un helper `computeGrossIncomeForRegime(input, regime)` réutilisé pour effective rate ET net.
 
-Les sections s'affichent/se masquent selon le régime détecté (ex : fortune masquée pour frontalier source pur).
+**g) Tuiles "Part suisse / Part étrangère"** toujours affichées en mode frontalier avec :
+- Part suisse = impôt source CH + cotisations sociales CH (déjà retenues sur fiche de paie).
+- Part étrangère = impôt FR + CMU si applicable.
 
-**Droite (2/5) sticky — Résultats temps réel**
-- Badge "Régime détecté" (couleur + libellé clair)
-- Tuiles : revenu imposable, impôt total, taux global, net annuel, économie potentielle
-- Breakdown : fédéral / cantonal / communal / fortune / source / CMU-LAMal
+**h) `marginalRate` résident — déjà calculé par `computeIncomeTax`** : OK.
 
-**Bas pleine largeur — Comparateur de scénarios**
-Cartes côte à côte avec Δ vs baseline en vert/rouge :
-- Situation actuelle
-- TOU/Quasi-résident (si éligible)
-- Passage permis C
-- + Rachat LPP max
-- + 3a max non utilisé
+## 4. Scénarios — recalcul après corrections
 
-Recalcul instantané via `useMemo` sur l'input unifié.
+Les scénarios (3a max, rachat LPP, permis C, TOU) appellent déjà `computeTaxGlobal` donc bénéficient automatiquement des corrections. À vérifier après refacto que `deltaVsBaseline` reste cohérent (ne pas comparer un `totalTaxCHF` qui inclut la santé à un qui ne l'inclut pas — la correction (b) règle ça naturellement).
 
----
+## 5. Traductions
 
-### 3. Pré-remplissage client
+~10 clés i18n nouvelles dans `fr/en/de/it` : libellés des statuts (déjà dans `CIVIL_STATUS_LABELS` via `enum.civil_status.*`), badge "Frontalier", note concubinage, label "Charges sociales", label "Couverture santé séparée".
 
-- Extension `usePrefillFromClient` avec kind `"tax-global"`
-- Nouveau mapper `toTaxGlobalInput` dans `src/lib/clients/to-calculator-input.ts` qui agrège tous les champs (clients + client_pension + client_assets)
-- Mutualisation : une seule saisie alimente tous les calculs internes
+## Fichiers touchés
 
----
+- `src/lib/tax-global/types.ts` — étendre `civilStatus`, ajouter `socialChargesCHF` au résultat.
+- `src/lib/tax-global/profile.ts` — helper `toTaxStatus()` partagé.
+- `src/lib/tax-global/engine.ts` — corrections (b), (c), (d), (e), (f), (g) ; séparation impôt/santé ; gross unifié.
+- `src/lib/tax/cross-border.ts` — `marginalRate` (a), affinage `foreignTax` GE (e).
+- `src/routes/_app/calculators/tax-global.tsx` — Select états civils complet, badge Frontalier visible, tuile santé séparée, tuile parts suisse/étrangère, note concubinage.
+- `src/lib/i18n/{fr,en,de,it}.ts` — clés ajoutées.
 
-### 4. Page index `/calculators`
+## Hors scope
 
-Module **Fiscalité** restructuré :
-- **Remplace** les 4 cartes par UNE carte "Calculateur Fiscal Global" en avant
-- Conserve uniquement un lien discret "Accès aux moteurs séparés" (les 4 routes existantes restent accessibles techniquement, mais ne sont plus mises en avant)
-
-Les routes `/calculators/income-tax`, `/source-tax`, `/cross-border`, `/tou` restent fonctionnelles pour les bookmarks et le prefill client existant.
-
----
-
-### 5. Export & sauvegarde
-- Nouveau PDF synthèse globale dans `src/lib/pdf/reports.ts` (`exportTaxGlobalPdf`) : régime détecté, breakdown, scénarios comparés, recommandation
-- Bouton "Sauvegarder simulation" (kind `tax_global`) — étend `simulation_history`
-
----
-
-### 6. i18n
-~40 clés nouvelles dans `fr.ts / en.ts / de.ts / it.ts` :
-- titres sections, labels régime détecté, libellés scénarios, tuiles résultats
-
----
-
-### Ce qui NE change PAS
-- Tous les moteurs existants (`tax/income`, `tax/source`, `tax/cross-border`, `tax/tou`, `health-france`, `overtime-fr`) — code inchangé
-- Schéma BDD inchangé (la "fiche client centralisée" demandée existe déjà : tables `clients` + `client_pension` + `client_assets`)
-- Les 4 routes existantes restent fonctionnelles (rétro-compatibilité)
-- PDF reports existants conservés
-
----
-
-### Livrables
-1. `src/lib/tax-global/{profile,engine,scenarios,types}.ts`
-2. `src/routes/_app/calculators/tax-global.tsx`
-3. `toTaxGlobalInput` dans `to-calculator-input.ts` + kind `"tax-global"` dans `usePrefillFromClient`
-4. `src/routes/_app/calculators/index.tsx` — mise en avant du nouveau module
-5. `exportTaxGlobalPdf` dans `src/lib/pdf/reports.ts`
-6. i18n 4 langues
-7. Enregistrement kind `tax_global` dans `src/lib/history/registry.ts`
-
-### Notes techniques
-- Tous les moteurs existants sont des fonctions pures → orchestration sans effets de bord
-- Composants UI réutilisés : `CalcCard`, `MoneyTile`, `PctTile`, `NumField`, `Accordion`, `Tabs`
-- Architecture extensible : ajouter un futur calculateur = +1 appel dans `engine.ts` + +1 carte scénario
+- Pas de modification de la DB (l'enum `civil_status` couvre déjà tout sauf "cohabiting" — géré côté Global uniquement, pas persisté).
+- Pas de refonte visuelle, juste l'ajout du badge et d'une tuile santé.

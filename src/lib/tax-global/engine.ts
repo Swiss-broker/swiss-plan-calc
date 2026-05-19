@@ -6,24 +6,46 @@ import { computeSourceTax, inferSourceScale } from "@/lib/tax/source";
 import { computeCrossBorder } from "@/lib/tax/cross-border";
 import { checkQuasiResident, compareTOUvsSource } from "@/lib/tax/tou";
 import { computeHealthFrance } from "@/lib/health-france";
-import { detectRegime } from "./profile";
-import type { TaxGlobalInput, TaxGlobalResult } from "./types";
+import { detectRegime, toTaxStatus, toFrenchStatus, isCoupleStatus } from "./profile";
+import type { TaxGlobalInput, TaxGlobalResult, Regime } from "./types";
+
+/** Revenu brut de référence selon le régime — utilisé pour effective rate & net. */
+function computeGrossForRegime(g: TaxGlobalInput, regime: Regime): number {
+  const couple = isCoupleStatus(g.civilStatus);
+  switch (regime) {
+    case "resident_ordinary":
+      return (
+        g.grossSalary +
+        g.bonus +
+        (couple ? g.spouseGrossSalary : 0) +
+        g.otherIncome +
+        g.rentalIncome +
+        g.imputedRent
+      );
+    case "source_taxed":
+    case "tou":
+      return (
+        g.grossSalary +
+        g.bonus +
+        (couple && g.spouseEmployed ? g.spouseGrossSalary : 0)
+      );
+    case "cross_border_ge":
+    case "cross_border_fr_1983":
+      return g.grossSalary + g.bonus;
+    default:
+      return g.grossSalary + g.bonus;
+  }
+}
 
 export function toIncomeTaxInput(g: TaxGlobalInput): IncomeTaxInput {
-  const status =
-    g.civilStatus === "married"
-      ? "married"
-      : g.children > 0
-        ? "single_with_children"
-        : "single";
   return {
     canton: g.canton,
-    status,
+    status: toTaxStatus(g.civilStatus, g.children),
     confession: g.confession,
     children: g.children,
     age: g.age,
     grossSalary: g.grossSalary + g.bonus,
-    spouseGrossSalary: g.civilStatus === "married" ? g.spouseGrossSalary : 0,
+    spouseGrossSalary: isCoupleStatus(g.civilStatus) ? g.spouseGrossSalary : 0,
     otherIncome: g.otherIncome,
     rentalIncome: g.rentalIncome,
     imputedRent: g.imputedRent,
@@ -38,19 +60,38 @@ export function toIncomeTaxInput(g: TaxGlobalInput): IncomeTaxInput {
   };
 }
 
+function rate(num: number, base: number): number {
+  return base > 0 ? Math.round((num / base) * 1000) / 10 : 0;
+}
+
 export function computeTaxGlobal(g: TaxGlobalInput): TaxGlobalResult {
   const det = detectRegime(g);
   const notes: string[] = [det.reason];
+  if (g.civilStatus === "cohabiting") {
+    notes.push(
+      "Concubinage : imposition séparée en Suisse — chaque partenaire déclare seul (barème célibataire).",
+    );
+  }
 
   // ─────────────────────── RÉSIDENT ORDINAIRE ───────────────────────
   if (det.regime === "resident_ordinary") {
     const income = computeIncomeTax(toIncomeTaxInput(g));
+    const gross = computeGrossForRegime(g, det.regime);
+    if (g.foreignIncome > 0) {
+      notes.push(
+        "Revenu étranger : exonéré en CH (convention) mais retenu pour le taux effectif — à reporter en déclaration.",
+      );
+    }
     return {
       regime: det.regime,
       regimeLabel: det.regimeLabel,
       income,
       totalTaxCHF: income.totalTax,
-      netAnnualCHF: Math.max(0, income.grossIncome - income.totalTax),
+      socialChargesCHF: 0,
+      grossIncomeCHF: gross,
+      netAnnualCHF: Math.max(0, gross - income.totalTax),
+      swissShareCHF: income.totalTax,
+      foreignShareCHF: 0,
       effectiveRate: income.effectiveRate,
       marginalRate: income.marginalRate,
       notes,
@@ -59,17 +100,13 @@ export function computeTaxGlobal(g: TaxGlobalInput): TaxGlobalResult {
 
   // ─────────────────────── SOURCE / QUASI-RÉSIDENT ───────────────────────
   if (det.regime === "source_taxed" || det.regime === "tou") {
-    const status =
-      g.civilStatus === "married"
-        ? "married"
-        : g.children > 0
-          ? "single_with_children"
-          : "single";
-    const scale = inferSourceScale(status, g.spouseEmployed);
+    const status = toTaxStatus(g.civilStatus, g.children);
+    const couple = isCoupleStatus(g.civilStatus);
+    const scale = inferSourceScale(status, couple && g.spouseEmployed);
     const source = computeSourceTax({
       monthlyGross: Math.round((g.grossSalary + g.bonus) / 12),
       spouseMonthlyGross:
-        g.civilStatus === "married" && g.spouseEmployed
+        couple && g.spouseEmployed
           ? Math.round(g.spouseGrossSalary / 12)
           : undefined,
       canton: g.canton,
@@ -81,7 +118,7 @@ export function computeTaxGlobal(g: TaxGlobalInput): TaxGlobalResult {
     const swissIncome =
       g.grossSalary +
       g.bonus +
-      g.spouseGrossSalary +
+      (couple ? g.spouseGrossSalary : 0) +
       g.otherIncome +
       g.rentalIncome;
     const worldwide = swissIncome + g.foreignIncome;
@@ -101,7 +138,7 @@ export function computeTaxGlobal(g: TaxGlobalInput): TaxGlobalResult {
     const useTOU =
       touEligibility.eligibleForTOU && touComparison.ordinaryTax < source.annualTax;
     const total = useTOU ? touComparison.ordinaryTax : source.annualTax;
-    const gross = g.grossSalary + g.bonus + g.spouseGrossSalary + g.otherIncome;
+    const gross = computeGrossForRegime(g, det.regime);
     return {
       regime: det.regime,
       regimeLabel: det.regimeLabel,
@@ -109,8 +146,12 @@ export function computeTaxGlobal(g: TaxGlobalInput): TaxGlobalResult {
       touEligibility,
       touComparison,
       totalTaxCHF: total,
+      socialChargesCHF: 0,
+      grossIncomeCHF: gross,
       netAnnualCHF: Math.max(0, gross - total),
-      effectiveRate: gross > 0 ? Math.round((total / gross) * 1000) / 10 : 0,
+      swissShareCHF: total,
+      foreignShareCHF: 0,
+      effectiveRate: rate(total, gross),
       marginalRate: touComparison.marginalRate,
       notes,
     };
@@ -118,20 +159,22 @@ export function computeTaxGlobal(g: TaxGlobalInput): TaxGlobalResult {
 
   // ─────────────────────── FRONTALIER FR (GE ou accord 1983) ───────────────────────
   if (det.regime === "cross_border_ge" || det.regime === "cross_border_fr_1983") {
+    const frStatus = toFrenchStatus(g.civilStatus);
+    const couple = isCoupleStatus(g.civilStatus);
     const crossBorder = computeCrossBorder({
       workCanton: g.canton,
       grossAnnualSalary: g.grossSalary + g.bonus,
-      status: g.civilStatus,
+      status: frStatus,
       children: g.children,
-      spouseEmployed: g.spouseEmployed,
-      spouseGrossSalary: g.spouseGrossSalary,
+      spouseEmployed: couple && g.spouseEmployed,
+      spouseGrossSalary: couple ? g.spouseGrossSalary : 0,
       eurChfRate: g.eurChfRate,
     });
 
-    // Couche santé : CMU vs LAMal
+    // Couche santé : CMU vs LAMal — SÉPARÉE de l'impôt
     const health = computeHealthFrance({
       swissGrossSalaryCHF: g.grossSalary + g.bonus,
-      civilStatus: g.civilStatus,
+      civilStatus: couple ? "married" : "single",
       childrenCount: g.children,
       chfToEurRate: g.chfToEurRate,
       taxYear: g.taxYear,
@@ -139,17 +182,22 @@ export function computeTaxGlobal(g: TaxGlobalInput): TaxGlobalResult {
       lamalChildMonthlyCHF: g.lamalChildMonthlyCHF,
     });
 
-    const total = crossBorder.totalTax + health.recommendedAnnualCHF;
-    const gross = g.grossSalary + g.bonus;
+    const gross = computeGrossForRegime(g, det.regime);
+    const totalTax = crossBorder.totalTax; // impôt uniquement
+    const social = health.recommendedAnnualCHF;
     return {
       regime: det.regime,
       regimeLabel: det.regimeLabel,
       crossBorder,
       health,
-      totalTaxCHF: total,
-      netAnnualCHF: Math.max(0, gross - total),
-      effectiveRate: gross > 0 ? Math.round((total / gross) * 1000) / 10 : 0,
-      marginalRate: 0,
+      totalTaxCHF: totalTax,
+      socialChargesCHF: social,
+      grossIncomeCHF: gross,
+      netAnnualCHF: Math.max(0, gross - totalTax - social),
+      swissShareCHF: crossBorder.swissTax,
+      foreignShareCHF: crossBorder.foreignTax,
+      effectiveRate: rate(totalTax, gross),
+      marginalRate: crossBorder.marginalRate,
       notes: [...notes, ...crossBorder.notes],
     };
   }
@@ -159,7 +207,11 @@ export function computeTaxGlobal(g: TaxGlobalInput): TaxGlobalResult {
     regime: "unknown",
     regimeLabel: det.regimeLabel,
     totalTaxCHF: 0,
+    socialChargesCHF: 0,
+    grossIncomeCHF: 0,
     netAnnualCHF: 0,
+    swissShareCHF: 0,
+    foreignShareCHF: 0,
     effectiveRate: 0,
     marginalRate: 0,
     notes: [
