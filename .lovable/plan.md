@@ -1,76 +1,122 @@
-## État actuel vs ta spec
+## Calculateur Fiscal Suisse Global — Fusion des 4 calculateurs
 
-La refonte précédente a déjà fait **70%** du job :
-- ✅ 2 options seulement (plus de 3ᵉ tuile)
-- ✅ Recommandation chiffrée CMU vs LAMal
-- ✅ Détail du calcul repliable
-- ✅ PDF + historique + synthèse RDV alignés sur 2 options
+### Objectif
+Remplacer dans l'UI les 4 calculateurs fiscaux (Frontalier FR, Revenu/Fortune, Source, TOU/Quasi-résident) par **UN SEUL** module `/calculators/tax-global` qui :
+- Détecte automatiquement le régime fiscal du client
+- Affiche dynamiquement uniquement les champs utiles
+- Lance tous les calculs en parallèle
+- Compare les scénarios (statut actuel vs TOU vs permis C vs optimisations)
 
-Mais il reste **3 écarts importants** vs ta spec officielle.
+**La logique métier des 4 moteurs est 100% conservée** — on l'orchestre, on ne la réécrit pas.
 
-## Ce qui reste à corriger
+---
 
-### 1. ❌ Bug majeur sur l'abattement (formule fiscalement fausse)
+### 1. Moteur orchestrateur (`src/lib/tax-global/`)
 
-Actuellement le code fait : `abattement = 27'000 € × nombre de parts fiscales`.
-C'est **faux** pour la cotisation CMU frontalier, qui est **individuelle** :
-- Abattement = **25% du PASS**, forfaitaire, **PAS multiplié par les parts**.
-- PASS 2026 = **47'100 €** (à confirmer côté Urssaf/ameli au moment de coder).
-- Donc abattement effectif = **11'775 €** quelle que soit la situation familiale.
+```
+src/lib/tax-global/
+  profile.ts      // détection auto du régime (réutilise suggestTaxStatus + règles)
+  engine.ts       // appelle les moteurs existants selon le régime
+  scenarios.ts    // génère les scénarios comparés
+  types.ts        // TaxGlobalInput unifié + TaxGlobalResult
+```
 
-Conséquence sur le cas test 95'000 CHF aujourd'hui : on calcule 5'820 € au lieu de **7'038 €** (6'703 CHF). LAMal sort gagnant dans les deux cas, mais le chiffre CMU est sous-estimé de ~1'200 €/an.
+**Détection** :
+- permis G + résidence FR + canton GE → frontalier GE
+- permis G + résidence FR + canton accord 1983 → frontalier FR
+- permis B/L + résident CH → source (+ proposer TOU si éligible)
+- permis C / suisse + résident CH → ordinaire (revenu + fortune)
+- Flags additionnels : `hasRealEstate`, `hasLpp`, `has3a`, `selfEmployed`...
 
-### 2. ❌ Libellés "CNTFS" encore visibles partout
+**Orchestrateur** : selon le régime, appelle parmi
+- `computeIncomeTax` (lib/tax/income)
+- `computeSourceTax` (lib/tax/source)
+- `computeCrossBorder` (lib/tax/cross-border)
+- `computeTou` (lib/tax/tou)
+- `computeHealthFrance` (lib/health-france) — CMU vs LAMal pour frontaliers
+- `computeOvertimeFr` (lib/overtime-fr) — heures sup frontaliers
 
-Toujours présents dans :
-- Titre du calculateur (`head meta`), titre de carte recommandée, sous-titre, tuile, encart détail
-- `src/components/clients/ClientCalculatorBar.tsx` (label "CNTFS / LAMal")
-- `src/lib/i18n/fr.ts | en.ts | de.ts | it.ts` (titre + description)
-- `src/lib/pdf/synthesis-report.ts` (3 occurrences)
-- `src/lib/pdf/reports.ts` (titre PDF "CMU/CNTFS vs LAMal")
-- `src/lib/simulations/extract-gain.ts` (label "CMU/CNTFS")
+Aucun moteur n'est modifié.
 
-Spec : ne plus utiliser "CNTFS" comme régime. Garder uniquement la mention "CMU (gérée par le CNTFS via l'URSSAF)" dans la note pédagogique.
+---
 
-### 3. ❌ Parts fiscales utilisées à tort
+### 2. Page unique `/calculators/tax-global`
 
-Le champ "situation civile" et "enfants à charge" pilotent encore le calcul (via parts fiscales). À transformer en **info contextuelle uniquement** (les enfants/conjoint n'impactent ni l'abattement ni l'assiette CMU). Le bloc conjoint (salaire conjoint EUR, couverture propre) doit disparaître du calcul CMU — on garde au mieux un libellé informatif.
+`src/routes/_app/calculators/tax-global.tsx` — layout 3 zones :
 
-## Plan d'implémentation
+**Gauche (3/5) — Fiche client unique en accordéons**
+- Identité & ménage (canton, permis, état civil, enfants, religion, pays)
+- Revenus (salaire, bonus, locatifs, dividendes, indépendant, étrangers)
+- Patrimoine (mobilière, immobilière, crypto, titres, liquidités)
+- Optimisations (rachats LPP, 3a, intérêts hypo, pensions, garde, frais réels, dons)
 
-### A. Moteur `src/lib/health-france/index.ts`
-1. Ajouter constante `PASS_2026_EUR = 47_100` (vérifier valeur officielle Urssaf au moment du build, ajuster si nécessaire).
-2. Remplacer `cmuAbatementPerPartEUR` par `cmuAbatementRate = 0.25` (× PASS).
-3. Supprimer la fonction `computeParts()` et le champ `partsFiscales` du résultat.
-4. Retirer `spouseFrenchSalaryEUR` / `spouseHasOwnCoverage` du calcul (champs conservés en input mais ignorés, ou supprimés totalement — voir question).
-5. Mettre à jour le `cmuBreakdown` pour refléter les 4 étapes de ta spec (RFR → PASS → abattement → assiette → cotisation).
-6. Ajouter une note explicite "déclaration individuelle, basée sur revenus N-2".
+Les sections s'affichent/se masquent selon le régime détecté (ex : fortune masquée pour frontalier source pur).
 
-### B. UI `src/routes/_app/calculators/health-insurance-france.tsx`
-1. Renommer le titre → `"Assurance santé frontaliers (CMU vs LAMal)"`.
-2. Sous-titre carte profil → `"Comparez la cotisation CMU (régime français géré par le CNTFS via l'URSSAF) et l'assurance privée suisse (LAMal)."`.
-3. Renommer tuile "CMU/CNTFS (France)" → **"CMU (France)"**.
-4. Renommer section détail → **"CMU — Cotisation maladie frontalier (Urssaf)"**.
-5. Bloc conjoint : soit le retirer, soit le marquer "info contextuelle, sans impact sur la cotisation CMU".
-6. Ajouter la phrase de recommandation officielle (droit d'option dans les 3 mois, lieu de consultation, ayants droit).
+**Droite (2/5) sticky — Résultats temps réel**
+- Badge "Régime détecté" (couleur + libellé clair)
+- Tuiles : revenu imposable, impôt total, taux global, net annuel, économie potentielle
+- Breakdown : fédéral / cantonal / communal / fortune / source / CMU-LAMal
 
-### C. i18n (4 langues)
-Renommer dans `fr.ts | en.ts | de.ts | it.ts` :
-- `calc.health_france.title` → "Assurance santé frontaliers (CMU vs LAMal)" / "Cross-border health insurance (CMU vs LAMal)" / "Krankenversicherung Grenzgänger (CMU vs LAMal)" / "Assicurazione malattia frontalieri (CMU vs LAMal)".
-- Description : remplacer la mention "CMU, CNTFS et LAMal" par "CMU (gérée par le CNTFS) vs LAMal".
+**Bas pleine largeur — Comparateur de scénarios**
+Cartes côte à côte avec Δ vs baseline en vert/rouge :
+- Situation actuelle
+- TOU/Quasi-résident (si éligible)
+- Passage permis C
+- + Rachat LPP max
+- + 3a max non utilisé
 
-### D. Surfaces dérivées
-- `ClientCalculatorBar.tsx` → label "CMU / LAMal".
-- `extract-gain.ts` → label "Droit d'option santé : CMU vs LAMal".
-- `pdf/reports.ts` → titre PDF "CMU vs LAMal", retirer "CNTFS" du titre/situation.
-- `pdf/synthesis-report.ts` → remplacer "CMU/CNTFS" par "CMU" partout, garder une seule mention "(gérée par le CNTFS via l'URSSAF)" dans la phrase narrative.
+Recalcul instantané via `useMemo` sur l'input unifié.
 
-### E. Cas test de validation (après code)
-Inputs : 95'000 CHF, taux 1.05, LAMal 3'600 → attendu : RFR 99'750 €, abattement 11'775 €, assiette 87'975 €, cotisation **7'038 € ≈ 6'703 CHF**, reco = **LAMal**, économie ≈ 3'100 CHF/an.
+---
 
-## Question avant de coder
+### 3. Pré-remplissage client
 
-Deux points où je veux ton OK explicite avant d'implémenter :
+- Extension `usePrefillFromClient` avec kind `"tax-global"`
+- Nouveau mapper `toTaxGlobalInput` dans `src/lib/clients/to-calculator-input.ts` qui agrège tous les champs (clients + client_pension + client_assets)
+- Mutualisation : une seule saisie alimente tous les calculs internes
 
-1. **Champs conjoint** (salaire conjoint EUR + "conjoint a sa propre couverture") : je les **supprime complètement** du formulaire, ou je les garde **affichés mais désactivés/marqués "info"** ?
-2. **Vérification PASS 2026** : je fige `47'100 €` (valeur communément admise pour 2026) ou tu veux que je relance un `websearch` Urssaf/ameli avant d'écrire la constante ?
+---
+
+### 4. Page index `/calculators`
+
+Module **Fiscalité** restructuré :
+- **Remplace** les 4 cartes par UNE carte "Calculateur Fiscal Global" en avant
+- Conserve uniquement un lien discret "Accès aux moteurs séparés" (les 4 routes existantes restent accessibles techniquement, mais ne sont plus mises en avant)
+
+Les routes `/calculators/income-tax`, `/source-tax`, `/cross-border`, `/tou` restent fonctionnelles pour les bookmarks et le prefill client existant.
+
+---
+
+### 5. Export & sauvegarde
+- Nouveau PDF synthèse globale dans `src/lib/pdf/reports.ts` (`exportTaxGlobalPdf`) : régime détecté, breakdown, scénarios comparés, recommandation
+- Bouton "Sauvegarder simulation" (kind `tax_global`) — étend `simulation_history`
+
+---
+
+### 6. i18n
+~40 clés nouvelles dans `fr.ts / en.ts / de.ts / it.ts` :
+- titres sections, labels régime détecté, libellés scénarios, tuiles résultats
+
+---
+
+### Ce qui NE change PAS
+- Tous les moteurs existants (`tax/income`, `tax/source`, `tax/cross-border`, `tax/tou`, `health-france`, `overtime-fr`) — code inchangé
+- Schéma BDD inchangé (la "fiche client centralisée" demandée existe déjà : tables `clients` + `client_pension` + `client_assets`)
+- Les 4 routes existantes restent fonctionnelles (rétro-compatibilité)
+- PDF reports existants conservés
+
+---
+
+### Livrables
+1. `src/lib/tax-global/{profile,engine,scenarios,types}.ts`
+2. `src/routes/_app/calculators/tax-global.tsx`
+3. `toTaxGlobalInput` dans `to-calculator-input.ts` + kind `"tax-global"` dans `usePrefillFromClient`
+4. `src/routes/_app/calculators/index.tsx` — mise en avant du nouveau module
+5. `exportTaxGlobalPdf` dans `src/lib/pdf/reports.ts`
+6. i18n 4 langues
+7. Enregistrement kind `tax_global` dans `src/lib/history/registry.ts`
+
+### Notes techniques
+- Tous les moteurs existants sont des fonctions pures → orchestration sans effets de bord
+- Composants UI réutilisés : `CalcCard`, `MoneyTile`, `PctTile`, `NumField`, `Accordion`, `Tabs`
+- Architecture extensible : ajouter un futur calculateur = +1 appel dans `engine.ts` + +1 carte scénario
