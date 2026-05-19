@@ -490,7 +490,7 @@ function LppCalc() {
               {buybackPlan.yearly.map((y) => (
                 <div key={y.year} className="flex items-center justify-between border-t border-border/50 pt-2 first:border-t-0 first:pt-0">
                   <span className="text-muted-foreground">{t("calc.lpp.year_label", { n: y.year })}</span>
-                  <span className="tabular-nums text-success-foreground">{formatCHF(y.taxSavings)}</span>
+                  <span className="tabular-nums font-semibold text-success">{formatCHF(y.taxSavings)}</span>
                 </div>
               ))}
             </div>
