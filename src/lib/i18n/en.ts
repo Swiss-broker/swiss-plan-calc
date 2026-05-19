@@ -1669,4 +1669,30 @@ export const en: Record<string, string> = {
   "calc.lpp.cert.summary_note": "These amounts come from the client's occupational pension certificate. They may add to DI / OASI survivors' benefits (1st pillar) in case of disability or death.",
   "calc.lpp.cert.per_month_short": "/mo",
   "calc.lpp.cert.per_year_short": "/yr",
+
+  "calc.module.prevoyance.title": "Pension planning",
+  "calc.module.prevoyance.desc":
+    "1st → 2nd → 3rd pillar journey, complete retirement projection",
+  "calc.module.prevoyance.soon":
+    "Coming soon: guided 1st → 2nd → 3rd pillar journey",
+  "calc.module.fiscalite.title": "Taxation",
+  "calc.module.fiscalite.desc":
+    "Taxes by profile: resident, 1983 cross-border, Geneva cross-border",
+  "calc.module.fiscalite.soon":
+    "Coming soon: unified tax calculator tailored to client profile",
+  "calc.module.assurances.title": "Insurance",
+  "calc.module.assurances.desc": "Compare health coverage options",
+  "calc.module.comparateurs.title": "Comparators",
+  "calc.module.comparateurs.desc":
+    "Comparison tools to support decision-making",
+  "calc.module.dirigeants.title": "Company directors",
+  "calc.module.dirigeants.desc":
+    "Sàrl/SA compensation strategy: salary, dividends, reserves",
+  "calc.sublink.income_tax_resident": "Income & wealth tax (resident)",
+  "calc.sublink.source_tax_ge": "Withholding tax (Geneva cross-border)",
+  "calc.sublink.cross_border_1983": "FR cross-border workers (1983 agreement)",
+  "calc.sublink.health_cmu_lamal": "CMU vs LAMal (FR cross-border)",
+  "calc.sublink.health_lamal_residents": "LAMal comparator for residents",
+  "calc.sublink.director_salary_div": "Salary / dividend comparator",
+  "calc.external.new_window": "Opens in a new window",
 };

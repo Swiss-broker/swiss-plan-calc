@@ -1669,4 +1669,31 @@ export const it: Record<string, string> = {
   "calc.lpp.cert.summary_note": "Questi importi provengono dal certificato LPP del cliente. Si aggiungono eventualmente alle prestazioni AI / rendita superstiti AVS (1° pilastro).",
   "calc.lpp.cert.per_month_short": "/mese",
   "calc.lpp.cert.per_year_short": "/anno",
+
+  "calc.module.prevoyance.title": "Previdenza",
+  "calc.module.prevoyance.desc":
+    "Percorso 1° → 2° → 3° pilastro, proiezione pensione completa",
+  "calc.module.prevoyance.soon":
+    "Presto: percorso guidato 1° → 2° → 3° pilastro",
+  "calc.module.fiscalite.title": "Fiscalità",
+  "calc.module.fiscalite.desc":
+    "Imposte per profilo: residente, frontaliere 1983, frontaliere Ginevra",
+  "calc.module.fiscalite.soon":
+    "Presto: calcolatore fiscale unificato adattato al profilo cliente",
+  "calc.module.assurances.title": "Assicurazioni",
+  "calc.module.assurances.desc":
+    "Confronto delle opzioni di copertura sanitaria",
+  "calc.module.comparateurs.title": "Strumenti di confronto",
+  "calc.module.comparateurs.desc":
+    "Strumenti di confronto per il supporto decisionale",
+  "calc.module.dirigeants.title": "Dirigenti aziendali",
+  "calc.module.dirigeants.desc":
+    "Strategia di remunerazione Sàrl/SA: stipendio, dividendi, riserve",
+  "calc.sublink.income_tax_resident": "Imposta reddito & sostanza (residente)",
+  "calc.sublink.source_tax_ge": "Imposta alla fonte (frontaliere Ginevra)",
+  "calc.sublink.cross_border_1983": "Frontalieri FR (accordo 1983)",
+  "calc.sublink.health_cmu_lamal": "CMU vs LAMal (frontalieri FR)",
+  "calc.sublink.health_lamal_residents": "Confronto LAMal per residenti",
+  "calc.sublink.director_salary_div": "Confronto salario / dividendo",
+  "calc.external.new_window": "Si apre in una nuova finestra",
 };
