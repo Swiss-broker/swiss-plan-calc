@@ -53,7 +53,9 @@ function TaxGlobalCalc() {
   const [form, setForm] = useState<TaxGlobalInput>(() => createDefaultInput());
   useHydrateFormFromPrefill(
     prefill as Partial<Record<string, unknown>> | null,
-    setForm as unknown as (updater: (prev: Record<string, unknown>) => Record<string, unknown>) => void,
+    setForm as unknown as (
+      updater: (prev: Record<string, unknown>) => Record<string, unknown>,
+    ) => void,
   );
 
   const set = <K extends keyof TaxGlobalInput>(k: K, v: TaxGlobalInput[K]) =>
@@ -70,7 +72,6 @@ function TaxGlobalCalc() {
   const isFrontalier = showFrontalierBlock;
   const isCouple = form.civilStatus === "married" || form.civilStatus === "registered_partnership";
   const isCohabiting = form.civilStatus === "cohabiting";
-
 
   return (
     <div className="space-y-6">
@@ -103,7 +104,6 @@ function TaxGlobalCalc() {
         </div>
       </CalcCard>
 
-
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-5">
         {/* LEFT — Fiche client */}
         <div className="space-y-4 lg:col-span-3">
@@ -115,7 +115,9 @@ function TaxGlobalCalc() {
                   <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                     <Field label={t("calc.global.field.canton")}>
                       <Select value={form.canton} onValueChange={(v) => set("canton", v)}>
-                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
                         <SelectContent>
                           {selectableCantons.map((c) => (
                             <SelectItem key={c.code} value={c.code}>
@@ -142,7 +144,9 @@ function TaxGlobalCalc() {
                           }))
                         }
                       >
-                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="CH">🇨🇭 Suisse</SelectItem>
                           <SelectItem value="FR">🇫🇷 France</SelectItem>
@@ -155,11 +159,11 @@ function TaxGlobalCalc() {
                     <Field label={t("calc.global.field.permit")}>
                       <Select
                         value={form.permit}
-                        onValueChange={(v) =>
-                          set("permit", v as TaxGlobalInput["permit"])
-                        }
+                        onValueChange={(v) => set("permit", v as TaxGlobalInput["permit"])}
                       >
-                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="swiss">🇨🇭 Suisse</SelectItem>
                           <SelectItem value="C">Permis C</SelectItem>
@@ -174,19 +178,28 @@ function TaxGlobalCalc() {
                     <Field label={t("calc.global.field.civil_status")}>
                       <Select
                         value={form.civilStatus}
-
                         onValueChange={(v) =>
                           set("civilStatus", v as TaxGlobalInput["civilStatus"])
                         }
                       >
-                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="single">{t("enum.civil_status.single")}</SelectItem>
                           <SelectItem value="married">{t("enum.civil_status.married")}</SelectItem>
-                          <SelectItem value="registered_partnership">{t("enum.civil_status.registered_partnership")}</SelectItem>
-                          <SelectItem value="cohabiting">{t("enum.civil_status.cohabiting")}</SelectItem>
-                          <SelectItem value="divorced">{t("enum.civil_status.divorced")}</SelectItem>
-                          <SelectItem value="separated">{t("enum.civil_status.separated")}</SelectItem>
+                          <SelectItem value="registered_partnership">
+                            {t("enum.civil_status.registered_partnership")}
+                          </SelectItem>
+                          <SelectItem value="cohabiting">
+                            {t("enum.civil_status.cohabiting")}
+                          </SelectItem>
+                          <SelectItem value="divorced">
+                            {t("enum.civil_status.divorced")}
+                          </SelectItem>
+                          <SelectItem value="separated">
+                            {t("enum.civil_status.separated")}
+                          </SelectItem>
                           <SelectItem value="widowed">{t("enum.civil_status.widowed")}</SelectItem>
                         </SelectContent>
                       </Select>
@@ -199,11 +212,11 @@ function TaxGlobalCalc() {
                     <Field label={t("calc.global.field.confession")}>
                       <Select
                         value={form.confession}
-                        onValueChange={(v) =>
-                          set("confession", v as TaxGlobalInput["confession"])
-                        }
+                        onValueChange={(v) => set("confession", v as TaxGlobalInput["confession"])}
                       >
-                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="none">Aucune</SelectItem>
                           <SelectItem value="catholic">Catholique</SelectItem>
@@ -235,7 +248,6 @@ function TaxGlobalCalc() {
                   )}
                 </AccordionContent>
               </AccordionItem>
-
 
               <AccordionItem value="income">
                 <AccordionTrigger>{t("calc.global.section.income")}</AccordionTrigger>
@@ -441,10 +453,7 @@ function TaxGlobalCalc() {
                 value={result.effectiveRate}
                 tone="primary"
               />
-              <PctTile
-                label={t("calc.global.tile.marginal_rate")}
-                value={result.marginalRate}
-              />
+              <PctTile label={t("calc.global.tile.marginal_rate")} value={result.marginalRate} />
             </div>
             <div className="mt-3 grid grid-cols-2 gap-3">
               {isFrontalier && (
@@ -466,13 +475,9 @@ function TaxGlobalCalc() {
                   tone="warning"
                 />
               )}
-              <MoneyTile
-                label={t("calc.global.tile.gross")}
-                value={result.grossIncomeCHF}
-              />
+              <MoneyTile label={t("calc.global.tile.gross")} value={result.grossIncomeCHF} />
             </div>
           </CalcCard>
-
 
           {/* Breakdown — ordinaire */}
           {result.income && (
@@ -483,10 +488,7 @@ function TaxGlobalCalc() {
                   label={t("calc.global.tile.cantonal")}
                   value={result.income.cantonal + result.income.communal}
                 />
-                <MoneyTile
-                  label={t("calc.global.tile.wealth")}
-                  value={result.income.wealthTax}
-                />
+                <MoneyTile label={t("calc.global.tile.wealth")} value={result.income.wealthTax} />
                 <MoneyTile label="Église" value={result.income.church} />
               </div>
             </CalcCard>
@@ -496,10 +498,7 @@ function TaxGlobalCalc() {
           {showTouBlock && result.source && (
             <CalcCard>
               <Row>
-                <MoneyTile
-                  label={t("calc.global.tile.source")}
-                  value={result.source.annualTax}
-                />
+                <MoneyTile label={t("calc.global.tile.source")} value={result.source.annualTax} />
                 <PctTile label="Taux IS" value={result.source.rate} />
               </Row>
               {result.touEligibility && (
@@ -510,9 +509,7 @@ function TaxGlobalCalc() {
                         {t("calc.global.tou.eligible")}
                       </Badge>
                     ) : (
-                      <Badge variant="secondary">
-                        {t("calc.global.tou.not_eligible")}
-                      </Badge>
+                      <Badge variant="secondary">{t("calc.global.tou.not_eligible")}</Badge>
                     )}
                     <span className="text-muted-foreground">
                       {t("calc.global.tile.swiss_part")} : {result.touEligibility.swissShare}%
@@ -588,9 +585,7 @@ function TaxGlobalCalc() {
                 <div className="flex items-start justify-between gap-2">
                   <div>
                     <div className="text-sm font-semibold">{s.label}</div>
-                    <p className="mt-0.5 text-xs text-muted-foreground">
-                      {s.description}
-                    </p>
+                    <p className="mt-0.5 text-xs text-muted-foreground">{s.description}</p>
                   </div>
                   {isBaseline && (
                     <Badge variant="outline" className="shrink-0">
@@ -604,7 +599,11 @@ function TaxGlobalCalc() {
                 {!isBaseline && (
                   <div
                     className={`mt-1 inline-flex items-center gap-1 text-xs font-semibold ${
-                      isGain ? "text-success" : isCost ? "text-destructive" : "text-muted-foreground"
+                      isGain
+                        ? "text-success"
+                        : isCost
+                          ? "text-destructive"
+                          : "text-muted-foreground"
                     }`}
                   >
                     {isGain ? (
