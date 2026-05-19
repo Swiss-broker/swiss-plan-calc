@@ -383,9 +383,6 @@ export function toOvertimeInput(b: ClientBundle) {
 // ──────────────────────────────────────────────────────────────────────────
 export function toTaxGlobalInput(b: ClientBundle) {
   const children = parseChildren(b.client.children);
-  const isMarried =
-    b.client.civil_status === "married" ||
-    b.client.civil_status === "registered_partnership";
   const country = (b.client.country_of_residence ?? "CH").toUpperCase();
   const permitRaw = (b.client.permit ?? "swiss") as string;
   const permit = ([
@@ -405,11 +402,44 @@ export function toTaxGlobalInput(b: ClientBundle) {
     | "catholic"
     | "protestant"
     | "other";
+
+  // civilStatus : on transmet le statut DB tel quel (7 valeurs supportées).
+  const civilStatusRaw = b.client.civil_status as string | null | undefined;
+  const civilStatus = ([
+    "single",
+    "married",
+    "registered_partnership",
+    "divorced",
+    "separated",
+    "widowed",
+  ].includes(civilStatusRaw ?? "")
+    ? civilStatusRaw
+    : "single") as
+    | "single"
+    | "married"
+    | "registered_partnership"
+    | "cohabiting"
+    | "divorced"
+    | "separated"
+    | "widowed";
+
+  // imputedRent vs rentalIncome : si bien immobilier renseigné mais pas de loyer perçu
+  // → on considère que le client occupe le bien (valeur locative imposable).
+  const realEstateValue = Number(b.assets?.real_estate_value ?? 0);
+  const rentalValue = Number(b.assets?.real_estate_rental_value ?? 0);
+  const owns = realEstateValue > 0;
+  const imputedRent = owns && rentalValue > 0 ? rentalValue : 0;
+  const rentalIncome = owns && rentalValue > 0 ? 0 : rentalValue;
+
+  // Rachat LPP : somme des rachats effectués cette année (déductible une fois).
+  const currentYear = new Date().getFullYear();
+  const lppBuyback = sumLppBuybacksForYear(b.pension, currentYear);
+
   return {
     canton: b.client.canton ?? undefined,
     countryOfResidence: country,
     permit,
-    civilStatus: (isMarried ? "married" : "single") as "single" | "married",
+    civilStatus,
     spouseEmployed: spouseSalary > 0,
     children: children.length,
     confession,
@@ -418,12 +448,30 @@ export function toTaxGlobalInput(b: ClientBundle) {
     bonus: numOrUndef(b.client.bonus),
     spouseGrossSalary: numOrUndef(b.client.spouse_gross_annual_salary),
     otherIncome: numOrUndef(b.client.other_income),
-    rentalIncome: numOrUndef(b.assets?.real_estate_rental_value),
+    rentalIncome: rentalIncome || undefined,
+    imputedRent: imputedRent || undefined,
+    // foreignIncome / healthInsurancePremiums / childCareCosts / donations :
+    // non persistés en DB clients → laissés au défaut du formulaire (0).
     netWealth: computeFortune(b.assets) || undefined,
     pillar3aContributions: numOrUndef(b.pension?.pillar_3a_annual_contribution),
+    lppBuyback: lppBuyback || undefined,
     mortgageInterest: numOrUndef(b.assets?.mortgage_interest),
     realEstateMaintenance: numOrUndef(b.assets?.real_estate_maintenance),
+    taxYear: currentYear,
   };
+}
+
+function sumLppBuybacksForYear(
+  pension: ClientPension | null,
+  year: number,
+): number {
+  if (!pension?.lpp_buybacks_done) return 0;
+  const arr = Array.isArray(pension.lpp_buybacks_done)
+    ? (pension.lpp_buybacks_done as Array<{ year?: number; amount?: number }>)
+    : [];
+  return arr
+    .filter((b) => Number(b?.year) === year)
+    .reduce((s, b) => s + Number(b?.amount ?? 0), 0);
 }
 
 
