@@ -483,11 +483,35 @@ export function DocumentsTab({
 
       {/* Liste */}
       <Card className="p-6">
-        <div className="mb-4 flex items-center justify-between">
-          <h3 className="text-lg font-semibold">Documents au dossier</h3>
-          <Badge variant="secondary">
-            {totalDocs} document(s) · {totalCats} catégorie(s)
-          </Badge>
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <h3 className="text-lg font-semibold">Documents au dossier</h3>
+            <Badge variant="secondary">
+              {totalDocs} document(s) · {totalCats} catégorie(s)
+            </Badge>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <Select value={viewMode} onValueChange={(v) => setViewMode(v as typeof viewMode)}>
+              <SelectTrigger className="h-9 w-44">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="grouped">Grouper par catégorie</SelectItem>
+                <SelectItem value="flat">Liste complète</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={sortBy} onValueChange={(v) => setSortBy(v as typeof sortBy)}>
+              <SelectTrigger className="h-9 w-52">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="date_desc">Date (plus récent)</SelectItem>
+                <SelectItem value="date_asc">Date (plus ancien)</SelectItem>
+                <SelectItem value="name_asc">Nom (A → Z)</SelectItem>
+                <SelectItem value="name_desc">Nom (Z → A)</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </div>
 
         {docsQuery.isLoading && <Loader2 className="h-4 w-4 animate-spin" />}
@@ -498,7 +522,7 @@ export function DocumentsTab({
           </div>
         )}
 
-        {totalDocs > 0 && (
+        {totalDocs > 0 && viewMode === "grouped" && (
           <Accordion type="multiple" defaultValue={Object.keys(docsByCategory)} className="w-full">
             {DOCUMENT_CATEGORIES.map((cat) => {
               const docs = docsByCategory[cat.value];
@@ -514,56 +538,18 @@ export function DocumentsTab({
                     </span>
                   </AccordionTrigger>
                   <AccordionContent>
-                    <ul className="space-y-2">
-                      {docs.map((doc) => (
-                        <li
-                          key={doc.id}
-                          className="flex flex-wrap items-center gap-3 rounded-md border border-border bg-background p-3"
-                        >
-                          {fileIcon(doc.mime_type)}
-                          <div className="min-w-0 flex-1">
-                            <div className="truncate text-sm font-medium">
-                              {doc.original_filename}
-                            </div>
-                            <div className="mt-0.5 flex items-center gap-2 text-xs text-muted-foreground">
-                              <span>{formatBytes(doc.size_bytes)}</span>
-                              <span>·</span>
-                              <span>{new Date(doc.created_at).toLocaleString("fr-CH")}</span>
-                              <Badge
-                                variant={doc.uploaded_by === "client_link" ? "default" : "secondary"}
-                                className="ml-1 h-4 text-[10px]"
-                              >
-                                {doc.uploaded_by === "client_link" ? "Client" : "Courtier"}
-                              </Badge>
-                            </div>
-                          </div>
-                          <Button size="sm" variant="ghost" onClick={() => openPreview(doc)}>
-                            <Eye className="h-4 w-4" />
-                          </Button>
-                          <Button size="sm" variant="ghost" onClick={() => downloadDoc(doc)}>
-                            <Download className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            className="text-destructive hover:text-destructive"
-                            onClick={() => {
-                              if (confirm(`Supprimer "${doc.original_filename}" ?`)) {
-                                deleteDoc.mutate(doc);
-                              }
-                            }}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </li>
-                      ))}
-                    </ul>
+                    <ul className="space-y-2">{docs.map((doc) => renderDocItem(doc))}</ul>
                   </AccordionContent>
                 </AccordionItem>
               );
             })}
           </Accordion>
         )}
+
+        {totalDocs > 0 && viewMode === "flat" && (
+          <ul className="space-y-2">{allDocsSorted.map((doc) => renderDocItem(doc, true))}</ul>
+        )}
+
       </Card>
 
       {/* Dialog: générer un lien */}
