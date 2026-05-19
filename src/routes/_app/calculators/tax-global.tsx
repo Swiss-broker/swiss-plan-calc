@@ -83,13 +83,21 @@ function TaxGlobalCalc() {
               </Badge>
             </div>
             <p className="mt-1 text-sm opacity-90">{t("calc.global.subtitle")}</p>
-            <div className="mt-3 inline-flex items-center gap-2 rounded-full bg-white/15 px-3 py-1 text-xs font-semibold">
-              <span className="opacity-80">{t("calc.global.regime.detected")} :</span>
-              <span>{result.regimeLabel}</span>
+            <div className="mt-3 flex flex-wrap items-center gap-2">
+              <div className="inline-flex items-center gap-2 rounded-full bg-white/15 px-3 py-1 text-xs font-semibold">
+                <span className="opacity-80">{t("calc.global.regime.detected")} :</span>
+                <span>{result.regimeLabel}</span>
+              </div>
+              {isFrontalier && (
+                <Badge className="bg-amber-400 text-amber-950 hover:bg-amber-400/90">
+                  🇫🇷→🇨🇭 {t("calc.global.badge.frontalier")}
+                </Badge>
+              )}
             </div>
           </div>
         </div>
       </CalcCard>
+
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-5">
         {/* LEFT — Fiche client */}
