@@ -50,10 +50,6 @@ const MODULES: ModuleDef[] = [
     descKey: "calc.module.fiscalite.desc",
     links: [
       { to: "/calculators/tax-global", labelKey: "calc.global.title" },
-      { to: "/calculators/income-tax", labelKey: "calc.sublink.income_tax_resident" },
-      { to: "/calculators/source-tax", labelKey: "calc.sublink.source_tax_ge" },
-      { to: "/calculators/tou", labelKey: "calc.tou.title" },
-      { to: "/calculators/cross-border", labelKey: "calc.sublink.cross_border_1983" },
       { to: "/calculators/overtime", labelKey: "calc.overtime.title" },
     ],
   },
