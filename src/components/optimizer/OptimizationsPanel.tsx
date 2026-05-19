@@ -28,11 +28,13 @@ export type Pillar3bContext = {
   canton?: string | null;
   civilStatus?: string | null;
   taxStatus?:
+    | "resident_ordinary"
     | "resident"
     | "source_taxed"
     | "cross_border_fr_1983"
     | "cross_border_ge"
     | "tou"
+    | "unknown"
     | null;
 };
 
@@ -206,7 +208,7 @@ function isCouple(civilStatus?: string | null): boolean {
   return civilStatus === "married" || civilStatus === "registered_partnership";
 }
 
-function Pillar3bInfoTile({ canton, civilStatus, taxStatus }: Pillar3bContext) {
+export function Pillar3bInfoTile({ canton, civilStatus, taxStatus }: Pillar3bContext) {
   const c = (canton ?? "").toUpperCase();
   const isGE = c === "GE";
   const isFR = c === "FR";
