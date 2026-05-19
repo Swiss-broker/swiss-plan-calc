@@ -89,6 +89,22 @@ const REGIME_SHORT: Record<Regime, string> = {
   unknown: "Régime à préciser",
 };
 
+/** Lieu d'imposition réel selon le régime — pour clarifier où l'impôt est dû. */
+function placeOfTaxation(regime: Regime): { flag: string; label: string } {
+  switch (regime) {
+    case "cross_border_fr_1983":
+      return { flag: "🇫🇷", label: "Imposition France" };
+    case "cross_border_ge":
+      return { flag: "🇨🇭+🇫🇷", label: "IS CH + résidu FR" };
+    case "resident_ordinary":
+    case "source_taxed":
+    case "tou":
+      return { flag: "🇨🇭", label: "Imposition CH" };
+    default:
+      return { flag: "❔", label: "À préciser" };
+  }
+}
+
 function CantonCompareCalc() {
   const t = useT();
   const { clientId } = Route.useSearch();
