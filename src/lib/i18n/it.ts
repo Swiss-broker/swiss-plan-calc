@@ -1747,6 +1747,10 @@ export const it: Record<string, string> = {
   "calc.global.tile.swiss_part": "Quota svizzera",
   "calc.global.tile.foreign_part": "Quota estera",
   "calc.global.tile.health": "Salute consigliata",
+  "calc.global.badge.frontalier": "Frontaliere",
+  "calc.global.note.cohabiting": "Convivenza: in Svizzera ogni partner è tassato separatamente (tariffa per celibi/nubili). Nessun cumulo di redditi.",
+  "calc.global.tile.social": "Oneri sanitari (LAMal/CMU)",
+  "calc.global.tile.gross": "Reddito lordo",
   "calc.global.scenarios.title": "Confronto scenari",
   "calc.global.scenarios.desc":
     "Tutte le ottimizzazioni possibili, ricalcolate in tempo reale sulla stessa scheda cliente.",
