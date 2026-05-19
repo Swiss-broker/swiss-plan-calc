@@ -767,6 +767,9 @@ export type Database = {
         | "cross_border"
         | "tou"
         | "director_compensation"
+        | "tax_global"
+        | "health_insurance_france"
+        | "overtime"
       tax_status:
         | "resident"
         | "source_taxed"
@@ -957,6 +960,9 @@ export const Constants = {
         "cross_border",
         "tou",
         "director_compensation",
+        "tax_global",
+        "health_insurance_france",
+        "overtime",
       ],
       tax_status: [
         "resident",
