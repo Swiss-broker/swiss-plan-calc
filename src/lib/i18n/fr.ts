@@ -1466,7 +1466,7 @@ export const fr: Record<string, string> = {
   "company_form.field.legal_form": "Forme juridique *",
   "company_form.field.canton": "Canton du siège",
   "company_form.field.canton.none": "Non renseigné",
-  "company_form.field.canton.placeholder": "—",
+  "company_form.field.canton.placeholder": "",
   "company_form.field.ide": "Numéro IDE",
   "company_form.field.ide.hint": "Format suisse : CHE-XXX.XXX.XXX",
   "company_form.field.vat": "Numéro TVA",
