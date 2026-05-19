@@ -86,10 +86,6 @@ function randomToken(): string {
   return Array.from(arr, (b) => b.toString(36).padStart(2, "0")).join("").slice(0, 32);
 }
 
-function fileIcon(mime: string) {
-  if (mime.startsWith("image/")) return <ImageIcon className="h-4 w-4 text-muted-foreground" />;
-  return <FileText className="h-4 w-4 text-muted-foreground" />;
-}
 
 export function DocumentsTab({
   clientId,
