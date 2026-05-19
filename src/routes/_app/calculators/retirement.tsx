@@ -167,30 +167,75 @@ function RetirementCalc() {
               <MoneyTile label={t("calc.income_tax.tile.cantonal")} value={lumpTax.cantonal} tip={t("calc.income_tax.tip.cantonal")} />
             </Row>
             <div className="mt-3">
-              <MoneyTile label={t("calc.retirement.lump_tax.total")} value={lumpTax.total} tone="warning" big tip={t("calc.retirement.lump_tax.total.tip")} />
+              <MoneyTile
+                label={`${t("calc.retirement.lump_tax.total")} (coût fiscal)`}
+                value={lumpTax.total}
+                tone="warning"
+                big
+                tip={t("calc.retirement.lump_tax.total.tip")}
+              />
             </div>
+            <p className="mt-2 text-[11px] text-muted-foreground">
+              Orange = charge fiscale ponctuelle à payer en cas de retrait en capital.
+            </p>
           </CalcCard>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <CalcCard title={t("calc.retirement.scen.annuity")}>
-          <Row>
-            <MoneyTile label={t("calc.retirement.scen.annuity.gross")} value={compare.totalRente} tip={t("calc.retirement.scen.annuity.gross.tip")} />
-            <MoneyTile label={t("calc.retirement.scen.annuity.net")} value={compare.netAnnuity} tone="primary" big tip={t("calc.retirement.scen.annuity.net.tip")} />
-          </Row>
-        </CalcCard>
-        <CalcCard title={t("calc.retirement.scen.lump")}>
-          <Row>
-            <MoneyTile label={t("calc.retirement.scen.lump.after_tax")} value={form.capital - lumpTax.total} tip={t("calc.retirement.scen.lump.after_tax.tip")} />
-            <MoneyTile label={t("calc.retirement.scen.lump.projected")} value={compare.netLumpSum} tone="primary" big tip={t("calc.retirement.scen.lump.projected.tip")} />
-          </Row>
-        </CalcCard>
-      </div>
+      {(() => {
+        const annuityWins = compare.recommendation === "annuity";
+        const lumpWins = compare.recommendation === "lump_sum";
+        return (
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <CalcCard
+              title={t("calc.retirement.scen.annuity")}
+              className={annuityWins ? "ring-2 ring-success/50" : undefined}
+            >
+              <Row>
+                <MoneyTile label={t("calc.retirement.scen.annuity.gross")} value={compare.totalRente} tip={t("calc.retirement.scen.annuity.gross.tip")} />
+                <MoneyTile
+                  label={t("calc.retirement.scen.annuity.net")}
+                  value={compare.netAnnuity}
+                  tone={annuityWins ? "success" : lumpWins ? "warning" : "primary"}
+                  big
+                  tip={t("calc.retirement.scen.annuity.net.tip")}
+                />
+              </Row>
+              {annuityWins && (
+                <p className="mt-2 text-[11px] font-semibold text-success">✓ Option recommandée</p>
+              )}
+            </CalcCard>
+            <CalcCard
+              title={t("calc.retirement.scen.lump")}
+              className={lumpWins ? "ring-2 ring-success/50" : undefined}
+            >
+              <Row>
+                <MoneyTile label={t("calc.retirement.scen.lump.after_tax")} value={form.capital - lumpTax.total} tip={t("calc.retirement.scen.lump.after_tax.tip")} />
+                <MoneyTile
+                  label={t("calc.retirement.scen.lump.projected")}
+                  value={compare.netLumpSum}
+                  tone={lumpWins ? "success" : annuityWins ? "warning" : "primary"}
+                  big
+                  tip={t("calc.retirement.scen.lump.projected.tip")}
+                />
+              </Row>
+              {lumpWins && (
+                <p className="mt-2 text-[11px] font-semibold text-success">✓ Option recommandée</p>
+              )}
+            </CalcCard>
+          </div>
+        );
+      })()}
 
-      <div className="rounded-2xl border border-success/30 bg-success/5 p-5">
-        <div className="text-xs font-medium uppercase tracking-wider text-success-foreground/80">{t("calc.retirement.reco.title")}</div>
-        <p className="mt-1 text-sm">{reco}</p>
+      <div className={`rounded-2xl border p-5 ${
+        compare.recommendation === "mixed"
+          ? "border-primary/30 bg-primary/5"
+          : "border-success/60 bg-success/15 ring-1 ring-success/30"
+      }`}>
+        <div className={`text-xs font-medium uppercase tracking-wider ${
+          compare.recommendation === "mixed" ? "text-primary" : "text-success"
+        }`}>{t("calc.retirement.reco.title")}</div>
+        <p className="mt-1 text-sm font-medium">{reco}</p>
         <p className="mt-2 text-[11px] text-muted-foreground">
           Cette comparaison repose sur les hypothèses ci-dessus (espérance de vie, rendement, fiscalité). Une modification de ces paramètres peut changer la recommandation.
         </p>
