@@ -10,7 +10,7 @@ import {
   CartesianGrid,
   Cell,
 } from "recharts";
-import { Info, Sparkles } from "lucide-react";
+import { Info, Sparkles, AlertTriangle } from "lucide-react";
 import { NumField as BaseNumField } from "@/components/ui/num-field";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
@@ -26,14 +26,15 @@ import {
   getSelectableCantons,
   type SelectableCantonCode,
 } from "@/lib/swiss/cantons";
-import { computeIncomeTax, type IncomeTaxInput } from "@/lib/tax/income";
 import { capitalWithdrawalTax } from "@/lib/lpp";
+import { computeTaxGlobal } from "@/lib/tax-global/engine";
+import { createDefaultInput } from "@/lib/tax-global/profile";
+import type { TaxGlobalInput, Regime } from "@/lib/tax-global/types";
 import { CalcCard } from "@/components/calculators/CalcUI";
 import { formatCHF } from "@/lib/format";
 import { ExportPdfButton } from "@/components/calculators/ExportPdfButton";
 import { exportCantonComparePdf } from "@/lib/pdf/reports";
 import { SaveSimulationButton } from "@/components/calculators/SaveSimulationButton";
-import { useAuth } from "@/contexts/AuthContext";
 import { useBrokerPdfHeader } from "@/hooks/useBrokerPdfHeader";
 import { useT } from "@/contexts/LanguageContext";
 import { useClientDashboard } from "@/hooks/use-client-dashboard";
@@ -44,6 +45,7 @@ import type {
   ClientPension,
   ClientAssets,
 } from "@/lib/clients/types";
+import { toTaxGlobalInput } from "@/lib/clients/to-calculator-input";
 
 const ZG_CODE = "ZG";
 const SZ_CODE = "SZ";
@@ -51,7 +53,7 @@ const REFERENCE_CODES: ReadonlySet<string> = new Set([ZG_CODE, SZ_CODE]);
 
 import { zodValidator, fallback } from "@tanstack/zod-adapter";
 import { z } from "zod";
-import { usePrefillFromClient, useHydrateFormFromPrefill } from "@/hooks/usePrefillFromClient";
+import { usePrefillFromClient } from "@/hooks/usePrefillFromClient";
 import { ClientLinkBanner } from "@/components/calculators/ClientLinkBanner";
 import { GuideMode, GuideToggleButton, type GuideStep } from "@/components/calculators/GuideMode";
 import { WikiTip } from "@/components/calculators/WikiTip";
@@ -71,16 +73,26 @@ type Row = {
   name: string;
   total: number;
   effective: number;
+  regimeLabel: string;
+  regime: Regime;
   isReference: boolean;
-  isSeparator?: boolean;
 };
 
 type CompareMode = "annual" | "lump_sum";
 
+const REGIME_SHORT: Record<Regime, string> = {
+  resident_ordinary: "Taxation ordinaire",
+  source_taxed: "Impôt à la source",
+  tou: "Quasi-résident (TOU)",
+  cross_border_ge: "Frontalier · IS Genève",
+  cross_border_fr_1983: "Frontalier · accord 1983",
+  unknown: "Régime à préciser",
+};
+
 function CantonCompareCalc() {
   const t = useT();
   const { clientId } = Route.useSearch();
-  const { client, prefill } = usePrefillFromClient(clientId, "canton-compare");
+  const { client } = usePrefillFromClient(clientId, "canton-compare");
   const selectable = getSelectableCantons();
   const comparable = getComparableCantons();
 
@@ -104,62 +116,71 @@ function CantonCompareCalc() {
   });
   const dashboard = useClientDashboard(bundle ?? null);
 
-  const [form, setForm] = useState({
-    grossSalary: 120_000,
-    spouseGrossSalary: 0,
-    status: "single" as IncomeTaxInput["status"],
-    children: 0,
-    netWealth: 0,
-    referenceCanton: "VD" as SelectableCantonCode,
-  });
-  useHydrateFormFromPrefill(prefill as Partial<typeof form> | null, setForm);
-  const set = <K extends keyof typeof form>(k: K, v: (typeof form)[K]) =>
-    setForm((f) => ({ ...f, [k]: v }));
+  // ── État du formulaire : on s'aligne sur le moteur Fiscal Global pour
+  //    garantir des chiffres identiques entre les deux écrans.
+  const [base, setBase] = useState<TaxGlobalInput>(() => ({
+    ...createDefaultInput(),
+    canton: "VD",
+  }));
+
+  // Hydratation depuis la fiche client : on réutilise exactement le mapping
+  // employé par le Fiscal Global → cohérence garantie.
+  const [hydrated, setHydrated] = useState(false);
+  useEffect(() => {
+    if (!hydrated && bundle?.client) {
+      const prefill = toTaxGlobalInput(bundle);
+      setBase((prev) => {
+        const next: TaxGlobalInput = { ...prev };
+        for (const [k, v] of Object.entries(prefill)) {
+          if (v !== undefined && v !== null && v !== "") {
+            (next as Record<string, unknown>)[k] = v;
+          }
+        }
+        return next;
+      });
+      setHydrated(true);
+    }
+  }, [bundle, hydrated]);
+
+  const set = <K extends keyof TaxGlobalInput>(k: K, v: TaxGlobalInput[K]) =>
+    setBase((f) => ({ ...f, [k]: v }));
+
+  const [referenceCanton, setReferenceCanton] = useState<SelectableCantonCode>("VD");
+  useEffect(() => {
+    if (hydrated && base.canton) {
+      setReferenceCanton(base.canton as SelectableCantonCode);
+    }
+  }, [hydrated, base.canton]);
 
   const [mode, setMode] = useState<CompareMode>("annual");
 
-  // ─────────────────────────────────────────────────────────────────────
-  // Source UNIQUE de vérité : projections "fiche client" issues du
-  // dashboard central (cf. src/lib/client-dashboard/lpp-projection.ts).
-  // On NE LIT PLUS simulation_history ici : une simulation sauvegardée est
-  // un what-if figé, pas la vérité de la fiche. Si le courtier veut
-  // intégrer un rachat/rendement custom, il édite la fiche → projection
-  // re-évaluée pour TOUS les calculateurs.
-  // ─────────────────────────────────────────────────────────────────────
+  // ──────────────────────────────────────────────────────────────────────
+  // Mode lump_sum : impôt sur prestation en capital LPP/3a à la retraite.
+  // Inchangé — barème séparé, ne dépend pas du régime fiscal courant.
+  // ──────────────────────────────────────────────────────────────────────
   const lppFromFiche = dashboard?.lpp?.projectedCapitalAt65 ?? 0;
   const p3aFromFiche = dashboard?.pillar3a?.projectedCapitalAt65 ?? 0;
-
   const [lppCapitalOverride, setLppCapitalOverride] = useState<number | null>(null);
   const [p3aCapitalOverride, setP3aCapitalOverride] = useState<number | null>(null);
-
-  // Hydratation depuis la fiche dès que les projections sont disponibles.
   useEffect(() => {
-    if (lppCapitalOverride === null && lppFromFiche > 0) {
-      setLppCapitalOverride(lppFromFiche);
-    }
+    if (lppCapitalOverride === null && lppFromFiche > 0) setLppCapitalOverride(lppFromFiche);
   }, [lppFromFiche, lppCapitalOverride]);
   useEffect(() => {
-    if (p3aCapitalOverride === null && p3aFromFiche > 0) {
-      setP3aCapitalOverride(p3aFromFiche);
-    }
+    if (p3aCapitalOverride === null && p3aFromFiche > 0) setP3aCapitalOverride(p3aFromFiche);
   }, [p3aFromFiche, p3aCapitalOverride]);
-
   const lppCapital = lppCapitalOverride ?? lppFromFiche;
   const p3aCapital = p3aCapitalOverride ?? p3aFromFiche;
   const projectedLPPCapital = Math.max(0, lppCapital + p3aCapital);
-
   const lppDivergesFromFiche =
     lppFromFiche > 0 && lppCapitalOverride !== null && lppCapitalOverride !== lppFromFiche;
   const p3aDivergesFromFiche =
     p3aFromFiche > 0 && p3aCapitalOverride !== null && p3aCapitalOverride !== p3aFromFiche;
-
   const resetLppFromFiche = () => setLppCapitalOverride(lppFromFiche);
   const resetP3aFromFiche = () => setP3aCapitalOverride(p3aFromFiche);
-
   const lumpSumStatus: "single" | "married" | "single_with_children" =
-    form.status === "married"
+    base.civilStatus === "married" || base.civilStatus === "registered_partnership"
       ? "married"
-      : form.status === "single_with_children"
+      : base.children > 0
         ? "single_with_children"
         : "single";
 
@@ -168,19 +189,17 @@ function CantonCompareCalc() {
     for (const c of comparable) {
       try {
         if (mode === "annual") {
-          const r = computeIncomeTax({
-            canton: c.code,
-            status: form.status,
-            children: form.children,
-            grossSalary: form.grossSalary,
-            spouseGrossSalary: form.spouseGrossSalary,
-            netWealth: form.netWealth,
-          });
+          // ⚠️ Source de vérité = moteur Fiscal Global.
+          // On ne change que le canton, le reste (régime, déductions,
+          // bonus, 3a, fortune…) est identique au calculateur fiscal global.
+          const r = computeTaxGlobal({ ...base, canton: c.code });
           rows.push({
             code: c.code,
             name: c.name,
-            total: r.totalTax,
+            total: r.totalTaxCHF,
             effective: r.effectiveRate,
+            regimeLabel: REGIME_SHORT[r.regime] ?? r.regimeLabel,
+            regime: r.regime,
             isReference: REFERENCE_CODES.has(c.code),
           });
         } else {
@@ -198,6 +217,8 @@ function CantonCompareCalc() {
             name: c.name,
             total: tt.total,
             effective,
+            regimeLabel: "Impôt sur prestation en capital (barème séparé)",
+            regime: "resident_ordinary",
             isReference: REFERENCE_CODES.has(c.code),
           });
         }
@@ -208,9 +229,19 @@ function CantonCompareCalc() {
     const romands = rows.filter((r) => !REFERENCE_CODES.has(r.code)).sort((a, b) => a.total - b.total);
     const refs = rows.filter((r) => REFERENCE_CODES.has(r.code)).sort((a, b) => a.total - b.total);
     return [...romands, ...refs];
-  }, [form, comparable, mode, projectedLPPCapital, lumpSumStatus]);
+  }, [base, comparable, mode, projectedLPPCapital, lumpSumStatus]);
 
-  const referenceTax = data.find((d) => d.code === form.referenceCanton)?.total ?? 0;
+  // Détecte les régimes hétérogènes (frontalier vs résident ordinaire selon
+  // le canton choisi) pour avertir le courtier que la comparaison croise
+  // plusieurs régimes fiscaux et pas seulement des barèmes cantonaux.
+  const distinctRegimes = useMemo(() => {
+    const s = new Set<Regime>();
+    data.forEach((d) => s.add(d.regime));
+    return Array.from(s);
+  }, [data]);
+  const heterogeneousRegimes = mode === "annual" && distinctRegimes.length > 1;
+
+  const referenceTax = data.find((d) => d.code === referenceCanton)?.total ?? 0;
   const cheapestRomand = useMemo(
     () =>
       data
@@ -221,12 +252,23 @@ function CantonCompareCalc() {
   const romandsCount = data.filter((d) => !REFERENCE_CODES.has(d.code)).length;
   const hasReferences = data.some((d) => REFERENCE_CODES.has(d.code));
 
-  const { user } = useAuth();
   const brokerHeader = useBrokerPdfHeader();
   const handleExport = () =>
     exportCantonComparePdf({
       header: brokerHeader,
-      input: form,
+      input: {
+        grossSalary: base.grossSalary,
+        spouseGrossSalary: base.spouseGrossSalary,
+        status:
+          base.civilStatus === "married" || base.civilStatus === "registered_partnership"
+            ? "married"
+            : base.children > 0
+              ? "single_with_children"
+              : "single",
+        children: base.children,
+        netWealth: base.netWealth,
+        referenceCanton,
+      },
       rows: data,
     });
   const [guideOpen, setGuideOpen] = useState(false);
@@ -236,12 +278,25 @@ function CantonCompareCalc() {
     { title: t("calc.canton_compare.guide.s3.title"), body: t("calc.canton_compare.guide.s3.body") },
   ];
 
+  const isCouple =
+    base.civilStatus === "married" || base.civilStatus === "registered_partnership";
+
   return (
     <div className="space-y-6">
       <GuideMode open={guideOpen} onClose={() => setGuideOpen(false)} steps={guideSteps} title={t("calc.canton_compare.guide.title")} />
       <div className="flex justify-end"><GuideToggleButton onClick={() => setGuideOpen(true)} /></div>
 
       {client && <ClientLinkBanner client={client} />}
+
+      <div className="rounded-lg border border-primary/30 bg-primary/5 p-3 text-xs">
+        <div className="flex items-start gap-2">
+          <Info className="mt-0.5 h-4 w-4 shrink-0 text-primary" aria-hidden />
+          <p className="text-muted-foreground">
+            Les chiffres affichés ici sont calculés avec <strong>le même moteur que le calculateur Fiscal Global</strong>.
+            Pour un même client, la ligne du canton actuel correspond au montant affiché dans le Fiscal Global.
+          </p>
+        </div>
+      </div>
 
       {clientId && (
         <CalcCard title={t("calc.canton_compare.mode.title")}>
@@ -293,14 +348,8 @@ function CantonCompareCalc() {
         >
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className="space-y-1.5">
-              <Label className="text-xs font-medium text-muted-foreground">
-                Capital LPP projeté à la retraite
-              </Label>
-              <BaseNumField
-                value={String(lppCapital)}
-                onChange={(v) => setLppCapitalOverride(Number(v) || 0)}
-                suffix="CHF"
-              />
+              <Label className="text-xs font-medium text-muted-foreground">Capital LPP projeté à la retraite</Label>
+              <BaseNumField value={String(lppCapital)} onChange={(v) => setLppCapitalOverride(Number(v) || 0)} suffix="CHF" />
               <p className="text-[11px] text-muted-foreground">
                 {lppFromFiche > 0
                   ? `Source : Projection fiche client (rendement 1,25%, frais 0,6%, conversion 6,0%, sans rachats). Modifiable pour what-if.`
@@ -308,11 +357,7 @@ function CantonCompareCalc() {
                 {lppDivergesFromFiche && (
                   <>
                     {" "}
-                    <button
-                      type="button"
-                      onClick={resetLppFromFiche}
-                      className="underline hover:text-foreground"
-                    >
+                    <button type="button" onClick={resetLppFromFiche} className="underline hover:text-foreground">
                       Réinitialiser depuis la fiche ({formatCHF(lppFromFiche)})
                     </button>
                   </>
@@ -320,14 +365,8 @@ function CantonCompareCalc() {
               </p>
             </div>
             <div className="space-y-1.5">
-              <Label className="text-xs font-medium text-muted-foreground">
-                Capital 3e pilier A projeté
-              </Label>
-              <BaseNumField
-                value={String(p3aCapital)}
-                onChange={(v) => setP3aCapitalOverride(Number(v) || 0)}
-                suffix="CHF"
-              />
+              <Label className="text-xs font-medium text-muted-foreground">Capital 3e pilier A projeté</Label>
+              <BaseNumField value={String(p3aCapital)} onChange={(v) => setP3aCapitalOverride(Number(v) || 0)} suffix="CHF" />
               <p className="text-[11px] text-muted-foreground">
                 {p3aFromFiche > 0
                   ? "D'après la fiche client (versement annuel + solde existant, rendement 2%). Modifiable."
@@ -335,11 +374,7 @@ function CantonCompareCalc() {
                 {p3aDivergesFromFiche && (
                   <>
                     {" "}
-                    <button
-                      type="button"
-                      onClick={resetP3aFromFiche}
-                      className="underline hover:text-foreground"
-                    >
+                    <button type="button" onClick={resetP3aFromFiche} className="underline hover:text-foreground">
                       Réinitialiser depuis la fiche ({formatCHF(p3aFromFiche)})
                     </button>
                   </>
@@ -348,12 +383,8 @@ function CantonCompareCalc() {
             </div>
           </div>
           <div className="mt-4 rounded-lg border border-primary/30 bg-primary/5 p-3">
-            <div className="text-xs uppercase tracking-wide text-muted-foreground">
-              Capital total imposable (LPP + 3a)
-            </div>
-            <div className="mt-1 text-2xl font-semibold tabular-nums text-foreground">
-              {formatCHF(projectedLPPCapital)}
-            </div>
+            <div className="text-xs uppercase tracking-wide text-muted-foreground">Capital total imposable (LPP + 3a)</div>
+            <div className="mt-1 text-2xl font-semibold tabular-nums text-foreground">{formatCHF(projectedLPPCapital)}</div>
           </div>
         </CalcCard>
       )}
@@ -363,36 +394,74 @@ function CantonCompareCalc() {
         description={
           mode === "lump_sum"
             ? t("calc.canton_compare.profile.desc.lump", { amount: formatCHF(projectedLPPCapital) })
-            : t("calc.canton_compare.profile.desc.annual")
+            : "Profil identique à celui du Fiscal Global : on fait varier uniquement le canton."
         }
       >
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          <NumField label={t("calc.canton_compare.field.gross")} value={form.grossSalary} onChange={(v) => set("grossSalary", v)} wikiId="ifd-icc" wikiTip={t("calc.canton_compare.tip.gross")} />
+          <NumField label="Salaire brut annuel (CHF)" value={base.grossSalary} onChange={(v) => set("grossSalary", v)} wikiId="ifd-icc" wikiTip={t("calc.canton_compare.tip.gross")} />
+          <NumField label="Bonus / 13e (CHF)" value={base.bonus} onChange={(v) => set("bonus", v)} />
+          <NumField label="Autres revenus (CHF)" value={base.otherIncome} onChange={(v) => set("otherIncome", v)} />
+
           <div className="space-y-1.5">
-            <Label className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
-              <span>{t("calc.canton_compare.field.civil_status")}</span>
-              <WikiTip articleId="ifd-icc" tip={t("calc.canton_compare.tip.civil_status")} />
-            </Label>
-            <Select value={form.status} onValueChange={(v) => set("status", v as IncomeTaxInput["status"])}>
+            <Label className="text-xs font-medium text-muted-foreground">État civil</Label>
+            <Select
+              value={base.civilStatus}
+              onValueChange={(v) => set("civilStatus", v as TaxGlobalInput["civilStatus"])}
+            >
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="single">{t("calc.status.single")}</SelectItem>
-                <SelectItem value="married">{t("calc.status.married")}</SelectItem>
-                <SelectItem value="single_with_children">{t("calc.status.single_with_children")}</SelectItem>
+                <SelectItem value="single">Célibataire</SelectItem>
+                <SelectItem value="married">Marié·e</SelectItem>
+                <SelectItem value="registered_partnership">Partenariat enregistré</SelectItem>
+                <SelectItem value="cohabiting">Concubinage</SelectItem>
+                <SelectItem value="divorced">Divorcé·e</SelectItem>
+                <SelectItem value="separated">Séparé·e</SelectItem>
+                <SelectItem value="widowed">Veuf·ve</SelectItem>
               </SelectContent>
             </Select>
           </div>
-          {form.status === "married" && (
-            <NumField label={t("calc.canton_compare.field.spouse_salary")} value={form.spouseGrossSalary} onChange={(v) => set("spouseGrossSalary", v)} wikiId="ifd-icc" wikiTip={t("calc.canton_compare.tip.spouse_salary")} />
+
+          {isCouple && (
+            <NumField label="Salaire brut conjoint (CHF)" value={base.spouseGrossSalary} onChange={(v) => set("spouseGrossSalary", v)} />
           )}
-          <NumField label={t("calc.canton_compare.field.children")} value={form.children} onChange={(v) => set("children", v)} />
-          <NumField label={t("calc.canton_compare.field.wealth")} value={form.netWealth} onChange={(v) => set("netWealth", v)} wikiId="fortune" wikiTip={t("calc.canton_compare.tip.wealth")} />
+          <NumField label="Enfants à charge" value={base.children} onChange={(v) => set("children", v)} />
+
           <div className="space-y-1.5">
-            <Label className="text-xs font-medium text-muted-foreground">{t("calc.canton_compare.field.reference")}</Label>
-            <Select
-              value={form.referenceCanton}
-              onValueChange={(v) => set("referenceCanton", v as SelectableCantonCode)}
-            >
+            <Label className="text-xs font-medium text-muted-foreground">Pays de résidence</Label>
+            <Select value={base.countryOfResidence} onValueChange={(v) => set("countryOfResidence", v)}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="CH">🇨🇭 Suisse</SelectItem>
+                <SelectItem value="FR">🇫🇷 France</SelectItem>
+                <SelectItem value="IT">🇮🇹 Italie</SelectItem>
+                <SelectItem value="DE">🇩🇪 Allemagne</SelectItem>
+                <SelectItem value="AT">🇦🇹 Autriche</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label className="text-xs font-medium text-muted-foreground">Permis</Label>
+            <Select value={base.permit} onValueChange={(v) => set("permit", v as TaxGlobalInput["permit"])}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="swiss">🇨🇭 Suisse</SelectItem>
+                <SelectItem value="C">Permis C</SelectItem>
+                <SelectItem value="B">Permis B</SelectItem>
+                <SelectItem value="L">Permis L</SelectItem>
+                <SelectItem value="G">Permis G (frontalier)</SelectItem>
+                <SelectItem value="Ci">Permis Ci</SelectItem>
+                <SelectItem value="F">Permis F</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <NumField label="3e pilier A annuel (CHF)" value={base.pillar3aContributions} onChange={(v) => set("pillar3aContributions", v)} />
+          <NumField label="Fortune nette (CHF)" value={base.netWealth} onChange={(v) => set("netWealth", v)} wikiId="fortune" wikiTip={t("calc.canton_compare.tip.wealth")} />
+
+          <div className="space-y-1.5">
+            <Label className="text-xs font-medium text-muted-foreground">Canton de référence</Label>
+            <Select value={referenceCanton} onValueChange={(v) => setReferenceCanton(v as SelectableCantonCode)}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
                 {selectable.map((c) => (
@@ -403,6 +472,18 @@ function CantonCompareCalc() {
           </div>
         </div>
       </CalcCard>
+
+      {heterogeneousRegimes && (
+        <div className="flex items-start gap-3 rounded-lg border border-warning/40 bg-warning/10 p-3 text-sm">
+          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-warning" aria-hidden />
+          <p className="text-foreground/90">
+            <strong>Régimes fiscaux différents selon le canton.</strong> Pour ce profil, certains cantons appliquent
+            l'imposition à la source ou un régime frontalier (accord 1983, IS genevoise) alors que d'autres relèvent
+            de la taxation ordinaire. Les écarts ne reflètent donc pas uniquement les barèmes cantonaux mais aussi
+            la mécanique fiscale applicable. Le régime utilisé est indiqué dans l'infobulle de chaque canton.
+          </p>
+        </div>
+      )}
 
       <div className="flex items-start gap-3 rounded-lg border border-border bg-muted/40 p-3 text-sm">
         <Info className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
@@ -418,27 +499,23 @@ function CantonCompareCalc() {
             <BarChart data={data} layout="vertical" margin={{ left: 12, right: 32, top: 8, bottom: 8 }}>
               <CartesianGrid stroke="var(--border)" strokeOpacity={0.5} horizontal={false} />
               <XAxis type="number" tickFormatter={(v) => `${Math.round(v / 1000)}k`} />
-              <YAxis
-                type="category"
-                dataKey="code"
-                width={56}
-                tick={{ fontSize: 11, fill: "var(--foreground)" }}
-              />
+              <YAxis type="category" dataKey="code" width={56} tick={{ fontSize: 11, fill: "var(--foreground)" }} />
               <Tooltip
                 allowEscapeViewBox={{ x: false, y: false }}
-                wrapperStyle={{ maxWidth: 280, zIndex: 50 }}
+                wrapperStyle={{ maxWidth: 320, zIndex: 50 }}
                 contentStyle={{
                   background: "var(--card)",
                   border: "1px solid var(--border)",
                   borderRadius: 8,
-                  maxWidth: 280,
+                  maxWidth: 320,
                   whiteSpace: "normal",
                   wordBreak: "break-word",
                 }}
                 itemStyle={{ whiteSpace: "normal" }}
                 labelStyle={{ whiteSpace: "normal" }}
                 formatter={(v: number, _: string, props) => {
-                  const label = `${props.payload.name} · ${props.payload.effective}%`;
+                  const p = props.payload as Row;
+                  const label = `${p.name} · ${p.effective}% · ${p.regimeLabel}`;
                   return [formatCHF(v), label];
                 }}
               />
@@ -474,15 +551,15 @@ function CantonCompareCalc() {
       <div className="flex flex-wrap justify-end gap-2">
         <SaveSimulationButton
           kind="canton_compare"
-          inputs={form}
+          inputs={{ ...base, referenceCanton }}
           summary={{
             cheapestCanton: cheapestRomand?.code,
             cheapestTax: cheapestRomand?.total,
-            referenceCanton: form.referenceCanton,
+            referenceCanton,
             referenceTax,
             maxSavings: Math.max(0, referenceTax - (cheapestRomand?.total ?? 0)),
           }}
-          defaultTitle={`Comparateur Suisse romande · réf ${form.referenceCanton}`}
+          defaultTitle={`Comparateur Suisse romande · réf ${referenceCanton}`}
         />
         <ExportPdfButton onClick={handleExport} />
       </div>
