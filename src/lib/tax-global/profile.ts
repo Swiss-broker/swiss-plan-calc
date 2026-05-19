@@ -14,65 +14,71 @@ export function detectRegime(input: TaxGlobalInput): RegimeDetection {
   const country = (input.countryOfResidence || "").toUpperCase();
   const permit = input.permit;
   const canton = (input.canton || "").toUpperCase();
+  const livesAbroad = country !== "" && country !== "CH";
 
-  // Frontalier (permis G, résidence hors CH)
-  if (permit === "G" && country && country !== "CH") {
+  // ─── Résidence à l'étranger → frontalier (peu importe le permis saisi) ───
+  if (livesAbroad) {
     if (canton === "GE") {
       return {
         regime: "cross_border_ge",
         regimeLabel: "Frontalier · Genève (IS genevoise + rétrocession)",
-        reason: "Permis G + résidence FR + canton GE",
+        reason: `Résidence ${country} + travail à GE → IS genevoise (4.5% rétrocédés à la France) puis imposition en France`,
       };
     }
     if (isFrAccordCanton(canton)) {
       return {
         regime: "cross_border_fr_1983",
         regimeLabel: `Frontalier · Accord franco-suisse 1983 (${canton})`,
-        reason: "Permis G + résidence FR + canton accord 1983",
+        reason: `Résidence ${country} + travail dans ${canton} (accord 1983) → imposition en France uniquement, attestation 2041-AS`,
       };
     }
+    // Autres cantons : par défaut, IS suisse + impôt résidence (proche modèle GE)
+    return {
+      regime: "cross_border_ge",
+      regimeLabel: `Frontalier · ${canton || "canton à préciser"} (modèle source CH + impôt résidence)`,
+      reason: `Résidence ${country} hors accord 1983 pour ${canton || "ce canton"} → IS suisse + imposition pays de résidence`,
+    };
   }
 
-  // Résident CH
-  if (country === "CH" || country === "") {
-    if (permit === "swiss" || permit === "C") {
-      return {
-        regime: "resident_ordinary",
-        regimeLabel: "Résident · Taxation ordinaire",
-        reason: "Permis C ou nationalité suisse",
-      };
-    }
-    if (permit === "B" || permit === "L" || permit === "Ci" || permit === "F") {
-      // Quasi-résident potentiel si revenu suisse >= 90% revenu mondial
-      const totalIncome =
-        input.grossSalary +
-        input.bonus +
-        input.spouseGrossSalary +
-        input.otherIncome +
-        input.rentalIncome;
-      const worldwide = totalIncome + input.foreignIncome;
-      const swissShare = worldwide > 0 ? totalIncome / worldwide : 1;
-      if (swissShare >= 0.9) {
-        return {
-          regime: "tou",
-          regimeLabel: "Imposé à la source · Éligible TOU (quasi-résident)",
-          reason: "Permis B/L résident CH avec ≥ 90% revenu mondial en CH",
-        };
-      }
-      return {
-        regime: "source_taxed",
-        regimeLabel: "Imposé à la source",
-        reason: "Permis B/L résident CH",
-      };
-    }
+  // ─── Résident CH ───
+  if (permit === "swiss" || permit === "C") {
+    return {
+      regime: "resident_ordinary",
+      regimeLabel: "Résident · Taxation ordinaire",
+      reason: "Permis C ou nationalité suisse → déclaration ordinaire (revenu + fortune)",
+    };
   }
-
+  if (permit === "G") {
+    // Cas atypique : résident CH déclaré avec permis G → traite comme ordinaire
+    return {
+      regime: "resident_ordinary",
+      regimeLabel: "Résident · Taxation ordinaire (permis G + résidence CH = inhabituel)",
+      reason: "Permis G mais résidence CH : vérifier le statut, traité comme résident ordinaire",
+    };
+  }
+  // Permis B / L / Ci / F → source, avec règle TOU si revenu CH ≥ 90% revenu mondial
+  const totalIncome =
+    input.grossSalary +
+    input.bonus +
+    input.spouseGrossSalary +
+    input.otherIncome +
+    input.rentalIncome;
+  const worldwide = totalIncome + input.foreignIncome;
+  const swissShare = worldwide > 0 ? totalIncome / worldwide : 1;
+  if (swissShare >= 0.9) {
+    return {
+      regime: "tou",
+      regimeLabel: "Imposé à la source · Éligible TOU (quasi-résident)",
+      reason: `Permis ${permit} résident CH avec ${(swissShare * 100).toFixed(0)}% du revenu mondial en CH → TOU possible (rectification déductions)`,
+    };
+  }
   return {
-    regime: "unknown",
-    regimeLabel: "Régime à préciser",
-    reason: "Combinaison permis/pays non couverte automatiquement",
+    regime: "source_taxed",
+    regimeLabel: "Imposé à la source",
+    reason: `Permis ${permit} résident CH → impôt à la source mensuel (barème ${canton || "—"})`,
   };
 }
+
 
 export function createDefaultInput(): TaxGlobalInput {
   return {

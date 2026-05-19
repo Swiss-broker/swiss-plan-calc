@@ -115,7 +115,19 @@ function TaxGlobalCalc() {
                     <Field label={t("calc.global.field.country")}>
                       <Select
                         value={form.countryOfResidence}
-                        onValueChange={(v) => set("countryOfResidence", v)}
+                        onValueChange={(v) =>
+                          setForm((f) => ({
+                            ...f,
+                            countryOfResidence: v,
+                            // Auto-cohérence permis ↔ résidence pour éviter "régime inconnu"
+                            permit:
+                              v !== "CH" && (f.permit === "swiss" || f.permit === "C")
+                                ? "G"
+                                : v === "CH" && f.permit === "G"
+                                  ? "C"
+                                  : f.permit,
+                          }))
+                        }
                       >
                         <SelectTrigger><SelectValue /></SelectTrigger>
                         <SelectContent>
