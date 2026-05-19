@@ -581,7 +581,8 @@ function CantonCompareCalc() {
                 labelStyle={{ whiteSpace: "normal" }}
                 formatter={(v: number, _: string, props) => {
                   const p = props.payload as Row;
-                  const label = `${p.name} · ${p.effective}% · ${p.regimeLabel}`;
+                  const place = placeOfTaxation(p.regime);
+                  const label = `${p.name} · ${p.effective}% · ${p.regimeLabel} · ${place.flag} ${place.label}`;
                   return [formatCHF(v), label];
                 }}
               />
