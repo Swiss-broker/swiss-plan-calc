@@ -37,13 +37,16 @@ export function OptimizationsPanel({
 
   if (optimizations.length === 0) {
     return (
-      <div className="rounded-2xl border border-border bg-card p-6 text-center shadow-sm">
-        <Sparkles className="mx-auto h-8 w-8 text-muted-foreground/60" />
-        <h3 className="mt-3 text-base font-semibold">Aucune optimisation détectée</h3>
-        <p className="mx-auto mt-1 max-w-md text-sm text-muted-foreground">
-          {emptyHint ??
-            "Renseignez davantage d'informations (LPP, 3a, fortune, canton) pour obtenir des recommandations chiffrées."}
-        </p>
+      <div className="space-y-4">
+        <div className="rounded-2xl border border-border bg-card p-6 text-center shadow-sm">
+          <Sparkles className="mx-auto h-8 w-8 text-muted-foreground/60" />
+          <h3 className="mt-3 text-base font-semibold">Aucune optimisation détectée</h3>
+          <p className="mx-auto mt-1 max-w-md text-sm text-muted-foreground">
+            {emptyHint ??
+              "Renseignez davantage d'informations (LPP, 3a, fortune, canton) pour obtenir des recommandations chiffrées."}
+          </p>
+        </div>
+        <Pillar3bInfoTile />
       </div>
     );
   }
