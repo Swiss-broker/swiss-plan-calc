@@ -133,7 +133,7 @@ function CantonCompareCalc() {
         const next: TaxGlobalInput = { ...prev };
         for (const [k, v] of Object.entries(prefill)) {
           if (v !== undefined && v !== null && v !== "") {
-            (next as Record<string, unknown>)[k] = v;
+            (next as unknown as Record<string, unknown>)[k] = v;
           }
         }
         return next;
