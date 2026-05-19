@@ -1678,4 +1678,31 @@ export const fr: Record<string, string> = {
   "calc.group.decision.title": "Aide à la décision",
   "calc.group.decision.desc":
     "Comparateur cantonal, rente vs capital, comparateur d'investissements",
+
+  // === Index calculateurs — modules v2 (5 modules) ===
+  "calc.module.prevoyance.title": "Prévoyance",
+  "calc.module.prevoyance.desc":
+    "Parcours 1er → 2e → 3e pilier, projection retraite complète",
+  "calc.module.prevoyance.soon":
+    "Bientôt : parcours guidé 1er → 2e → 3e pilier",
+  "calc.module.fiscalite.title": "Fiscalité",
+  "calc.module.fiscalite.desc":
+    "Impôts selon profil : résident, frontalier 1983, frontalier Genève",
+  "calc.module.fiscalite.soon":
+    "Bientôt : calculateur fiscal unifié adapté au profil client",
+  "calc.module.assurances.title": "Assurances",
+  "calc.module.assurances.desc": "Comparaison des options de couverture santé",
+  "calc.module.comparateurs.title": "Comparateurs",
+  "calc.module.comparateurs.desc":
+    "Outils de comparaison pour aide à la décision",
+  "calc.module.dirigeants.title": "Dirigeants société",
+  "calc.module.dirigeants.desc":
+    "Stratégie de rémunération Sàrl/SA : salaire, dividendes, réserves",
+  "calc.sublink.income_tax_resident": "Impôt revenu & fortune (résident)",
+  "calc.sublink.source_tax_ge": "Impôt à la source (frontalier Genève)",
+  "calc.sublink.cross_border_1983": "Frontaliers FR (accord 1983)",
+  "calc.sublink.health_cmu_lamal": "CMU vs LAMal (frontaliers FR)",
+  "calc.sublink.health_lamal_residents": "Comparateur LAMal résidents",
+  "calc.sublink.director_salary_div": "Comparateur salaire/dividende",
+  "calc.external.new_window": "Ouvre dans une nouvelle fenêtre",
 };
