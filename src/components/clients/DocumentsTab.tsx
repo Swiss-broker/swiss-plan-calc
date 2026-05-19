@@ -240,6 +240,7 @@ export function DocumentsTab({
     }
     setPreviewUrl(data.signedUrl);
     setPreviewName(doc.original_filename);
+    setPreviewMime(doc.mime_type);
   };
 
   const downloadDoc = async (doc: DocRow) => {
