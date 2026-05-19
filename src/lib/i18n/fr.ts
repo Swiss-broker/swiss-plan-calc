@@ -838,7 +838,7 @@ export const fr: Record<string, string> = {
   "calc.lpp.cert.orphan_title": "Rente d'orphelin",
   "calc.lpp.cert.orphan_amount_label": "Montant par enfant (certificat)",
   "calc.lpp.cert.orphan_children_used": "Enfants pris en compte : {n} (depuis fiche client)",
-  "calc.lpp.cert.orphan_cap_note": "— plafonné au maximum LPP de 3 enfants",
+  "calc.lpp.cert.orphan_cap_note": "plafonné au maximum LPP de 3 enfants",
   "calc.lpp.cert.orphan_total_month": "Total rentes d'orphelin / mois",
   "calc.lpp.cert.orphan_total_year": "Total rentes d'orphelin / an",
   "calc.lpp.cert.widow_title": "Rente de veuf / veuve",
