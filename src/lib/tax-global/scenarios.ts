@@ -110,26 +110,23 @@ export function buildScenarios(input: TaxGlobalInput): Scenario[] {
   // ─── CMU vs LAMal (frontalier uniquement) ───
   if (isFrontalier && baselineResult.health) {
     const h = baselineResult.health;
-    const otherAnnualCHF =
-      h.recommended === "CMU" ? h.lamalAnnualCHF : h.cmuAnnualCHF;
-    if (otherAnnualCHF != null) {
-      const otherLabel = h.recommended === "CMU" ? "LAMal" : "CMU";
-      out.push({
-        id: "health_switch",
-        label: `Bascule ${otherLabel}`,
-        description: `Comparaison directe avec l'autre option santé`,
-        result: {
-          ...baselineResult,
-          socialChargesCHF: otherAnnualCHF,
-          netAnnualCHF: Math.max(
-            0,
-            baselineResult.grossIncomeCHF - baseTotal - otherAnnualCHF,
-          ),
-        },
-        deltaVsBaseline: 0,
-        deltaSocialVsBaseline: otherAnnualCHF - baseSocial,
-      });
-    }
+    const otherAnnualCHF = h.recommended === "CMU" ? h.lamalAnnualCHF : h.cmuAnnualCHF;
+    const otherLabel = h.recommended === "CMU" ? "LAMal" : "CMU";
+    out.push({
+      id: "health_switch",
+      label: `Bascule ${otherLabel}`,
+      description: `Comparaison directe avec l'autre option santé`,
+      result: {
+        ...baselineResult,
+        socialChargesCHF: otherAnnualCHF,
+        netAnnualCHF: Math.max(
+          0,
+          baselineResult.grossIncomeCHF - baseTotal - otherAnnualCHF,
+        ),
+      },
+      deltaVsBaseline: 0,
+      deltaSocialVsBaseline: otherAnnualCHF - baseSocial,
+    });
   }
 
   return out;
