@@ -1,76 +1,69 @@
-## Objectif
+Je vais corriger ça en deux axes : cohérence des montants et lecture visuelle claire.
 
-Remplacer la tuile "3e pilier B" dans `OptimizationsPanel` par une explication claire, structurée et **juste** sur le plan fiscal, avec un comportement adapté au canton du client (Genève / Fribourg = règles spéciales, autres = pas de déduction).
+## 1. Faire matcher le comparateur cantonal avec le fiscal global
 
-## Problème actuel
+- Le comparateur cantonal utilise aujourd’hui `computeIncomeTax` en mode taxation ordinaire simple.
+- Le fiscal global utilise `computeTaxGlobal`, qui tient compte du régime réel du client : résident ordinaire, source, TOU, frontalier Genève, frontalier accord 1983, etc.
+- Pour un client comme celui affiché actuellement : canton GE, résidence FR, permis B, statut source/frontaliers, le fiscal global part sur un régime frontalier Genève, alors que le comparateur cantonal compare comme une taxation ordinaire suisse classique. C’est la source principale de l’écart.
 
-Le texte actuel est un bloc dense, mélange IFD / cantonal / forfait assurances / frontalier en une phrase, cite un chiffre GE erroné (~2 200 / ~4 300 CHF pour le forfait LAMal, pas pour le 3b), et conclut sans message clair. Résultat : on ne comprend pas si oui ou non on peut déduire un 3b.
+Je vais donc :
+- importer la logique fiscale globale dans le comparateur cantonal ;
+- construire les lignes du comparateur en changeant uniquement le canton, mais en conservant tous les autres paramètres du client/calculateur global ;
+- utiliser `computeTaxGlobal` pour le mode “impôt annuel” quand le comparateur est ouvert depuis une fiche client ;
+- garder le moteur actuel seulement comme fallback pour le mode standalone sans client ou pour les cas où le comparateur n’a pas les données fiscales globales nécessaires ;
+- ajouter dans le comparateur les champs manquants qui influencent le fiscal global : canton, pays de résidence, permis/régime, bonus, autres revenus, 3a, rachat LPP, intérêts, entretien, fortune, confession, enfants, conjoint.
 
-## Règles fiscales correctes (sources : Finwise Assurances, troisiemepilier.ch, jane.ch — 2025)
+Résultat attendu : si fiscal global affiche Genève à ~24–26k selon les déductions/régime, la ligne Genève du comparateur cantonal affichera la même base de calcul, pas un autre moteur incohérent.
 
-- **IFD (impôt fédéral)** : 3e pilier B **jamais déductible**, dans aucun canton.
-- **Majorité des cantons** : 3b **non déductible** du revenu (les primes peuvent éventuellement rentrer dans le forfait global "assurances + intérêts d'épargne", mais ce forfait est en pratique saturé par la LAMal → impact = 0).
-- **Canton de Genève** (déduction cantonale spécifique 3b, plafonds 2025) :
-  - Célibataire : jusqu'à **2 196 CHF/an** (4 434 CHF si indépendant)
-  - Couple marié / partenariat enregistré : jusqu'à **3 292 CHF** (6 652 CHF si les 2 sont indépendants)
-  - Supplément **900 CHF par enfant** (1 814 CHF par enfant si indépendants)
-- **Canton de Fribourg** (déduction cantonale 3b) :
-  - Célibataire : **750 CHF/an**
-  - Couple : **1 500 CHF/an**
-- **Frontalier accord 1983 (VD/VS/NE/JU/FR)** : imposition en France → la déduction CH cantonale 3b **n'a aucun effet fiscal**.
+## 2. Clarifier les cas où un canton change aussi le régime fiscal
 
-## Comportement de la nouvelle tuile
+Certains écarts sont fiscalement normaux si le régime change avec le canton :
+- Genève frontalier = imposition à la source genevoise ;
+- Vaud/Valais/Fribourg/Jura/Neuchâtel pour résident France = accord 1983, imposition française avec compensation 4.5 % ;
+- résident CH = taxation ordinaire cantonale.
 
-Tuile toujours visible dans `OptimizationsPanel` (en bas, même en état vide). Contenu adapté :
+Je vais rendre ça visible dans le comparateur :
+- afficher le régime utilisé par ligne/canton dans le tooltip ou sous le montant ;
+- éviter que l’utilisateur pense que ce sont les mêmes règles quand juridiquement ce ne sont pas les mêmes ;
+- mettre une note claire si le comparateur compare des régimes différents, pas uniquement des barèmes cantonaux.
 
-1. **Titre clair** + sous-titre : "Déductible uniquement à Genève et Fribourg".
-2. **Bloc principal court** (2-3 phrases) expliquant en clair :
-   - Pas de déduction au niveau fédéral.
-   - Pas de déduction dans la plupart des cantons.
-   - Exceptions : GE et FR uniquement, avec plafonds bas.
-3. **Mini-tableau lisible** des plafonds 2025 (GE + FR), célibataire / couple, avec note "par enfant" pour GE.
-4. **Variante contextuelle** selon le canton détecté (props : `canton?: string`, `civilStatus?: string`, `taxStatus?: TaxStatusContext`) :
-   - Si canton = `GE` : badge vert "Vous êtes éligible (GE)" + montant max applicable mis en évidence selon statut civil.
-   - Si canton = `FR` : badge vert "Vous êtes éligible (FR)" + montant FR mis en évidence.
-   - Si autre canton : badge gris "Non déductible dans votre canton" + texte "Le 3b reste utile pour la prévoyance et la transmission, mais sans levier fiscal direct."
-   - Si frontalier accord 1983 : note rouge/warning "Imposition en France : aucune déduction CH applicable, même si canton = FR."
-5. Conclusion utilitaire en 1 phrase : "Le 3b reste pertinent pour la protection des proches, la transmission et l'épargne à long terme — mais ce n'est pas un levier d'optimisation fiscale dans la majorité des cas."
+## 3. Harmoniser les données préremplies depuis la fiche client
 
-## Modifications techniques
+Je vais ajuster le mapping client pour que `tax-global` et `canton-compare` partent de la même matière fiscale :
+- salaire + bonus + autres revenus ;
+- conjoint si applicable ;
+- enfants ;
+- canton ;
+- pays de résidence ;
+- permis ;
+- statut fiscal ;
+- 3a annuel ;
+- fortune nette ;
+- intérêts hypothécaires et frais immobiliers ;
+- rachats LPP de l’année.
 
-**Fichier modifié : `src/components/optimizer/OptimizationsPanel.tsx`**
+But : quand on passe d’une fiche client à un calculateur, les calculateurs ne doivent plus ignorer des éléments que les autres prennent en compte.
 
-1. Étendre la signature `OptimizationsPanel` avec props optionnelles :
-   ```ts
-   canton?: string;
-   civilStatus?: string;
-   taxStatus?: "resident" | "source_taxed" | "cross_border_fr_1983" | "cross_border_ge" | "tou";
-   ```
-2. Passer ces props à `<Pillar3bInfoTile canton={...} civilStatus={...} taxStatus={...} />`.
-3. Réécrire `Pillar3bInfoTile` :
-   - Constantes locales `GE_LIMITS` et `FR_LIMITS` (chiffres 2025).
-   - Logique :
-     - `isFrontalier1983 = taxStatus === "cross_border_fr_1983"`
-     - `eligibleCanton = canton === "GE" || canton === "FR"` (et non frontalier)
-     - Badge + bloc "votre situation" calculé en fonction.
-   - Structure visuelle : en-tête (icône + titre + badge contextuel), paragraphe d'explication clair, petit tableau 2-colonnes (Genève / Fribourg) avec plafonds, et phrase de conclusion.
-   - Aucun `<strong>` empilé — utiliser hiérarchie typographique (h4, text-sm, text-xs muted).
+## 4. Revoir les couleurs dans “Rente vs capital”
 
-**Fichier modifié : `src/routes/_app/calculators/tax-global.tsx`**
+Je vais remplacer la logique orange ambiguë par une logique explicite :
+- vert très visible = option gagnante / optimisation / meilleur net ;
+- orange = coût fiscal, charge, ou option moins favorable ;
+- neutre/bleu = information de contexte, pas une recommandation.
 
-- Passer `canton`, `civilStatus` et `taxStatus` (régime détecté) à `<OptimizationsPanel>` là où il est rendu, pour activer la variante contextuelle.
+Concrètement :
+- `Total impôt capital` restera identifié comme une charge fiscale, mais avec un libellé plus clair ;
+- entre “rente” et “capital”, le meilleur scénario sera vert ;
+- le scénario perdant sera orange ;
+- la recommandation finale utilisera aussi le vert si une stratégie est clairement gagnante, et un style neutre si le résultat est mixte.
 
-## Hors scope
+## 5. Vérification chiffrée
 
-- Pas de nouveau scénario chiffré "verser X CHF en 3b" dans `scenarios.ts` (décision déjà prise : trop dépendant du forfait cantonal et du statut indépendant).
-- Pas de changement dans `engine.ts`, `to-calculator-input.ts`, ni dans la DB.
-- Pas de modification de la fiche client (3b non saisi côté DB aujourd'hui — info pédagogique uniquement).
+Après correction, je vérifierai au minimum :
+- un cas GE frontalier/résidence France ;
+- un cas résident CH taxation ordinaire ;
+- un cas avec 3a annuel ;
+- un cas rente vs capital où le capital gagne ;
+- un cas rente vs capital où la rente gagne.
 
-## Vérification
-
-Lecture visuelle de la tuile sur le client courant (canton à confirmer dans la fiche) :
-- Si GE/FR → badge vert + plafond mis en avant.
-- Sinon → badge gris + message court.
-- Si frontalier 1983 → message warning.
-
-Aucune migration DB, aucun nouveau test requis.
+Objectif : supprimer les contradictions visibles entre calculateurs et rendre les économies/coûts immédiatement compréhensibles.
