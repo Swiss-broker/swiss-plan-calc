@@ -28,6 +28,7 @@ import { Route as AppClientsNewRouteImport } from './routes/_app/clients/new'
 import { Route as AppClientsClientIdRouteImport } from './routes/_app/clients/$clientId'
 import { Route as AppCalculatorsVestedBenefitsRouteImport } from './routes/_app/calculators/vested-benefits'
 import { Route as AppCalculatorsTouRouteImport } from './routes/_app/calculators/tou'
+import { Route as AppCalculatorsTaxGlobalRouteImport } from './routes/_app/calculators/tax-global'
 import { Route as AppCalculatorsSourceTaxRouteImport } from './routes/_app/calculators/source-tax'
 import { Route as AppCalculatorsRetirementRouteImport } from './routes/_app/calculators/retirement'
 import { Route as AppCalculatorsPillar3aRouteImport } from './routes/_app/calculators/pillar3a'
@@ -139,6 +140,11 @@ const AppCalculatorsTouRoute = AppCalculatorsTouRouteImport.update({
   path: '/tou',
   getParentRoute: () => AppCalculatorsRoute,
 } as any)
+const AppCalculatorsTaxGlobalRoute = AppCalculatorsTaxGlobalRouteImport.update({
+  id: '/tax-global',
+  path: '/tax-global',
+  getParentRoute: () => AppCalculatorsRoute,
+} as any)
 const AppCalculatorsSourceTaxRoute = AppCalculatorsSourceTaxRouteImport.update({
   id: '/source-tax',
   path: '/source-tax',
@@ -245,6 +251,7 @@ export interface FileRoutesByFullPath {
   '/calculators/pillar3a': typeof AppCalculatorsPillar3aRoute
   '/calculators/retirement': typeof AppCalculatorsRetirementRoute
   '/calculators/source-tax': typeof AppCalculatorsSourceTaxRoute
+  '/calculators/tax-global': typeof AppCalculatorsTaxGlobalRoute
   '/calculators/tou': typeof AppCalculatorsTouRoute
   '/calculators/vested-benefits': typeof AppCalculatorsVestedBenefitsRoute
   '/clients/$clientId': typeof AppClientsClientIdRoute
@@ -278,6 +285,7 @@ export interface FileRoutesByTo {
   '/calculators/pillar3a': typeof AppCalculatorsPillar3aRoute
   '/calculators/retirement': typeof AppCalculatorsRetirementRoute
   '/calculators/source-tax': typeof AppCalculatorsSourceTaxRoute
+  '/calculators/tax-global': typeof AppCalculatorsTaxGlobalRoute
   '/calculators/tou': typeof AppCalculatorsTouRoute
   '/calculators/vested-benefits': typeof AppCalculatorsVestedBenefitsRoute
   '/clients/$clientId': typeof AppClientsClientIdRoute
@@ -315,6 +323,7 @@ export interface FileRoutesById {
   '/_app/calculators/pillar3a': typeof AppCalculatorsPillar3aRoute
   '/_app/calculators/retirement': typeof AppCalculatorsRetirementRoute
   '/_app/calculators/source-tax': typeof AppCalculatorsSourceTaxRoute
+  '/_app/calculators/tax-global': typeof AppCalculatorsTaxGlobalRoute
   '/_app/calculators/tou': typeof AppCalculatorsTouRoute
   '/_app/calculators/vested-benefits': typeof AppCalculatorsVestedBenefitsRoute
   '/_app/clients/$clientId': typeof AppClientsClientIdRoute
@@ -352,6 +361,7 @@ export interface FileRouteTypes {
     | '/calculators/pillar3a'
     | '/calculators/retirement'
     | '/calculators/source-tax'
+    | '/calculators/tax-global'
     | '/calculators/tou'
     | '/calculators/vested-benefits'
     | '/clients/$clientId'
@@ -385,6 +395,7 @@ export interface FileRouteTypes {
     | '/calculators/pillar3a'
     | '/calculators/retirement'
     | '/calculators/source-tax'
+    | '/calculators/tax-global'
     | '/calculators/tou'
     | '/calculators/vested-benefits'
     | '/clients/$clientId'
@@ -421,6 +432,7 @@ export interface FileRouteTypes {
     | '/_app/calculators/pillar3a'
     | '/_app/calculators/retirement'
     | '/_app/calculators/source-tax'
+    | '/_app/calculators/tax-global'
     | '/_app/calculators/tou'
     | '/_app/calculators/vested-benefits'
     | '/_app/clients/$clientId'
@@ -577,6 +589,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppCalculatorsTouRouteImport
       parentRoute: typeof AppCalculatorsRoute
     }
+    '/_app/calculators/tax-global': {
+      id: '/_app/calculators/tax-global'
+      path: '/tax-global'
+      fullPath: '/calculators/tax-global'
+      preLoaderRoute: typeof AppCalculatorsTaxGlobalRouteImport
+      parentRoute: typeof AppCalculatorsRoute
+    }
     '/_app/calculators/source-tax': {
       id: '/_app/calculators/source-tax'
       path: '/source-tax'
@@ -698,6 +717,7 @@ interface AppCalculatorsRouteChildren {
   AppCalculatorsPillar3aRoute: typeof AppCalculatorsPillar3aRoute
   AppCalculatorsRetirementRoute: typeof AppCalculatorsRetirementRoute
   AppCalculatorsSourceTaxRoute: typeof AppCalculatorsSourceTaxRoute
+  AppCalculatorsTaxGlobalRoute: typeof AppCalculatorsTaxGlobalRoute
   AppCalculatorsTouRoute: typeof AppCalculatorsTouRoute
   AppCalculatorsVestedBenefitsRoute: typeof AppCalculatorsVestedBenefitsRoute
   AppCalculatorsIndexRoute: typeof AppCalculatorsIndexRoute
@@ -718,6 +738,7 @@ const AppCalculatorsRouteChildren: AppCalculatorsRouteChildren = {
   AppCalculatorsPillar3aRoute: AppCalculatorsPillar3aRoute,
   AppCalculatorsRetirementRoute: AppCalculatorsRetirementRoute,
   AppCalculatorsSourceTaxRoute: AppCalculatorsSourceTaxRoute,
+  AppCalculatorsTaxGlobalRoute: AppCalculatorsTaxGlobalRoute,
   AppCalculatorsTouRoute: AppCalculatorsTouRoute,
   AppCalculatorsVestedBenefitsRoute: AppCalculatorsVestedBenefitsRoute,
   AppCalculatorsIndexRoute: AppCalculatorsIndexRoute,

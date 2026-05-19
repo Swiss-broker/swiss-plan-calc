@@ -1,0 +1,76 @@
+// Types pour le Calculateur Fiscal Global.
+// Unifie les inputs des 4 moteurs (income, source, cross-border, tou, health-france)
+// dans une seule structure, et expose un résultat consolidé.
+
+import type { IncomeTaxBreakdown } from "@/lib/tax/income";
+import type { SourceTaxResult } from "@/lib/tax/source";
+import type { CrossBorderResult } from "@/lib/tax/cross-border";
+import type { QuasiResidentResult, TOUComparisonResult } from "@/lib/tax/tou";
+import type { HealthFranceResult } from "@/lib/health-france";
+
+export type Regime =
+  | "resident_ordinary" // permis C ou suisse, résident CH
+  | "source_taxed" // permis B/L, résident CH
+  | "cross_border_ge" // frontalier travaillant à GE
+  | "cross_border_fr_1983" // frontalier accord 1983
+  | "tou" // quasi-résident éligible TOU
+  | "unknown";
+
+export interface TaxGlobalInput {
+  // === Identité & ménage ===
+  canton: string;
+  countryOfResidence: string; // "CH", "FR", ...
+  permit: "swiss" | "C" | "B" | "L" | "G" | "Ci" | "F" | "other";
+  civilStatus: "single" | "married";
+  spouseEmployed: boolean;
+  children: number;
+  confession: "none" | "catholic" | "protestant" | "other";
+  age?: number;
+
+  // === Revenus ===
+  grossSalary: number;
+  bonus: number;
+  spouseGrossSalary: number;
+  otherIncome: number;
+  rentalIncome: number;
+  imputedRent: number;
+  foreignIncome: number;
+
+  // === Patrimoine ===
+  netWealth: number;
+
+  // === Optimisations / déductions ===
+  pillar3aContributions: number;
+  lppBuyback: number;
+  mortgageInterest: number;
+  realEstateMaintenance: number;
+  healthInsurancePremiums: number;
+  childCareCosts: number;
+  donations: number;
+
+  // === Frontaliers ===
+  eurChfRate: number;
+  chfToEurRate: number;
+  taxYear: number;
+  lamalAdultMonthlyCHF: number;
+  lamalChildMonthlyCHF: number;
+}
+
+export interface TaxGlobalResult {
+  regime: Regime;
+  regimeLabel: string;
+  /** Tous les champs sont remplis selon le régime applicable */
+  income?: IncomeTaxBreakdown;
+  source?: SourceTaxResult;
+  crossBorder?: CrossBorderResult;
+  touEligibility?: QuasiResidentResult;
+  touComparison?: TOUComparisonResult;
+  health?: HealthFranceResult;
+
+  // KPI consolidés
+  totalTaxCHF: number;
+  netAnnualCHF: number;
+  effectiveRate: number;
+  marginalRate: number;
+  notes: string[];
+}

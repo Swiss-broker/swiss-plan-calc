@@ -378,3 +378,52 @@ export function toOvertimeInput(b: ClientBundle) {
   };
 }
 
+// ──────────────────────────────────────────────────────────────────────────
+// CALCULATEUR FISCAL GLOBAL
+// ──────────────────────────────────────────────────────────────────────────
+export function toTaxGlobalInput(b: ClientBundle) {
+  const children = parseChildren(b.client.children);
+  const isMarried =
+    b.client.civil_status === "married" ||
+    b.client.civil_status === "registered_partnership";
+  const country = (b.client.country_of_residence ?? "CH").toUpperCase();
+  const permitRaw = (b.client.permit ?? "swiss") as string;
+  const permit = ([
+    "swiss",
+    "C",
+    "B",
+    "L",
+    "G",
+    "Ci",
+    "F",
+  ].includes(permitRaw)
+    ? permitRaw
+    : "other") as "swiss" | "C" | "B" | "L" | "G" | "Ci" | "F" | "other";
+  const spouseSalary = Number(b.client.spouse_gross_annual_salary ?? 0);
+  const confession = mapConfession(b.client) as
+    | "none"
+    | "catholic"
+    | "protestant"
+    | "other";
+  return {
+    canton: b.client.canton ?? undefined,
+    countryOfResidence: country,
+    permit,
+    civilStatus: (isMarried ? "married" : "single") as "single" | "married",
+    spouseEmployed: spouseSalary > 0,
+    children: children.length,
+    confession,
+    age: ageFromDob(b.client.date_of_birth) ?? undefined,
+    grossSalary: numOrUndef(b.client.gross_annual_salary),
+    bonus: numOrUndef(b.client.bonus),
+    spouseGrossSalary: numOrUndef(b.client.spouse_gross_annual_salary),
+    otherIncome: numOrUndef(b.client.other_income),
+    rentalIncome: numOrUndef(b.assets?.real_estate_rental_value),
+    netWealth: computeFortune(b.assets) || undefined,
+    pillar3aContributions: numOrUndef(b.pension?.pillar_3a_annual_contribution),
+    mortgageInterest: numOrUndef(b.assets?.mortgage_interest),
+    realEstateMaintenance: numOrUndef(b.assets?.real_estate_maintenance),
+  };
+}
+
+

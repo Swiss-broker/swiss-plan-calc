@@ -48,8 +48,8 @@ const MODULES: ModuleDef[] = [
     icon: Coins,
     titleKey: "calc.module.fiscalite.title",
     descKey: "calc.module.fiscalite.desc",
-    soonKey: "calc.module.fiscalite.soon",
     links: [
+      { to: "/calculators/tax-global", labelKey: "calc.global.title" },
       { to: "/calculators/income-tax", labelKey: "calc.sublink.income_tax_resident" },
       { to: "/calculators/source-tax", labelKey: "calc.sublink.source_tax_ge" },
       { to: "/calculators/tou", labelKey: "calc.tou.title" },
