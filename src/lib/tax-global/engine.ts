@@ -69,7 +69,7 @@ export function computeTaxGlobal(g: TaxGlobalInput): TaxGlobalResult {
   const notes: string[] = [det.reason];
   if (g.civilStatus === "cohabiting") {
     notes.push(
-      "Concubinage : imposition séparée en Suisse — chaque partenaire déclare seul (barème célibataire).",
+      "Concubinage : imposition séparée en Suisse, chaque partenaire déclare seul (barème célibataire).",
     );
   }
 
