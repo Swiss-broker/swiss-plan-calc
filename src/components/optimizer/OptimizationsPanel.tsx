@@ -223,7 +223,7 @@ export function Pillar3bInfoTile({ canton, civilStatus, taxStatus }: Pillar3bCon
 
   if (isFrontalier1983) {
     statusBadge = {
-      label: "Imposition en France — non applicable",
+      label: "Imposition en France : non applicable",
       tone: "warning",
     };
     statusLine =
@@ -231,15 +231,15 @@ export function Pillar3bInfoTile({ canton, civilStatus, taxStatus }: Pillar3bCon
   } else if (isGE) {
     const max = couple ? GE_LIMITS_2025.couple : GE_LIMITS_2025.single;
     const maxSelf = couple ? GE_LIMITS_2025.coupleSelfEmployed : GE_LIMITS_2025.singleSelfEmployed;
-    statusBadge = { label: "Éligible — Genève", tone: "success" };
+    statusBadge = { label: "Éligible : Genève", tone: "success" };
     statusLine = `Votre canton (GE) autorise une déduction 3b jusqu'à ${formatCHF(max)}/an${couple ? " (couple)" : " (célibataire)"}, ou ${formatCHF(maxSelf)} si indépendant. Supplément de ${formatCHF(GE_LIMITS_2025.perChild)} par enfant à charge.`;
   } else if (isFR) {
     const max = couple ? FR_LIMITS_2025.couple : FR_LIMITS_2025.single;
-    statusBadge = { label: "Éligible — Fribourg", tone: "success" };
+    statusBadge = { label: "Éligible : Fribourg", tone: "success" };
     statusLine = `Votre canton (FR) autorise une déduction 3b limitée à ${formatCHF(max)}/an${couple ? " (couple)" : " (célibataire)"}.`;
   } else {
     statusBadge = {
-      label: canton ? `Non déductible — ${c}` : "Non déductible dans la plupart des cantons",
+      label: canton ? `Non déductible : ${c}` : "Non déductible dans la plupart des cantons",
       tone: "muted",
     };
     statusLine = canton
@@ -282,7 +282,7 @@ export function Pillar3bInfoTile({ canton, civilStatus, taxStatus }: Pillar3bCon
 
           <p className="text-xs leading-relaxed text-foreground/80">
             Le 3e pilier B n'est jamais déductible de l'impôt fédéral direct (IFD). Au niveau
-            cantonal, la plupart des cantons ne prévoient aucune déduction spécifique pour le 3b —
+            cantonal, la plupart des cantons ne prévoient aucune déduction spécifique pour le 3b,
             les primes entrent au mieux dans le forfait général "assurances et intérêts d'épargne",
             souvent déjà saturé par la LAMal. Seuls Genève et Fribourg accordent une déduction
             dédiée, plafonnée.
@@ -306,7 +306,7 @@ export function Pillar3bInfoTile({ canton, civilStatus, taxStatus }: Pillar3bCon
           <div className="grid gap-2 sm:grid-cols-2">
             <div className="rounded-lg border border-border bg-card p-2.5">
               <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                Genève — plafonds 2025
+                Genève : plafonds 2025
               </div>
               <div className="mt-1 space-y-0.5 text-[11px] text-foreground/80">
                 <div>
@@ -325,7 +325,7 @@ export function Pillar3bInfoTile({ canton, civilStatus, taxStatus }: Pillar3bCon
             </div>
             <div className="rounded-lg border border-border bg-card p-2.5">
               <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                Fribourg — plafonds 2025
+                Fribourg : plafonds 2025
               </div>
               <div className="mt-1 space-y-0.5 text-[11px] text-foreground/80">
                 <div>Célibataire : {formatCHF(FR_LIMITS_2025.single)}</div>

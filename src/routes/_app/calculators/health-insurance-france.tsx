@@ -208,8 +208,8 @@ function HealthInsuranceFranceCalc() {
         </CalcCard>
 
         <CalcCard title="Détail du calcul">
-          <BreakdownSection title="CMU — Cotisation maladie frontalier (URSSAF / CNTFS)" lines={result.cmuBreakdown} />
-          <BreakdownSection title="LAMal — assurance maladie suisse" lines={result.lamalBreakdown} />
+          <BreakdownSection title="CMU : cotisation maladie frontalier (URSSAF / CNTFS)" lines={result.cmuBreakdown} />
+          <BreakdownSection title="LAMal : assurance maladie suisse" lines={result.lamalBreakdown} />
         </CalcCard>
       </div>
     </div>

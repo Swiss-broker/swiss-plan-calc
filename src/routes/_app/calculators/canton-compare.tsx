@@ -522,12 +522,12 @@ function CantonCompareCalc() {
           <span className="mt-0.5 text-base leading-none" aria-hidden>🇫🇷</span>
           <div className="space-y-1 text-foreground/90">
             <p>
-              <strong>Régime frontalier — accord franco-suisse 1983.</strong>{" "}
+              <strong>Régime frontalier (accord franco-suisse 1983).</strong>{" "}
               L'impôt est dû <strong>en France uniquement</strong> pour{" "}
               {accord1983Rows.map((r) => r.code).join(", ")}. Le canton suisse
               de travail ne change pas le montant
               {accord1983Identical && accord1983Sample
-                ? ` — d'où ${formatCHF(accord1983Sample.total)} (${accord1983Sample.effective}%) identique sur ces ${accord1983Rows.length} cantons.`
+                ? `, d'où ${formatCHF(accord1983Sample.total)} (${accord1983Sample.effective}%) identique sur ces ${accord1983Rows.length} cantons.`
                 : "."}
               {hasGeFrontalier && (
                 <> Seul <strong>Genève</strong> prélève à la source en Suisse (IS + 4,5% rétrocédés à la France).</>
@@ -590,8 +590,14 @@ function CantonCompareCalc() {
                 {data.map((d) => {
                   const isCheapest = cheapestRomand?.code === d.code;
                   const isRef = REFERENCE_CODES.has(d.code);
-                  const fill = isCheapest || isRef ? "var(--success)" : "var(--primary)";
-                  return <Cell key={d.code} fill={fill} fillOpacity={isRef ? 0.65 : 1} />;
+                  // ZG / SZ : couleur dédiée (accent) à pleine opacité, sinon
+                  // ils ressortaient quasi blancs à 0.65 d'opacité.
+                  const fill = isRef
+                    ? "var(--accent)"
+                    : isCheapest
+                      ? "var(--success)"
+                      : "var(--primary)";
+                  return <Cell key={d.code} fill={fill} fillOpacity={1} />;
                 })}
               </Bar>
             </BarChart>
@@ -611,7 +617,7 @@ function CantonCompareCalc() {
         <div className="mt-3 flex flex-wrap items-center gap-4 text-xs text-muted-foreground">
           <Legend color="var(--success)" label={t("calc.canton_compare.legend.cheapest")} />
           <Legend color="var(--primary)" label={t("calc.canton_compare.legend.romand")} />
-          <Legend color="var(--success)" label={t("calc.canton_compare.legend.zg")} opacity={0.65} />
+          <Legend color="var(--accent)" label={t("calc.canton_compare.legend.zg")} />
         </div>
       </CalcCard>
 

@@ -497,7 +497,7 @@ function exportInvestmentComparePdf(args: {
       [t("calc.invcompare.field.fees"), formatPct(a.input.annualFeeRate), formatPct(b.input.annualFeeRate)],
       [t("calc.invcompare.field.exit_tax"), formatPct(a.input.exitTaxRate), formatPct(b.input.exitTaxRate)],
       [t("calc.invcompare.field.interest_mode"), t(`calc.invcompare.mode.${a.input.interestMode ?? "compound"}`), t(`calc.invcompare.mode.${b.input.interestMode ?? "compound"}`)],
-      ["—", "—", "—"],
+      ["n/a", "n/a", "n/a"],
       [t("calc.invcompare.res.gross"), formatCHF(a.finalGrossCapital), formatCHF(b.finalGrossCapital)],
       [t("calc.invcompare.res.gain"), formatCHF(a.grossGain), formatCHF(b.grossGain)],
       [t("calc.invcompare.res.fees"), formatCHF(a.feesImpact), formatCHF(b.feesImpact)],
