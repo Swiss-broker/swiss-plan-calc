@@ -252,7 +252,7 @@ function TaxGlobalCalc() {
                       onChange={(v) => set("bonus", v)}
                       suffix="CHF"
                     />
-                    {form.civilStatus === "married" && (
+                    {isCouple && (
                       <NumField
                         label={t("calc.global.field.spouse_salary")}
                         value={form.spouseGrossSalary}
