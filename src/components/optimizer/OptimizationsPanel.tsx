@@ -1,4 +1,4 @@
-import { Sparkles, TrendingUp, AlertCircle, AlertTriangle } from "lucide-react";
+import { Sparkles, TrendingUp, AlertCircle, AlertTriangle, Info } from "lucide-react";
 import type { Optimization } from "@/lib/optimizer";
 import { formatCHF } from "@/lib/format";
 import { cn } from "@/lib/utils";
