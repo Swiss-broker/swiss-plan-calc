@@ -39,20 +39,17 @@ type CalcChip = {
 };
 
 const CHIPS: CalcChip[] = [
+  { to: "/calculators/tax-global", kind: "income_tax", label: "Fiscalité globale", icon: Receipt },
   { to: "/calculators/avs-ai", kind: "avs_ai", label: "1er pilier AVS/AI", icon: HeartHandshake },
   { to: "/calculators/lpp", kind: "lpp", label: "2e pilier LPP & rachats", icon: Landmark },
   { to: "/calculators/pillar3a", kind: "pillar3a", label: "3e pilier A & B", icon: PiggyBank },
   { to: "/calculators/vested-benefits", kind: "vested_benefits", label: "Libre passage", icon: Vault },
-  { to: "/calculators/cross-border", kind: "cross_border", label: "Frontalier", icon: Globe2 },
   { to: "/calculators/health-insurance-france", kind: "health_insurance_france", label: "CMU / LAMal", icon: ShieldPlus },
   { to: "/calculators/overtime", kind: "overtime", label: "Heures supp", icon: Clock },
-  { to: "/calculators/income-tax", kind: "income_tax", label: "Impôt revenu", icon: Receipt },
-  { to: "/calculators/source-tax", kind: "source_tax", label: "Impôt à la source", icon: Coins },
   { to: "/calculators/retirement", kind: "retirement", label: "Rente vs capital", icon: Sun },
   { to: "/calculators/canton-compare", kind: "canton_compare", label: "Comparateur cantons", icon: Scale },
   { to: "/calculators/director-compensation", kind: "director_compensation", label: "Comparateur dirigeant", icon: TrendingUp },
   { to: "/calculators/investment-compare", kind: "investment_compare", label: "Comparateur d'investissements", icon: LineChart },
-  { to: "/calculators/tou", kind: "tou", label: "TOU", icon: Calculator },
 ];
 
 type LatestSimMap = Record<string, string>; // kind -> ISO created_at
