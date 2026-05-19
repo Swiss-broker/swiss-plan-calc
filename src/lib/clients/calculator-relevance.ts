@@ -75,6 +75,7 @@ export function getCalculatorRelevance(c: Client, route: CalcRoute): Relevance {
 
     case "/calculators/avs-ai":
     case "/calculators/income-tax":
+    case "/calculators/tax-global":
     case "/calculators/retirement":
     case "/calculators/canton-compare":
     case "/calculators/investment-compare":
