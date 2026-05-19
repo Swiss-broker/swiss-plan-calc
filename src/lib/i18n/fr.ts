@@ -851,7 +851,7 @@ export const fr: Record<string, string> = {
   "calc.lpp.cert.per_year_short": "/an",
   "calc.avs.tip.assistance_share": "100 % si vous assumez seul·e l'assistance, sinon part répartie.",
   "calc.ai.card_title": "Prestations AI (Assurance Invalidité)",
-  "calc.ai.card_desc": "Estimation en cas d'invalidité totale aujourd'hui — mêmes paramètres que l'AVS, mais bonifications calculées sur l'âge ACTUEL des enfants (et non en projection).",
+  "calc.ai.card_desc": "Estimation en cas d'invalidité totale aujourd'hui. Mêmes paramètres que l'AVS, mais bonifications calculées sur l'âge ACTUEL des enfants (et non en projection).",
   "calc.ai.pension_month": "Rente AI / mois",
   "calc.ai.pension_year": "Rente AI / an",
   "calc.ai.scale": "Échelle de cotisation",
