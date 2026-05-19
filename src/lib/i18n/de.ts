@@ -1671,4 +1671,30 @@ export const de: Record<string, string> = {
   "calc.lpp.cert.summary_note": "Diese Beträge stammen aus dem Vorsorgeausweis. Sie ergänzen ggf. IV- bzw. Hinterlassenenleistungen der AHV (1. Säule).",
   "calc.lpp.cert.per_month_short": "/Mt.",
   "calc.lpp.cert.per_year_short": "/Jahr",
+
+  "calc.module.prevoyance.title": "Vorsorge",
+  "calc.module.prevoyance.desc":
+    "Weg 1. → 2. → 3. Säule, vollständige Rentenprojektion",
+  "calc.module.prevoyance.soon":
+    "Demnächst: geführter Weg 1. → 2. → 3. Säule",
+  "calc.module.fiscalite.title": "Steuern",
+  "calc.module.fiscalite.desc":
+    "Steuern nach Profil: Ansässige, Grenzgänger 1983, Grenzgänger Genf",
+  "calc.module.fiscalite.soon":
+    "Demnächst: einheitlicher Steuerrechner nach Kundenprofil",
+  "calc.module.assurances.title": "Versicherungen",
+  "calc.module.assurances.desc": "Vergleich der Krankenversicherungsoptionen",
+  "calc.module.comparateurs.title": "Vergleichsrechner",
+  "calc.module.comparateurs.desc":
+    "Vergleichswerkzeuge zur Entscheidungshilfe",
+  "calc.module.dirigeants.title": "Geschäftsführer",
+  "calc.module.dirigeants.desc":
+    "Vergütungsstrategie GmbH/AG: Lohn, Dividenden, Reserven",
+  "calc.sublink.income_tax_resident": "Einkommens- & Vermögenssteuer (Ansässige)",
+  "calc.sublink.source_tax_ge": "Quellensteuer (Grenzgänger Genf)",
+  "calc.sublink.cross_border_1983": "FR-Grenzgänger (Abkommen 1983)",
+  "calc.sublink.health_cmu_lamal": "CMU vs. LAMal (FR-Grenzgänger)",
+  "calc.sublink.health_lamal_residents": "LAMal-Vergleich für Ansässige",
+  "calc.sublink.director_salary_div": "Lohn / Dividende Vergleich",
+  "calc.external.new_window": "Öffnet in einem neuen Fenster",
 };
