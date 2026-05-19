@@ -369,6 +369,9 @@ function ClientDetailPage() {
             optimizations={optimizations}
             title={`Optimisations pour ${client.first_name}`}
             emptyHint="Complétez la fiche (canton, salaire, LPP, 3a, fortune) pour générer des recommandations chiffrées."
+            canton={client.canton}
+            civilStatus={client.civil_status}
+            taxStatus={client.tax_status as never}
           />
         </TabsContent>
 

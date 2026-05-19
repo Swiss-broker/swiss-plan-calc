@@ -417,15 +417,30 @@ export function DashboardWealthSummary({ dashboard }: { dashboard: ClientDashboa
 export function DashboardOptimizations({
   dashboard,
   clientFirstName,
+  canton,
+  civilStatus,
+  taxStatus,
 }: {
   dashboard: ClientDashboard;
   clientFirstName: string;
+  canton?: string | null;
+  civilStatus?: string | null;
+  taxStatus?:
+    | "resident"
+    | "source_taxed"
+    | "cross_border_fr_1983"
+    | "cross_border_ge"
+    | "tou"
+    | null;
 }) {
   return (
     <OptimizationsPanel
       optimizations={dashboard.suggestions}
       title={`Optimisations pour ${clientFirstName}`}
       emptyHint="Complétez la fiche (canton, salaire, LPP, 3a, fortune) pour générer des recommandations chiffrées."
+      canton={canton}
+      civilStatus={civilStatus}
+      taxStatus={taxStatus}
     />
   );
 }

@@ -1,60 +1,76 @@
-## Audit Calculateur Fiscal Global
+## Objectif
 
-Verdict global : le moteur délègue proprement aux sous-calculateurs existants, mais il reste **3 zones à corriger** (prefill incomplet, scénarios partiels, KPI résident incohérents) pour que tout soit propre quel que soit le profil.
+Remplacer la tuile "3e pilier B" dans `OptimizationsPanel` par une explication claire, structurée et **juste** sur le plan fiscal, avec un comportement adapté au canton du client (Genève / Fribourg = règles spéciales, autres = pas de déduction).
 
-## 1. Prefill depuis la fiche client (`src/lib/clients/to-calculator-input.ts`, fn `toTaxGlobalInput`)
+## Problème actuel
 
-Aujourd'hui le mapping ignore plusieurs champs présents dans le formulaire — d'où l'impression de "pas synchronisé".
+Le texte actuel est un bloc dense, mélange IFD / cantonal / forfait assurances / frontalier en une phrase, cite un chiffre GE erroné (~2 200 / ~4 300 CHF pour le forfait LAMal, pas pour le 3b), et conclut sans message clair. Résultat : on ne comprend pas si oui ou non on peut déduire un 3b.
 
-À ajouter :
-- `civilStatus` : passer **les 7 statuts** (`single` / `married` / `registered_partnership` / `cohabiting` / `divorced` / `separated` / `widowed`) au lieu de forcer `single | married`. Mapper `cohabiting` depuis `civil_status` si présent en DB, sinon laisser le défaut.
-- `imputedRent` ← `assets.real_estate_rental_value` quand le bien est occupé par le propriétaire (heuristique : si `real_estate_value > 0` et `real_estate_rental_value > 0`, considérer comme valeur locative ; sinon on garde 0 et c'est `rentalIncome` qui est rempli — clarifier la règle).
-- `lppBuyback` ← somme de `pension.lpp_buybacks_done` de l'année en cours (déductible une seule fois).
-- `healthInsurancePremiums`, `childCareCosts`, `donations` : pas en DB clients aujourd'hui → laisser à 0 (commentaire explicite : « non persisté, à saisir manuellement »).
-- `foreignIncome` : pas en DB → laisser 0.
-- `taxYear` : `new Date().getFullYear()`.
-- `spouseEmployed` : conserver la déduction `spouseSalary > 0` ✓.
-- `bonus`, `otherIncome`, `pillar3aContributions`, `mortgageInterest`, `realEstateMaintenance`, `netWealth`, `confession`, `age`, `permit`, `country`, `canton` ✓ déjà mappés.
+## Règles fiscales correctes (sources : Finwise Assurances, troisiemepilier.ch, jane.ch — 2025)
 
-Resserrer aussi le cast `civilStatus` côté `TaxGlobalInput` (actuellement `as "single" | "married"` qui ment au type).
+- **IFD (impôt fédéral)** : 3e pilier B **jamais déductible**, dans aucun canton.
+- **Majorité des cantons** : 3b **non déductible** du revenu (les primes peuvent éventuellement rentrer dans le forfait global "assurances + intérêts d'épargne", mais ce forfait est en pratique saturé par la LAMal → impact = 0).
+- **Canton de Genève** (déduction cantonale spécifique 3b, plafonds 2025) :
+  - Célibataire : jusqu'à **2 196 CHF/an** (4 434 CHF si indépendant)
+  - Couple marié / partenariat enregistré : jusqu'à **3 292 CHF** (6 652 CHF si les 2 sont indépendants)
+  - Supplément **900 CHF par enfant** (1 814 CHF par enfant si indépendants)
+- **Canton de Fribourg** (déduction cantonale 3b) :
+  - Célibataire : **750 CHF/an**
+  - Couple : **1 500 CHF/an**
+- **Frontalier accord 1983 (VD/VS/NE/JU/FR)** : imposition en France → la déduction CH cantonale 3b **n'a aucun effet fiscal**.
 
-## 2. Scénarios (`src/lib/tax-global/scenarios.ts`)
+## Comportement de la nouvelle tuile
 
-Corrections :
-- `isMarried` ne couvre que `married` → inclure aussi `registered_partnership` pour doubler le plafond 3a (même règle fiscale CH).
-- **Frontalier accord 1983 (VD/VS/NE/JU/FR)** : le 3a et le rachat LPP **ne réduisent pas** l'impôt français (imposition exclusive en France). Ne pas afficher ces scénarios pour `cross_border_fr_1983`, ou les afficher avec un libellé « pas d'impact fiscal direct » (delta = 0).
-- **Frontalier GE** : 3a/LPP peuvent peser sur le calcul TOU si éligible — garder mais ajouter une note.
-- Nouveau scénario universel **« CMU vs LAMal »** pour frontaliers : 2 variantes (`recommended = "CMU"` vs `"LAMal"`) avec delta sur le `socialChargesCHF` (les chiffres sont déjà dans `result.health`).
-- Scénario **TOU explicite** : à proposer aussi quand baseline = `tou` (montrer le gain vs source pur) et quand baseline = `source_taxed` non éligible (afficher le scénario en grisé avec raison).
-- Scénario **« Don 5 000 CHF »** pour résident ordinaire et TOU (déductible jusqu'à 20% du revenu net, illustratif).
-- Scénario **« Permis C »** ✓ déjà présent, OK.
+Tuile toujours visible dans `OptimizationsPanel` (en bas, même en état vide). Contenu adapté :
 
-## 3. Moteur (`src/lib/tax-global/engine.ts`)
+1. **Titre clair** + sous-titre : "Déductible uniquement à Genève et Fribourg".
+2. **Bloc principal court** (2-3 phrases) expliquant en clair :
+   - Pas de déduction au niveau fédéral.
+   - Pas de déduction dans la plupart des cantons.
+   - Exceptions : GE et FR uniquement, avec plafonds bas.
+3. **Mini-tableau lisible** des plafonds 2025 (GE + FR), célibataire / couple, avec note "par enfant" pour GE.
+4. **Variante contextuelle** selon le canton détecté (props : `canton?: string`, `civilStatus?: string`, `taxStatus?: TaxStatusContext`) :
+   - Si canton = `GE` : badge vert "Vous êtes éligible (GE)" + montant max applicable mis en évidence selon statut civil.
+   - Si canton = `FR` : badge vert "Vous êtes éligible (FR)" + montant FR mis en évidence.
+   - Si autre canton : badge gris "Non déductible dans votre canton" + texte "Le 3b reste utile pour la prévoyance et la transmission, mais sans levier fiscal direct."
+   - Si frontalier accord 1983 : note rouge/warning "Imposition en France : aucune déduction CH applicable, même si canton = FR."
+5. Conclusion utilitaire en 1 phrase : "Le 3b reste pertinent pour la protection des proches, la transmission et l'épargne à long terme — mais ce n'est pas un levier d'optimisation fiscale dans la majorité des cas."
 
-Corrections d'incohérences :
-- **Résident ordinaire** : `effectiveRate` vient de `income.effectiveRate` (basé sur le revenu imposable), mais on affiche `grossIncomeCHF` calculé différemment. Recalculer `effectiveRate = totalTax / grossIncomeCHF` pour cohérence avec la tuile « Net annuel ».
-- **Résident** : `socialChargesCHF` reste à 0 alors qu'on a la LAMal CH. Soit on l'ajoute via une estimation (`lamalAdultMonthlyCHF * 12 + enfants`), soit on l'expose comme une tuile « non incluse » (préférer **l'ajouter** pour aligner avec le calcul frontalier).
-- **Résident avec `foreignIncome > 0`** : exposer `foreignShareCHF` = 0 mais ajouter la note "exonéré conventionnel, taux effectif". Garder la `note` actuelle ✓.
-- **Source non éligible TOU** : `marginalRate` utilise `touComparison.marginalRate` (= marginal de l'ordinaire) → c'est trompeur. Utiliser `source.rate` (taux moyen IS) ou recalculer une marginale source.
-- **Imputed rent (valeur locative)** : actuellement ajoutée à `grossIncomeCHF` résident → fausse le « Net annuel » (revenu fictif, pas de cash). L'exclure du gross ou afficher une tuile dédiée « dont valeur locative ».
-- **Frontalier** : `crossBorder.totalTax` inclut déjà la part suisse + part étrangère, donc `swissShareCHF + foreignShareCHF ≈ totalTaxCHF` ✓ ; vérifier le côté GE où `foreignTax` n'est qu'une estimation (le noter dans `notes`).
+## Modifications techniques
 
-## 4. UI (`src/routes/_app/calculators/tax-global.tsx`)
+**Fichier modifié : `src/components/optimizer/OptimizationsPanel.tsx`**
 
-- Afficher la tuile **Santé recommandée** (LAMal CH) aussi pour les résidents (pas seulement frontaliers).
-- Afficher le bloc **Charges sociales** dès qu'il existe (pas conditionné à `isFrontalier`).
-- Utiliser `showFortune` pour masquer le champ « Fortune nette » dans les régimes source/frontalier où la fortune n'entre pas dans le calcul.
-- Ajouter dans la pill du régime détecté la justification (`result.notes[0]`) en tooltip.
+1. Étendre la signature `OptimizationsPanel` avec props optionnelles :
+   ```ts
+   canton?: string;
+   civilStatus?: string;
+   taxStatus?: "resident" | "source_taxed" | "cross_border_fr_1983" | "cross_border_ge" | "tou";
+   ```
+2. Passer ces props à `<Pillar3bInfoTile canton={...} civilStatus={...} taxStatus={...} />`.
+3. Réécrire `Pillar3bInfoTile` :
+   - Constantes locales `GE_LIMITS` et `FR_LIMITS` (chiffres 2025).
+   - Logique :
+     - `isFrontalier1983 = taxStatus === "cross_border_fr_1983"`
+     - `eligibleCanton = canton === "GE" || canton === "FR"` (et non frontalier)
+     - Badge + bloc "votre situation" calculé en fonction.
+   - Structure visuelle : en-tête (icône + titre + badge contextuel), paragraphe d'explication clair, petit tableau 2-colonnes (Genève / Fribourg) avec plafonds, et phrase de conclusion.
+   - Aucun `<strong>` empilé — utiliser hiérarchie typographique (h4, text-sm, text-xs muted).
 
-## 5. Vérifs sans code
+**Fichier modifié : `src/routes/_app/calculators/tax-global.tsx`**
 
-- `usePrefillFromClient(clientId, "tax-global")` ✓ branché.
-- `KIND_LABELS` / `KIND_ROUTES` (historique) : ne pas créer de kind `tax_global` (éviterait une migration enum DB) — continuer à logger sous `income_tax`.
-- Routes des 4 anciens calculateurs : conservées (déjà décidé).
+- Passer `canton`, `civilStatus` et `taxStatus` (régime détecté) à `<OptimizationsPanel>` là où il est rendu, pour activer la variante contextuelle.
 
-## Fichiers modifiés
+## Hors scope
 
-- `src/lib/clients/to-calculator-input.ts` (toTaxGlobalInput)
-- `src/lib/tax-global/scenarios.ts`
-- `src/lib/tax-global/engine.ts`
-- `src/routes/_app/calculators/tax-global.tsx`
+- Pas de nouveau scénario chiffré "verser X CHF en 3b" dans `scenarios.ts` (décision déjà prise : trop dépendant du forfait cantonal et du statut indépendant).
+- Pas de changement dans `engine.ts`, `to-calculator-input.ts`, ni dans la DB.
+- Pas de modification de la fiche client (3b non saisi côté DB aujourd'hui — info pédagogique uniquement).
+
+## Vérification
+
+Lecture visuelle de la tuile sur le client courant (canton à confirmer dans la fiche) :
+- Si GE/FR → badge vert + plafond mis en avant.
+- Sinon → badge gris + message court.
+- Si frontalier 1983 → message warning.
+
+Aucune migration DB, aucun nouveau test requis.

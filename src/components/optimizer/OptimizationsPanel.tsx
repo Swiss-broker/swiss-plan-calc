@@ -24,15 +24,30 @@ const PRIORITY_LABEL: Record<Optimization["priority"], string> = {
   low: "À considérer",
 };
 
+export type Pillar3bContext = {
+  canton?: string | null;
+  civilStatus?: string | null;
+  taxStatus?:
+    | "resident"
+    | "source_taxed"
+    | "cross_border_fr_1983"
+    | "cross_border_ge"
+    | "tou"
+    | null;
+};
+
 export function OptimizationsPanel({
   optimizations,
   title = "Suggestions d'optimisation",
   emptyHint,
+  canton,
+  civilStatus,
+  taxStatus,
 }: {
   optimizations: Optimization[];
   title?: string;
   emptyHint?: string;
-}) {
+} & Pillar3bContext) {
   const totalSavings = optimizations.reduce((s, o) => s + o.estimatedSavings, 0);
 
   if (optimizations.length === 0) {
@@ -46,7 +61,7 @@ export function OptimizationsPanel({
               "Renseignez davantage d'informations (LPP, 3a, fortune, canton) pour obtenir des recommandations chiffrées."}
           </p>
         </div>
-        <Pillar3bInfoTile />
+        <Pillar3bInfoTile canton={canton} civilStatus={civilStatus} taxStatus={taxStatus} />
       </div>
     );
   }
@@ -156,7 +171,7 @@ export function OptimizationsPanel({
         ))}
       </div>
 
-      <Pillar3bInfoTile />
+      <Pillar3bInfoTile canton={canton} civilStatus={civilStatus} taxStatus={taxStatus} />
 
       <p className="flex items-start gap-2 text-[11px] text-muted-foreground">
         <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
@@ -173,7 +188,70 @@ function labelize(key: string): string {
     .trim();
 }
 
-function Pillar3bInfoTile() {
+const GE_LIMITS_2025 = {
+  single: 2196,
+  singleSelfEmployed: 4434,
+  couple: 3292,
+  coupleSelfEmployed: 6652,
+  perChild: 900,
+  perChildSelfEmployed: 1814,
+};
+
+const FR_LIMITS_2025 = {
+  single: 750,
+  couple: 1500,
+};
+
+function isCouple(civilStatus?: string | null): boolean {
+  return civilStatus === "married" || civilStatus === "registered_partnership";
+}
+
+function Pillar3bInfoTile({ canton, civilStatus, taxStatus }: Pillar3bContext) {
+  const c = (canton ?? "").toUpperCase();
+  const isGE = c === "GE";
+  const isFR = c === "FR";
+  const isFrontalier1983 = taxStatus === "cross_border_fr_1983";
+  const eligible = (isGE || isFR) && !isFrontalier1983;
+  const couple = isCouple(civilStatus);
+
+  let statusBadge: { label: string; tone: "success" | "muted" | "warning" };
+  let statusLine: string | null = null;
+
+  if (isFrontalier1983) {
+    statusBadge = {
+      label: "Imposition en France — non applicable",
+      tone: "warning",
+    };
+    statusLine =
+      "En tant que frontalier sous l'accord 1983, votre revenu est imposé en France. Les déductions cantonales suisses (y compris 3b à GE/FR) n'ont aucun effet fiscal.";
+  } else if (isGE) {
+    const max = couple ? GE_LIMITS_2025.couple : GE_LIMITS_2025.single;
+    const maxSelf = couple
+      ? GE_LIMITS_2025.coupleSelfEmployed
+      : GE_LIMITS_2025.singleSelfEmployed;
+    statusBadge = { label: "Éligible — Genève", tone: "success" };
+    statusLine = `Votre canton (GE) autorise une déduction 3b jusqu'à ${formatCHF(max)}/an${couple ? " (couple)" : " (célibataire)"}, ou ${formatCHF(maxSelf)} si indépendant. Supplément de ${formatCHF(GE_LIMITS_2025.perChild)} par enfant à charge.`;
+  } else if (isFR) {
+    const max = couple ? FR_LIMITS_2025.couple : FR_LIMITS_2025.single;
+    statusBadge = { label: "Éligible — Fribourg", tone: "success" };
+    statusLine = `Votre canton (FR) autorise une déduction 3b limitée à ${formatCHF(max)}/an${couple ? " (couple)" : " (célibataire)"}.`;
+  } else {
+    statusBadge = {
+      label: canton ? `Non déductible — ${c}` : "Non déductible dans la plupart des cantons",
+      tone: "muted",
+    };
+    statusLine = canton
+      ? `Votre canton (${c}) ne prévoit pas de déduction spécifique pour le 3e pilier B. Aucun gain fiscal direct attendu.`
+      : null;
+  }
+
+  const badgeClass =
+    statusBadge.tone === "success"
+      ? "border-success/40 bg-success/10 text-success-foreground"
+      : statusBadge.tone === "warning"
+        ? "border-warning/40 bg-warning/10 text-warning-foreground"
+        : "border-border bg-muted text-muted-foreground";
+
   return (
     <div
       className="rounded-xl border border-dashed border-border bg-muted/30 p-4"
@@ -184,15 +262,68 @@ function Pillar3bInfoTile() {
         <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
           <Info className="h-4 w-4" />
         </div>
-        <div className="flex-1 space-y-1.5">
-          <div className="flex flex-wrap items-center gap-2">
-            <h4 className="text-sm font-semibold">3e pilier B (assurance-vie / épargne libre)</h4>
-            <Badge variant="outline" className="text-[10px] uppercase tracking-wider">
-              Pas de scénario chiffré
-            </Badge>
+        <div className="flex-1 space-y-3">
+          <div className="space-y-1">
+            <div className="flex flex-wrap items-center gap-2">
+              <h4 className="text-sm font-semibold">
+                3e pilier B (assurance-vie / épargne libre)
+              </h4>
+              <Badge variant="outline" className={cn("text-[10px] uppercase tracking-wider", badgeClass)}>
+                {statusBadge.label}
+              </Badge>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Déductible uniquement à Genève et Fribourg, dans des limites cantonales spécifiques.
+            </p>
           </div>
-          <p className="text-xs leading-relaxed text-muted-foreground">
-            Le 3e pilier B n'est <strong>pas déductible au niveau fédéral (IFD)</strong>. Au niveau cantonal, les primes entrent dans un <strong>forfait global "primes d'assurance + intérêts d'épargne"</strong> plafonné (ex. GE : ~2 200 CHF seul / ~4 300 CHF couple), souvent déjà saturé par la LAMal et les intérêts bancaires. L'effet fiscal réel est donc <strong>quasi nul</strong> dans la plupart des situations, et <strong>inexistant pour un frontalier accord 1983</strong> (imposition en France). Le 3b reste pertinent pour la <strong>prévoyance, la protection des proches et la transmission</strong>, mais pas comme levier d'optimisation fiscale directe.
+
+          <p className="text-xs leading-relaxed text-foreground/80">
+            Le 3e pilier B n'est jamais déductible de l'impôt fédéral direct (IFD). Au niveau cantonal,
+            la plupart des cantons ne prévoient aucune déduction spécifique pour le 3b — les primes
+            entrent au mieux dans le forfait général "assurances et intérêts d'épargne", souvent déjà
+            saturé par la LAMal. Seuls Genève et Fribourg accordent une déduction dédiée, plafonnée.
+          </p>
+
+          {statusLine && (
+            <div
+              className={cn(
+                "rounded-lg border p-2.5 text-xs leading-relaxed",
+                statusBadge.tone === "success"
+                  ? "border-success/30 bg-success/5 text-foreground"
+                  : statusBadge.tone === "warning"
+                    ? "border-warning/40 bg-warning/10 text-foreground"
+                    : "border-border bg-card text-foreground/80",
+              )}
+            >
+              {statusLine}
+            </div>
+          )}
+
+          <div className="grid gap-2 sm:grid-cols-2">
+            <div className="rounded-lg border border-border bg-card p-2.5">
+              <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                Genève — plafonds 2025
+              </div>
+              <div className="mt-1 space-y-0.5 text-[11px] text-foreground/80">
+                <div>Célibataire : {formatCHF(GE_LIMITS_2025.single)} ({formatCHF(GE_LIMITS_2025.singleSelfEmployed)} si indépendant)</div>
+                <div>Couple : {formatCHF(GE_LIMITS_2025.couple)} ({formatCHF(GE_LIMITS_2025.coupleSelfEmployed)} si indépendants)</div>
+                <div>Par enfant : {formatCHF(GE_LIMITS_2025.perChild)} ({formatCHF(GE_LIMITS_2025.perChildSelfEmployed)} si indépendants)</div>
+              </div>
+            </div>
+            <div className="rounded-lg border border-border bg-card p-2.5">
+              <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                Fribourg — plafonds 2025
+              </div>
+              <div className="mt-1 space-y-0.5 text-[11px] text-foreground/80">
+                <div>Célibataire : {formatCHF(FR_LIMITS_2025.single)}</div>
+                <div>Couple : {formatCHF(FR_LIMITS_2025.couple)}</div>
+              </div>
+            </div>
+          </div>
+
+          <p className="text-[11px] italic text-muted-foreground">
+            Le 3b reste pertinent pour la prévoyance, la protection des proches et la transmission, mais
+            ce n'est pas un levier d'optimisation fiscale dans la majorité des cas.
           </p>
         </div>
       </div>
