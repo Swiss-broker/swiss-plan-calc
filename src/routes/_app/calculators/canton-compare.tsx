@@ -517,6 +517,40 @@ function CantonCompareCalc() {
         </div>
       )}
 
+      {showAccord1983Banner && (
+        <div className="flex items-start gap-3 rounded-lg border border-warning/50 bg-warning/10 p-3 text-sm">
+          <span className="mt-0.5 text-base leading-none" aria-hidden>🇫🇷</span>
+          <div className="space-y-1 text-foreground/90">
+            <p>
+              <strong>Régime frontalier — accord franco-suisse 1983.</strong>{" "}
+              L'impôt est dû <strong>en France uniquement</strong> pour{" "}
+              {accord1983Rows.map((r) => r.code).join(", ")}. Le canton suisse
+              de travail ne change pas le montant
+              {accord1983Identical && accord1983Sample
+                ? ` — d'où ${formatCHF(accord1983Sample.total)} (${accord1983Sample.effective}%) identique sur ces ${accord1983Rows.length} cantons.`
+                : "."}
+              {hasGeFrontalier && (
+                <> Seul <strong>Genève</strong> prélève à la source en Suisse (IS + 4,5% rétrocédés à la France).</>
+              )}
+            </p>
+            <p className="text-xs text-muted-foreground">
+              Pour une vraie comparaison cantonale (26 chiffres distincts), basculez « Pays de résidence » sur 🇨🇭 Suisse.
+            </p>
+          </div>
+        </div>
+      )}
+
+      {showGeFrontalierBanner && !showAccord1983Banner && (
+        <div className="flex items-start gap-3 rounded-lg border border-primary/40 bg-primary/5 p-3 text-sm">
+          <span className="mt-0.5 text-base leading-none" aria-hidden>🇨🇭</span>
+          <p className="text-foreground/90">
+            <strong>Frontalier Genève.</strong> Imposition à la source genevoise (IS)
+            + résidu éventuel en France. Les autres cantons sont indiqués à titre comparatif
+            (impôt français applicable au titre de l'accord 1983).
+          </p>
+        </div>
+      )}
+
       <div className="flex items-start gap-3 rounded-lg border border-border bg-muted/40 p-3 text-sm">
         <Info className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
         <p
