@@ -1,4 +1,4 @@
-import { Sparkles, TrendingUp, AlertCircle, AlertTriangle } from "lucide-react";
+import { Sparkles, TrendingUp, AlertCircle, AlertTriangle, Info } from "lucide-react";
 import type { Optimization } from "@/lib/optimizer";
 import { formatCHF } from "@/lib/format";
 import { cn } from "@/lib/utils";
@@ -37,13 +37,16 @@ export function OptimizationsPanel({
 
   if (optimizations.length === 0) {
     return (
-      <div className="rounded-2xl border border-border bg-card p-6 text-center shadow-sm">
-        <Sparkles className="mx-auto h-8 w-8 text-muted-foreground/60" />
-        <h3 className="mt-3 text-base font-semibold">Aucune optimisation détectée</h3>
-        <p className="mx-auto mt-1 max-w-md text-sm text-muted-foreground">
-          {emptyHint ??
-            "Renseignez davantage d'informations (LPP, 3a, fortune, canton) pour obtenir des recommandations chiffrées."}
-        </p>
+      <div className="space-y-4">
+        <div className="rounded-2xl border border-border bg-card p-6 text-center shadow-sm">
+          <Sparkles className="mx-auto h-8 w-8 text-muted-foreground/60" />
+          <h3 className="mt-3 text-base font-semibold">Aucune optimisation détectée</h3>
+          <p className="mx-auto mt-1 max-w-md text-sm text-muted-foreground">
+            {emptyHint ??
+              "Renseignez davantage d'informations (LPP, 3a, fortune, canton) pour obtenir des recommandations chiffrées."}
+          </p>
+        </div>
+        <Pillar3bInfoTile />
       </div>
     );
   }
@@ -153,6 +156,8 @@ export function OptimizationsPanel({
         ))}
       </div>
 
+      <Pillar3bInfoTile />
+
       <p className="flex items-start gap-2 text-[11px] text-muted-foreground">
         <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
         Suggestions calculées sur la base des barèmes fiscaux 2026 et du statut fiscal du client. Pour les cas complexes (frontaliers TOU, structures holding, revenus internationaux), valider la cohérence des hypothèses avant remise au client.
@@ -166,4 +171,31 @@ function labelize(key: string): string {
     .replace(/([A-Z])/g, " $1")
     .replace(/^./, (s) => s.toUpperCase())
     .trim();
+}
+
+function Pillar3bInfoTile() {
+  return (
+    <div
+      className="rounded-xl border border-dashed border-border bg-muted/30 p-4"
+      role="note"
+      aria-label="Information 3e pilier B"
+    >
+      <div className="flex items-start gap-3">
+        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+          <Info className="h-4 w-4" />
+        </div>
+        <div className="flex-1 space-y-1.5">
+          <div className="flex flex-wrap items-center gap-2">
+            <h4 className="text-sm font-semibold">3e pilier B (assurance-vie / épargne libre)</h4>
+            <Badge variant="outline" className="text-[10px] uppercase tracking-wider">
+              Pas de scénario chiffré
+            </Badge>
+          </div>
+          <p className="text-xs leading-relaxed text-muted-foreground">
+            Le 3e pilier B n'est <strong>pas déductible au niveau fédéral (IFD)</strong>. Au niveau cantonal, les primes entrent dans un <strong>forfait global "primes d'assurance + intérêts d'épargne"</strong> plafonné (ex. GE : ~2 200 CHF seul / ~4 300 CHF couple), souvent déjà saturé par la LAMal et les intérêts bancaires. L'effet fiscal réel est donc <strong>quasi nul</strong> dans la plupart des situations, et <strong>inexistant pour un frontalier accord 1983</strong> (imposition en France). Le 3b reste pertinent pour la <strong>prévoyance, la protection des proches et la transmission</strong>, mais pas comme levier d'optimisation fiscale directe.
+          </p>
+        </div>
+      </div>
+    </div>
+  );
 }
