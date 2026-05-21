@@ -31,6 +31,16 @@ export interface CrossBorderInput {
   spouseGrossSalary?: number;
   /** Taux de change EUR/CHF (défaut 0.95) */
   eurChfRate?: number;
+  /**
+   * Déductions FR-éligibles (en CHF, converties en EUR par le moteur).
+   * Côté France, sont déductibles de l'assiette : intérêts d'emprunt résidence
+   * principale (crédit d'impôt en pratique mais traités ici comme abattement),
+   * frais de garde, dons à organismes d'intérêt général.
+   * Le 3e pilier A / rachat LPP suisses ne sont PAS déductibles côté FR.
+   */
+  mortgageInterestCHF?: number;
+  childCareCostsCHF?: number;
+  donationsCHF?: number;
 }
 
 export interface CrossBorderResult {
@@ -148,8 +158,17 @@ export function computeCrossBorder(input: CrossBorderInput): CrossBorderResult {
   const grossEur = input.grossAnnualSalary * eur;
   const spouseEur = (input.spouseGrossSalary ?? 0) * eur;
   // Abattement forfaitaire 10% (frais professionnels FR)
-  const taxableFR = (grossEur + spouseEur) * 0.9;
+  const baseAfterAbatement = (grossEur + spouseEur) * 0.9;
+  // Déductions FR-éligibles (intérêts d'emprunt résidence principale FR,
+  // frais de garde, dons) — converties en EUR.
+  const frEligibleChf =
+    (input.mortgageInterestCHF ?? 0) +
+    (input.childCareCostsCHF ?? 0) +
+    (input.donationsCHF ?? 0);
+  const frEligibleEur = frEligibleChf * eur;
+  const taxableFR = Math.max(0, baseAfterAbatement - frEligibleEur);
   const marginal = frenchMarginalRate(taxableFR, input.status, children);
+  const hasFrDeductions = frEligibleChf > 0;
 
   // ===== Régime 1 : Accord 4.5% (cantons romands sauf GE) =====
   if (isFrAccordCanton(input.workCanton)) {
@@ -157,6 +176,20 @@ export function computeCrossBorder(input: CrossBorderInput): CrossBorderResult {
     const frTax = frenchIncomeTax(taxableFR, input.status, children);
     const frTaxChf = frTax / eur;
     const total = swissTax + frTaxChf;
+    const notes = [
+      "Retenue suisse : 4.5 % du brut, intégralement rétrocédée à la France.",
+      "Imposition principale en France au barème progressif après abattement 10 %.",
+      "Le crédit d'impôt français évite la double imposition (méthode du taux effectif).",
+    ];
+    if (hasFrDeductions) {
+      notes.push(
+        `Déductions FR-éligibles appliquées : ${Math.round(frEligibleChf).toLocaleString("fr-CH")} CHF (intérêts d'emprunt résidence principale FR, frais de garde, dons). 3e pilier A et rachat LPP suisses ignorés (non déductibles côté FR sous accord 1983).`,
+      );
+    } else {
+      notes.push(
+        "3a, rachat LPP, primes LAMal CH : NON déductibles côté FR. Seuls intérêts d'emprunt résidence FR, frais de garde et dons réduisent l'assiette française.",
+      );
+    }
     return {
       regime: "fr_accord_45",
       regimeLabel: `Accord franco-suisse 4.5 % (${input.workCanton})`,
@@ -168,11 +201,7 @@ export function computeCrossBorder(input: CrossBorderInput): CrossBorderResult {
       totalRate: Math.round((total / input.grossAnnualSalary) * 1000) / 10,
       netAnnual: Math.round(input.grossAnnualSalary - total),
       marginalRate: marginal,
-      notes: [
-        "Retenue suisse : 4.5 % du brut, intégralement rétrocédée à la France.",
-        "Imposition principale en France au barème progressif après abattement 10 %.",
-        "Le crédit d'impôt français évite la double imposition (méthode du taux effectif).",
-      ],
+      notes,
     };
   }
 

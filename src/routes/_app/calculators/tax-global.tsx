@@ -4,7 +4,7 @@ import { zodValidator, fallback } from "@tanstack/zod-adapter";
 import { z } from "zod";
 import { Sparkles, Info, TrendingDown, TrendingUp, ArrowRight } from "lucide-react";
 
-import { CalcCard, MoneyTile, PctTile, Row, InfoLabel } from "@/components/calculators/CalcUI";
+import { CalcCard, MoneyTile, PctTile, Row, InfoLabel, HelpDot } from "@/components/calculators/CalcUI";
 import { ClientLinkBanner } from "@/components/calculators/ClientLinkBanner";
 import { NumField as BaseNumField } from "@/components/ui/num-field";
 import { Label } from "@/components/ui/label";
@@ -325,54 +325,95 @@ function TaxGlobalCalc() {
                 <AccordionTrigger>{t("calc.global.section.deductions")}</AccordionTrigger>
                 <AccordionContent>
                   <div className="space-y-4">
+                    {/* Bannière régime : explique l'effet réel des déductions */}
+                    {(() => {
+                      const reg = result.regime;
+                      if (reg === "cross_border_fr_1983") {
+                        return (
+                          <div className="rounded-md border border-destructive/40 bg-destructive/5 p-3 text-xs text-destructive">
+                            <strong>Accord 1983 — imposition exclusive en France.</strong> Le 3a, le rachat LPP, l'entretien immobilier CH et les primes LAMal CH <strong>ne sont pas déductibles</strong>. Seuls les intérêts d'emprunt résidence principale FR, les frais de garde et les dons réduisent l'assiette française. Vérifiez chaque bulle ci-dessous.
+                          </div>
+                        );
+                      }
+                      if (reg === "cross_border_ge" || reg === "cross_border_other") {
+                        return (
+                          <div className="rounded-md border border-amber-500/40 bg-amber-500/5 p-3 text-xs text-amber-800 dark:text-amber-300">
+                            <strong>Frontalier — déductions CH appliquées via TOU / rectification IS.</strong> Sans démarche auprès de l'AFC, l'impôt à la source reste calculé sur le brut. La simulation ci-dessous montre l'effet POTENTIEL des déductions si la démarche est effectuée.
+                          </div>
+                        );
+                      }
+                      if (reg === "source_taxed") {
+                        return (
+                          <div className="rounded-md border border-amber-500/40 bg-amber-500/5 p-3 text-xs text-amber-800 dark:text-amber-300">
+                            <strong>Imposé à la source — déductions appliquées via TOU (si quasi-résident ≥ 90 % revenus CH) ou rectification IS.</strong> Sans démarche, la retenue source brute s'applique. La simulation montre l'effet réel post-démarche.
+                          </div>
+                        );
+                      }
+                      if (reg === "tou") {
+                        return (
+                          <div className="rounded-md border border-success/40 bg-success/5 p-3 text-xs text-success">
+                            <strong>Quasi-résident éligible TOU.</strong> Les déductions saisies s'appliquent sur demande de Taxation Ordinaire Ultérieure (à déposer avant le 31 mars de l'année suivante).
+                          </div>
+                        );
+                      }
+                      return null;
+                    })()}
                     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                       <NumField
                         label={t("calc.global.field.pillar_3a")}
                         value={form.pillar3aContributions}
                         onChange={(v) => set("pillar3aContributions", v)}
                         suffix="CHF"
+                        tip={deductionTip(result.regime, "pillar3a")}
                       />
                       <NumField
                         label={t("calc.global.field.lpp_buyback")}
                         value={form.lppBuyback}
                         onChange={(v) => set("lppBuyback", v)}
                         suffix="CHF"
+                        tip={deductionTip(result.regime, "lpp")}
                       />
                       <NumField
                         label={t("calc.global.field.mortgage")}
                         value={form.mortgageInterest}
                         onChange={(v) => set("mortgageInterest", v)}
                         suffix="CHF"
+                        tip={deductionTip(result.regime, "mortgage")}
                       />
                       <NumField
                         label={t("calc.global.field.maintenance")}
                         value={form.realEstateMaintenance}
                         onChange={(v) => set("realEstateMaintenance", v)}
                         suffix="CHF"
+                        tip={deductionTip(result.regime, "maintenance")}
                       />
                       <NumField
                         label={t("calc.global.field.health_premiums")}
                         value={form.healthInsurancePremiums}
                         onChange={(v) => set("healthInsurancePremiums", v)}
                         suffix="CHF"
+                        tip={deductionTip(result.regime, "health")}
                       />
                       <NumField
                         label={t("calc.global.field.child_care")}
                         value={form.childCareCosts}
                         onChange={(v) => set("childCareCosts", v)}
                         suffix="CHF"
+                        tip={deductionTip(result.regime, "childcare")}
                       />
                       <NumField
                         label="Cotisations 3e pilier B (assurance-vie / épargne libre)"
                         value={form.pillar3bContributions}
                         onChange={(v) => set("pillar3bContributions", v)}
                         suffix="CHF"
+                        tip={deductionTip(result.regime, "pillar3b")}
                       />
                       <NumField
                         label={t("calc.global.field.donations")}
                         value={form.donations}
                         onChange={(v) => set("donations", v)}
                         suffix="CHF"
+                        tip={deductionTip(result.regime, "donations")}
                       />
                     </div>
                     <Pillar3bInfoTile
@@ -383,6 +424,7 @@ function TaxGlobalCalc() {
                   </div>
                 </AccordionContent>
               </AccordionItem>
+
 
               {showFrontalierBlock && (
                 <AccordionItem value="frontalier">
@@ -455,12 +497,14 @@ function TaxGlobalCalc() {
                 value={result.totalTaxCHF}
                 tone="warning"
                 big
+                tip="Somme de l'impôt fédéral direct (IFD), cantonal, communal, ecclésiastique et — pour résident — impôt sur la fortune. N'inclut PAS les charges sociales (LAMal/CMU). Voir le panneau « Comment ce résultat est calculé » pour la chaîne complète."
               />
               <MoneyTile
                 label={t("calc.global.tile.net")}
                 value={result.netAnnualCHF}
                 tone="success"
                 big
+                tip="Revenu brut − impôt total − charges sociales (LAMal/CMU pour frontalier). La valeur locative est exclue (revenu fictif, pas du cash)."
               />
             </Row>
             <div className="mt-3 grid grid-cols-2 gap-3">
@@ -468,8 +512,13 @@ function TaxGlobalCalc() {
                 label={t("calc.global.tile.effective_rate")}
                 value={result.effectiveRate}
                 tone="primary"
+                tip="Impôt total ÷ revenu brut. Taux moyen réellement payé sur l'ensemble du revenu."
               />
-              <PctTile label={t("calc.global.tile.marginal_rate")} value={result.marginalRate} />
+              <PctTile
+                label={t("calc.global.tile.marginal_rate")}
+                value={result.marginalRate}
+                tip="Taux d'imposition du prochain franc gagné. Sert à chiffrer l'économie d'une déduction : économie ≈ déduction × taux marginal."
+              />
             </div>
             <div className="mt-3 grid grid-cols-2 gap-3">
               {isFrontalier && (
@@ -477,10 +526,12 @@ function TaxGlobalCalc() {
                   <MoneyTile
                     label={t("calc.global.tile.swiss_part")}
                     value={result.swissShareCHF}
+                    tip="Impôt prélevé en Suisse (retenue à la source, ou taxation ordinaire CH si TOU/rectification IS activée)."
                   />
                   <MoneyTile
                     label={t("calc.global.tile.foreign_part")}
                     value={result.foreignShareCHF}
+                    tip="Estimation du résidu d'impôt côté pays de résidence APRÈS application du crédit d'impôt (méthode du taux effectif). Hors GE et accord 1983, varie selon le pays."
                   />
                 </>
               )}
@@ -489,9 +540,14 @@ function TaxGlobalCalc() {
                   label={t("calc.global.tile.social")}
                   value={result.socialChargesCHF}
                   tone="warning"
+                  tip="Charges santé annuelles : CMU (8% du revenu fiscal de référence FR) ou LAMal (primes mensuelles × 12 × nb assurés). L'option recommandée minimise ce coût."
                 />
               )}
-              <MoneyTile label={t("calc.global.tile.gross")} value={result.grossIncomeCHF} />
+              <MoneyTile
+                label={t("calc.global.tile.gross")}
+                value={result.grossIncomeCHF}
+                tip="Revenu brut de référence utilisé pour les taux. Salaire + bonus + (conjoint si couple) + autres revenus + loyer perçu. Valeur locative et revenus étrangers exclus."
+              />
             </div>
           </CalcCard>
 
@@ -499,13 +555,26 @@ function TaxGlobalCalc() {
           {result.income && (
             <CalcCard>
               <div className="grid grid-cols-2 gap-3">
-                <MoneyTile label={t("calc.global.tile.federal")} value={result.income.ifd} />
+                <MoneyTile
+                  label={t("calc.global.tile.federal")}
+                  value={result.income.ifd}
+                  tip="Impôt fédéral direct (LIFD art. 36). Barème progressif fédéral appliqué au revenu imposable IFD, après déduction enfants (6 700 CHF / enfant) et rabais 259 CHF / enfant."
+                />
                 <MoneyTile
                   label={t("calc.global.tile.cantonal")}
                   value={result.income.cantonal + result.income.communal}
+                  tip={`Impôt cantonal + communal. Barème du canton ${form.canton} × coefficient cantonal × multiplicateur communal (chef-lieu par défaut tant que la commune réelle n'est pas résolue).`}
                 />
-                <MoneyTile label={t("calc.global.tile.wealth")} value={result.income.wealthTax} />
-                <MoneyTile label="Église" value={result.income.church} />
+                <MoneyTile
+                  label={t("calc.global.tile.wealth")}
+                  value={result.income.wealthTax}
+                  tip="Impôt sur la fortune nette (immobilier + titres + bancaire + véhicules − dettes). Seuils d'exonération et barèmes cantonaux. Uniquement résident ordinaire."
+                />
+                <MoneyTile
+                  label="Église"
+                  value={result.income.church}
+                  tip="Impôt ecclésiastique cantonal — appliqué uniquement si la confession est catholique ou protestante. Taux variable par canton (généralement 5–15 % de l'impôt cantonal)."
+                />
               </div>
             </CalcCard>
           )}
@@ -514,8 +583,16 @@ function TaxGlobalCalc() {
           {showTouBlock && result.source && (
             <CalcCard>
               <Row>
-                <MoneyTile label={t("calc.global.tile.source")} value={result.source.annualTax} />
-                <PctTile label="Taux IS" value={result.source.rate} />
+                <MoneyTile
+                  label={t("calc.global.tile.source")}
+                  value={result.source.annualTax}
+                  tip="Retenue à la source annuelle = (salaire mensuel × taux IS du barème) × 12. Barème déterminé par statut civil, conjoint actif et confession."
+                />
+                <PctTile
+                  label="Taux IS"
+                  value={result.source.rate}
+                  tip="Taux moyen du barème IS appliqué — le marginal réel dépend du barème détaillé du canton de travail."
+                />
               </Row>
               {result.touEligibility && (
                 <div className="mt-3 rounded-md border p-3 text-sm">
@@ -530,6 +607,7 @@ function TaxGlobalCalc() {
                     <span className="text-muted-foreground">
                       {t("calc.global.tile.swiss_part")} : {result.touEligibility.swissShare}%
                     </span>
+                    <HelpDot tip="Quasi-résident = ≥ 90 % du revenu mondial gagné en CH. Seuil requis pour demander la TOU (Taxation Ordinaire Ultérieure), qui permet d'appliquer toutes les déductions effectives (3a, rachat LPP, intérêts hypothécaires, etc.) en remplacement de la retenue source." />
                   </div>
                   {result.touComparison && (
                     <p className="mt-2 text-xs text-muted-foreground">
@@ -549,19 +627,30 @@ function TaxGlobalCalc() {
                   label={t("calc.global.tile.swiss_part")}
                   value={result.crossBorder.swissTax}
                   hint={`${result.crossBorder.swissRate}%`}
+                  tip={
+                    result.regime === "cross_border_fr_1983"
+                      ? "Retenue suisse forfaitaire de 4.5 % du brut (accord 1983), intégralement rétrocédée à la France."
+                      : "Impôt à la source genevois (barème A/B + réduction enfants) — OU impôt ordinaire CH avec déductions si TOU GE activée et plus avantageux."
+                  }
                 />
                 <MoneyTile
                   label={t("calc.global.tile.foreign_part")}
                   value={result.crossBorder.foreignTax}
                   hint={`${result.crossBorder.foreignRate}%`}
+                  tip={
+                    result.regime === "cross_border_fr_1983"
+                      ? "Impôt FR au barème progressif sur (brut × 0.9 − déductions FR-éligibles), avec quotient familial. Crédit d'impôt évite la double imposition."
+                      : "GE : impôt FR ramené à 0 (taux effectif côté FR, imposition principale en CH). Hors GE / accord 1983 : varie selon le pays."
+                  }
                 />
               </div>
               {result.health && (
                 <div className="mt-3 rounded-md border p-3 text-sm">
                   <div className="flex items-center justify-between">
-                    <span className="font-semibold">
+                    <span className="flex items-center gap-1.5 font-semibold">
                       {t("calc.global.tile.health")} :{" "}
                       <span className="text-primary">{result.health.recommended}</span>
+                      <HelpDot tip="Comparaison automatique CMU (8 % du revenu fiscal FR) vs LAMal (primes mensuelles × 12 × assurés). L'option affichée est celle qui minimise le coût annuel." />
                     </span>
                     <span className="tabular-nums">
                       {formatCHF(result.health.recommendedAnnualCHF)}/an
@@ -574,6 +663,7 @@ function TaxGlobalCalc() {
               )}
             </CalcCard>
           )}
+
         </div>
       </div>
 
@@ -689,6 +779,73 @@ function TaxGlobalCalc() {
     </div>
   );
 }
+
+/** Tooltip dynamique pour chaque déduction selon le régime fiscal détecté. */
+function deductionTip(
+  regime: string,
+  kind:
+    | "pillar3a"
+    | "lpp"
+    | "mortgage"
+    | "maintenance"
+    | "health"
+    | "childcare"
+    | "pillar3b"
+    | "donations",
+): React.ReactNode {
+  const ch = {
+    pillar3a: "3e pilier A — plafond 2026 : 7 258 CHF (affilié LPP) ou 36 288 CHF (non-affilié, max 20 % du revenu).",
+    lpp: "Rachat LPP — déduit du revenu imposable l'année du versement. Blocage 3 ans avant tout retrait en capital (art. 79b LPP).",
+    mortgage: "Intérêts hypothécaires — entièrement déductibles du revenu imposable.",
+    maintenance: "Frais d'entretien immobilier — soit forfait 10–20 % de la valeur locative/loyer, soit frais réels.",
+    health: "Primes LAMal + LCA — déductibles dans la limite du forfait cantonal (variable, ex : 2 400 CHF célib. GE / 4 800 CHF couple).",
+    childcare: "Frais de garde — max 25 500 CHF/enfant côté IFD, plafonds cantonaux variables.",
+    pillar3b: "3e pilier B (assurance-vie / épargne libre) — agrégé aux primes santé, déductible dans le plafond commun cantonal.",
+    donations: "Dons à organismes d'utilité publique — déductibles jusqu'à 20 % du revenu net.",
+  }[kind];
+
+  if (regime === "resident_ordinary" || regime === "tou") {
+    return <span>✅ Déductible intégralement. {ch}</span>;
+  }
+  if (regime === "source_taxed") {
+    return (
+      <span>
+        ⚠️ <strong>Non automatique en IS.</strong> Pour appliquer : demander la TOU (si quasi-résident ≥ 90 % revenus CH) ou une rectification IS auprès de l'AFC. {ch}
+      </span>
+    );
+  }
+  if (regime === "cross_border_ge" || regime === "cross_border_other") {
+    if (kind === "mortgage" || kind === "childcare" || kind === "donations") {
+      return (
+        <span>
+          ⚠️ <strong>Côté FR :</strong> déductible de l'assiette française (impact direct sur l'impôt FR).<br />
+          ⚠️ <strong>Côté CH :</strong> appliqué uniquement via TOU GE ou rectification IS. {ch}
+        </span>
+      );
+    }
+    return (
+      <span>
+        ⚠️ <strong>Frontalier GE :</strong> déductible uniquement via démarche TOU ou rectification IS auprès de l'AFC. Sans démarche, aucun effet sur l'IS. Non déductible côté FR. {ch}
+      </span>
+    );
+  }
+  if (regime === "cross_border_fr_1983") {
+    if (kind === "mortgage" || kind === "childcare" || kind === "donations") {
+      return (
+        <span>
+          ✅ <strong>Déductible côté France</strong> (intérêts résidence principale FR, garde, dons à organismes FR). Réduit directement l'assiette du barème français.
+        </span>
+      );
+    }
+    return (
+      <span>
+        ❌ <strong>NON déductible</strong> sous accord 1983 (imposition exclusive France). La saisie est ignorée par le moteur. {ch}
+      </span>
+    );
+  }
+  return ch;
+}
+
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
