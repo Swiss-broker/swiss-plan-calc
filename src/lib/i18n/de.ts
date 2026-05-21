@@ -1350,7 +1350,7 @@ export const de: Record<string, string> = {
   "wizard.field.npa": "Postleitzahl (PLZ)",
   "wizard.field.tax_status": "Steuerstatus",
   "wizard.field.source_scale": "Quellensteuertarif",
-  "wizard.field.source_scale.hint": "Je nach Familiensituation auswählen",
+  "wizard.field.source_scale.hint": "Je nach Familiensituation auswählen. Grenzgänger Frankreich/Italien: A/B/C/H wählen und Steuerstatus oben angeben.",
   "wizard.field.source_scale.placeholder": "Auswählen",
   "wizard.field.confession": "Konfession",
   "wizard.field.parish": "Kirchgemeinde (falls relevant)",
