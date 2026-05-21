@@ -1348,7 +1348,7 @@ export const it: Record<string, string> = {
   "wizard.field.npa": "NAP",
   "wizard.field.tax_status": "Stato fiscale",
   "wizard.field.source_scale": "Tariffa imposta alla fonte",
-  "wizard.field.source_scale.hint": "Selezionare in base alla situazione familiare",
+  "wizard.field.source_scale.hint": "Selezionare in base alla situazione familiare. Frontalieri Francia/Italia: scegliere A/B/C/H e impostare lo stato fiscale sopra.",
   "wizard.field.source_scale.placeholder": "Selezionare",
   "wizard.field.confession": "Confessione",
   "wizard.field.parish": "Parrocchia (se pertinente)",
