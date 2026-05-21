@@ -61,6 +61,7 @@ import {
   DashboardPension,
   DashboardWealthSummary,
 } from "@/components/clients/ClientDashboardSections";
+import { ConsolidatedBenefitsCard } from "@/components/clients/ConsolidatedBenefitsCard";
 import { ClientCompanyCard } from "@/components/clients/ClientCompanyCard";
 import { DeleteConfirmDialog } from "@/components/common/DeleteConfirmDialog";
 import { ArchiveConfirmDialog } from "@/components/common/ArchiveConfirmDialog";
