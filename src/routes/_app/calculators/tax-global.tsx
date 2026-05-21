@@ -320,12 +320,14 @@ function TaxGlobalCalc() {
                       value={form.grossSalary}
                       onChange={(v) => set("grossSalary", v)}
                       suffix="CHF"
+                      tip="Salaire annuel brut figurant sur le certificat de salaire (case 1/8), avant déductions sociales (AVS, AI, AC, LPP)."
                     />
                     <NumField
                       label={t("calc.global.field.bonus")}
                       value={form.bonus}
                       onChange={(v) => set("bonus", v)}
                       suffix="CHF"
+                      tip="Gratifications, 13e salaire, part variable. Imposés comme le salaire ordinaire."
                     />
                     {isCouple && (
                       <NumField
@@ -333,6 +335,7 @@ function TaxGlobalCalc() {
                         value={form.spouseGrossSalary}
                         onChange={(v) => set("spouseGrossSalary", v)}
                         suffix="CHF"
+                        tip="Salaire brut annuel du conjoint. Cumulé au revenu du ménage en taxation ordinaire."
                       />
                     )}
                     <NumField
@@ -340,28 +343,151 @@ function TaxGlobalCalc() {
                       value={form.otherIncome}
                       onChange={(v) => set("otherIncome", v)}
                       suffix="CHF"
+                      tip="Revenus accessoires : jetons de présence, indemnités, activité indépendante secondaire, rentes imposables. S'ajoutent au revenu brut."
                     />
                     <NumField
                       label={t("calc.global.field.rental_income")}
                       value={form.rentalIncome}
                       onChange={(v) => set("rentalIncome", v)}
                       suffix="CHF"
+                      tip="Loyers nets perçus d'immeubles loués (avant entretien et intérêts hypothécaires, qui se déclarent en déductions). S'ajoutent au revenu imposable."
                     />
                     <NumField
                       label={t("calc.global.field.imputed_rent")}
                       value={form.imputedRent}
                       onChange={(v) => set("imputedRent", v)}
                       suffix="CHF"
+                      tip="Valeur locative — revenu fictif imposé aux propriétaires occupant leur logement en Suisse (art. 21 LIFD). Représente le loyer théorique qu'ils paieraient en louant. Incluse dans le revenu imposable mais PAS dans le cash réel."
                     />
-                    <NumField
-                      label={t("calc.global.field.foreign_income")}
-                      value={form.foreignIncome}
-                      onChange={(v) => set("foreignIncome", v)}
-                      suffix="CHF"
-                    />
+
+                    {/* ── Revenus étrangers avec conversion devise ── */}
+                    <div className="sm:col-span-2 space-y-2 rounded-md border border-border/50 bg-muted/20 p-3">
+                      <div className="flex items-center gap-1.5">
+                        <Label className="text-xs font-semibold">
+                          {t("calc.global.field.foreign_income")}
+                        </Label>
+                        <HelpDot tip="Revenus de source étrangère (salaire, dividendes, loyers d'immeubles hors CH). En Suisse, ils sont exonérés mais retenus pour la PROGRESSIVITÉ du taux d'imposition (méthode d'exemption avec réserve de progressivité, art. 7 LIFD). À convertir en CHF au taux AFC de l'année fiscale." />
+                      </div>
+                      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                        <div className="space-y-1.5">
+                          <Label className="text-xs font-medium text-muted-foreground">Devise</Label>
+                          <Select
+                            value={fxCurrency}
+                            onValueChange={(v) => setFxCurrency(v as FxCurrency)}
+                          >
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="CHF">CHF</SelectItem>
+                              {SUPPORTED_CURRENCIES.map((c) => (
+                                <SelectItem key={c} value={c}>
+                                  {c}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <NumField
+                          label={`Montant${fxCurrency === "JPY" ? " (JPY)" : ""}`}
+                          value={fxAmount}
+                          onChange={setFxAmount}
+                          suffix={fxCurrency}
+                        />
+                        {fxCurrency !== "CHF" && (
+                          <div className="space-y-1.5">
+                            <Label className="text-xs font-medium text-muted-foreground">
+                              Source du taux
+                            </Label>
+                            <Select
+                              value={fxSource}
+                              onValueChange={(v) => setFxSource(v as "afc" | "market")}
+                            >
+                              <SelectTrigger>
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="afc">
+                                  AFC officiel {form.taxYear}
+                                </SelectItem>
+                                <SelectItem value="market">Marché du jour</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        )}
+                      </div>
+                      {fxCurrency !== "CHF" && (
+                        <p className="text-xs text-muted-foreground">
+                          {fxRate == null ? (
+                            fxSource === "afc" ? (
+                              <span className="text-amber-600">
+                                ⚠️ Taux AFC non publié pour {fxCurrency} en {form.taxYear}. Sélectionnez « Marché du jour ».
+                              </span>
+                            ) : fxMarketLoading ? (
+                              "Chargement du taux marché…"
+                            ) : (
+                              <span className="text-amber-600">⚠️ Taux marché indisponible.</span>
+                            )
+                          ) : (
+                            <>
+                              → <strong className="text-foreground">{formatCHF(form.foreignIncome)}</strong>{" "}
+                              <span className="opacity-70">
+                                (taux {fxRate.toFixed(4)}
+                                {fxCurrency === "JPY" && " / 100 JPY"} ·{" "}
+                                {fxSource === "afc"
+                                  ? `AFC ${form.taxYear}`
+                                  : `marché ${fxMarketDate ?? ""}`})
+                              </span>
+                            </>
+                          )}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* ── Totaux cumulés ── */}
+                  <div className="mt-4 rounded-md border border-primary/30 bg-primary/5 p-3">
+                    <div className="flex items-center justify-between border-b border-primary/20 pb-2">
+                      <span className="text-sm font-semibold">Revenu brut total (CH)</span>
+                      <span className="text-base font-bold tabular-nums">
+                        {formatCHF(
+                          form.grossSalary +
+                            form.bonus +
+                            (isCouple ? form.spouseGrossSalary : 0) +
+                            form.otherIncome +
+                            form.rentalIncome,
+                        )}
+                      </span>
+                    </div>
+                    <ul className="mt-2 space-y-0.5 text-xs text-muted-foreground">
+                      <li className="flex justify-between"><span>Salaire principal</span><span className="tabular-nums">{formatCHF(form.grossSalary)}</span></li>
+                      {form.bonus > 0 && <li className="flex justify-between"><span>+ Bonus / 13e</span><span className="tabular-nums">{formatCHF(form.bonus)}</span></li>}
+                      {isCouple && form.spouseGrossSalary > 0 && <li className="flex justify-between"><span>+ Salaire conjoint</span><span className="tabular-nums">{formatCHF(form.spouseGrossSalary)}</span></li>}
+                      {form.otherIncome > 0 && <li className="flex justify-between"><span>+ Autres revenus</span><span className="tabular-nums">{formatCHF(form.otherIncome)}</span></li>}
+                      {form.rentalIncome > 0 && <li className="flex justify-between"><span>+ Revenus locatifs</span><span className="tabular-nums">{formatCHF(form.rentalIncome)}</span></li>}
+                      {form.imputedRent > 0 && (
+                        <li className="flex justify-between italic">
+                          <span>+ Valeur locative <span className="opacity-60">(imposable, hors cash)</span></span>
+                          <span className="tabular-nums">{formatCHF(form.imputedRent)}</span>
+                        </li>
+                      )}
+                      {form.foreignIncome > 0 && (
+                        <li className="flex justify-between italic">
+                          <span>
+                            + Revenus étrangers{" "}
+                            <span className="opacity-60">
+                              (progressivité uniquement{fxCurrency !== "CHF" && fxAmount > 0 ? ` · ${fxAmount.toLocaleString("fr-CH")} ${fxCurrency}` : ""})
+                            </span>
+                          </span>
+                          <span className="tabular-nums">{formatCHF(form.foreignIncome)}</span>
+                        </li>
+                      )}
+                    </ul>
                   </div>
                 </AccordionContent>
               </AccordionItem>
+
+
 
               {showFortune && (
                 <AccordionItem value="wealth">
