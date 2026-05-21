@@ -504,6 +504,13 @@ function AvsAiCalc() {
             </p>
           </CalcCard>
 
+          <SurvivorCard
+            theoreticalAnnual={projection.primary.theoreticalAnnualPension}
+            hasSurvivingSpouse={form.isCouple}
+            childrenCount={parseChildren(bundle?.client?.children).length}
+          />
+
+
           {form.isCouple && projection.spouse && (
             <CalcCard title={t("calc.avs.detail_spouse_card")}>
               <Row>
