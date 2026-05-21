@@ -517,13 +517,26 @@ function LppCalc() {
               {buybackPlan.yearly.map((y) => (
                 <div key={y.year} className="flex items-center justify-between border-t border-border/50 pt-2 first:border-t-0 first:pt-0">
                   <span className="text-muted-foreground">{t("calc.lpp.year_label", { n: y.year })}</span>
-                  <span className="tabular-nums font-semibold text-success">{formatCHF(y.taxSavings)}</span>
+                  <div className="flex gap-3 text-right">
+                    <span className="tabular-nums font-semibold text-success">{formatCHF(y.taxSavings)}</span>
+                    <span className="tabular-nums text-[11px] text-muted-foreground">
+                      {t("calc.lpp.net_cost_label")} {formatCHF(y.effectiveCost)}
+                    </span>
+                  </div>
                 </div>
               ))}
             </div>
+
+            <BuybackPlanExplanation
+              plan={buybackPlan}
+              taxInput={enrichedTaxInput}
+              form={form}
+              actualBuybackCapped={actualBuybackCapped}
+            />
           </CalcCard>
         </div>
       </div>
+
 
       <CertificatePensionsCard
         form={form}
