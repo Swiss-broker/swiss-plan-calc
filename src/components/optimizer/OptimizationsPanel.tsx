@@ -33,6 +33,7 @@ export type Pillar3bContext = {
     | "source_taxed"
     | "cross_border_fr_1983"
     | "cross_border_ge"
+    | "cross_border_other"
     | "tou"
     | "unknown"
     | null;

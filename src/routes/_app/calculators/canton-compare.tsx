@@ -86,6 +86,7 @@ const REGIME_SHORT: Record<Regime, string> = {
   tou: "Quasi-résident (TOU)",
   cross_border_ge: "Frontalier · IS Genève",
   cross_border_fr_1983: "Frontalier · accord 1983",
+  cross_border_other: "Frontalier · IS canton + impôt résidence",
   unknown: "Régime à préciser",
 };
 
@@ -96,6 +97,8 @@ function placeOfTaxation(regime: Regime): { flag: string; label: string } {
       return { flag: "🇫🇷", label: "Imposition France" };
     case "cross_border_ge":
       return { flag: "🇨🇭+🇫🇷", label: "IS CH + résidu FR" };
+    case "cross_border_other":
+      return { flag: "🇨🇭+🌍", label: "IS CH + impôt résidence" };
     case "resident_ordinary":
     case "source_taxed":
     case "tou":
