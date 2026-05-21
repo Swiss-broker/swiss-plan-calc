@@ -13,6 +13,7 @@ export type Regime =
   | "source_taxed" // permis B/L, résident CH
   | "cross_border_ge" // frontalier travaillant à GE
   | "cross_border_fr_1983" // frontalier accord 1983
+  | "cross_border_other" // frontalier hors GE/accord 1983
   | "tou" // quasi-résident éligible TOU
   | "unknown";
 

@@ -53,8 +53,8 @@ export function detectRegime(input: TaxGlobalInput): RegimeDetection {
       };
     }
     return {
-      regime: "cross_border_ge",
-      regimeLabel: `Frontalier ${canton || "canton à préciser"} (modèle source CH + impôt résidence)`,
+      regime: "cross_border_other",
+      regimeLabel: `Frontalier ${canton || "canton à préciser"} (IS canton de travail + impôt pays de résidence)`,
       reason: `Résidence ${country} hors accord 1983 pour ${canton || "ce canton"} : IS suisse + imposition pays de résidence`,
     };
   }
