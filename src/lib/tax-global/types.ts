@@ -51,6 +51,8 @@ export interface TaxGlobalInput {
 
   // === Optimisations / déductions ===
   pillar3aContributions: number;
+  /** Cotisations 3e pilier B (assurance-vie / épargne libre). */
+  pillar3bContributions: number;
   lppBuyback: number;
   mortgageInterest: number;
   realEstateMaintenance: number;

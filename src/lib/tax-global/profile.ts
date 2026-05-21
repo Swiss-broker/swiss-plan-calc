@@ -115,6 +115,7 @@ export function createDefaultInput(): TaxGlobalInput {
     foreignIncome: 0,
     netWealth: 0,
     pillar3aContributions: 0,
+    pillar3bContributions: 0,
     lppBuyback: 0,
     mortgageInterest: 0,
     realEstateMaintenance: 0,

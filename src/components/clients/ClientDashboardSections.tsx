@@ -17,9 +17,10 @@ import {
   DashboardMetric,
 } from "./DashboardCard";
 import { OptimizationsPanel } from "@/components/optimizer/OptimizationsPanel";
+import { ConsolidatedBenefitsCard } from "./ConsolidatedBenefitsCard";
 import { formatCHF, formatPct } from "@/lib/format";
 import { CANTON_BY_CODE } from "@/lib/swiss/cantons";
-import type { ClientDashboard } from "@/lib/client-dashboard";
+import type { ClientBundle, ClientDashboard } from "@/lib/client-dashboard";
 
 interface Props {
   dashboard: ClientDashboard;
