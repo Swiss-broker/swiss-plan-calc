@@ -780,6 +780,73 @@ function TaxGlobalCalc() {
   );
 }
 
+/** Tooltip dynamique pour chaque déduction selon le régime fiscal détecté. */
+function deductionTip(
+  regime: string,
+  kind:
+    | "pillar3a"
+    | "lpp"
+    | "mortgage"
+    | "maintenance"
+    | "health"
+    | "childcare"
+    | "pillar3b"
+    | "donations",
+): React.ReactNode {
+  const ch = {
+    pillar3a: "3e pilier A — plafond 2026 : 7 258 CHF (affilié LPP) ou 36 288 CHF (non-affilié, max 20 % du revenu).",
+    lpp: "Rachat LPP — déduit du revenu imposable l'année du versement. Blocage 3 ans avant tout retrait en capital (art. 79b LPP).",
+    mortgage: "Intérêts hypothécaires — entièrement déductibles du revenu imposable.",
+    maintenance: "Frais d'entretien immobilier — soit forfait 10–20 % de la valeur locative/loyer, soit frais réels.",
+    health: "Primes LAMal + LCA — déductibles dans la limite du forfait cantonal (variable, ex : 2 400 CHF célib. GE / 4 800 CHF couple).",
+    childcare: "Frais de garde — max 25 500 CHF/enfant côté IFD, plafonds cantonaux variables.",
+    pillar3b: "3e pilier B (assurance-vie / épargne libre) — agrégé aux primes santé, déductible dans le plafond commun cantonal.",
+    donations: "Dons à organismes d'utilité publique — déductibles jusqu'à 20 % du revenu net.",
+  }[kind];
+
+  if (regime === "resident_ordinary" || regime === "tou") {
+    return <span>✅ Déductible intégralement. {ch}</span>;
+  }
+  if (regime === "source_taxed") {
+    return (
+      <span>
+        ⚠️ <strong>Non automatique en IS.</strong> Pour appliquer : demander la TOU (si quasi-résident ≥ 90 % revenus CH) ou une rectification IS auprès de l'AFC. {ch}
+      </span>
+    );
+  }
+  if (regime === "cross_border_ge" || regime === "cross_border_other") {
+    if (kind === "mortgage" || kind === "childcare" || kind === "donations") {
+      return (
+        <span>
+          ⚠️ <strong>Côté FR :</strong> déductible de l'assiette française (impact direct sur l'impôt FR).<br />
+          ⚠️ <strong>Côté CH :</strong> appliqué uniquement via TOU GE ou rectification IS. {ch}
+        </span>
+      );
+    }
+    return (
+      <span>
+        ⚠️ <strong>Frontalier GE :</strong> déductible uniquement via démarche TOU ou rectification IS auprès de l'AFC. Sans démarche, aucun effet sur l'IS. Non déductible côté FR. {ch}
+      </span>
+    );
+  }
+  if (regime === "cross_border_fr_1983") {
+    if (kind === "mortgage" || kind === "childcare" || kind === "donations") {
+      return (
+        <span>
+          ✅ <strong>Déductible côté France</strong> (intérêts résidence principale FR, garde, dons à organismes FR). Réduit directement l'assiette du barème français.
+        </span>
+      );
+    }
+    return (
+      <span>
+        ❌ <strong>NON déductible</strong> sous accord 1983 (imposition exclusive France). La saisie est ignorée par le moteur. {ch}
+      </span>
+    );
+  }
+  return ch;
+}
+
+
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="space-y-1.5">
