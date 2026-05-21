@@ -55,16 +55,24 @@ export function buildScenarios(input: TaxGlobalInput): Scenario[] {
     });
   }
 
-  // ─── Rachat LPP 20'000 ───
-  const buybackTrial = 20_000;
-  if (!isFrAccord1983 && input.lppBuyback < buybackTrial) {
-    const r = computeTaxGlobal({ ...input, lppBuyback: buybackTrial });
+  // ─── Rachat LPP : basé sur la capacité disponible (fiche client) ───
+  // Si la fiche client renseigne une capacité de rachat (lpp_max_buyback),
+  // on plafonne le scénario à cette capacité. Sinon, valeur d'illustration 20'000.
+  const capacity = input.lppBuybackCapacity ?? 0;
+  const buybackTrial = capacity > 0
+    ? Math.min(20_000, Math.max(0, capacity - input.lppBuyback))
+    : 20_000;
+  if (!isFrAccord1983 && buybackTrial >= 1_000 && input.lppBuyback < input.lppBuyback + buybackTrial) {
+    const r = computeTaxGlobal({ ...input, lppBuyback: input.lppBuyback + buybackTrial });
+    const capacityLabel = capacity > 0
+      ? ` (capacité dispo : ${Math.round(capacity).toLocaleString("fr-CH")} CHF)`
+      : ` (montant d'illustration — capacité non renseignée)`;
     out.push({
-      id: "lpp_buyback_20k",
-      label: `+Rachat LPP 20'000 CHF`,
-      description: regime === "cross_border_ge"
-        ? "Rachat LPP standard (déductible uniquement si TOU activée)"
-        : "Simulation d'un rachat LPP standard",
+      id: "lpp_buyback_trial",
+      label: `+Rachat LPP ${Math.round(buybackTrial).toLocaleString("fr-CH")} CHF`,
+      description: (regime === "cross_border_ge"
+        ? "Rachat LPP supplémentaire (déductible uniquement si TOU activée)"
+        : "Rachat LPP supplémentaire simulé") + capacityLabel,
       result: r,
       deltaVsBaseline: r.totalTaxCHF - baseTotal,
     });

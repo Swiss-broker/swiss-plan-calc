@@ -485,6 +485,7 @@ export function toTaxGlobalInput(b: ClientBundle) {
     netWealth: computeFortune(b.assets) || undefined,
     pillar3aContributions: numOrUndef(b.pension?.pillar_3a_annual_contribution),
     lppBuyback: lppBuyback || undefined,
+    lppBuybackCapacity: numOrUndef(b.pension?.lpp_max_buyback),
     mortgageInterest: numOrUndef(b.assets?.mortgage_interest),
     realEstateMaintenance: numOrUndef(b.assets?.real_estate_maintenance),
     taxYear: currentYear,

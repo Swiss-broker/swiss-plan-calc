@@ -55,6 +55,8 @@ export interface TaxGlobalInput {
   /** Cotisations 3e pilier B (assurance-vie / épargne libre). */
   pillar3bContributions: number;
   lppBuyback: number;
+  /** Capacité maximale de rachat LPP encore disponible (issue de la fiche client). */
+  lppBuybackCapacity?: number;
   mortgageInterest: number;
   realEstateMaintenance: number;
   healthInsurancePremiums: number;
