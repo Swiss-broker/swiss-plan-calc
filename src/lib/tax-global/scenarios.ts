@@ -23,7 +23,10 @@ export function buildScenarios(input: TaxGlobalInput): Scenario[] {
   const baseSocial = baselineResult.socialChargesCHF;
   const regime = baselineResult.regime;
   const isFrAccord1983 = regime === "cross_border_fr_1983";
-  const isFrontalier = regime === "cross_border_ge" || isFrAccord1983;
+  const isFrontalier =
+    regime === "cross_border_ge" ||
+    regime === "cross_border_other" ||
+    isFrAccord1983;
 
   const out: Scenario[] = [
     {

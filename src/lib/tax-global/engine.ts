@@ -30,6 +30,7 @@ function computeGrossForRegime(g: TaxGlobalInput, regime: Regime): number {
       );
     case "cross_border_ge":
     case "cross_border_fr_1983":
+    case "cross_border_other":
       return g.grossSalary + g.bonus;
     default:
       return g.grossSalary + g.bonus;
@@ -177,7 +178,11 @@ export function computeTaxGlobal(g: TaxGlobalInput): TaxGlobalResult {
   }
 
   // ─────────────────────── FRONTALIER FR (GE ou accord 1983) ───────────────────────
-  if (det.regime === "cross_border_ge" || det.regime === "cross_border_fr_1983") {
+  if (
+    det.regime === "cross_border_ge" ||
+    det.regime === "cross_border_fr_1983" ||
+    det.regime === "cross_border_other"
+  ) {
     const frStatus = toFrenchStatus(g.civilStatus);
     const couple = isCoupleStatus(g.civilStatus);
     const crossBorder = computeCrossBorder({
