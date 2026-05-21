@@ -134,6 +134,24 @@ export function computeTaxGlobal(g: TaxGlobalInput): TaxGlobalResult {
       effectiveRate: rate(income.totalTax, gross),
       marginalRate: income.marginalRate,
       notes,
+      trace: {
+        ...baseTrace,
+        assumptions: [
+          "Forfait frais professionnels = 3% du salaire net (min 2 000 / max 4 000 CHF)",
+          "Forfait primes maladie cantonal 2026 si dispo, sinon forfait IFD (1 800 célib. / 3 600 marié / +700 par enfant)",
+          "Plafond 3a affilié LPP : 7 258 CHF par contribuable",
+          "Plafond AC 2026 : 148 200 CHF (au-delà : cotisation solidarité 0.5%)",
+          "Bonifications LPP selon âge × salaire coordonné (part salarié = 50%)",
+          `Multiplicateur communal : chef-lieu de ${g.canton} (commune non résolue)`,
+          "Déduction enfant IFD : 6 700 CHF/enfant + rabais d'impôt 259 CHF/enfant",
+        ],
+        limits: [
+          "Revenu étranger non inclus dans la progressivité (à reporter manuellement)",
+          "Multiplicateur communal réel non utilisé (chef-lieu par défaut)",
+          "Valeur locative incluse dans l'impôt mais exclue du net cash affiché",
+          "Pas de prise en compte des dépenses de santé extraordinaires (art. 33 al. 1 let. h LIFD)",
+        ],
+      },
     };
   }
 
@@ -197,6 +215,24 @@ export function computeTaxGlobal(g: TaxGlobalInput): TaxGlobalResult {
       effectiveRate: rate(total, gross),
       marginalRate: marginal,
       notes,
+      trace: {
+        ...baseTrace,
+        assumptions: [
+          `Barème IS appliqué : ${scale} (statut ${status}, conjoint actif: ${couple && g.spouseEmployed ? "oui" : "non"})`,
+          "Impôt à la source mensuel × 12 (hors gratifications irrégulières)",
+          touEligibility.eligibleForTOU
+            ? `Quasi-résident : ${baseTrace.detection.swissShareOfWorldwide}% du revenu mondial en CH → TOU possible`
+            : `Quasi-résident non éligible (seuil 90% du revenu mondial en CH)`,
+          useTOU
+            ? "TOU avantageuse : impôt ordinaire avec déductions retenu comme KPI"
+            : "Source moins coûteuse que TOU : impôt à la source conservé",
+        ],
+        limits: [
+          "Taux IS = taux moyen (le marginal réel dépend du barème détaillé)",
+          "Bonus / 13e salaire annualisés via la part fixe — vérifier le mode de prélèvement employeur",
+          "Pas de prise en compte des allocations familiales déductibles cantonales spécifiques",
+        ],
+      },
     };
   }
 
@@ -252,6 +288,24 @@ export function computeTaxGlobal(g: TaxGlobalInput): TaxGlobalResult {
       effectiveRate: rate(totalTax, gross),
       marginalRate: crossBorder.marginalRate,
       notes: [...notes, ...cbNotes],
+      trace: {
+        ...baseTrace,
+        assumptions: [
+          det.regime === "cross_border_fr_1983"
+            ? "Accord franco-suisse 1983 : imposition exclusive en France (canton retient 4.5% rétrocédés)"
+            : det.regime === "cross_border_ge"
+              ? "IS genevoise prélevée à la source + crédit d'impôt côté France"
+              : "IS canton de travail + imposition pays de résidence (modèle générique)",
+          `Taux EUR/CHF utilisé : ${g.eurChfRate.toFixed(4)} (CHF→EUR dérivé : ${g.chfToEurRate.toFixed(4)})`,
+          "Santé : comparaison CMU vs LAMal sur base des primes mensuelles saisies",
+        ],
+        limits: [
+          "Part étrangère = estimation du résidu d'impôt après crédit (≠ déclaration FR effective)",
+          "Pas de prise en compte du quotient familial FR ni des charges de famille étendues",
+          "Pas de calcul de la CSG/CRDS si affiliation FR partielle (statut mixte)",
+          "Taux de change figé : volatilité EUR/CHF non simulée",
+        ],
+      },
     };
   }
 
