@@ -87,6 +87,22 @@ export function computeTaxGlobal(g: TaxGlobalInput): TaxGlobalResult {
     );
   }
 
+  // Trace commune à tous les régimes
+  const swissTotalIncome =
+    g.grossSalary + g.bonus + g.spouseGrossSalary + g.otherIncome + g.rentalIncome;
+  const worldwide = swissTotalIncome + g.foreignIncome;
+  const baseTrace = {
+    regimeReason: det.reason,
+    detection: {
+      canton: g.canton,
+      permit: g.permit,
+      countryOfResidence: g.countryOfResidence,
+      swissShareOfWorldwide:
+        worldwide > 0 ? Math.round((swissTotalIncome / worldwide) * 1000) / 10 : 100,
+    },
+  };
+
+
   // ─────────────────────── RÉSIDENT ORDINAIRE ───────────────────────
   if (det.regime === "resident_ordinary") {
     const income = computeIncomeTax(toIncomeTaxInput(g));
