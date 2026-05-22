@@ -4,7 +4,7 @@
 // puis affiche les deux scénarios côte à côte via SplitCompareLayout.
 
 import { useMemo } from "react";
-import { TrendingUp } from "lucide-react";
+
 import { CalcCard, HelpDot } from "@/components/calculators/CalcUI";
 import {
   SplitCompareLayout,
