@@ -27,6 +27,7 @@ import {
   type HealthFranceInput,
 } from "@/lib/health-france";
 import { exportHealthFrancePdf } from "@/lib/pdf/reports";
+import { CrossCalcImpactBanner } from "@/components/calculators/CrossCalcImpactBanner";
 
 const searchSchema = z.object({
   clientId: fallback(z.string().uuid().optional(), undefined),
@@ -60,6 +61,7 @@ function HealthInsuranceFranceCalc() {
 
   return (
     <div className="grid grid-cols-1 gap-6 md:grid-cols-5">
+      <div className="md:col-span-5"><CrossCalcImpactBanner calculator="health-insurance-france" clientId={clientId} /></div>
       {client && (
         <div className="md:col-span-5">
           <ClientLinkBanner client={client} />

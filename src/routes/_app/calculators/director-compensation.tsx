@@ -88,6 +88,7 @@ import type { Client } from "@/lib/clients/types";
 import type { Company } from "@/lib/companies/types";
 import type { FilingStatus } from "@/lib/tax/ifd";
 import { DirectorLppBuybackCard } from "@/components/calculators/DirectorLppBuybackCard";
+import { CrossCalcImpactBanner } from "@/components/calculators/CrossCalcImpactBanner";
 
 const searchSchema = z.object({
   clientId: fallback(z.string().uuid().optional(), undefined),
@@ -248,6 +249,7 @@ function DirectorCompensationCalc() {
   return (
     <TooltipProvider delayDuration={150}>
       <div className="space-y-6">
+        <CrossCalcImpactBanner calculator="director-compensation" clientId={clientId} />
         <GuideMode open={guideOpen} onClose={() => setGuideOpen(false)} steps={guideSteps} title={t("calc.dir.guide.title")} />
         <div className="flex justify-end gap-2">
           <ExportPdfButton

@@ -37,6 +37,7 @@ import { AFC_ANNUAL_RATES, SUPPORTED_CURRENCIES, type Currency } from "@/lib/fx/
 import { fetchMarketRates } from "@/lib/fx/fetch.functions";
 import { useBrokerPdfHeader } from "@/hooks/useBrokerPdfHeader";
 import { exportFxClaimPdf } from "@/lib/pdf/fx-claim-report";
+import { CrossCalcImpactBanner } from "@/components/calculators/CrossCalcImpactBanner";
 
 const searchSchema = z.object({
   clientId: fallback(z.string().uuid().optional(), undefined),
@@ -154,6 +155,7 @@ function FxClaimCalc() {
 
   return (
     <div className="grid grid-cols-1 gap-6 md:grid-cols-5">
+      <div className="md:col-span-5"><CrossCalcImpactBanner calculator="fx-claim" clientId={clientId} /></div>
       <div className="md:col-span-3 space-y-4">
         <CalcCard
           title="Paramètres généraux"

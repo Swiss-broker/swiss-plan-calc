@@ -32,6 +32,7 @@ import {
 } from "@/lib/overtime-fr";
 import { exportOvertimePdf } from "@/lib/pdf/reports";
 import { usePrefillFromClient, useHydrateFormFromPrefill } from "@/hooks/usePrefillFromClient";
+import { CrossCalcImpactBanner } from "@/components/calculators/CrossCalcImpactBanner";
 
 const searchSchema = z.object({
   clientId: fallback(z.string().uuid().optional(), undefined),
@@ -74,6 +75,7 @@ function OvertimeCalc() {
 
   return (
     <div className="grid grid-cols-1 gap-6 md:grid-cols-5">
+      <div className="md:col-span-5"><CrossCalcImpactBanner calculator="overtime" clientId={clientId} /></div>
       {client && (
         <div className="md:col-span-5">
           <ClientLinkBanner client={client} />
