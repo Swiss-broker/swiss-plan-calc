@@ -29,7 +29,9 @@ export function DirectorLppBuybackCard({
   initialMaxBuyback,
 }: Props) {
   const inputs = best.inputs;
-  const grossSalary = best.company.grossSalary;
+  const initialGrossSalary = best.company.grossSalary;
+  const [grossSalary, setGrossSalary] = useState<number>(initialGrossSalary);
+  const salaryEdited = grossSalary !== initialGrossSalary;
   const insuredCap =
     inputs.lppPlan === "executive_1e" ? LPP_2026.oneEPlanCap : LPP_2026.maxInsuredSalary;
   const insuredSalary = useMemo(
