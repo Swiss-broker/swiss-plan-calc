@@ -3,8 +3,9 @@
 // canton-compare, AVS/AI). Affiche deux colonnes côte à côte (empilées en
 // mobile) avec un bandeau de synthèse en bas : économie annuelle, gain
 // retraite, % d'amélioration.
-import type { ReactNode } from "react";
-import { ArrowRight, TrendingUp, TrendingDown, Minus, Sparkles } from "lucide-react";
+import { useState, type ReactNode } from "react";
+import { ArrowRight, TrendingUp, TrendingDown, Minus, Sparkles, ChevronDown, ChevronUp } from "lucide-react";
+
 import { cn } from "@/lib/utils";
 import { formatCHF, formatPct } from "@/lib/format";
 import { Badge } from "@/components/ui/badge";
@@ -19,7 +20,12 @@ export interface SplitRow {
   /** "higher_is_better" (défaut) ou "lower_is_better", pilote la couleur du delta. */
   betterWhen?: "higher" | "lower" | "neutral";
   hint?: string;
+  /** Identifiant stable pour relier les deux colonnes (expand synchronisé). */
+  id?: string;
+  /** Contenu détaillé affiché quand la pastille est cliquée (panneau sous la ligne). */
+  breakdown?: ReactNode;
 }
+
 
 export interface SplitSummary {
   /** Économie annuelle en CHF (positive = bon). */
@@ -109,6 +115,10 @@ export function SplitCompareLayout({
   projectedExtra,
   className,
 }: Props) {
+  const [expanded, setExpanded] = useState<Record<string, boolean>>({});
+  const toggle = (id: string) =>
+    setExpanded((e) => ({ ...e, [id]: !e[id] }));
+
   return (
     <div className={cn("space-y-4", className)}>
       {(title || description || legend) && (
@@ -154,6 +164,7 @@ export function SplitCompareLayout({
               </div>
             ))}
           </div>
+
           {currentExtra && <div className="mt-3">{currentExtra}</div>}
         </div>
 
@@ -175,39 +186,77 @@ export function SplitCompareLayout({
           </div>
           <div className="space-y-2">
             {rows.map((r, i) => {
+              const id = r.id ?? `row-${i}`;
+              const isOpen = !!expanded[id];
               const delta = computeDelta(r);
+              const canExpand = !!r.breakdown && !!delta && delta.value !== 0;
               return (
-                <div
-                  key={`proj-${i}`}
-                  className="flex items-baseline justify-between gap-3 border-b border-success/20 pb-1.5 last:border-0 last:pb-0"
-                >
-                  <span className="text-xs text-foreground/70">{r.label}</span>
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm font-semibold tabular-nums">
-                      {formatValue(r.projected, r.format)}
-                    </span>
-                    {delta && delta.value !== 0 && (
-                      <span
-                        className={cn(
-                          "inline-flex items-center gap-0.5 rounded px-1.5 py-0.5 text-[10px] font-semibold tabular-nums",
-                          delta.tone === "good"
-                            ? "bg-success/20 text-success"
-                            : delta.tone === "bad"
-                              ? "bg-destructive/15 text-destructive"
-                              : "bg-muted text-muted-foreground",
-                        )}
-                      >
-                        {delta.tone === "good" ? (
-                          <TrendingUp className="h-2.5 w-2.5" />
-                        ) : delta.tone === "bad" ? (
-                          <TrendingDown className="h-2.5 w-2.5" />
-                        ) : (
-                          <Minus className="h-2.5 w-2.5" />
-                        )}
-                        {delta.label}
+                <div key={`proj-${i}`} className="space-y-1">
+                  <div className="flex items-baseline justify-between gap-3 border-b border-success/20 pb-1.5">
+                    <span className="text-xs text-foreground/70">{r.label}</span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-semibold tabular-nums">
+                        {formatValue(r.projected, r.format)}
                       </span>
-                    )}
+                      {delta && delta.value !== 0 ? (
+                        canExpand ? (
+                          <button
+                            type="button"
+                            onClick={() => toggle(id)}
+                            className={cn(
+                              "inline-flex items-center gap-0.5 rounded px-1.5 py-0.5 text-[10px] font-semibold tabular-nums transition-colors",
+                              delta.tone === "good"
+                                ? "bg-success/20 text-success hover:bg-success/30"
+                                : delta.tone === "bad"
+                                  ? "bg-destructive/15 text-destructive hover:bg-destructive/25"
+                                  : "bg-muted text-muted-foreground hover:bg-muted/70",
+                            )}
+                            aria-expanded={isOpen}
+                            title="Voir le détail des causes"
+                          >
+                            {delta.tone === "good" ? (
+                              <TrendingUp className="h-2.5 w-2.5" />
+                            ) : delta.tone === "bad" ? (
+                              <TrendingDown className="h-2.5 w-2.5" />
+                            ) : (
+                              <Minus className="h-2.5 w-2.5" />
+                            )}
+                            {delta.label}
+                            {isOpen ? (
+                              <ChevronUp className="ml-0.5 h-2.5 w-2.5" />
+                            ) : (
+                              <ChevronDown className="ml-0.5 h-2.5 w-2.5" />
+                            )}
+                          </button>
+                        ) : (
+                          <span
+                            className={cn(
+                              "inline-flex items-center gap-0.5 rounded px-1.5 py-0.5 text-[10px] font-semibold tabular-nums",
+                              delta.tone === "good"
+                                ? "bg-success/20 text-success"
+                                : delta.tone === "bad"
+                                  ? "bg-destructive/15 text-destructive"
+                                  : "bg-muted text-muted-foreground",
+                            )}
+                          >
+                            {delta.tone === "good" ? (
+                              <TrendingUp className="h-2.5 w-2.5" />
+                            ) : delta.tone === "bad" ? (
+                              <TrendingDown className="h-2.5 w-2.5" />
+                            ) : (
+                              <Minus className="h-2.5 w-2.5" />
+                            )}
+                            {delta.label}
+                          </span>
+                        )
+                      ) : null}
+                    </div>
                   </div>
+                  {r.breakdown && isOpen && (
+                    <div className="rounded-md border border-success/20 bg-background/70 p-2 text-[11px] text-foreground/80">
+                      {r.breakdown}
+                    </div>
+                  )}
                 </div>
               );
             })}
@@ -221,6 +270,7 @@ export function SplitCompareLayout({
           </div>
         </div>
       </div>
+
 
       {/* Bandeau synthèse */}
       {summary && (summary.annualSaving !== undefined || summary.retirementGain !== undefined || summary.deltaPercent !== undefined) && (

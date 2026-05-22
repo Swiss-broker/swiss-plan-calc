@@ -9,8 +9,8 @@
 //   marginal. La liste des champs modifiés est affichée pour rendre
 //   l'impact compréhensible.
 
-import { useEffect, useMemo, useRef, useState } from "react";
-import { Camera, RotateCcw } from "lucide-react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { Camera, RotateCcw, ArrowRight as ArrowRightIcon } from "lucide-react";
 
 import { CalcCard } from "@/components/calculators/CalcUI";
 import {
@@ -18,10 +18,16 @@ import {
   type SplitRow,
 } from "@/components/calculators/SplitCompareLayout";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+
 import { formatCHF } from "@/lib/format";
 import { computeTaxGlobal } from "@/lib/tax-global/engine";
+import {
+  computeFieldSensitivities,
+  type FieldSensitivity,
+  type PostBreakdown,
+} from "@/lib/tax-global/sensitivities";
 import type { TaxGlobalInput, TaxGlobalResult } from "@/lib/tax-global/types";
+
 
 interface Props {
   form: TaxGlobalInput;
@@ -156,74 +162,152 @@ export function TaxGlobalCompareCard({ form, result, clientId }: Props) {
   const diffs = useMemo(() => diffForms(baseline, form), [baseline, form]);
   const hasChanges = diffs.length > 0;
 
+  // Sensibilités : impact isolé de chaque champ sur chaque poste fiscal.
+  const sensitivities = useMemo<FieldSensitivity[]>(() => {
+    if (!hasChanges) return [];
+    return computeFieldSensitivities(
+      baseline,
+      form,
+      diffs.map((d) => d.key),
+    );
+  }, [baseline, form, diffs, hasChanges]);
+
   const ifdRow = (r: TaxGlobalResult): number =>
     r.income ? r.income.ifd : r.crossBorder?.swissTax ?? r.source?.annualTax ?? 0;
   const cantonalRow = (r: TaxGlobalResult): number =>
     r.income ? r.income.cantonal + r.income.communal : 0;
   const wealthRow = (r: TaxGlobalResult): number => r.income?.wealthTax ?? 0;
 
+  // Helper : rend le panneau de causes pour un poste donné.
+  const buildBreakdown = (postKey: keyof PostBreakdown): ReactNode => {
+    if (sensitivities.length === 0) return null;
+    const items = sensitivities
+      .map((s) => ({
+        key: s.key,
+        label: FIELD_LABEL[s.key] ?? String(s.key),
+        impact: s.delta[postKey],
+      }))
+      .filter((it) => typeof it.impact === "number");
+    const significant = items.filter((it) => Math.abs(Number(it.impact)) >= 1);
+    if (significant.length === 0) {
+      return (
+        <div className="text-muted-foreground">
+          Aucun des champs modifiés n'agit directement sur cette ligne.
+        </div>
+      );
+    }
+    significant.sort(
+      (a, b) => Math.abs(Number(b.impact)) - Math.abs(Number(a.impact)),
+    );
+    const isRate = postKey === "effectiveRate" || postKey === "marginalRate";
+    return (
+      <ul className="space-y-1">
+        {significant.map((it) => {
+          const val = Number(it.impact);
+          const pos = val > 0;
+          const formatted = isRate
+            ? `${pos ? "+" : "−"}${Math.abs(val).toFixed(2)} pt`
+            : `${pos ? "+" : "−"}${formatCHF(Math.abs(val))}`;
+          return (
+            <li
+              key={String(it.key)}
+              className="flex items-center justify-between gap-3"
+            >
+              <span className="text-foreground/80">{it.label}</span>
+              <span
+                className={
+                  (pos
+                    ? "text-destructive"
+                    : "text-success") + " font-semibold tabular-nums"
+                }
+              >
+                {formatted}
+              </span>
+            </li>
+          );
+        })}
+      </ul>
+    );
+  };
+
   const rows: SplitRow[] = [
     {
+      id: "total",
       label: "Impôt total annuel",
       current: baselineResult.totalTaxCHF,
       projected: result.totalTaxCHF,
       betterWhen: "lower",
+      breakdown: buildBreakdown("total"),
     },
     {
+      id: "ifd",
       label: "Impôt fédéral / source CH",
       current: ifdRow(baselineResult),
       projected: ifdRow(result),
       betterWhen: "lower",
+      breakdown: buildBreakdown("ifd"),
     },
     ...(cantonalRow(baselineResult) > 0 || cantonalRow(result) > 0
       ? [
           {
+            id: "cantonalCommunal",
             label: "Cantonal + communal",
             current: cantonalRow(baselineResult),
             projected: cantonalRow(result),
             betterWhen: "lower" as const,
+            breakdown: buildBreakdown("cantonalCommunal"),
           },
         ]
       : []),
     ...(wealthRow(baselineResult) > 0 || wealthRow(result) > 0
       ? [
           {
+            id: "wealth",
             label: "Impôt sur la fortune",
             current: wealthRow(baselineResult),
             projected: wealthRow(result),
             betterWhen: "lower" as const,
+            breakdown: buildBreakdown("wealth"),
           },
         ]
       : []),
     ...(baselineResult.socialChargesCHF > 0 || result.socialChargesCHF > 0
       ? [
           {
+            id: "health",
             label: "Charges santé (LAMal / CMU)",
             current: baselineResult.socialChargesCHF,
             projected: result.socialChargesCHF,
             betterWhen: "lower" as const,
+            breakdown: buildBreakdown("health"),
           },
         ]
       : []),
     {
+      id: "net",
       label: "Net annuel disponible",
       current: baselineResult.netAnnualCHF,
       projected: result.netAnnualCHF,
       betterWhen: "higher",
+      breakdown: buildBreakdown("net"),
     },
     {
+      id: "effectiveRate",
       label: "Taux effectif",
       current: baselineResult.effectiveRate / 100,
       projected: result.effectiveRate / 100,
       format: "pct",
       betterWhen: "lower",
+      breakdown: buildBreakdown("effectiveRate"),
     },
     {
+      id: "marginalRate",
       label: "Taux marginal",
       current: baselineResult.marginalRate / 100,
       projected: result.marginalRate / 100,
       format: "pct",
       betterWhen: "lower",
+      breakdown: buildBreakdown("marginalRate"),
     },
   ];
 
@@ -242,11 +326,13 @@ export function TaxGlobalCompareCard({ form, result, clientId }: Props) {
     result.regime === "cross_border_other";
 
   return (
-    <CalcCard title="Comparateur fiscal · Avant / Après">
+    <CalcCard
+      title={`Comparateur fiscal · Avant / Après${hasChanges ? ` · ${diffs.length} modification${diffs.length > 1 ? "s" : ""}` : ""}`}
+    >
       <p className="mb-3 text-xs text-muted-foreground">
         Comparez la situation de référence (base figée) avec la situation
-        simulée en direct. Toute modification du formulaire (rachat LPP, 3a,
-        canton, permis, statut, frontalier…) fait bouger la colonne « Après ».
+        simulée en direct. Cliquez sur une pastille verte ou rouge pour voir
+        quels champs précis ont produit l'écart.
       </p>
 
       {/* Barre d'actions base */}
@@ -274,49 +360,68 @@ export function TaxGlobalCompareCard({ form, result, clientId }: Props) {
             Réinitialiser la base
           </Button>
         )}
-        <Badge variant="outline" className="ml-auto text-[10px]">
-          {hasChanges
-            ? `${diffs.length} modification${diffs.length > 1 ? "s" : ""} simulée${diffs.length > 1 ? "s" : ""}`
-            : "Aucune modification simulée"}
-        </Badge>
       </div>
 
-      {/* Liste des changements */}
+      {/* Liste des changements - grille tabulaire propre */}
       {hasChanges ? (
-        <div className="mb-4 rounded-md border border-primary/30 bg-primary/5 p-3">
-          <div className="mb-2 text-xs font-semibold text-primary">
+        <div className="mb-4 overflow-hidden rounded-lg border border-primary/30 bg-primary/5">
+          <div className="border-b border-primary/20 bg-primary/10 px-3 py-2 text-xs font-semibold text-primary">
             Changements simulés
           </div>
-          <ul className="space-y-1 text-xs">
+          <div className="divide-y divide-primary/10">
+            {/* En-tête colonnes */}
+            <div className="grid grid-cols-[1.2fr_1fr_auto_1fr_auto] items-center gap-3 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+              <div>Champ</div>
+              <div className="text-right">Avant</div>
+              <div />
+              <div className="text-right">Après</div>
+              <div className="text-right">Δ</div>
+            </div>
             {diffs.map((d) => (
-              <li key={String(d.key)} className="flex flex-wrap items-baseline gap-2">
-                <span className="font-medium text-foreground">{d.label} :</span>
-                <span className="text-muted-foreground line-through">{d.before}</span>
-                <span className="text-foreground">→ {d.after}</span>
-                {typeof d.delta === "number" && d.delta !== 0 && (
-                  <span
-                    className={
-                      d.delta > 0
-                        ? "rounded bg-success/15 px-1.5 text-[10px] font-semibold text-success"
-                        : "rounded bg-destructive/15 px-1.5 text-[10px] font-semibold text-destructive"
-                    }
-                  >
-                    {d.delta > 0 ? "+" : "−"}
-                    {formatCHF(Math.abs(d.delta))}
-                  </span>
-                )}
-              </li>
+              <div
+                key={String(d.key)}
+                className="grid grid-cols-[1.2fr_1fr_auto_1fr_auto] items-center gap-3 px-3 py-1.5 text-xs"
+              >
+                <div className="font-medium text-foreground">{d.label}</div>
+                <div className="text-right tabular-nums text-muted-foreground">
+                  {d.before}
+                </div>
+                <ArrowRightIcon className="h-3 w-3 text-muted-foreground/60" />
+                <div className="text-right font-semibold tabular-nums text-foreground">
+                  {d.after}
+                </div>
+                <div className="text-right">
+                  {typeof d.delta === "number" && d.delta !== 0 ? (
+                    <span
+                      className={
+                        (d.delta > 0
+                          ? "bg-success/15 text-success"
+                          : "bg-destructive/15 text-destructive") +
+                        " rounded px-1.5 py-0.5 text-[10px] font-semibold tabular-nums"
+                      }
+                    >
+                      {d.delta > 0 ? "+" : "−"}
+                      {formatCHF(Math.abs(d.delta))}
+                    </span>
+                  ) : (
+                    <span className="text-[10px] text-muted-foreground">—</span>
+                  )}
+                </div>
+              </div>
             ))}
             {regimeChanged && (
-              <li className="flex flex-wrap items-baseline gap-2 pt-1">
-                <span className="font-medium text-foreground">Régime fiscal :</span>
-                <span className="text-muted-foreground line-through">
+              <div className="grid grid-cols-[1.2fr_1fr_auto_1fr_auto] items-center gap-3 bg-primary/10 px-3 py-1.5 text-xs">
+                <div className="font-semibold text-primary">Régime fiscal</div>
+                <div className="text-right tabular-nums text-muted-foreground">
                   {baselineResult.regimeLabel}
-                </span>
-                <span className="text-foreground">→ {result.regimeLabel}</span>
-              </li>
+                </div>
+                <ArrowRightIcon className="h-3 w-3 text-primary/60" />
+                <div className="col-span-2 text-right font-semibold tabular-nums text-primary">
+                  {result.regimeLabel}
+                </div>
+              </div>
             )}
-          </ul>
+          </div>
         </div>
       ) : (
         <div className="mb-4 rounded-md border border-dashed border-border bg-muted/30 p-3 text-xs text-muted-foreground">
@@ -325,6 +430,8 @@ export function TaxGlobalCompareCard({ form, result, clientId }: Props) {
           voir son impact ici.
         </div>
       )}
+
+
 
       {needsTou && hasChanges && (
         <div className="mb-3 rounded-md border border-amber-500/40 bg-amber-500/5 p-3 text-xs text-amber-800 dark:text-amber-300">

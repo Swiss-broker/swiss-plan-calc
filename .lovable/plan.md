@@ -1,141 +1,66 @@
-Le mieux, c’est de changer complètement la logique du bloc “Actuel vs Projeté”.
+Deux objectifs : relier chaque pastille de delta à la cause concrète, et nettoyer le visuel de la section.
 
-Aujourd’hui, “Actuel” et “Projeté” ne sont pas assez clairs parce que la situation actuelle contient déjà une partie des champs que l’utilisateur saisit. Donc si tu mets un rachat LPP de 20’000 CHF, ce montant peut déjà être considéré comme “actuel”, et le projeté n’a plus grand-chose à comparer.
+## 1. Relier chaque pastille verte / rouge à ses causes
 
-Je propose donc cette logique plus claire :
-
-```text
-Situation actuelle = la situation de départ figée
-Situation projetée = la situation en direct avec les changements saisis
-Différence = impact réel de ce que l’utilisateur vient de modifier
-```
-
-## Plan proposé
-
-### 1. Refaire la définition du comparateur
-
-Le comparateur fiscal global deviendra un vrai comparateur “avant / après”.
-
-- “Situation actuelle” = snapshot de départ quand on ouvre le calculateur ou quand la fiche client est chargée.
-- “Situation projetée” = les valeurs actuellement saisies dans le formulaire.
-- Si l’utilisateur modifie le rachat LPP, le 3a, la santé, le canton, le permis, le statut frontalier ou les revenus, la colonne projetée bouge immédiatement.
-
-Résultat attendu : si tu mets un rachat LPP de 20’000 CHF, on voit directement l’impact par rapport à la situation avant rachat.
-
-### 2. Ajouter un bouton “Définir comme situation actuelle”
-
-Pour éviter toute ambiguïté, le courtier pourra figer la situation actuelle à n’importe quel moment.
-
-Exemple :
+Chaque ligne du comparateur (Impôt fédéral, Cantonal + communal, Charges santé, Net annuel, Taux effectif, Taux marginal) deviendra cliquable / survolable. La pastille de delta ouvrira une mini‑explication structurée :
 
 ```text
-1. Je saisis la situation réelle du client
-2. Je clique “Définir comme situation actuelle”
-3. Je teste un rachat LPP, un 3a, une TOU ou un changement de canton
-4. Le comparateur affiche l’impact exact
+Impôt fédéral    CHF 8'940   −CHF 1'665
+└─ causes :
+   • Rachat LPP +20'000 CHF       → −CHF 1'420 (déduction directe)
+   • 3e pilier A +2'258 CHF       → −CHF 245  (déduction directe)
+   • Salaire brut +14'000 CHF     → +CHF 0    (compensé par déductions)
 ```
 
-### 3. Renommer les colonnes pour supprimer le flou
+Mécanique : pour chaque champ modifié, on lance un calcul incrémental qui isole sa contribution à la ligne concernée (méthode des sensibilités : on applique le champ seul sur la base et on mesure l'écart par poste — IFD, cantonal+communal, fortune, charges santé, net, taux). Les champs sans effet sur cette ligne précise sont masqués.
 
-Remplacer :
+Tooltip ou panneau dépliable selon la place : on partira sur un panneau dépliable juste sous le tableau (mobile‑friendly), avec un bouton « voir le détail » à côté de chaque pastille.
+
+Ajout d'un mapping champ → poste fiscal impacté :
 
 ```text
-Situation actuelle
-Situation projetée
+3a, rachat LPP, primes santé, dons, frais garde
+   → IFD + cantonal + communal (déductions du revenu)
+Fortune nette
+   → Impôt sur la fortune uniquement
+LAMal/CMU, primes santé (frontalier)
+   → Charges santé
+Salaires, bonus, autres revenus
+   → IFD + cantonal + communal + net annuel + taux
+Canton, permis, statut civil, confession
+   → barème entier (toutes lignes)
 ```
 
-par quelque chose de plus explicite :
+## 2. Nettoyer la section « Changements simulés »
+
+Supprimer le `line-through` et passer à une grille en colonnes alignées, façon tableau léger :
 
 ```text
-Base de comparaison
-Situation simulée
+Champ              Avant       Après        Δ
+Salaire brut       120'000     134'000      +14'000
+3e pilier A        0           7'258        +7'258
+Nombre d'enfants   0           2            +2
+Pays résidence     CH          FR           —
+Permis             swiss       B            —
 ```
 
-ou :
+Détails visuels :
 
-```text
-Avant modification
-Après modification
-```
+- Colonnes alignées (grid `auto 1fr 1fr auto`), tabular‑nums.
+- « Avant » en gris doux, « Après » en foreground normal, sans barré.
+- Delta dans une pastille fine à droite : verte si baisse d'impôt attendue (rachat LPP, 3a, dons, primes…), rouge si hausse de revenu, neutre (gris) pour les champs catégoriels.
+- Ligne « Régime fiscal » mise en évidence (badge bleu, pleine largeur) car c'est un changement structurel, pas une simple variation.
+- Compteur de modifications déplacé en titre de la carte au lieu du badge en haut à droite.
 
-Je recommande “Avant modification” et “Après modification”, c’est le plus compréhensible.
+## 3. Cohérence avec le bloc « Pourquoi l'écart reste à zéro »
 
-### 4. Afficher ce qui a réellement changé
+- Quand un champ a un effet nul, on garde l'explication champ par champ existante mais on la relie à la même mécanique : la ligne du tableau et la pastille pointent vers la même raison.
+- Si toutes les pastilles sont neutres, on masque le bloc des sensibilités et on n'affiche que les causes transverses (accord 1983, source sans TOU, etc.).
 
-Ajouter un bloc juste au-dessus ou sous le comparateur :
+## Détails techniques
 
-```text
-Changements simulés
-Rachat LPP : +20’000 CHF
-3e pilier A : +7’258 CHF
-Régime fiscal : Source → TOU
-Santé : CMU → LAMal
-```
-
-S’il n’y a aucun changement, afficher :
-
-```text
-Aucune modification simulée. Modifiez un champ ou appliquez une optimisation pour voir l’impact.
-```
-
-### 5. Afficher l’impact par niveau fiscal
-
-Le comparateur doit dire précisément où l’effet se produit :
-
-- Impôt fédéral
-- Impôt cantonal et communal
-- Impôt à la source
-- TOU ou rectification IS
-- Charges santé CMU / LAMal
-- Net annuel disponible
-- Taux effectif
-- Taux marginal
-
-Ainsi, on ne montre pas seulement “CHF 0”, on explique pourquoi ça bouge ou pourquoi ça ne bouge pas.
-
-### 6. Garder les optimisations détectées, mais séparées
-
-Les recommandations automatiques doivent rester, mais elles ne doivent plus être confondues avec le comparateur principal.
-
-Je propose deux zones :
-
-```text
-Comparateur avant / après
-= impact de ce que l’utilisateur saisit maintenant
-
-Optimisations détectées
-= autres pistes possibles : 3a max, rachat LPP, TOU, permis C, CMU/LAMal, don, etc.
-```
-
-Chaque optimisation détectée pourra avoir un bouton du type :
-
-```text
-Appliquer au scénario simulé
-```
-
-Comme ça, l’utilisateur comprend : “si j’applique cette optimisation, voilà ce que ça change”.
-
-### 7. Corriger les cas où l’écart reste à zéro
-
-Quand l’économie est nulle, afficher une explication directe selon le cas :
-
-- Le rachat LPP est déjà dans la base de comparaison.
-- La TOU ou rectification IS n’est pas avantageuse.
-- Le client est sous accord franco-suisse 1983, donc les déductions suisses ne changent pas l’impôt.
-- La capacité de rachat LPP n’est pas renseignée.
-- Le plafond 3a est déjà atteint.
-- Le changement affecte les charges santé mais pas l’impôt.
-
-## Résultat final attendu
-
-Le calculateur fiscal global deviendra lisible comme ça :
-
-```text
-Avant modification : impôt total CHF 10’605
-Après modification : impôt total CHF 8’940
-Économie : CHF 1’665
-Cause : rachat LPP +20’000 CHF
-Impact : baisse de l’impôt fédéral + cantonal/communal
-```
-
-C’est cette approche que je recommande, parce qu’elle répond exactement au besoin : chaque modification doit avoir un endroit clair où son impact apparaît.
+- Nouveau helper `computeFieldSensitivities(baseline, current)` dans `src/lib/tax-global/sensitivities.ts` : pour chaque champ modifié, recalcule `computeTaxGlobal` avec ce champ seul appliqué sur la base, et renvoie l'écart par poste (`ifd`, `cantonalCommunal`, `wealth`, `health`, `net`, `effectiveRate`, `marginalRate`).
+- Extension de `SplitRow` (`src/components/calculators/SplitCompareLayout.tsx`) avec un champ optionnel `breakdown?: ReactNode` rendu sous la ligne quand l'utilisateur clique sur la pastille.
+- Refonte du bloc « Changements simulés » dans `src/components/calculators/TaxGlobalCompareCard.tsx` en grille tabulaire, sans `line-through`.
+- Aucune modification des moteurs de calcul (`tax/income`, `tax/source`, `tax/cross-border`, `health-france`) : on réutilise `computeTaxGlobal` en boîte noire.
+- Performance : 1 calcul de base + 1 calcul par champ modifié (typique < 10), mémoisé via `useMemo` sur `(baseline, form)`.
