@@ -396,7 +396,15 @@ function DirectorCompensationCalc() {
                         <SelectItem value="executive_1e">{t("calc.dir.lpp.executive")}</SelectItem>
                       </SelectContent>
                     </Select>
+                    {inputs.lppPlan === "executive_1e" && (
+                      <p className="rounded-md border border-primary/30 bg-primary/5 p-2 text-[11px] leading-snug text-foreground/80">
+                        <strong>Plan cadre 1e</strong> — prévoyance surobligatoire pour salaires
+                        élevés. Plus grande flexibilité d'investissement et optimisation fiscale,
+                        mais niveau de risque supérieur selon la stratégie choisie.
+                      </p>
+                    )}
                   </div>
+
                 </div>
                 <div className="flex items-center justify-between rounded-lg border border-border bg-muted/30 p-3">
                   <div className="space-y-0.5">
