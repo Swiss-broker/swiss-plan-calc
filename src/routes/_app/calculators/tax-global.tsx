@@ -26,6 +26,7 @@ import { Badge } from "@/components/ui/badge";
 import { Pillar3bInfoTile } from "@/components/optimizer/OptimizationsPanel";
 import { SaveSimulationButton } from "@/components/calculators/SaveSimulationButton";
 import { TaxGlobalExplanation } from "@/components/calculators/TaxGlobalExplanation";
+import { TaxGlobalCompareCard } from "@/components/calculators/TaxGlobalCompareCard";
 
 import { CANTONS } from "@/lib/swiss/cantons";
 import { formatCHF } from "@/lib/format";
