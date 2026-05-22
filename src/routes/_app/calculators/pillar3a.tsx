@@ -357,6 +357,35 @@ function Pillar3aCalc() {
         </div>
       )}
 
+      {/* Champ « 3b cible » éditable, juste au-dessus du comparateur. */}
+      <div className="flex flex-wrap items-end gap-3 rounded-xl border border-border bg-card/50 p-3">
+        <div className="flex-1 min-w-[200px]">
+          <Label className="text-xs font-medium text-muted-foreground">
+            🎯 3b cible (CHF/an) — colonne projetée
+          </Label>
+          <BaseNumField
+            value={String(target3bYearly)}
+            onChange={(v) => setTarget3bOverride(Number(v) || 0)}
+          />
+          <p className="mt-1 text-[11px] text-muted-foreground">
+            Suggéré automatiquement : <strong>{auto3bTarget.toLocaleString("fr-CH")} CHF/an</strong>
+            {form.pillar3bYearly < 3_000
+              ? " (3b actuel < 3 000 → cible de départ 6 000)"
+              : " (versement actuel × 1,5, plafonné à 10 000)"}
+            . Modifiez pour ajuster la projection.
+          </p>
+        </div>
+        {target3bOverride !== null && target3bOverride !== auto3bTarget && (
+          <button
+            type="button"
+            onClick={() => setTarget3bOverride(null)}
+            className="rounded-md border border-border bg-background px-3 py-2 text-xs font-medium hover:bg-muted"
+          >
+            ↺ Auto
+          </button>
+        )}
+      </div>
+
       <SplitCompareLayout
         title="Actuel vs Projeté — Prévoyance privée totale (3a + 3b)"
         description={
@@ -364,11 +393,22 @@ function Pillar3aCalc() {
             ? `3a déjà au max (${max.toLocaleString("fr-CH")} CHF). Projection = 3b cible (${target3bYearly.toLocaleString("fr-CH")} CHF/an) + retrait fractionné.`
             : `3a au plafond (${max.toLocaleString("fr-CH")} CHF), 3b cible ${target3bYearly.toLocaleString("fr-CH")} CHF/an et retrait fractionné sur ${Math.max(2, form.withdrawalAccounts)} comptes.`
         }
+        legend={
+          <>
+            💡 Les <strong className="text-success">petites pastilles vertes</strong> à droite de chaque ligne montrent l'écart projeté – actuel (ex.{" "}
+            <span className="font-mono">+1 500 CHF</span> = vous cotiseriez 1 500 de plus). Le 3b n'étant pas déductible du revenu, il n'apparaît pas dans l'économie d'impôt annuelle.
+          </>
+        }
         currentSubtitle={client ? "Données fiche client" : "Valeurs saisies"}
         projectedSubtitle="3a max + 3b cible + retrait fractionné"
         rows={compareRows}
         summary={{
-          annualSaving: optimizedSavings.taxSavings - savings.taxSavings,
+          annualSaving: isMaxed
+            ? taxStaggeredProjected.totalTaxSingle - taxStaggeredProjected.totalTaxSeparated
+            : optimizedSavings.taxSavings - savings.taxSavings,
+          annualSavingLabel: isMaxed
+            ? "Économie d'impôt au retrait (fractionnement)"
+            : "Économie d'impôt annuelle (3a)",
           retirementGain: projectedNetAfterTax - currentNetAfterTax,
           retirementGainLabel: "Capital net supplémentaire (après impôt de sortie)",
           deltaPercent:
@@ -376,6 +416,15 @@ function Pillar3aCalc() {
               ? (projectedNetAfterTax - currentNetAfterTax) / currentNetAfterTax
               : 0,
           deltaLabel: "Capital net total",
+          footnote: (
+            <>
+              <strong>D'où vient le gain ?</strong> Capital 3a supplémentaire :{" "}
+              {(optimizedProjection.finalBalance - projection.finalBalance).toLocaleString("fr-CH")} CHF · Capital 3b supplémentaire :{" "}
+              {(optimized3bFinal - current3bFinal).toLocaleString("fr-CH")} CHF · Impôt en moins au retrait (fractionnement) :{" "}
+              {(taxLumpCurrent.totalTaxSingle - taxStaggeredProjected.totalTaxSeparated).toLocaleString("fr-CH")} CHF.
+              {isMaxed && " Votre 3a est déjà au maximum légal → le gain provient uniquement du 3b + du fractionnement des retraits."}
+            </>
+          ),
         }}
       />
 
