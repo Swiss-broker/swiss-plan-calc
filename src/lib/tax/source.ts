@@ -1,7 +1,7 @@
 // Impôt à la source 2026 · barèmes A/B/C/H + L (quasi-résident).
 // Calibrage 2026 sur barèmes officiels romands.
 //
-// === V2 — règle clé pour le barème C (couple double revenu) ===
+// === V2, règle clé pour le barème C (couple double revenu) ===
 //
 // Pour le barème C, la retenue sur le salaire d'un contribuable est calculée
 // au TAUX correspondant au REVENU MENSUEL COMBINÉ du ménage (revenu propre
@@ -19,7 +19,7 @@ export type SourceScale = "A" | "B" | "C" | "H";
 export interface SourceTaxOptions {
   /** Salaire brut mensuel CHF du contribuable (incl. 13e au prorata) */
   monthlyGross: number;
-  /** Salaire brut mensuel CHF du conjoint — utilisé uniquement pour le barème C */
+  /** Salaire brut mensuel CHF du conjoint, utilisé uniquement pour le barème C */
   spouseMonthlyGross?: number;
   /** Code canton (ex "GE") */
   canton: string;
@@ -34,7 +34,7 @@ export interface SourceTaxOptions {
 }
 
 export interface SourceTaxResult {
-  /** Taux moyen appliqué (%) — sur le revenu propre */
+  /** Taux moyen appliqué (%), sur le revenu propre */
   rate: number;
   /** Impôt mensuel CHF */
   monthlyTax: number;
@@ -89,7 +89,7 @@ function baseRateGE(monthlyGross: number, scale: SourceScale): number {
     return Math.min(32, 25 + (g - 25_000) * 0.00025);
   }
 
-  // Barème C · marié biactif — `g` est ici le REVENU MENSUEL COMBINÉ
+  // Barème C · marié biactif, `g` est ici le REVENU MENSUEL COMBINÉ
   if (scale === "C") {
     if (g < 4_500) return 1.5;
     if (g < 7_000) return 3 + ((g - 4_500) / 2_500) * 4; // 3 → 7

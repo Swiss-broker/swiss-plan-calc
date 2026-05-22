@@ -50,7 +50,7 @@ export function TaxGlobalExplanation({ form, result, client }: Props) {
 
         <CollapsibleContent className="mt-4 space-y-5">
           {/* 1. Régime détecté */}
-          <Section icon={<BookOpen className="h-4 w-4" />} title="1. Régime détecté — pourquoi">
+          <Section icon={<BookOpen className="h-4 w-4" />} title="1. Régime détecté, pourquoi">
             <div className="rounded-md border bg-muted/30 p-3 text-sm">
               <div className="font-semibold">{result.regimeLabel}</div>
               <p className="mt-1 text-muted-foreground">{trace?.regimeReason}</p>

@@ -390,7 +390,7 @@ function numOrUndef(v: number | string | null | undefined): number | undefined {
   return Number.isFinite(n) ? n : undefined;
 }
 
-/** Retire les undefined d'un objet — utile pour merger sans écraser des défauts. */
+/** Retire les undefined d'un objet, utile pour merger sans écraser des défauts. */
 export function stripUndefined<T extends Record<string, unknown>>(o: T): Partial<T> {
   const out: Partial<T> = {};
   for (const k of Object.keys(o) as Array<keyof T>) {

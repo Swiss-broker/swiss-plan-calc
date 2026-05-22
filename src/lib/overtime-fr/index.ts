@@ -1,4 +1,4 @@
-// Heures supplémentaires — méthode officielle française 2026 pour frontaliers.
+// Heures supplémentaires, méthode officielle française 2026 pour frontaliers.
 //
 // Méthode :
 //   1. heures_annuelles      = heures_hebdo × 52

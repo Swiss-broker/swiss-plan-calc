@@ -1,4 +1,4 @@
-// Orchestrateur — appelle les moteurs existants selon le régime détecté.
+// Orchestrateur, appelle les moteurs existants selon le régime détecté.
 // AUCUN calcul n'est réécrit : on délègue à income/source/cross-border/tou/health-france.
 
 import { computeIncomeTax, type IncomeTaxInput } from "@/lib/tax/income";
@@ -109,7 +109,7 @@ export function computeTaxGlobal(g: TaxGlobalInput): TaxGlobalResult {
     const gross = computeGrossForRegime(g, det.regime);
     // Pas d'estimation LAMal automatique pour résident : les primes sont déjà
     // déductibles via `healthInsurancePremiums` (forfait cantonal). Afficher une
-    // estimation séparée serait trompeur — laissé à 0, le net cash reste cohérent.
+    // estimation séparée serait trompeur, laissé à 0, le net cash reste cohérent.
     const lamal = 0;
     if (g.foreignIncome > 0) {
       notes.push(
@@ -205,7 +205,7 @@ export function computeTaxGlobal(g: TaxGlobalInput): TaxGlobalResult {
 
     // Règle d'affichage : on prend le MIN entre source et ordinaire avec
     // déductions, peu importe l'éligibilité TOU. Le courtier veut voir
-    // l'effet d'une déduction simulée même hors quasi-résident — la note
+    // l'effet d'une déduction simulée même hors quasi-résident, la note
     // précise la démarche requise (TOU si éligible, rectification IS sinon).
     const useOrdinary = touComparison.ordinaryTax < source.annualTax;
     const total = useOrdinary ? touComparison.ordinaryTax : source.annualTax;
@@ -216,12 +216,12 @@ export function computeTaxGlobal(g: TaxGlobalInput): TaxGlobalResult {
         );
       } else {
         notes.push(
-          `Quasi-résident NON éligible (${touEligibility.swissShare}% du revenu mondial en CH, seuil 90%). Déductions appliquées ici uniquement via démarche de rectification IS auprès du canton — sans cette demande, la retenue source brute (${source.annualTax.toLocaleString("fr-CH")} CHF) s'applique.`,
+          `Quasi-résident NON éligible (${touEligibility.swissShare}% du revenu mondial en CH, seuil 90%). Déductions appliquées ici uniquement via démarche de rectification IS auprès du canton, sans cette demande, la retenue source brute (${source.annualTax.toLocaleString("fr-CH")} CHF) s'applique.`,
         );
       }
     } else if (deductionsTotal > 0 && !useOrdinary) {
       notes.push(
-        `Déductions saisies (${Math.round(deductionsTotal).toLocaleString("fr-CH")} CHF) insuffisantes pour battre la retenue source — IS conservée.`,
+        `Déductions saisies (${Math.round(deductionsTotal).toLocaleString("fr-CH")} CHF) insuffisantes pour battre la retenue source, IS conservée.`,
       );
     }
     const gross = computeGrossForRegime(g, det.regime);
@@ -250,7 +250,7 @@ export function computeTaxGlobal(g: TaxGlobalInput): TaxGlobalResult {
           "Impôt à la source mensuel × 12 (hors gratifications irrégulières)",
           touEligibility.eligibleForTOU
             ? `Quasi-résident : ${baseTrace.detection.swissShareOfWorldwide}% du revenu mondial en CH → TOU possible`
-            : `Quasi-résident non éligible (seuil 90% du revenu mondial en CH) — déductions appliquées sur rectification IS uniquement`,
+            : `Quasi-résident non éligible (seuil 90% du revenu mondial en CH), déductions appliquées sur rectification IS uniquement`,
           useOrdinary
             ? "Affichage : impôt ordinaire avec déductions (plus avantageux)"
             : "Affichage : impôt à la source (moins coûteux que l'ordinaire ici)",
@@ -260,7 +260,7 @@ export function computeTaxGlobal(g: TaxGlobalInput): TaxGlobalResult {
         ],
         limits: [
           "Taux IS = taux moyen (le marginal réel dépend du barème détaillé)",
-          "Bonus / 13e salaire annualisés via la part fixe — vérifier le mode de prélèvement employeur",
+          "Bonus / 13e salaire annualisés via la part fixe, vérifier le mode de prélèvement employeur",
           "Pour appliquer les déductions, démarche administrative requise (TOU ou rectification IS)",
         ],
       },
@@ -290,7 +290,7 @@ export function computeTaxGlobal(g: TaxGlobalInput): TaxGlobalResult {
       donationsCHF: g.donations,
     });
 
-    // Couche santé : CMU vs LAMal — SÉPARÉE de l'impôt
+    // Couche santé : CMU vs LAMal, SÉPARÉE de l'impôt
     const health = computeHealthFrance({
       swissGrossSalaryCHF: g.grossSalary + g.bonus,
       civilStatus: couple ? "married" : "single",
@@ -337,17 +337,17 @@ export function computeTaxGlobal(g: TaxGlobalInput): TaxGlobalResult {
         cbNotes.push(
           eligibleTou
             ? `TOU GE applicable (${Math.round((swissIncome / Math.max(1, worldwide)) * 100)}% du revenu mondial en CH ≥ 90%) : déductions CH appliquées, économie suisse estimée ${Math.round(crossBorder.swissTax - newSwiss).toLocaleString("fr-CH")} CHF. Démarche : demander la TOU GE.`
-            : `Déductions CH non automatiques (quasi-résident non éligible : ${Math.round((swissIncome / Math.max(1, worldwide)) * 100)}% < 90%). Affichage simulé ici — nécessite une rectification IS auprès de l'AFC pour s'appliquer réellement.`,
+            : `Déductions CH non automatiques (quasi-résident non éligible : ${Math.round((swissIncome / Math.max(1, worldwide)) * 100)}% < 90%). Affichage simulé ici, nécessite une rectification IS auprès de l'AFC pour s'appliquer réellement.`,
         );
       } else {
         cbNotes.push(
-          "Déductions CH saisies insuffisantes pour battre la retenue source GE — IS GE conservée.",
+          "Déductions CH saisies insuffisantes pour battre la retenue source GE, IS GE conservée.",
         );
       }
     }
     if (det.regime === "cross_border_fr_1983" && chDeductionsTotal > 0) {
       cbNotes.push(
-        `Accord 1983 : imposition exclusive en France. Les déductions CH (3a, rachat LPP, primes LAMal, entretien immobilier CH) NE SONT PAS déductibles — saisie ignorée (${Math.round(chDeductionsTotal).toLocaleString("fr-CH")} CHF). Seuls intérêts d'emprunt résidence FR, garde d'enfants et dons réduisent l'assiette française.`,
+        `Accord 1983 : imposition exclusive en France. Les déductions CH (3a, rachat LPP, primes LAMal, entretien immobilier CH) NE SONT PAS déductibles, saisie ignorée (${Math.round(chDeductionsTotal).toLocaleString("fr-CH")} CHF). Seuls intérêts d'emprunt résidence FR, garde d'enfants et dons réduisent l'assiette française.`,
       );
     }
 
@@ -384,7 +384,7 @@ export function computeTaxGlobal(g: TaxGlobalInput): TaxGlobalResult {
           `Taux EUR/CHF utilisé : ${g.eurChfRate.toFixed(4)} (CHF→EUR dérivé : ${g.chfToEurRate.toFixed(4)})`,
           "Santé : comparaison CMU vs LAMal sur base des primes mensuelles saisies",
           chDeductionsTotal > 0
-            ? `Déductions CH saisies : ${Math.round(chDeductionsTotal).toLocaleString("fr-CH")} CHF — ${det.regime === "cross_border_fr_1983" ? "ignorées (accord 1983)" : "appliquées via TOU/rectification IS"}`
+            ? `Déductions CH saisies : ${Math.round(chDeductionsTotal).toLocaleString("fr-CH")} CHF, ${det.regime === "cross_border_fr_1983" ? "ignorées (accord 1983)" : "appliquées via TOU/rectification IS"}`
             : "Aucune déduction CH saisie",
         ],
         limits: [

@@ -14,7 +14,7 @@ import { CANTON_SCALES } from "../tax/cantons";
 export type OptimizationCategory = "lpp" | "3a" | "canton" | "wealth" | "withdrawal";
 
 /**
- * Statut fiscal du contribuable — détermine si les déductions
+ * Statut fiscal du contribuable, détermine si les déductions
  * (rachat LPP, 3a, etc.) sont automatiquement appliquées ou non.
  *
  * - `resident` / `tou` : déductions OK (taxation ordinaire).
@@ -74,9 +74,9 @@ export interface OptimizerInput {
   age?: number;
   /** Capital LPP actuel (pour scénarios retraite) */
   lppBalance?: number;
-  /** Statut fiscal — IMPORTANT pour adapter les suggestions */
+  /** Statut fiscal, IMPORTANT pour adapter les suggestions */
   taxStatus?: TaxStatusContext;
-  /** Statut professionnel — utile pour 3a non-LPP, etc. */
+  /** Statut professionnel, utile pour 3a non-LPP, etc. */
   workStatus?: WorkStatusContext;
 }
 
@@ -89,7 +89,7 @@ function sourceTaxedWarning(
   if (kind === "lpp_buyback") {
     return {
       severity: "warning",
-      title: "Client imposé à la source — déduction non automatique",
+      title: "Client imposé à la source, déduction non automatique",
       body: `La déduction fiscale annoncée n'est applicable que si :
 • le client est quasi-résident (≥ 90 % revenus en CH) ET demande la TOU (Taxation Ordinaire Ultérieure) ;
 • OU le client demande une rectification IS auprès de l'administration cantonale ;
@@ -100,14 +100,14 @@ ${common}`,
   if (kind === "3a") {
     return {
       severity: "warning",
-      title: "Client imposé à la source — déduction 3a non automatique",
+      title: "Client imposé à la source, déduction 3a non automatique",
       body: `Le versement 3a est autorisé pour un imposé à la source, mais sa déduction fiscale exige : TOU (quasi-résident ≥ 90 %), rectification IS, ou passage en taxation ordinaire.
 ${common}`,
     };
   }
   return {
     severity: "info",
-    title: "Client imposé à la source — vérifier l'imposition du retrait",
+    title: "Client imposé à la source, vérifier l'imposition du retrait",
     body: "Le retrait en capital 3a/LPP reste imposé séparément dans le canton de domicile au moment du retrait. Vérifier la résidence fiscale prévue à l'échéance.",
   };
 }
@@ -115,7 +115,7 @@ ${common}`,
 function crossBorderWarning(): Optimization["warning"] {
   return {
     severity: "warning",
-    title: "Frontalier — règles conventionnelles spécifiques",
+    title: "Frontalier, règles conventionnelles spécifiques",
     body: "La déductibilité dépend du régime fiscal applicable (accord 1983 pour les frontaliers français, IS au barème normal pour Genève). Valider l'éligibilité au cas par cas selon le pays d'imposition principal.",
   };
 }

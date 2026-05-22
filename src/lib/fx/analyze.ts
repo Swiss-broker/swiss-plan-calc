@@ -1,4 +1,4 @@
-// Moteur d'analyse — réclamation fiscale liée au taux de change.
+// Moteur d'analyse, réclamation fiscale liée au taux de change.
 //
 // Principe : l'AFC applique un taux moyen annuel uniforme à tous les revenus
 // libellés en devises. Or les versements réels (salaire mensuel frontalier,

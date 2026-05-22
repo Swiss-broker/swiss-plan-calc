@@ -1,4 +1,4 @@
-// Server function — récupère les taux journaliers de référence.
+// Server function, récupère les taux journaliers de référence.
 //
 // Source primaire : api.frankfurter.app (proxy gratuit ECB, sans clé).
 // Convertit toutes les devises en CHF (1 unit FOREIGN = X CHF).

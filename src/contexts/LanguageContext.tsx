@@ -96,7 +96,7 @@ export function useLanguage(): LanguageState {
   return ctx;
 }
 
-/** Raccourci dans les composants React — re-rend automatiquement au changement de langue. */
+/** Raccourci dans les composants React, re-rend automatiquement au changement de langue. */
 export function useT() {
   return useLanguage().t;
 }

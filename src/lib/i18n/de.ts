@@ -692,7 +692,7 @@ export const de: Record<string, string> = {
   "calc.lpp.explain.method.yearly": "Jährlicher Einkauf = {total} ÷ {years} Jahr(e) = {yearly}.",
   "calc.lpp.explain.method.diff": "Pro Jahr wird die Steuer MIT Einkauf (Abzug Art. 33 Abs. 1 Bst. d DBG) und OHNE berechnet. Ersparnis = Differenz.",
   "calc.lpp.explain.method.sum": "Gesamtersparnis = Summe der jährlichen Ersparnisse.",
-  "calc.lpp.explain.method.roi": "Steuer-ROI = {roi}% — für 1 CHF investiert ca. {cents} Rappen Steuerersparnis.",
+  "calc.lpp.explain.method.roi": "Steuer-ROI = {roi}%, für 1 CHF investiert ca. {cents} Rappen Steuerersparnis.",
   "calc.lpp.explain.method.marginal": "Effektiver Grenzsteuersatz ({rate}%) = Anteil des 1. Einkaufs, der durch die Steuerersparnis kompensiert wird.",
   "calc.lpp.explain.assumptions.title": "Verwendete Annahmen",
   "calc.lpp.explain.confession": "Konfession",
@@ -1652,7 +1652,7 @@ export const de: Record<string, string> = {
   "calc.group.decision.desc":
     "Kantonsvergleich, Rente vs. Kapital, Anlagenvergleich",
   "calc.ai.card_title": "IV-Leistungen (Invalidenversicherung)",
-  "calc.ai.card_desc": "Schätzung bei vollständiger Invalidität heute — gleiche Parameter wie AHV, aber Gutschriften basieren auf dem AKTUELLEN Alter der Kinder (keine Projektion).",
+  "calc.ai.card_desc": "Schätzung bei vollständiger Invalidität heute, gleiche Parameter wie AHV, aber Gutschriften basieren auf dem AKTUELLEN Alter der Kinder (keine Projektion).",
   "calc.ai.pension_month": "IV-Rente / Monat",
   "calc.ai.pension_year": "IV-Rente / Jahr",
   "calc.ai.scale": "Beitragsskala",

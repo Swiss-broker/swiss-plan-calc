@@ -26,6 +26,7 @@ import { Badge } from "@/components/ui/badge";
 import { Pillar3bInfoTile } from "@/components/optimizer/OptimizationsPanel";
 import { SaveSimulationButton } from "@/components/calculators/SaveSimulationButton";
 import { TaxGlobalExplanation } from "@/components/calculators/TaxGlobalExplanation";
+import { TaxGlobalCompareCard } from "@/components/calculators/TaxGlobalCompareCard";
 
 import { CANTONS } from "@/lib/swiss/cantons";
 import { formatCHF } from "@/lib/format";
@@ -167,7 +168,7 @@ function TaxGlobalCalc() {
       </CalcCard>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-5">
-        {/* LEFT — Fiche client */}
+        {/* LEFT, Fiche client */}
         <div className="space-y-4 lg:col-span-3">
           <CalcCard>
             <Accordion type="multiple" defaultValue={["identity", "income"]}>
@@ -357,7 +358,7 @@ function TaxGlobalCalc() {
                       value={form.imputedRent}
                       onChange={(v) => set("imputedRent", v)}
                       suffix="CHF"
-                      tip="Valeur locative — revenu fictif imposé aux propriétaires occupant leur logement en Suisse (art. 21 LIFD). Représente le loyer théorique qu'ils paieraient en louant. Incluse dans le revenu imposable mais PAS dans le cash réel."
+                      tip="Valeur locative, revenu fictif imposé aux propriétaires occupant leur logement en Suisse (art. 21 LIFD). Représente le loyer théorique qu'ils paieraient en louant. Incluse dans le revenu imposable mais PAS dans le cash réel."
                     />
 
                     {/* ── Revenus étrangers avec conversion devise ── */}
@@ -515,21 +516,21 @@ function TaxGlobalCalc() {
                       if (reg === "cross_border_fr_1983") {
                         return (
                           <div className="rounded-md border border-destructive/40 bg-destructive/5 p-3 text-xs text-destructive">
-                            <strong>Accord 1983 — imposition exclusive en France.</strong> Le 3a, le rachat LPP, l'entretien immobilier CH et les primes LAMal CH <strong>ne sont pas déductibles</strong>. Seuls les intérêts d'emprunt résidence principale FR, les frais de garde et les dons réduisent l'assiette française. Vérifiez chaque bulle ci-dessous.
+                            <strong>Accord 1983, imposition exclusive en France.</strong> Le 3a, le rachat LPP, l'entretien immobilier CH et les primes LAMal CH <strong>ne sont pas déductibles</strong>. Seuls les intérêts d'emprunt résidence principale FR, les frais de garde et les dons réduisent l'assiette française. Vérifiez chaque bulle ci-dessous.
                           </div>
                         );
                       }
                       if (reg === "cross_border_ge" || reg === "cross_border_other") {
                         return (
                           <div className="rounded-md border border-amber-500/40 bg-amber-500/5 p-3 text-xs text-amber-800 dark:text-amber-300">
-                            <strong>Frontalier — déductions CH appliquées via TOU / rectification IS.</strong> Sans démarche auprès de l'AFC, l'impôt à la source reste calculé sur le brut. La simulation ci-dessous montre l'effet POTENTIEL des déductions si la démarche est effectuée.
+                            <strong>Frontalier, déductions CH appliquées via TOU / rectification IS.</strong> Sans démarche auprès de l'AFC, l'impôt à la source reste calculé sur le brut. La simulation ci-dessous montre l'effet POTENTIEL des déductions si la démarche est effectuée.
                           </div>
                         );
                       }
                       if (reg === "source_taxed") {
                         return (
                           <div className="rounded-md border border-amber-500/40 bg-amber-500/5 p-3 text-xs text-amber-800 dark:text-amber-300">
-                            <strong>Imposé à la source — déductions appliquées via TOU (si quasi-résident ≥ 90 % revenus CH) ou rectification IS.</strong> Sans démarche, la retenue source brute s'applique. La simulation montre l'effet réel post-démarche.
+                            <strong>Imposé à la source, déductions appliquées via TOU (si quasi-résident ≥ 90 % revenus CH) ou rectification IS.</strong> Sans démarche, la retenue source brute s'applique. La simulation montre l'effet réel post-démarche.
                           </div>
                         );
                       }
@@ -672,7 +673,7 @@ function TaxGlobalCalc() {
           )}
         </div>
 
-        {/* RIGHT — Results */}
+        {/* RIGHT, Results */}
         <div className="space-y-4 lg:col-span-2">
           <CalcCard title={t("calc.global.results.title")}>
             <Row>
@@ -681,7 +682,7 @@ function TaxGlobalCalc() {
                 value={result.totalTaxCHF}
                 tone="warning"
                 big
-                tip="Somme de l'impôt fédéral direct (IFD), cantonal, communal, ecclésiastique et — pour résident — impôt sur la fortune. N'inclut PAS les charges sociales (LAMal/CMU). Voir le panneau « Comment ce résultat est calculé » pour la chaîne complète."
+                tip="Somme de l'impôt fédéral direct (IFD), cantonal, communal, ecclésiastique et, pour résident, impôt sur la fortune. N'inclut PAS les charges sociales (LAMal/CMU). Voir le panneau « Comment ce résultat est calculé » pour la chaîne complète."
               />
               <MoneyTile
                 label={t("calc.global.tile.net")}
@@ -735,7 +736,7 @@ function TaxGlobalCalc() {
             </div>
           </CalcCard>
 
-          {/* Breakdown — ordinaire */}
+          {/* Breakdown, ordinaire */}
           {result.income && (
             <CalcCard>
               <div className="grid grid-cols-2 gap-3">
@@ -757,7 +758,7 @@ function TaxGlobalCalc() {
                 <MoneyTile
                   label="Église"
                   value={result.income.church}
-                  tip="Impôt ecclésiastique cantonal — appliqué uniquement si la confession est catholique ou protestante. Taux variable par canton (généralement 5–15 % de l'impôt cantonal)."
+                  tip="Impôt ecclésiastique cantonal, appliqué uniquement si la confession est catholique ou protestante. Taux variable par canton (généralement 5–15 % de l'impôt cantonal)."
                 />
               </div>
             </CalcCard>
@@ -775,7 +776,7 @@ function TaxGlobalCalc() {
                 <PctTile
                   label="Taux IS"
                   value={result.source.rate}
-                  tip="Taux moyen du barème IS appliqué — le marginal réel dépend du barème détaillé du canton de travail."
+                  tip="Taux moyen du barème IS appliqué, le marginal réel dépend du barème détaillé du canton de travail."
                 />
               </Row>
               {result.touEligibility && (
@@ -814,7 +815,7 @@ function TaxGlobalCalc() {
                   tip={
                     result.regime === "cross_border_fr_1983"
                       ? "Retenue suisse forfaitaire de 4.5 % du brut (accord 1983), intégralement rétrocédée à la France."
-                      : "Impôt à la source genevois (barème A/B + réduction enfants) — OU impôt ordinaire CH avec déductions si TOU GE activée et plus avantageux."
+                      : "Impôt à la source genevois (barème A/B + réduction enfants), OU impôt ordinaire CH avec déductions si TOU GE activée et plus avantageux."
                   }
                 />
                 <MoneyTile
@@ -851,8 +852,12 @@ function TaxGlobalCalc() {
         </div>
       </div>
 
-      {/* TRANSPARENCE — comment ce résultat est calculé */}
+      {/* COMPARATEUR Actuel vs Projeté */}
+      <TaxGlobalCompareCard form={form} result={result} />
+
+      {/* TRANSPARENCE : comment ce résultat est calculé */}
       <TaxGlobalExplanation form={form} result={result} client={client} />
+
 
       <div className="flex flex-wrap justify-end gap-2">
         <SaveSimulationButton
@@ -890,14 +895,14 @@ function deductionTip(
     | "donations",
 ): React.ReactNode {
   const ch = {
-    pillar3a: "3e pilier A — plafond 2026 : 7 258 CHF (affilié LPP) ou 36 288 CHF (non-affilié, max 20 % du revenu).",
-    lpp: "Rachat LPP — déduit du revenu imposable l'année du versement. Blocage 3 ans avant tout retrait en capital (art. 79b LPP).",
-    mortgage: "Intérêts hypothécaires — entièrement déductibles du revenu imposable.",
-    maintenance: "Frais d'entretien immobilier — soit forfait 10–20 % de la valeur locative/loyer, soit frais réels.",
-    health: "Primes LAMal + LCA — déductibles dans la limite du forfait cantonal (variable, ex : 2 400 CHF célib. GE / 4 800 CHF couple).",
-    childcare: "Frais de garde — max 25 500 CHF/enfant côté IFD, plafonds cantonaux variables.",
-    pillar3b: "3e pilier B (assurance-vie / épargne libre) — agrégé aux primes santé, déductible dans le plafond commun cantonal.",
-    donations: "Dons à organismes d'utilité publique — déductibles jusqu'à 20 % du revenu net.",
+    pillar3a: "3e pilier A, plafond 2026 : 7 258 CHF (affilié LPP) ou 36 288 CHF (non-affilié, max 20 % du revenu).",
+    lpp: "Rachat LPP, déduit du revenu imposable l'année du versement. Blocage 3 ans avant tout retrait en capital (art. 79b LPP).",
+    mortgage: "Intérêts hypothécaires, entièrement déductibles du revenu imposable.",
+    maintenance: "Frais d'entretien immobilier, soit forfait 10–20 % de la valeur locative/loyer, soit frais réels.",
+    health: "Primes LAMal + LCA, déductibles dans la limite du forfait cantonal (variable, ex : 2 400 CHF célib. GE / 4 800 CHF couple).",
+    childcare: "Frais de garde, max 25 500 CHF/enfant côté IFD, plafonds cantonaux variables.",
+    pillar3b: "3e pilier B (assurance-vie / épargne libre), agrégé aux primes santé, déductible dans le plafond commun cantonal.",
+    donations: "Dons à organismes d'utilité publique, déductibles jusqu'à 20 % du revenu net.",
   }[kind];
 
   if (regime === "resident_ordinary" || regime === "tou") {

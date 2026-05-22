@@ -1,4 +1,4 @@
-// Comparateur dividende / salaire / bénéfices — fonctions de calcul pures.
+// Comparateur dividende / salaire / bénéfices, fonctions de calcul pures.
 // Phase 4.1.
 
 import { computeIFD } from "@/lib/tax/ifd";

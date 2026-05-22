@@ -59,7 +59,7 @@ function makeBundle(overrides: {
   return { client, pension, assets: null };
 }
 
-describe("projectClientLPP — déterminisme et cohérence", () => {
+describe("projectClientLPP, déterminisme et cohérence", () => {
   it("retourne null si pas affilié et pas d'avoir", () => {
     const b = makeBundle({
       client: { work_status: "retired" },
@@ -108,7 +108,7 @@ describe("projectClientLPP — déterminisme et cohérence", () => {
   });
 });
 
-describe("projectClient3a — déterminisme", () => {
+describe("projectClient3a, déterminisme", () => {
   it("retourne null sans solde ni cotisation", () => {
     expect(projectClient3a(makeBundle({}))).toBeNull();
   });

@@ -17,7 +17,7 @@ export type Regime =
   | "tou" // quasi-résident éligible TOU
   | "unknown";
 
-/** Statuts civils complets — alignés avec l'enum DB + concubinage (non persisté). */
+/** Statuts civils complets, alignés avec l'enum DB + concubinage (non persisté). */
 export type GlobalCivilStatus =
   | "single"
   | "married"
@@ -83,9 +83,9 @@ export interface TaxGlobalResult {
   health?: HealthFranceResult;
 
   // KPI consolidés
-  /** Impôt total (CH + étranger) — n'inclut PAS les charges sociales / santé */
+  /** Impôt total (CH + étranger), n'inclut PAS les charges sociales / santé */
   totalTaxCHF: number;
-  /** Charges sociales hors impôt (LAMal / CMU) — séparé pour clarté */
+  /** Charges sociales hors impôt (LAMal / CMU), séparé pour clarté */
   socialChargesCHF: number;
   /** Revenu brut de référence utilisé pour les taux */
   grossIncomeCHF: number;

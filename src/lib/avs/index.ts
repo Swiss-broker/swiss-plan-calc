@@ -1,11 +1,11 @@
-// Logique pure AVS/AI — calcul rente prévisionnelle.
+// Logique pure AVS/AI, calcul rente prévisionnelle.
 // Approximation par paliers OFAS (formule de rente "65"), v1 simplifiée.
 //
 // Limites connues :
 // - Bonifications pour tâches éducatives / d'assistance NON modélisées.
 // - Splitting AVS pour couple : on calcule chaque rente individuellement
 //   puis on applique le plafonnement couple au prorata. La vraie formule
-//   officielle splitterait les revenus durant le mariage — approximation
+//   officielle splitterait les revenus durant le mariage, approximation
 //   suffisante pour un outil de planification (marge ±3% vs caisse).
 //
 // Référence : avoir une marge d'erreur acceptable et toujours afficher
@@ -80,7 +80,7 @@ export interface AvsPersonInput {
   departureYear?: number | null;
   /** Bonifications pour tâches éducatives : nombre d'années avec enfant <16 ans */
   educationalYears?: number;
-  /** Pourcentage attribué (0..100) — 50% si conjoint actif, sinon 100% */
+  /** Pourcentage attribué (0..100), 50% si conjoint actif, sinon 100% */
   educationalShare?: number;
   /** Bonifications pour tâches d'assistance : nombre d'années */
   assistanceYears?: number;

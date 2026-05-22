@@ -1,4 +1,4 @@
-// Calculateur d'investissement comparatif — fonction pure testable.
+// Calculateur d'investissement comparatif, fonction pure testable.
 // Calcul année par année (capitalisation composée), versements en début d'année,
 // frais déduits du rendement brut, impôt appliqué sur le gain à la sortie.
 
@@ -81,7 +81,7 @@ function annualContribution(input: InvestmentInput): number {
   return 0;
 }
 
-/** Simulation pure — ne modifie pas l'input. */
+/** Simulation pure, ne modifie pas l'input. */
 export function simulateInvestment(input: InvestmentInput): InvestmentResult {
   const years = Math.max(1, Math.floor(input.durationYears || 0));
   const yearlyContrib = annualContribution(input);

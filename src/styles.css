@@ -81,7 +81,7 @@
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.18 0.02 260);
 
-  /* Primary: Teal modern — couleur de marque B2B */
+  /* Primary: Teal modern, couleur de marque B2B */
   --primary: oklch(0.58 0.11 185);
   --primary-foreground: oklch(0.99 0.003 250);
   --primary-glow: oklch(0.7 0.12 185);
@@ -94,21 +94,21 @@
   --muted: oklch(0.96 0.005 250);
   --muted-foreground: oklch(0.5 0.02 260);
 
-  /* Accent: Amber — highlights ponctuels */
+  /* Accent: Amber, highlights ponctuels */
   --accent: oklch(0.78 0.16 70);
   --accent-foreground: oklch(0.99 0.003 250);
 
-  /* Destructive: Red — UNIQUEMENT alertes/erreurs/suppressions */
+  /* Destructive: Red, UNIQUEMENT alertes/erreurs/suppressions */
   --destructive: oklch(0.58 0.23 27);
   --destructive-foreground: oklch(0.99 0.003 250);
   --destructive-light: oklch(0.94 0.04 25);
 
-  /* Success: Green — validations, "le plus avantageux" */
+  /* Success: Green, validations, "le plus avantageux" */
   --success: oklch(0.62 0.18 145);
   --success-foreground: oklch(0.99 0.003 250);
   --success-light: oklch(0.95 0.06 145);
 
-  /* Warning: Amber sombre — avertissements */
+  /* Warning: Amber sombre, avertissements */
   --warning: oklch(0.68 0.16 60);
   --warning-foreground: oklch(0.99 0.003 250);
   --warning-light: oklch(0.95 0.06 75);
@@ -132,7 +132,7 @@
   --sidebar-border: oklch(0.92 0.005 250);
   --sidebar-ring: oklch(0.58 0.11 185);
 
-  /* Effects 2026 — relief, profondeur, glass */
+  /* Effects 2026, relief, profondeur, glass */
   --gradient-primary: linear-gradient(135deg, var(--primary), var(--primary-glow));
   --gradient-surface: linear-gradient(
     180deg,

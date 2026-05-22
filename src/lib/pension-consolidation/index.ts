@@ -1,4 +1,4 @@
-// Consolidation 1er + 2e pilier — vision globale des prestations futures
+// Consolidation 1er + 2e pilier, vision globale des prestations futures
 // pour les 3 événements clés : retraite, invalidité, décès.
 //
 // Source de vérité unique réutilisée par :
@@ -223,10 +223,10 @@ function buildDisability(b: ClientBundle, disabilityPct = 100): ConsolidatedScen
     ...benefits.children.map((c) => toItem(c.label, c.annual, "AI")),
   ];
 
-  // Pilier 2 — rente d'invalidité LPP
+  // Pilier 2, rente d'invalidité LPP
   // Approximation : 6,8% × capital projeté à la retraite × taux invalidité.
   // (la rente AI LPP officielle est basée sur l'avoir prévisionnel à 65 ans
-  // multiplié par le taux de conversion légal — cf. art. 24 LPP.)
+  // multiplié par le taux de conversion légal, cf. art. 24 LPP.)
   const lpp = projectClientLPP(b);
   const pillar2Items: ConsolidatedItem[] = [];
   if (lpp && lpp.projectedCapitalAt65 > 0) {

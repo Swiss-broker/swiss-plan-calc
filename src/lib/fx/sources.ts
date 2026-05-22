@@ -5,7 +5,7 @@
 //    publiés à l'attention des contribuables pour conversion des revenus/
 //    fortune étrangers. https://www.estv.admin.ch (Notices A1/A1a, taux annuels).
 //  - BNS (Banque nationale suisse) : taux de change journaliers de référence.
-//    Portail data.snb.ch — interrogeable côté serveur.
+//    Portail data.snb.ch, interrogeable côté serveur.
 //  - ECB (Banque centrale européenne) : taux de référence EUR. Proxy gratuit
 //    sans clé : https://api.frankfurter.app/ (basé ECB).
 //
@@ -15,7 +15,7 @@
 export type Currency = "EUR" | "USD" | "GBP" | "CAD" | "JPY";
 
 /**
- * Taux moyens annuels AFC — 1 unité de devise = X CHF.
+ * Taux moyens annuels AFC, 1 unité de devise = X CHF.
  * Valeurs publiées (notices AFC). À mettre à jour chaque année fiscale.
  * Note JPY : taux pour 100 JPY (convention AFC).
  */

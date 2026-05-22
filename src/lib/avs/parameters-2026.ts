@@ -1,5 +1,5 @@
-// Paramètres AVS/AI 2026 — source de vérité centralisée.
-// Source : OFAS (Office fédéral des assurances sociales) — bsv.admin.ch
+// Paramètres AVS/AI 2026, source de vérité centralisée.
+// Source : OFAS (Office fédéral des assurances sociales), bsv.admin.ch
 // Indexation au 1er janvier 2025 (+2.9%) maintenue pour 2026.
 // Vérifié : décembre 2025.
 
@@ -8,7 +8,7 @@ export const AVS_2026 = {
   minMonthlyPension: 1_260,
   /** Rente individuelle maximale (CHF/mois) */
   maxMonthlyPension: 2_520,
-  /** Plafond couple (150% rente individuelle max) — CHF/mois */
+  /** Plafond couple (150% rente individuelle max), CHF/mois */
   maxCoupleMonthlyPension: 3_780,
 
   /** Rente annuelle minimale (CHF/an) */

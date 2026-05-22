@@ -25,30 +25,30 @@ export function suggestTaxStatus(
   const canton = (i.canton ?? "").toUpperCase() || null;
   const permit = i.permit ?? null;
 
-  // Étape 1 — info minimale requise
+  // Étape 1, info minimale requise
   if (!country) return null;
 
-  // Étape 2 — résident en Suisse
+  // Étape 2, résident en Suisse
   if (country === "CH") {
-    // 2.A — Suisse, permis C, ou permis swiss → résident ordinaire
+    // 2.A, Suisse, permis C, ou permis swiss → résident ordinaire
     if (nationality === "CH" || permit === "C" || permit === "swiss") {
       return "resident";
     }
-    // 2.B — Étranger permis B/L/Ci/F → imposé à la source
+    // 2.B, Étranger permis B/L/Ci/F → imposé à la source
     if (permit === "B" || permit === "L" || permit === "Ci" || permit === "F") {
       return "source_taxed";
     }
-    // 2.C — cas non standard
+    // 2.C, cas non standard
     return null;
   }
 
-  // Étape 3 — résident étranger : frontalier permis G dans pays voisin
+  // Étape 3, résident étranger : frontalier permis G dans pays voisin
   if (permit === "G" && FRONTIER_COUNTRIES.has(country)) {
     if (canton === "GE") return "cross_border_ge";
     if (canton && ACCORD_1983_CANTONS.has(canton)) return "cross_border_fr_1983";
     return null;
   }
 
-  // Étape 4 — autre cas (expatrié, etc.)
+  // Étape 4, autre cas (expatrié, etc.)
   return null;
 }

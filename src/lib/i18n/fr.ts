@@ -703,7 +703,7 @@ export const fr: Record<string, string> = {
   "calc.lpp.explain.method.yearly": "Versement annuel = {total} ÷ {years} an(s) = {yearly}.",
   "calc.lpp.explain.method.diff": "Pour chaque année, on calcule l'impôt AVEC le rachat (déduction art. 33 al. 1 let. d LIFD) et SANS. L'économie = différence des deux impôts.",
   "calc.lpp.explain.method.sum": "L'économie totale du plan = somme des économies annuelles.",
-  "calc.lpp.explain.method.roi": "ROI fiscal = {roi}% — pour 1 CHF investi, environ {cents} centimes récupérés en impôt.",
+  "calc.lpp.explain.method.roi": "ROI fiscal = {roi}%, pour 1 CHF investi, environ {cents} centimes récupérés en impôt.",
   "calc.lpp.explain.method.marginal": "Taux marginal effectif ({rate}%) = part du 1er versement annuel absorbée par l'économie d'impôt.",
   "calc.lpp.explain.assumptions.title": "Hypothèses utilisées",
   "calc.lpp.explain.confession": "Confession",
@@ -713,7 +713,7 @@ export const fr: Record<string, string> = {
   "calc.lpp.explain.warnings.title": "Points d'attention",
   "calc.lpp.explain.warn.lockup": "Aucun retrait LPP n'est possible dans les 3 ans suivant un rachat (art. 79b al. 3 LPP).",
   "calc.lpp.explain.warn.partial_lost": "Le versement annuel ({yearly}) dépasse le revenu imposable absorbable ({absorbable}). La déduction excédentaire est fiscalement perdue.",
-  "calc.lpp.explain.warn.rate_shift": "Le rachat fait passer le taux marginal de {baseline}% (sans rachat) à {effective}% (avec rachat) — l'économie réelle dépend de cette tranche.",
+  "calc.lpp.explain.warn.rate_shift": "Le rachat fait passer le taux marginal de {baseline}% (sans rachat) à {effective}% (avec rachat), l'économie réelle dépend de cette tranche.",
   "calc.lpp.auto_label": "Auto",
   "calc.lpp.manual_label": "Manuel",
   "calc.lpp.recalc_auto": "Recalculer auto",
@@ -1684,7 +1684,7 @@ export const fr: Record<string, string> = {
   // === PDF · libellé bouton export ===
   "pdf.export": "Exporter en PDF",
 
-  // === Index calculateurs — sections & groupes ===
+  // === Index calculateurs, sections & groupes ===
   "calc.section.prevoyance": "Prévoyance",
   "calc.section.prevoyance.desc":
     "Calcul des prestations de retraite, invalidité et survivants",
@@ -1704,7 +1704,7 @@ export const fr: Record<string, string> = {
   "calc.group.decision.desc":
     "Comparateur cantonal, rente vs capital, comparateur d'investissements",
 
-  // === Index calculateurs — modules v2 (5 modules) ===
+  // === Index calculateurs, modules v2 (5 modules) ===
   "calc.module.prevoyance.title": "Prévoyance",
   "calc.module.prevoyance.desc":
     "Parcours 1er → 2e → 3e pilier, projection retraite complète",

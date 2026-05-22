@@ -1,6 +1,6 @@
 // Barèmes ICC (impôt cantonal et communal) 2026.
 //
-// === SCOPE V1 — Suisse romande ===
+// === SCOPE V1, Suisse romande ===
 //
 // La v1 du produit cible la Suisse romande. Seuls 7 cantons ont des barèmes
 // chargés ici :
@@ -40,9 +40,9 @@ export interface CantonTaxScale {
   cantonalMultiplier: number;
   /** Coefficient communal moyen / chef-lieu (1.00 = 100%) */
   communalMultiplierCapital: number;
-  /** Impôt ecclésiastique (% du simple) — catholique romain */
+  /** Impôt ecclésiastique (% du simple), catholique romain */
   churchRateCatholic?: number;
-  /** Impôt ecclésiastique — protestant */
+  /** Impôt ecclésiastique, protestant */
   churchRateProtestant?: number;
   /** Déduction sociale par enfant (CHF, du revenu imposable) */
   childDeduction: number;
@@ -50,9 +50,9 @@ export interface CantonTaxScale {
   marriedDeduction: number;
   /** Barème impôt sur la fortune (par mille du capital imposable) */
   wealthScale: BracketStep[];
-  /** Franchise fortune (CHF) — célibataire */
+  /** Franchise fortune (CHF), célibataire */
   wealthExemptionSingle: number;
-  /** Franchise fortune (CHF) — marié */
+  /** Franchise fortune (CHF), marié */
   wealthExemptionMarried: number;
   /** Nom du chef-lieu */
   capital: string;
@@ -75,7 +75,7 @@ export interface CantonTaxScale {
 }
 
 // =====================================================================
-//   Barèmes — Suisse romande (selectable v1)
+//   Barèmes, Suisse romande (selectable v1)
 // =====================================================================
 
 const VD_SINGLE: BracketStep[] = [
@@ -396,7 +396,7 @@ export function applySimpleScale(taxableIncome: number, scale: BracketStep[]): n
 export interface CCComputeOptions {
   /** Code canton (ex: "VD") */
   canton: string;
-  /** Revenu imposable (CHF) — après toutes déductions sauf déductions sociales du canton */
+  /** Revenu imposable (CHF), après toutes déductions sauf déductions sociales du canton */
   taxableIncome: number;
   /** Statut familial */
   status: FilingStatus;

@@ -1,4 +1,4 @@
-// Paramètres 2026 — Comparateur dirigeant.
+// Paramètres 2026, Comparateur dirigeant.
 //
 // Sources principales :
 //  - OFAS : cotisations sociales 2024-2026 (stables).
@@ -15,7 +15,7 @@ import type { SelectableCantonCode } from "@/lib/swiss/cantons";
 import type { LppPlanKind } from "./types";
 
 /**
- * Cotisations sociales 2026 — stables depuis 2024.
+ * Cotisations sociales 2026, stables depuis 2024.
  * Source : OFAS (bsv.admin.ch).
  */
 export const SOCIAL_RATES_2026 = {
@@ -27,16 +27,16 @@ export const SOCIAL_RATES_2026 = {
   acEmployer: 0.011,
   /** Assurance chômage employé */
   acEmployee: 0.011,
-  /** Plafond AC 2026 (CHF) — aligné LPP max insured salary */
+  /** Plafond AC 2026 (CHF), aligné LPP max insured salary */
   acCeiling: 148_200,
-  /** LAA professionnel — défaut courant tertiaire (employeur, à charge entreprise) */
+  /** LAA professionnel, défaut courant tertiaire (employeur, à charge entreprise) */
   laaProfessionalDefault: 0.01,
-  /** LAA non professionnel — défaut (employé) */
+  /** LAA non professionnel, défaut (employé) */
   laaNonProfessionalDefault: 0.014,
 } as const;
 
 /**
- * Allocations familiales — taux employeur 2026 par canton (approximation chef-lieu).
+ * Allocations familiales, taux employeur 2026 par canton (approximation chef-lieu).
  * Sources : caisses cantonales d'allocations familiales.
  */
 export const FAMILY_ALLOWANCE_RATE: Record<SelectableCantonCode, number> = {
@@ -50,7 +50,7 @@ export const FAMILY_ALLOWANCE_RATE: Record<SelectableCantonCode, number> = {
 
 /**
  * Taux EFFECTIF d'impôt sur le bénéfice (IFD + ICC + commune chef-lieu) 2026.
- * Approximation basée sur KPMG Swiss Tax Report 2024 — RFFA harmonisée.
+ * Approximation basée sur KPMG Swiss Tax Report 2024, RFFA harmonisée.
  *
  * À noter : depuis RFFA (2020), tous les cantons ont convergé entre ~12% et ~17%.
  */
@@ -64,7 +64,7 @@ export const CORPORATE_TAX_RATE: Record<SelectableCantonCode, number> = {
 };
 
 /**
- * Imposition partielle des dividendes — participation qualifiée (≥10%).
+ * Imposition partielle des dividendes, participation qualifiée (≥10%).
  *
  * - Part fédérale : 70% imposable (art. 20 al. 1bis LIFD, post-RFFA 2020,
  *   uniforme tous cantons).
@@ -72,7 +72,7 @@ export const CORPORATE_TAX_RATE: Record<SelectableCantonCode, number> = {
  *   fixe son taux. Valeurs post-RFFA :
  *     GE 70%, VD 70%, VS 70%, FR 70%, NE 60%, JU 70%.
  *   Sources : barèmes cantonaux AFC + sites cantonaux (vérification
- *   indicative — à reconfirmer pour millésime fiscal final).
+ *   indicative, à reconfirmer pour millésime fiscal final).
  *
  * Pour participation NON qualifiée : 100% imposable (pas d'abattement).
  */
@@ -89,7 +89,7 @@ export const DIVIDEND_TAXABLE = {
 } as const;
 
 /**
- * LPP — paramètres simplifiés.
+ * LPP, paramètres simplifiés.
  * Référence officielle déjà dans src/lib/lpp/parameters-2026.ts.
  */
 export const LPP_PARAMS_2026 = {

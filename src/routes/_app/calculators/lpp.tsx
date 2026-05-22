@@ -179,7 +179,7 @@ function LppCalc() {
     [form.buybackCapacity, form.buybackYears, actualBuybackCapped, enrichedTaxInput],
   );
 
-  // Projection sans rachat — baseline pour la comparaison "Actuel vs Projeté".
+  // Projection sans rachat, baseline pour la comparaison "Actuel vs Projeté".
   const projectionNoBuyback = useMemo(
     () =>
       projectLPP({
@@ -627,7 +627,7 @@ function LppCalc() {
 // ──────────────────────────────────────────────────────────────────────
 // Panneau explicatif du plan de rachat LPP
 // Transparence : méthode, hypothèses utilisées, avertissements.
-// Aucun calcul ici — uniquement de l'affichage explicatif.
+// Aucun calcul ici, uniquement de l'affichage explicatif.
 // ──────────────────────────────────────────────────────────────────────
 function BuybackPlanExplanation({
   plan,

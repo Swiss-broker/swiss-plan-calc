@@ -19,7 +19,7 @@ const baseGE: DirectorInputs = {
 };
 
 describe("computeStrategy", () => {
-  it("Cas 1 — Sàrl GE 200k bénéfice / 70% salaire 30% div", () => {
+  it("Cas 1, Sàrl GE 200k bénéfice / 70% salaire 30% div", () => {
     const r = computeStrategy(baseGE, {
       salaryPct: 70, dividendPct: 30, retainedPct: 0, label: "70/30",
     });
@@ -33,7 +33,7 @@ describe("computeStrategy", () => {
     expect(Math.abs(r.reconciliation)).toBeLessThan(2);
   });
 
-  it("Cas 2 — SA Vaud 400k bénéfice marié 2 enfants 50/50 plan cadre", () => {
+  it("Cas 2, SA Vaud 400k bénéfice marié 2 enfants 50/50 plan cadre", () => {
     const r = computeStrategy(
       {
         ...baseGE,
@@ -54,7 +54,7 @@ describe("computeStrategy", () => {
     expect(r.warnings.length).toBeGreaterThanOrEqual(0);
   });
 
-  it("Cas 3 — Sàrl Sion 100k bénéfice 100% salaire", () => {
+  it("Cas 3, Sàrl Sion 100k bénéfice 100% salaire", () => {
     const r = computeStrategy(
       {
         ...baseGE,
@@ -70,7 +70,7 @@ describe("computeStrategy", () => {
     expect(Math.abs(r.reconciliation)).toBeLessThan(2);
   });
 
-  it("Cas limite — bénéfice 0", () => {
+  it("Cas limite, bénéfice 0", () => {
     const r = computeStrategy(
       { ...baseGE, totalProfit: 0 },
       { salaryPct: 70, dividendPct: 30, retainedPct: 0 },
@@ -80,7 +80,7 @@ describe("computeStrategy", () => {
     expect(r.totalTaxAndCharges).toBe(0);
   });
 
-  it("Cas limite — 100% en réserves", () => {
+  it("Cas limite, 100% en réserves", () => {
     const r = computeStrategy(baseGE, {
       salaryPct: 0, dividendPct: 0, retainedPct: 100, label: "All retained",
     });

@@ -599,7 +599,7 @@ function SurvivorCard({
   if (!hasSurvivingSpouse && childrenCount === 0) {
     return (
       <CalcCard
-        title="Décès — Rentes de survivants"
+        title="Décès, Rentes de survivants"
         description="Indiquez un conjoint ou des enfants pour estimer les rentes de survivants."
       >
         <p className="text-xs text-muted-foreground">
@@ -611,7 +611,7 @@ function SurvivorCard({
 
   return (
     <CalcCard
-      title="Décès — Rentes de survivants AVS"
+      title="Décès, Rentes de survivants AVS"
       description="Veuf/veuve 80% · Orphelin 40% (60% si double). Plafond familial 150%."
     >
       <Row>

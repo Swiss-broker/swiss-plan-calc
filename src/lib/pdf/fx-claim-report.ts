@@ -1,4 +1,4 @@
-// PDF — Courrier de réclamation fiscale liée au taux de change.
+// PDF, Courrier de réclamation fiscale liée au taux de change.
 import { ReportPdf, makeFilename, type PdfHeaderInfo } from "./builder";
 import { formatCHF, formatPct } from "@/lib/format";
 import type { FxClaimInput, FxClaimResult } from "@/lib/fx/analyze";
@@ -12,7 +12,7 @@ export function exportFxClaimPdf(args: {
 }) {
   const { input, result, client, authorityName } = args;
   const pdf = new ReportPdf({
-    title: "Réclamation — Conversion des revenus en devise étrangère",
+    title: "Réclamation, Conversion des revenus en devise étrangère",
     subtitle: `Année fiscale ${input.taxYear} · ${input.currency}/CHF`,
     ...args.header,
   } as PdfHeaderInfo);

@@ -28,10 +28,10 @@ export const RETIREMENT_AGE_DEFAULT = 65;
 /** Hypothèses de projection LPP "fiche client". Identiques partout.
  *  Alignées sur les défauts du formulaire LPP pour cohérence au franc près. */
 export const DASHBOARD_LPP_DEFAULTS = {
-  expectedReturnRate: 1.25, // % — taux minimum LPP 2026
-  feeRate: 0.6, // % — frais TER+admin moyens caisses LPP suisses
+  expectedReturnRate: 1.25, // %, taux minimum LPP 2026
+  feeRate: 0.6, // %, frais TER+admin moyens caisses LPP suisses
   salaryGrowthRate: 1, // %
-  conversionRate: 6.0, // % — taux minimum légal LPP 2026 (prudent)
+  conversionRate: 6.0, // %, taux minimum légal LPP 2026 (prudent)
 } as const;
 
 /** Hypothèses de projection 3a "fiche client". */

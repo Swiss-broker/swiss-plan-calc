@@ -42,7 +42,7 @@ export function getTotalGrossIncome(
   return getBaseGrossSalary(c) + getBonus(c) + getOtherIncome(c);
 }
 
-/** Variante "undefined si zéro" — pratique pour les mappers qui mergent
+/** Variante "undefined si zéro", pratique pour les mappers qui mergent
  *  des Partial sans écraser les défauts du formulaire. */
 export function getTotalGrossIncomeOrUndef(
   c: Pick<Client, "gross_annual_salary" | "bonus" | "other_income">,

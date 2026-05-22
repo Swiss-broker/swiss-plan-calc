@@ -91,7 +91,7 @@ const REGIME_SHORT: Record<Regime, string> = {
   unknown: "Régime à préciser",
 };
 
-/** Lieu d'imposition réel selon le régime — pour clarifier où l'impôt est dû. */
+/** Lieu d'imposition réel selon le régime, pour clarifier où l'impôt est dû. */
 function placeOfTaxation(regime: Regime): { flag: string; label: string } {
   switch (regime) {
     case "cross_border_fr_1983":
@@ -176,7 +176,7 @@ function CantonCompareCalc() {
 
   // ──────────────────────────────────────────────────────────────────────
   // Mode lump_sum : impôt sur prestation en capital LPP/3a à la retraite.
-  // Inchangé — barème séparé, ne dépend pas du régime fiscal courant.
+  // Inchangé, barème séparé, ne dépend pas du régime fiscal courant.
   // ──────────────────────────────────────────────────────────────────────
   const lppFromFiche = dashboard?.lpp?.projectedCapitalAt65 ?? 0;
   const p3aFromFiche = dashboard?.pillar3a?.projectedCapitalAt65 ?? 0;

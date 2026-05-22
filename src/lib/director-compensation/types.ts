@@ -1,5 +1,5 @@
-// Types — Comparateur dividende/salaire/bénéfices pour dirigeants de société
-// Phase 4.1 — Module de logique pure.
+// Types, Comparateur dividende/salaire/bénéfices pour dirigeants de société
+// Phase 4.1, Module de logique pure.
 
 import type { SelectableCantonCode } from "@/lib/swiss/cantons";
 import type { FilingStatus } from "@/lib/tax/ifd";
@@ -42,7 +42,7 @@ export interface DirectorInputs {
   reserveTarget?: number;
 }
 
-/** Répartition absolue (CHF) — utilisée pour modéliser une situation réelle. */
+/** Répartition absolue (CHF), utilisée pour modéliser une situation réelle. */
 export interface AbsoluteAllocation {
   /** Salaire BRUT versé (avant charges sociales employeur) */
   grossSalary: number;

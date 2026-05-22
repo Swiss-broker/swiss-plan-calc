@@ -1026,7 +1026,7 @@ export function exportOvertimePdf(args: {
     ...args.header,
   } as PdfHeaderInfo);
 
-  pdf.situationBanner("FISCALITÉ HEURES SUP · 2026 — MÉTHODE OFFICIELLE FR");
+  pdf.situationBanner("FISCALITÉ HEURES SUP · 2026, MÉTHODE OFFICIELLE FR");
   pdf.section("Synthèse");
   pdf.metricsGrid([
     { label: "Économie fiscale (CHF)", value: result.taxSavingsCHF, tone: "success" },

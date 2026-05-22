@@ -126,7 +126,7 @@ export const HEALTH_INSURANCE_PER_CHILD = 700;
 /**
  * Forfaits cantonaux 2026 pour primes d'assurance-maladie + LCA (déduction
  * cantonale). Valeurs indicatives publiées par les administrations fiscales
- * cantonales — utilisées si l'utilisateur ne saisit pas ses primes réelles.
+ * cantonales, utilisées si l'utilisateur ne saisit pas ses primes réelles.
  * Format : { single, married, perChild }.
  */
 export const HEALTH_INSURANCE_CANTONAL_2026: Record<

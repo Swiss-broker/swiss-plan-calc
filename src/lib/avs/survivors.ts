@@ -1,4 +1,4 @@
-// AVS/AI — Rentes enfants, veuf/veuve, orphelins (échelle 44, 2026).
+// AVS/AI, Rentes enfants, veuf/veuve, orphelins (échelle 44, 2026).
 //
 // Référence : LAVS art. 22ter / 23-25 / 35-37, paramètres OFAS 2026.
 // Règles principales :

@@ -66,7 +66,7 @@ export function buildScenarios(input: TaxGlobalInput): Scenario[] {
     const r = computeTaxGlobal({ ...input, lppBuyback: input.lppBuyback + buybackTrial });
     const capacityLabel = capacity > 0
       ? ` (capacité dispo : ${Math.round(capacity).toLocaleString("fr-CH")} CHF)`
-      : ` (montant d'illustration — capacité non renseignée)`;
+      : ` (montant d'illustration, capacité non renseignée)`;
     out.push({
       id: "lpp_buyback_trial",
       label: `+Rachat LPP ${Math.round(buybackTrial).toLocaleString("fr-CH")} CHF`,

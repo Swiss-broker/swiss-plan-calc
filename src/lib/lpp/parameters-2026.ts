@@ -2,7 +2,7 @@
  * Paramètres LPP / 2e pilier · Suisse 2026
  *
  * Source : Office fédéral des assurances sociales (OFAS), barème LPP 2026
- * publié au Recueil officiel — voir https://www.bsv.admin.ch (paramètres LPP).
+ * publié au Recueil officiel, voir https://www.bsv.admin.ch (paramètres LPP).
  *
  * Ces constantes sont la **référence officielle** utilisée par le moteur
  * (src/lib/lpp/index.ts) et par la note pédagogique affichée dans les
@@ -13,7 +13,7 @@
 export const LPP_2026 = {
   /** Déduction de coordination (CHF) */
   coordinationDeduction: 26_460,
-  /** Plafond du salaire assuré obligatoire (CHF) — 7,5× rente AVS max */
+  /** Plafond du salaire assuré obligatoire (CHF), 7,5× rente AVS max */
   maxInsuredSalary: 90_720,
   /** Salaire annuel minimum d'assujettissement (CHF) */
   minAnnualSalary: 22_680,
@@ -28,7 +28,7 @@ export const LPP_2026 = {
     "45-54": 15,
     "55-65": 18,
   },
-  /** Plafond plan 1e cadre (CHF) — référence indicative */
+  /** Plafond plan 1e cadre (CHF), référence indicative */
   oneEPlanCap: 860_000,
 } as const;
 

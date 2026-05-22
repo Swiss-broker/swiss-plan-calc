@@ -1,4 +1,4 @@
-// Helpers de formatage CHF / pourcentages — format suisse (apostrophe en séparateur)
+// Helpers de formatage CHF / pourcentages, format suisse (apostrophe en séparateur)
 const numFmt = new Intl.NumberFormat("fr-CH", {
   maximumFractionDigits: 0,
 });

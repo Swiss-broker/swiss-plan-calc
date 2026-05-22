@@ -1,69 +1,62 @@
-## Ce qui se passe et pourquoi c'est confus
+# Plan approuvé · Implémentation
 
-Trois problèmes distincts s'additionnent dans l'écran actuel :
+Tu as approuvé le plan : j'ajoute le split-screen Actuel vs Projeté sur le Calculateur Fiscal Global, plus deux extras demandés.
 
-### 1. Le « 4 500 » qui sort de nulle part pour le 3b projeté
+## 1. Comparateur Actuel vs Projeté sur tax-global
 
-Dans le code j'ai mis une règle automatique :
+Nouveau composant `src/components/calculators/TaxGlobalCompareCard.tsx` injecté sous la zone résultats. Il calcule un scénario optimisé en appelant `computeTaxGlobal()` une seconde fois avec :
 
-- si tu cotises < 3 000 CHF/an au 3b → cible = 6 000 CHF/an
-- sinon → cible = ton versement × 1,5 (plafonné à 10 000)
+- **3a** porté au plafond légal 2026 (7 258 CHF affilié LPP, 36 288 CHF sinon).
+- **Rachat LPP** = `min(capacité fiche client, 25 % du brut)` étalé sur 3 ans.
+- **3b** au plancher 3 500 CHF (forfait cantonal indicatif) si pas saisi.
+- **Frais santé** au forfait 3 500 CHF si pas saisi.
 
-Tu as saisi 3 000, donc la cible devient 3 000 × 1,5 = **4 500**. Le « +1 500 » vert est l'écart entre les deux colonnes. Cette règle n'est documentée nulle part dans l'UI, donc c'est illisible.
+Affichage via `SplitCompareLayout` (déjà utilisé sur pillar3a et ConsolidatedBenefits) :
 
-### 2. Les petites pastilles vertes avec la flèche
+```text
+                ACTUEL              PROJETÉ        Δ
+Impôt total     10'605 CHF          7'200 CHF      −3'405 (vert)
+IFD             …                   …
+Cantonal+comm.  …                   …
+Charges santé   3'586 CHF           3'586 CHF
+Net annuel      119'809 CHF         123'214 CHF    +3'405
+Taux effectif   7.9 %               5.4 %          −2.5 pp
+Taux marginal   26.9 %              …
+```
 
-Elles indiquent l'écart entre la colonne « Actuelle » et « Projetée » (delta brut, ex. `+1 500 CHF`). C'est censé être un signal rapide « combien tu gagnes en passant à la situation projetée », mais sans légende ça ressemble à du bruit.
+Bandeau bas : Économie annuelle / Gain net cash / Réduction d'impôt en %.
+Footnote : décomposition des leviers (3a +X, LPP +Y, 3b +Z).
 
-### 3. « Économie annuelle CHF 0 »
+## 2. Petits « i » d'information partout
 
-L'économie annuelle affichée = économie d'impôt 3a (projeté) − économie d'impôt 3a (actuel). Comme ton 3a est déjà au max, c'est 2 296 − 2 296 = **0**. Le 3b n'est **pas déductible** du revenu donc ne génère aucune économie d'impôt annuelle. C'est techniquement juste mais ça ne reflète pas le vrai gain de l'optimisation, qui est :
+Chaque badge cible et chaque tuile du comparateur reçoit un `<HelpDot tip="...">` avec une explication claire :
 
-- +48 045 de capital 3b à la retraite (grâce à la cotisation 3b plus forte)
-- +5 133 d'impôt en moins au retrait (fractionnement)
-- = **+53 178 CHF nets** à la retraite (déjà affiché dans la 2e tuile)
+- **Cible 3a** : rappelle le plafond 2026 et l'effet sur le revenu imposable.
+- **Rachat LPP** : explique l'étalement 3 ans et le blocage art. 79b LPP.
+- **Cible 3b** : explique l'agrégation au plafond commun cantonal.
+- **Forfait santé** : explique le forfait cantonal LAMal + LCA.
 
-## Plan de correction
+Plus une légende sous le titre du comparateur expliquant les pastilles vertes/rouges.
 
-### A. Rendre le 3b cible explicite et contrôlable
+Encarts amber/rouge contextuels :
+- **Frontalier GE / IS** : « démarche TOU ou rectification IS requise avant le 31 mars ».
+- **Accord 1983** : « déductions CH sans effet, scénario affiché à titre informatif ».
 
-- Ajouter au-dessus du comparateur un petit bandeau qui dit en clair :
-  > « 3b projeté : on suppose +50 % de votre versement actuel (cible 4 500 CHF/an). Modifiez la cible ci-dessous. »
-- Ajouter **un champ « 3b cible (CHF/an) »** éditable dans le bloc « Actuel vs Projeté » lui-même, pré-rempli avec la règle automatique mais que l'utilisateur peut surcharger. Si on le passe à 3 000 = même que l'actuel, le « +1 500 » disparaît et le capital projeté 3b devient identique → confirme visuellement la logique.
-- Si actuel = 0, la cible par défaut reste 6 000 (faut une suggestion concrète).
+## 3. Nettoyage des tirets cadratins « — » dans toute l'application
 
-### B. Légender les pastilles delta
+252 occurrences détectées dans `src/`. Remplacement global du tiret cadratin entouré d'espaces (` — `) par `. ` (point + espace) ou `, ` selon le contexte grammatical. Couvre :
 
-Ajouter une mini-légende sous le titre du comparateur :
+- Tooltips et bulles d'information (`tip="..."`).
+- Libellés et descriptions dans `src/lib/i18n/*.ts`.
+- Notes et avertissements dans les calculateurs.
+- Commentaires JSDoc des moteurs (pour cohérence).
 
-> « Les pastilles vertes indiquent l'écart entre votre situation actuelle et la projection (ex. +1 500 CHF/an = vous cotisez 1 500 de plus). »
+Vérification après le pass : pas de double point, pas de tiret orphelin résiduel, fichiers parseables (build vert).
 
-Et masquer les pastilles quand le delta = 0 (déjà fait), ou afficher « = » neutre pour rendre clair que rien n'a bougé.
+## Fichiers touchés
 
-### C. Remplacer le bandeau résumé du bas
+- **Nouveau** : `src/components/calculators/TaxGlobalCompareCard.tsx`.
+- **Modifié** : `src/routes/_app/calculators/tax-global.tsx` (1 import + 1 ligne d'insertion).
+- **Nettoyage tirets** : ~30 fichiers `.ts` / `.tsx` touchés par sed scripté + relecture ciblée.
 
-Au lieu du trio actuel (Économie annuelle 0 / Capital net suppl. / Δ %), afficher **trois indicateurs qui ont du sens dans tous les cas** :
-
-1. **Capital net supplémentaire à la retraite** (le vrai gain final) — déjà calculé : 53 178 CHF
-2. **Économie d'impôt annuelle (3a)** — utile uniquement si le 3a n'est pas maxé ; sinon afficher « 3a déjà au max — pas d'économie supplémentaire » au lieu de « CHF 0 »
-3. **Économie d'impôt au retrait (fractionnement)** — le levier fiscal restant quand le 3a est saturé : 5 133 CHF
-
-Et **ventiler** dans le sous-titre du bandeau d'où vient le gain : « = 48 045 CHF de cotisations 3b supplémentaires capitalisées + 5 133 CHF d'impôt en moins au retrait ».
-
-### D. Clarifier les lignes du comparateur
-
-- Renommer « Cotisation annuelle 3a » → « Cotisation 3a (CHF/an) ».
-- Ajouter un petit `hint` (déjà supporté par `SplitRow`) sur « Cotisation annuelle 3b » qui dit : « Cible projetée = +50 % de votre versement actuel (modifiable) ».
-- Ajouter un `hint` sur « Économie d'impôt annuelle (3a) » : « Le 3b n'est pas déductible du revenu, donc n'apparaît pas ici. »
-
-## Détails techniques
-
-Un seul fichier touché : `src/routes/_app/calculators/pillar3a.tsx`.
-
-- Nouveau state local `target3bYearlyOverride` (number | null) ; `target3bYearly` = override ?? règle auto.
-- Nouveau champ `NumField` « 3b cible (CHF/an) » au-dessus du `SplitCompareLayout` avec bouton « auto » pour réinitialiser à la règle.
-- Refonte du bandeau `summary` du `SplitCompareLayout` (3 tuiles au lieu de 2, libellés conditionnels).
-- Ajout des `hint` sur les 2 lignes concernées.
-- Mini-légende sous le titre.
-
-Aucun changement de logique de calcul, aucun changement DB, aucun autre calculateur impacté.
+Aucun changement DB, aucune modif des autres calculateurs.

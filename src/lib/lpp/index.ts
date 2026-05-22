@@ -158,7 +158,7 @@ export function projectLPP(input: LPPProjectionInput): LPPProjectionResult {
 }
 
 export interface LPPBuybackPlanInput {
-  /** Capacité de rachat totale (CHF) — informatif (plafond caisse) */
+  /** Capacité de rachat totale (CHF), informatif (plafond caisse) */
   buybackCapacity: number;
   /** Montant effectivement racheté (CHF). Si non fourni, on utilise buybackCapacity (compat). */
   actualBuyback?: number;
@@ -245,7 +245,7 @@ export function simulateBuybackPlan(input: LPPBuybackPlanInput): LPPBuybackPlanR
  * taux d'intérêt minimal LPP.
  *
  * Hypothèses :
- * - salaire constant (sur le salaire courant) — communiqué clairement à l'UI
+ * - salaire constant (sur le salaire courant), communiqué clairement à l'UI
  * - taux d'intérêt = LPP_INTEREST_MIN_2026 (1.25%)
  * - bonifications légales selon barème par tranche d'âge
  */

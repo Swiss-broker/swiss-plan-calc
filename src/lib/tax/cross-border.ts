@@ -1,12 +1,12 @@
 // Module frontaliers · régime France-Suisse (Suisse romande v1).
 // Sources : Convention fiscale FR-CH 1966, Accord 1983 (4.5%).
 //
-// === SCOPE V1 — Suisse romande ===
+// === SCOPE V1, Suisse romande ===
 //
 // Régimes couverts :
 //   - "fr_accord_45" : VD, VS, NE, JU, FR
 //                      (la liste fédérale complète est BE, BL, BS, JU, NE,
-//                      SO, VD, VS — BE/BL/BS/SO hors scope v1)
+//                      SO, VD, VS, BE/BL/BS/SO hors scope v1)
 //   - "fr_geneva"    : GE (IS genevoise classique + rétrocession 3.5 %)
 //
 // Régime "it_ticino" (accord italo-suisse 2023) RETIRÉ en v1 puisque le
@@ -53,7 +53,7 @@ export interface CrossBorderResult {
   totalTax: number;
   totalRate: number;
   netAnnual: number;
-  /** Taux marginal côté pays de résidence (% — dernière tranche FR atteinte) */
+  /** Taux marginal côté pays de résidence (%, dernière tranche FR atteinte) */
   marginalRate: number;
   notes: string[];
   // Comparatif si plusieurs régimes possibles
@@ -109,7 +109,7 @@ function frenchIncomeTax(taxableEur: number, status: "single" | "married", child
   return Math.max(0, tax * parts);
 }
 
-/** Taux marginal FR (% — taux de la tranche atteinte par revenu/part). */
+/** Taux marginal FR (%, taux de la tranche atteinte par revenu/part). */
 function frenchMarginalRate(taxableEur: number, status: "single" | "married", children: number): number {
   let parts = status === "married" ? 2 : 1;
   parts += children >= 3 ? 1 + (children - 1) : children * 0.5;
@@ -160,7 +160,7 @@ export function computeCrossBorder(input: CrossBorderInput): CrossBorderResult {
   // Abattement forfaitaire 10% (frais professionnels FR)
   const baseAfterAbatement = (grossEur + spouseEur) * 0.9;
   // Déductions FR-éligibles (intérêts d'emprunt résidence principale FR,
-  // frais de garde, dons) — converties en EUR.
+  // frais de garde, dons), converties en EUR.
   const frEligibleChf =
     (input.mortgageInterestCHF ?? 0) +
     (input.childCareCostsCHF ?? 0) +

@@ -1,4 +1,4 @@
-// Carte « Prestations consolidées » — Actuel vs Projeté
+// Carte « Prestations consolidées », Actuel vs Projeté
 // (vieillesse / invalidité / décès) à partir de la fiche client.
 
 import { useMemo, useState } from "react";

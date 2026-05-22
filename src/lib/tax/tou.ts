@@ -116,7 +116,7 @@ export function compareTOUvsSource(input: TOUComparisonInput): TOUComparisonResu
     ordinary.deductions.realEstate;
   const potentialDeductionsImpact =
     deductionsTotal > 5_000
-      ? `Vos déductions effectives (3a, rachats LPP, intérêts hypothécaires, entretien) totalisent CHF ${deductionsTotal.toLocaleString("fr-CH")} — c'est ce levier qui rend la TOU intéressante.`
+      ? `Vos déductions effectives (3a, rachats LPP, intérêts hypothécaires, entretien) totalisent CHF ${deductionsTotal.toLocaleString("fr-CH")}, c'est ce levier qui rend la TOU intéressante.`
       : "Peu de déductions à faire valoir : la TOU n'apporte pas de gain significatif sans intérêts d'emprunt, rachat LPP ou 3a important.";
 
   return {

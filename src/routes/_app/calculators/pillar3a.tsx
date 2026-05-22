@@ -109,7 +109,7 @@ function Pillar3aCalc() {
   // Scénario optimisé : cotisation au plafond légal + 3b cible + retrait
   // fractionné. Permet d'afficher un vrai gain même quand le 3a est déjà au max.
   const isMaxed = form.contribution >= max;
-  // 3b cible — règle auto : si < 3'000 CHF/an → 6'000 ; sinon versement × 1,5
+  // 3b cible, règle auto : si < 3'000 CHF/an → 6'000 ; sinon versement × 1,5
   // (plafond 10'000). L'utilisateur peut surcharger via le champ ci-dessous.
   const auto3bTarget = useMemo(() => {
     if (form.pillar3bYearly < 3_000) return 6_000;
@@ -137,7 +137,7 @@ function Pillar3aCalc() {
     [max, form.currentBalance, form.yearsToRetirement, form.expectedReturn],
   );
 
-  // Projection 3b (actuelle et optimisée) — capitalisation simple.
+  // Projection 3b (actuelle et optimisée), capitalisation simple.
   const project3b = (yearly: number) => {
     const r = form.pillar3bReturn / 100;
     let balance = form.pillar3bCurrent;
@@ -361,7 +361,7 @@ function Pillar3aCalc() {
       <div className="flex flex-wrap items-end gap-3 rounded-xl border border-border bg-card/50 p-3">
         <div className="flex-1 min-w-[200px]">
           <Label className="text-xs font-medium text-muted-foreground">
-            🎯 3b cible (CHF/an) — colonne projetée
+            🎯 3b cible (CHF/an), colonne projetée
           </Label>
           <BaseNumField
             value={String(target3bYearly)}
@@ -387,7 +387,7 @@ function Pillar3aCalc() {
       </div>
 
       <SplitCompareLayout
-        title="Actuel vs Projeté — Prévoyance privée totale (3a + 3b)"
+        title="Actuel vs Projeté, Prévoyance privée totale (3a + 3b)"
         description={
           isMaxed
             ? `3a déjà au max (${max.toLocaleString("fr-CH")} CHF). Projection = 3b cible (${target3bYearly.toLocaleString("fr-CH")} CHF/an) + retrait fractionné.`

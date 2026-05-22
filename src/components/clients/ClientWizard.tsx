@@ -719,7 +719,7 @@ function StepFiscal({ form, update, errors }: StepProps) {
                 ) &&
                 SOURCE_TAX_SCALES.includes(form.source_tax_scale as SourceTaxScale) && (
                   <SelectItem value={form.source_tax_scale}>
-                    {SOURCE_TAX_SCALE_LABELS[form.source_tax_scale as SourceTaxScale]} — legacy
+                    {SOURCE_TAX_SCALE_LABELS[form.source_tax_scale as SourceTaxScale]}, legacy
                   </SelectItem>
                 )}
             </SelectContent>

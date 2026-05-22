@@ -11,7 +11,7 @@ export interface VestedStrategyDef {
   equityAllocation: number;
   /** Rendement annuel net espéré (%) */
   expectedReturn: number;
-  /** Volatilité annuelle (écart-type, %) — pour fourchettes +/- 1σ */
+  /** Volatilité annuelle (écart-type, %), pour fourchettes +/- 1σ */
   volatility: number;
   /** Frais annuels totaux (TER + frais admin) */
   totalFees: number;

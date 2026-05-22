@@ -1,4 +1,4 @@
-// Calculateur — Analyse réclamation fiscale liée au taux de change.
+// Calculateur, Analyse réclamation fiscale liée au taux de change.
 // Compare le taux AFC (annuel) au taux marché (BNS/ECB) à la date de chaque versement.
 
 import { createFileRoute } from "@tanstack/react-router";
@@ -128,7 +128,7 @@ function FxClaimCalc() {
         }),
       );
       if (missing.length) {
-        toast.warning(`Taux non récupérés pour ${missing.length} date(s) — saisie manuelle.`);
+        toast.warning(`Taux non récupérés pour ${missing.length} date(s), saisie manuelle.`);
       } else {
         toast.success(`Taux ${currency}/CHF récupérés via ECB.`);
       }
@@ -196,11 +196,11 @@ function FxClaimCalc() {
                 Taux AFC retenu{" "}
                 {AFC_ANNUAL_RATES[taxYear]?.[currency] != null ? (
                   <span className="text-success">
-                    — officiel {taxYear} : {(AFC_ANNUAL_RATES[taxYear]![currency] ?? 0).toFixed(4)} CHF/{currency}
+                   , officiel {taxYear} : {(AFC_ANNUAL_RATES[taxYear]![currency] ?? 0).toFixed(4)} CHF/{currency}
                   </span>
                 ) : (
                   <span className="text-warning">
-                    — taux AFC non publié pour {currency} en {taxYear}, saisir manuellement
+                   , taux AFC non publié pour {currency} en {taxYear}, saisir manuellement
                   </span>
                 )}
               </Label>
@@ -335,11 +335,11 @@ function FxClaimCalc() {
         <CalcCard title="Notes" description="Sources et fondement juridique">
           <ul className="text-xs text-muted-foreground space-y-2 leading-relaxed">
             <li>
-              <strong>AFC</strong> — taux moyens annuels publiés par l'Administration fédérale
+              <strong>AFC</strong>, taux moyens annuels publiés par l'Administration fédérale
               des contributions (notices officielles, base de la conversion par défaut).
             </li>
             <li>
-              <strong>BNS / ECB</strong> — taux journaliers de référence récupérés via
+              <strong>BNS / ECB</strong>, taux journaliers de référence récupérés via
               api.frankfurter.app (proxy ECB, sans clé). Les taux BNS officiels (data.snb.ch)
               peuvent être substitués pour les pièces jointes.
             </li>

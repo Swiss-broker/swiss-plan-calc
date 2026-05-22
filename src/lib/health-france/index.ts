@@ -1,4 +1,4 @@
-// CMU — Cotisation maladie pour frontaliers français travaillant en Suisse
+// CMU, Cotisation maladie pour frontaliers français travaillant en Suisse
 // ayant exercé le droit d'option vers la Sécurité sociale française.
 // La cotisation est gérée et collectée par le CNTFS via l'URSSAF.
 // CMU et CNTFS désignent donc le MÊME régime (CNTFS = organisme collecteur).
@@ -26,7 +26,7 @@ export const LAMAL_TARIFS_DEFAULT = {
 export const CMU_TAUX_COTISATION = 0.08;
 
 export interface HealthFranceInput {
-  /** Salaire suisse brut annuel N-2 (CHF) — base de la cotisation CMU */
+  /** Salaire suisse brut annuel N-2 (CHF), base de la cotisation CMU */
   swissGrossSalaryCHF: number;
   civilStatus: "single" | "married";
   childrenCount: number;
@@ -92,7 +92,7 @@ export function computeHealthFrance(input: HealthFranceInput): HealthFranceResul
   const cmuAnnualEUR = Math.round(cmuBaseEUR * CMU_TAUX_COTISATION);
   const cmuAnnualCHF = Math.round(chfFromEur(cmuAnnualEUR));
 
-  // LAMal — calcul forfaitaire selon composition familiale
+  // LAMal, calcul forfaitaire selon composition familiale
   const adultMonthly =
     input.lamalAdultMonthlyCHF && input.lamalAdultMonthlyCHF > 0
       ? input.lamalAdultMonthlyCHF
@@ -134,13 +134,13 @@ export function computeHealthFrance(input: HealthFranceInput): HealthFranceResul
           : `${fmtCHF(0)} (0 enfant)`,
     },
     { label: "Total LAMal annuel", value: fmtCHF(lamalAnnualCHF) },
-    { label: "Note", value: "Tarif indicatif — varie selon caisse, franchise, canton de domicile" },
+    { label: "Note", value: "Tarif indicatif, varie selon caisse, franchise, canton de domicile" },
   ];
 
   const notes = [
     "CMU et CNTFS désignent le même régime : la cotisation est calculée par l'URSSAF (CNTFS) pour les frontaliers ayant exercé le droit d'option vers la Sécurité sociale française.",
     `L'abattement CMU est forfaitaire et révisé chaque année par l'administration française (barème ${input.taxYear} : ${fmtEUR(abatementEUR)}). La cotisation est calculée sur les revenus N-2 (pour 2026 = revenus 2024).`,
-    "La déclaration CMU est INDIVIDUELLE — la situation civile et les enfants n'impactent ni l'abattement ni l'assiette CMU.",
+    "La déclaration CMU est INDIVIDUELLE, la situation civile et les enfants n'impactent ni l'abattement ni l'assiette CMU.",
     "La prime LAMal frontalier est forfaitaire et varie selon la caisse maladie, la franchise et le canton de domicile en France. Les tarifs affichés sont indicatifs.",
     "Le droit d'option CMU vs LAMal doit être exercé dans les 3 mois suivant le début de l'activité frontalière. Ce choix est irrévocable.",
   ];

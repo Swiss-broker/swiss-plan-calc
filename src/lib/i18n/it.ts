@@ -690,7 +690,7 @@ export const it: Record<string, string> = {
   "calc.lpp.explain.method.yearly": "Riscatto annuo = {total} ÷ {years} anno/i = {yearly}.",
   "calc.lpp.explain.method.diff": "Per ogni anno si calcola l'imposta CON riscatto (deduzione art. 33 cpv. 1 lett. d LIFD) e SENZA. Risparmio = differenza.",
   "calc.lpp.explain.method.sum": "Risparmio totale = somma dei risparmi annuali.",
-  "calc.lpp.explain.method.roi": "ROI fiscale = {roi}% — per 1 CHF investito, circa {cents} centesimi recuperati in imposta.",
+  "calc.lpp.explain.method.roi": "ROI fiscale = {roi}%, per 1 CHF investito, circa {cents} centesimi recuperati in imposta.",
   "calc.lpp.explain.method.marginal": "Aliquota marginale effettiva ({rate}%) = quota del 1° versamento annuo compensata dal risparmio fiscale.",
   "calc.lpp.explain.assumptions.title": "Ipotesi utilizzate",
   "calc.lpp.explain.confession": "Confessione",
@@ -1650,7 +1650,7 @@ export const it: Record<string, string> = {
   "calc.group.decision.desc":
     "Comparatore cantonale, rendita vs capitale, comparatore investimenti",
   "calc.ai.card_title": "Prestazioni AI (Assicurazione Invalidità)",
-  "calc.ai.card_desc": "Stima in caso di invalidità totale oggi — stessi parametri dell'AVS, ma accrediti calcolati sull'età ATTUALE dei figli (nessuna proiezione).",
+  "calc.ai.card_desc": "Stima in caso di invalidità totale oggi, stessi parametri dell'AVS, ma accrediti calcolati sull'età ATTUALE dei figli (nessuna proiezione).",
   "calc.ai.pension_month": "Rendita AI / mese",
   "calc.ai.pension_year": "Rendita AI / anno",
   "calc.ai.scale": "Scala contributiva",

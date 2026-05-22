@@ -16,7 +16,7 @@ export interface SplitRow {
   current: number | string | null | undefined;
   projected: number | string | null | undefined;
   format?: SplitRowFormat;
-  /** "higher_is_better" (défaut) ou "lower_is_better" — pilote la couleur du delta. */
+  /** "higher_is_better" (défaut) ou "lower_is_better", pilote la couleur du delta. */
   betterWhen?: "higher" | "lower" | "neutral";
   hint?: string;
 }
