@@ -3,8 +3,9 @@
 // canton-compare, AVS/AI). Affiche deux colonnes côte à côte (empilées en
 // mobile) avec un bandeau de synthèse en bas : économie annuelle, gain
 // retraite, % d'amélioration.
-import type { ReactNode } from "react";
-import { ArrowRight, TrendingUp, TrendingDown, Minus, Sparkles } from "lucide-react";
+import { useState, type ReactNode } from "react";
+import { ArrowRight, TrendingUp, TrendingDown, Minus, Sparkles, ChevronDown, ChevronUp } from "lucide-react";
+
 import { cn } from "@/lib/utils";
 import { formatCHF, formatPct } from "@/lib/format";
 import { Badge } from "@/components/ui/badge";
