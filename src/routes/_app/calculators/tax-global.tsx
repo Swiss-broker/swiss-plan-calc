@@ -852,8 +852,12 @@ function TaxGlobalCalc() {
         </div>
       </div>
 
-      {/* TRANSPARENCE — comment ce résultat est calculé */}
+      {/* COMPARATEUR Actuel vs Projeté */}
+      <TaxGlobalCompareCard form={form} result={result} />
+
+      {/* TRANSPARENCE : comment ce résultat est calculé */}
       <TaxGlobalExplanation form={form} result={result} client={client} />
+
 
       <div className="flex flex-wrap justify-end gap-2">
         <SaveSimulationButton
