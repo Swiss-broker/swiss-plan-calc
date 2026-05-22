@@ -1,64 +1,69 @@
-## Pourquoi rien ne bouge actuellement
+## Ce qui se passe et pourquoi c'est confus
 
-Sur la capture, la fiche client a déjà `pillar_3a_annual_contribution = 7'258 CHF` (le plafond légal 2026 pour un salarié LPP). Le scénario « Projeté » du split-screen propose justement « cotisation au maximum légal » → comme on est déjà au max, les deux colonnes affichent les mêmes chiffres. C'est mathématiquement juste mais l'écran ne sert à rien dans ce cas, et surtout **le 3B n'entre nulle part dans la comparaison**.
+Trois problèmes distincts s'additionnent dans l'écran actuel :
 
-## Ce que je propose
+### 1. Le « 4 500 » qui sort de nulle part pour le 3b projeté
 
-Refondre le bloc « Actuel vs Projeté » du calculateur `pillar3a` pour qu'il représente l'ensemble de la prévoyance privée (3a + 3b) et qu'il propose toujours un levier d'optimisation, même quand le 3a est déjà saturé.
+Dans le code j'ai mis une règle automatique :
 
-### 1. Élargir la comparaison au 3a + 3b
+- si tu cotises < 3 000 CHF/an au 3b → cible = 6 000 CHF/an
+- sinon → cible = ton versement × 1,5 (plafonné à 10 000)
 
-Le scénario « Actuel » et « Projeté » comparent désormais **tout le pilier 3** :
+Tu as saisi 3 000, donc la cible devient 3 000 × 1,5 = **4 500**. Le « +1 500 » vert est l'écart entre les deux colonnes. Cette règle n'est documentée nulle part dans l'UI, donc c'est illisible.
 
-- Actuel = cotisation 3a saisie + 3b saisi (tels qu'en fiche / formulaire)
-- Projeté = 3a au plafond légal **+ 3b « cible »** (cotisation annuelle 3b suggérée, par défaut 6'000 CHF/an si le 3b courant est plus bas, sinon on garde la valeur saisie) **+ retrait fractionné sur 3-5 comptes** au lieu d'un retrait unique
+### 2. Les petites pastilles vertes avec la flèche
 
-Lignes du comparateur (au lieu de 4 lignes 3a only) :
+Elles indiquent l'écart entre la colonne « Actuelle » et « Projetée » (delta brut, ex. `+1 500 CHF`). C'est censé être un signal rapide « combien tu gagnes en passant à la situation projetée », mais sans légende ça ressemble à du bruit.
 
-1. Cotisation annuelle 3a
-2. Cotisation annuelle 3b
-3. Économie d'impôt annuelle (3a uniquement, le 3b n'est pas déductible)
-4. Capital 3a à la retraite
-5. Capital 3b à la retraite
-6. **Capital total prévoyance privée (3a + 3b)**
-7. Impôt sur le retrait à la retraite (unique vs fractionné)
-8. Capital net après impôt de sortie
+### 3. « Économie annuelle CHF 0 »
 
-### 2. Bandeau « déjà optimisé » quand le 3a est saturé
+L'économie annuelle affichée = économie d'impôt 3a (projeté) − économie d'impôt 3a (actuel). Comme ton 3a est déjà au max, c'est 2 296 − 2 296 = **0**. Le 3b n'est **pas déductible** du revenu donc ne génère aucune économie d'impôt annuelle. C'est techniquement juste mais ça ne reflète pas le vrai gain de l'optimisation, qui est :
 
-Si `contribution >= max` ET (3b absent OU sous-cotisé), afficher un encart explicite au-dessus du comparateur :
+- +48 045 de capital 3b à la retraite (grâce à la cotisation 3b plus forte)
+- +5 133 d'impôt en moins au retrait (fractionnement)
+- = **+53 178 CHF nets** à la retraite (déjà affiché dans la 2e tuile)
 
-> ✅ Cotisation 3a déjà au maximum légal (7'258 CHF). Levier d'optimisation restant : **ouvrir un 3B** + **fractionner les retraits** sur 3 à 5 comptes 3a.
+## Plan de correction
 
-Le summary recalcule alors le gain via le 3b + le fractionnement, plus via la cotisation 3a.
+### A. Rendre le 3b cible explicite et contrôlable
 
-### 3. Suggestion automatique du 3b cible
+- Ajouter au-dessus du comparateur un petit bandeau qui dit en clair :
+  > « 3b projeté : on suppose +50 % de votre versement actuel (cible 4 500 CHF/an). Modifiez la cible ci-dessous. »
+- Ajouter **un champ « 3b cible (CHF/an) »** éditable dans le bloc « Actuel vs Projeté » lui-même, pré-rempli avec la règle automatique mais que l'utilisateur peut surcharger. Si on le passe à 3 000 = même que l'actuel, le « +1 500 » disparaît et le capital projeté 3b devient identique → confirme visuellement la logique.
+- Si actuel = 0, la cible par défaut reste 6 000 (faut une suggestion concrète).
 
-Si `pillar3bYearly < 3'000`, le scénario projeté utilise 6'000 CHF/an comme cible (montant éditable). Sinon on garde la valeur saisie + 50 %, plafonnée à un montant raisonnable (10'000 CHF/an).
+### B. Légender les pastilles delta
 
-### 4. Summary mis à jour
+Ajouter une mini-légende sous le titre du comparateur :
 
-Le résumé en bas du SplitCompareLayout combine :
+> « Les pastilles vertes indiquent l'écart entre votre situation actuelle et la projection (ex. +1 500 CHF/an = vous cotisez 1 500 de plus). »
 
-- Économie d'impôt annuelle = (Δ 3a) ✕ taux marginal
-- Capital supplémentaire à la retraite = Δ(3a + 3b) projetés
-- Économie d'impôt au retrait = `staggered.savings` du retrait fractionné
-- Delta % = sur le capital net total après impôt de sortie
+Et masquer les pastilles quand le delta = 0 (déjà fait), ou afficher « = » neutre pour rendre clair que rien n'a bougé.
+
+### C. Remplacer le bandeau résumé du bas
+
+Au lieu du trio actuel (Économie annuelle 0 / Capital net suppl. / Δ %), afficher **trois indicateurs qui ont du sens dans tous les cas** :
+
+1. **Capital net supplémentaire à la retraite** (le vrai gain final) — déjà calculé : 53 178 CHF
+2. **Économie d'impôt annuelle (3a)** — utile uniquement si le 3a n'est pas maxé ; sinon afficher « 3a déjà au max — pas d'économie supplémentaire » au lieu de « CHF 0 »
+3. **Économie d'impôt au retrait (fractionnement)** — le levier fiscal restant quand le 3a est saturé : 5 133 CHF
+
+Et **ventiler** dans le sous-titre du bandeau d'où vient le gain : « = 48 045 CHF de cotisations 3b supplémentaires capitalisées + 5 133 CHF d'impôt en moins au retrait ».
+
+### D. Clarifier les lignes du comparateur
+
+- Renommer « Cotisation annuelle 3a » → « Cotisation 3a (CHF/an) ».
+- Ajouter un petit `hint` (déjà supporté par `SplitRow`) sur « Cotisation annuelle 3b » qui dit : « Cible projetée = +50 % de votre versement actuel (modifiable) ».
+- Ajouter un `hint` sur « Économie d'impôt annuelle (3a) » : « Le 3b n'est pas déductible du revenu, donc n'apparaît pas ici. »
 
 ## Détails techniques
 
-Fichiers touchés :
+Un seul fichier touché : `src/routes/_app/calculators/pillar3a.tsx`.
 
-- `src/routes/_app/calculators/pillar3a.tsx`
-  - Calculer `projection3bOptimized` (3b avec cotisation cible)
-  - Étendre `compareRows` (8 lignes)
-  - Ajouter un bandeau conditionnel « déjà au max »
-  - Recalculer le `summary` du `SplitCompareLayout` pour intégrer 3b + fractionnement
-- `src/lib/clients/to-calculator-input.ts` (mapper `toPillar3aInput`)
-  - Pré-remplir `pillar3bCurrent` et `pillar3bYearly` depuis `client_pension.pillar_3b_accounts` (somme des soldes + estimation versement annuel si stocké)
-- Aucun changement de schéma DB, aucune nouvelle dépendance, aucun changement aux autres calculateurs.
+- Nouveau state local `target3bYearlyOverride` (number | null) ; `target3bYearly` = override ?? règle auto.
+- Nouveau champ `NumField` « 3b cible (CHF/an) » au-dessus du `SplitCompareLayout` avec bouton « auto » pour réinitialiser à la règle.
+- Refonte du bandeau `summary` du `SplitCompareLayout` (3 tuiles au lieu de 2, libellés conditionnels).
+- Ajout des `hint` sur les 2 lignes concernées.
+- Mini-légende sous le titre.
 
-## Hors scope (à confirmer si voulu plus tard)
-
-- Pré-remplissage du 3b côté wizard client (formulaire de saisie). Si la fiche n'a pas de 3b, le calculateur prend la valeur par défaut du formulaire et reste éditable.
-- Propagation de ce modèle « prévoyance privée totale » dans `ConsolidatedBenefitsCard` (déjà fait en phase 2, mais on pourra y brancher le 3b cible si tu valides la logique ici).
+Aucun changement de logique de calcul, aucun changement DB, aucun autre calculateur impacté.
