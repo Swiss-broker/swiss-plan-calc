@@ -268,7 +268,7 @@ function Pillar3aCalc() {
       </div>
 
       <SplitCompareLayout
-        title="Actuel vs Projeté Piliarys"
+        title="Actuel vs Projeté"
         description={`Comparaison de la cotisation saisie (${form.contribution.toLocaleString("fr-CH")} CHF) avec le plafond légal (${max.toLocaleString("fr-CH")} CHF), à canton et statut identiques.`}
         currentSubtitle={client ? "Données fiche client" : "Cotisation saisie"}
         projectedSubtitle="Cotisation au maximum légal"

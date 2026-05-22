@@ -450,7 +450,7 @@ function LppCalc() {
       </CalcCard>
 
       <SplitCompareLayout
-        title="Actuel (sans rachat) vs Projeté Piliarys (avec rachat)"
+        title="Actuel (sans rachat) vs Projeté (avec rachat)"
         description="Impact du plan de rachat sur le capital final et la fiscalité, à hypothèses de salaire et rendement identiques."
         currentSubtitle="Aucun rachat planifié"
         projectedSubtitle={`Rachat de ${formatCHF(actualBuybackCapped)} sur ${form.buybackYears} an(s)`}

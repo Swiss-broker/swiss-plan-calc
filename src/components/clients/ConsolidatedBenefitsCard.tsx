@@ -1,4 +1,4 @@
-// Carte « Prestations consolidées » — Actuel vs Projeté Piliarys
+// Carte « Prestations consolidées » — Actuel vs Projeté
 // (vieillesse / invalidité / décès) à partir de la fiche client.
 
 import { useMemo, useState } from "react";
@@ -37,7 +37,7 @@ export function ConsolidatedBenefitsCard({ bundle }: Props) {
 
   return (
     <DashboardCard
-      title="Prestations consolidées · Actuel vs Projeté Piliarys"
+      title="Prestations consolidées · Actuel vs Projeté"
       icon={HeartHandshake}
     >
       <Tabs value={tab} onValueChange={(v) => setTab(v as PensionEvent)}>

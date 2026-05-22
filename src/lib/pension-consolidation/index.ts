@@ -347,7 +347,7 @@ export function consolidatePensionBenefits(b: ClientBundle): ConsolidatedBenefit
 }
 
 /**
- * Variante "optimisée Piliarys" du même bundle :
+ * Variante "optimisée" du même bundle :
  * - LPP : saturation de la capacité de rachat restante (étalée linéairement
  *   jusqu'à la retraite via le mécanisme existant de `lpp_planned_buybacks`).
  * - 3a : cotisation portée au plafond légal salarié LPP (7 258 CHF, 2026)

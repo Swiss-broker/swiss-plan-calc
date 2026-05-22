@@ -1,4 +1,4 @@
-// Écran scindé "Situation actuelle vs Situation projetée Piliarys"
+// Écran scindé "Situation actuelle vs Situation projetée"
 // Composant central réutilisable pour tous les comparateurs (3a, LPP, retraite,
 // canton-compare, AVS/AI). Affiche deux colonnes côte à côte (empilées en
 // mobile) avec un bandeau de synthèse en bas : économie annuelle, gain
@@ -41,7 +41,7 @@ interface Props {
   description?: string;
   /** Libellé de la colonne gauche (défaut: "Situation actuelle"). */
   currentLabel?: string;
-  /** Libellé de la colonne droite (défaut: "Situation projetée Piliarys"). */
+  /** Libellé de la colonne droite (défaut: "Situation projetée"). */
   projectedLabel?: string;
   /** Sous-titre colonne gauche (ex: "Données fiche client"). */
   currentSubtitle?: string;
@@ -93,7 +93,7 @@ export function SplitCompareLayout({
   title,
   description,
   currentLabel = "Situation actuelle",
-  projectedLabel = "Situation projetée Piliarys",
+  projectedLabel = "Situation projetée",
   currentSubtitle = "Données fiche client",
   projectedSubtitle = "Optimisation recommandée",
   rows,
