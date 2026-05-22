@@ -106,8 +106,16 @@ function Pillar3aCalc() {
     [form],
   );
 
-  // Scénario optimisé : cotisation au plafond légal + projection sur la
-  // même durée et même rendement que la situation courante.
+  // Scénario optimisé : cotisation au plafond légal + 3b cible + retrait
+  // fractionné. Permet d'afficher un vrai gain même quand le 3a est déjà au max.
+  const isMaxed = form.contribution >= max;
+  // 3b cible : si < 3'000 CHF/an, on suggère 6'000 ; sinon on garde la valeur
+  // saisie + 50 %, plafonné à 10'000 CHF/an.
+  const target3bYearly = useMemo(() => {
+    if (form.pillar3bYearly < 3_000) return 6_000;
+    return Math.min(10_000, Math.round(form.pillar3bYearly * 1.5));
+  }, [form.pillar3bYearly]);
+
   const optimizedSavings = useMemo(
     () =>
       pillar3aTaxSavings({
@@ -127,34 +135,105 @@ function Pillar3aCalc() {
     [max, form.currentBalance, form.yearsToRetirement, form.expectedReturn],
   );
 
+  // Projection 3b (actuelle et optimisée) — capitalisation simple.
+  const project3b = (yearly: number) => {
+    const r = form.pillar3bReturn / 100;
+    let balance = form.pillar3bCurrent;
+    for (let i = 0; i < form.pillar3bYears; i++) {
+      balance = balance * (1 + r) + yearly;
+    }
+    return Math.round(balance);
+  };
+  const current3bFinal = useMemo(
+    () => project3b(form.pillar3bYearly),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [form.pillar3bCurrent, form.pillar3bReturn, form.pillar3bYears, form.pillar3bYearly],
+  );
+  const optimized3bFinal = useMemo(
+    () => project3b(target3bYearly),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [form.pillar3bCurrent, form.pillar3bReturn, form.pillar3bYears, target3bYearly],
+  );
+
+  // Impôt de sortie : actuel = retrait unique sur 3a projeté ; projeté =
+  // fractionné sur N comptes (utilise le stag déjà calculé sur withdrawalCapital,
+  // mais on recalcule ici sur le capital 3a projeté pour cohérence).
+  const taxLumpCurrent = useMemo(
+    () =>
+      staggeredWithdrawal({
+        totalCapital: projection.finalBalance,
+        numberOfAccounts: 1,
+        canton: form.canton,
+        status: form.status === "single_with_children" ? "single_with_children" : form.status,
+      }),
+    [projection.finalBalance, form.canton, form.status],
+  );
+  const taxStaggeredProjected = useMemo(
+    () =>
+      staggeredWithdrawal({
+        totalCapital: optimizedProjection.finalBalance,
+        numberOfAccounts: Math.max(2, form.withdrawalAccounts),
+        canton: form.canton,
+        status: form.status === "single_with_children" ? "single_with_children" : form.status,
+      }),
+    [optimizedProjection.finalBalance, form.withdrawalAccounts, form.canton, form.status],
+  );
+
+  const currentTotalPrivate = projection.finalBalance + current3bFinal;
+  const projectedTotalPrivate = optimizedProjection.finalBalance + optimized3bFinal;
+  const currentNetAfterTax = currentTotalPrivate - taxLumpCurrent.totalTaxSingle;
+  const projectedNetAfterTax =
+    projectedTotalPrivate - taxStaggeredProjected.totalTaxSeparated;
+
   const compareRows: SplitRow[] = useMemo(
     () => [
+      { label: "Cotisation annuelle 3a", current: form.contribution, projected: max, betterWhen: "higher" },
+      { label: "Cotisation annuelle 3b", current: form.pillar3bYearly, projected: target3bYearly, betterWhen: "higher" },
       {
-        label: "Cotisation annuelle 3a",
-        current: form.contribution,
-        projected: max,
-        betterWhen: "higher",
-      },
-      {
-        label: "Économie d'impôt annuelle",
+        label: "Économie d'impôt annuelle (3a)",
         current: savings.taxSavings,
         projected: optimizedSavings.taxSavings,
         betterWhen: "higher",
+        hint: "Le 3B n'est pas déductible du revenu.",
       },
       {
-        label: "Coût net après impôt",
-        current: savings.effectiveCost,
-        projected: optimizedSavings.effectiveCost,
-        betterWhen: "lower",
-      },
-      {
-        label: `Capital à la retraite (${form.yearsToRetirement} ans)`,
+        label: `Capital 3a à la retraite (${form.yearsToRetirement} ans)`,
         current: projection.finalBalance,
         projected: optimizedProjection.finalBalance,
         betterWhen: "higher",
       },
+      {
+        label: `Capital 3b à la retraite (${form.pillar3bYears} ans)`,
+        current: current3bFinal,
+        projected: optimized3bFinal,
+        betterWhen: "higher",
+      },
+      {
+        label: "Capital total prévoyance privée (3a + 3b)",
+        current: currentTotalPrivate,
+        projected: projectedTotalPrivate,
+        betterWhen: "higher",
+      },
+      {
+        label: "Impôt sur le retrait (unique vs fractionné)",
+        current: taxLumpCurrent.totalTaxSingle,
+        projected: taxStaggeredProjected.totalTaxSeparated,
+        betterWhen: "lower",
+        hint: `Projeté = retrait étalé sur ${Math.max(2, form.withdrawalAccounts)} comptes.`,
+      },
+      {
+        label: "Capital net après impôt de sortie",
+        current: currentNetAfterTax,
+        projected: projectedNetAfterTax,
+        betterWhen: "higher",
+      },
     ],
-    [form.contribution, form.yearsToRetirement, max, savings, optimizedSavings, projection, optimizedProjection],
+    [
+      form.contribution, form.pillar3bYearly, form.yearsToRetirement, form.pillar3bYears, form.withdrawalAccounts,
+      max, target3bYearly, savings, optimizedSavings, projection, optimizedProjection,
+      current3bFinal, optimized3bFinal, currentTotalPrivate, projectedTotalPrivate,
+      taxLumpCurrent, taxStaggeredProjected, currentNetAfterTax, projectedNetAfterTax,
+    ],
   );
 
   const { user } = useAuth();
@@ -267,21 +346,34 @@ function Pillar3aCalc() {
         </div>
       </div>
 
+      {isMaxed && (
+        <div className="rounded-xl border border-success/40 bg-success/5 p-4 text-sm">
+          <div className="font-semibold text-success">✅ Cotisation 3a déjà au maximum légal ({max.toLocaleString("fr-CH")} CHF)</div>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Leviers d'optimisation restants : <strong>cotiser à un 3B</strong> (assurance-vie / épargne libre, cible {target3bYearly.toLocaleString("fr-CH")} CHF/an) et <strong>fractionner les retraits</strong> sur {Math.max(2, form.withdrawalAccounts)} comptes 3a pour réduire l'impôt de sortie.
+          </p>
+        </div>
+      )}
+
       <SplitCompareLayout
-        title="Actuel vs Projeté"
-        description={`Comparaison de la cotisation saisie (${form.contribution.toLocaleString("fr-CH")} CHF) avec le plafond légal (${max.toLocaleString("fr-CH")} CHF), à canton et statut identiques.`}
-        currentSubtitle={client ? "Données fiche client" : "Cotisation saisie"}
-        projectedSubtitle="Cotisation au maximum légal"
+        title="Actuel vs Projeté — Prévoyance privée totale (3a + 3b)"
+        description={
+          isMaxed
+            ? `3a déjà au max (${max.toLocaleString("fr-CH")} CHF). Projection = 3b cible (${target3bYearly.toLocaleString("fr-CH")} CHF/an) + retrait fractionné.`
+            : `3a au plafond (${max.toLocaleString("fr-CH")} CHF), 3b cible ${target3bYearly.toLocaleString("fr-CH")} CHF/an et retrait fractionné sur ${Math.max(2, form.withdrawalAccounts)} comptes.`
+        }
+        currentSubtitle={client ? "Données fiche client" : "Valeurs saisies"}
+        projectedSubtitle="3a max + 3b cible + retrait fractionné"
         rows={compareRows}
         summary={{
           annualSaving: optimizedSavings.taxSavings - savings.taxSavings,
-          retirementGain: optimizedProjection.finalBalance - projection.finalBalance,
-          retirementGainLabel: "Capital 3a en plus à la retraite",
+          retirementGain: projectedNetAfterTax - currentNetAfterTax,
+          retirementGainLabel: "Capital net supplémentaire (après impôt de sortie)",
           deltaPercent:
-            projection.finalBalance > 0
-              ? (optimizedProjection.finalBalance - projection.finalBalance) / projection.finalBalance
+            currentNetAfterTax > 0
+              ? (projectedNetAfterTax - currentNetAfterTax) / currentNetAfterTax
               : 0,
-          deltaLabel: "Capital final",
+          deltaLabel: "Capital net total",
         }}
       />
 

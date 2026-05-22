@@ -260,6 +260,7 @@ export function toVestedBenefitsInput(b: ClientBundle) {
 export function toPillar3aInput(b: ClientBundle) {
   const age = ageFromDob(b.client.date_of_birth);
   const pillar3aSum = sumAccountBalances(b.pension?.pillar_3a_accounts);
+  const pillar3bSum = sumAccountBalances(b.pension?.pillar_3b_accounts);
   return {
     canton: b.client.canton ?? undefined,
     status: mapStatus(b.client, parseChildren(b.client.children).length > 0),
@@ -268,6 +269,7 @@ export function toPillar3aInput(b: ClientBundle) {
     currentBalance: pillar3aSum > 0 ? pillar3aSum : undefined,
     yearsToRetirement: age !== null ? Math.max(1, 65 - age) : undefined,
     hasLPP: Number(b.pension?.lpp_current_balance ?? 0) > 0,
+    pillar3bCurrent: pillar3bSum > 0 ? pillar3bSum : undefined,
   };
 }
 
