@@ -1,95 +1,64 @@
-# Plan – Optimisation calculateurs piliers en 2 phases
+## Pourquoi rien ne bouge actuellement
 
-**Fil rouge** : tous les comparateurs adoptent un **affichage en écran scindé** (split-screen) avec **Situation actuelle (client)** à gauche et **Situation projetée Piliarys** à droite, plus un bandeau de synthèse en bas (économie + gain retraite).
+Sur la capture, la fiche client a déjà `pillar_3a_annual_contribution = 7'258 CHF` (le plafond légal 2026 pour un salarié LPP). Le scénario « Projeté » du split-screen propose justement « cotisation au maximum légal » → comme on est déjà au max, les deux colonnes affichent les mêmes chiffres. C'est mathématiquement juste mais l'écran ne sert à rien dans ce cas, et surtout **le 3B n'entre nulle part dans la comparaison**.
 
----
+## Ce que je propose
 
-## Phase 1 – Comparaison en écran scindé "Actuel vs Projeté" (priorité haute)
+Refondre le bloc « Actuel vs Projeté » du calculateur `pillar3a` pour qu'il représente l'ensemble de la prévoyance privée (3a + 3b) et qu'il propose toujours un levier d'optimisation, même quand le 3a est déjà saturé.
 
-### 1.1 · Composant réutilisable `SplitCompareLayout`
-Nouveau fichier `src/components/calculators/SplitCompareLayout.tsx` :
+### 1. Élargir la comparaison au 3a + 3b
 
-```text
-┌─────────────────────────────┬─────────────────────────────┐
-│ 🔴 SITUATION ACTUELLE       │ 🟢 SITUATION PROJETÉE       │
-│ (données fiche client)      │ Piliarys (optimisée)        │
-│                             │                             │
-│ • Revenu / capital actuel   │ • Avec optimisations        │
-│ • Cotisations / rachats     │ • Plan recommandé           │
-│ • Impôt / rente             │ • Impôt / rente projetés    │
-├─────────────────────────────┴─────────────────────────────┤
-│ 💰 Économie annuelle  │  📈 Gain retraite  │  Δ % delta   │
-└────────────────────────────────────────────────────────────┘
-```
+Le scénario « Actuel » et « Projeté » comparent désormais **tout le pilier 3** :
 
-- Colonnes côte à côte ≥ lg, empilées sur mobile.
-- Codes couleur : rouge atténué (actuel) / vert (projeté).
-- Mise en évidence visuelle des deltas par ligne (flèche + montant).
-- Bandeau synthèse final obligatoire : économie annuelle CHF, gain retraite (capital ou rente), % d'amélioration.
+- Actuel = cotisation 3a saisie + 3b saisi (tels qu'en fiche / formulaire)
+- Projeté = 3a au plafond légal **+ 3b « cible »** (cotisation annuelle 3b suggérée, par défaut 6'000 CHF/an si le 3b courant est plus bas, sinon on garde la valeur saisie) **+ retrait fractionné sur 3-5 comptes** au lieu d'un retrait unique
 
-### 1.2 · Intégration dans les calculateurs liés client
-Appliquer le layout à :
+Lignes du comparateur (au lieu de 4 lignes 3a only) :
 
-- **`pillar3a.tsx`** : actuel (cotisation client) vs projeté (max légal + canton de retrait optimal).
-- **`lpp.tsx`** : actuel (capital projeté sans rachat) vs projeté (avec plan de rachat recommandé).
-- **`retirement.tsx`** : rente actuelle vs rente avec optimisation 3a + rachats LPP.
-- **`canton-compare.tsx`** : canton de résidence vs canton optimisé (défaut **Zoug**), avec nouveau **mode "Retrait de capital"** (2 cantons, montant, barème prestations en capital, calcul delta).
-- **`avs-ai.tsx`** : actuel vs projeté (informatif, combine AVS + LPP pour rente totale).
+1. Cotisation annuelle 3a
+2. Cotisation annuelle 3b
+3. Économie d'impôt annuelle (3a uniquement, le 3b n'est pas déductible)
+4. Capital 3a à la retraite
+5. Capital 3b à la retraite
+6. **Capital total prévoyance privée (3a + 3b)**
+7. Impôt sur le retrait à la retraite (unique vs fractionné)
+8. Capital net après impôt de sortie
 
-### 1.3 · Corrections rapides associées
-- **Salaire éditable dans rachat LPP dirigeant** (`DirectorLppBuybackCard.tsx`) : champ `NumField` éditable, prérempli depuis la fiche client mais override toujours possible — y compris en mode libre.
-- **Tooltip "Plan cadre 1e"** (sélecteur Plan LPP dans `director-compensation.tsx`, `lpp.tsx`, wizard client) :
-  > "Le plan cadre 1e est une solution de prévoyance surobligatoire destinée aux salaires élevés. Il permet une plus grande flexibilité d'investissement et une optimisation fiscale, mais implique un niveau de risque plus élevé selon la stratégie choisie."
+### 2. Bandeau « déjà optimisé » quand le 3a est saturé
 
-### 1.4 · Comparateur cantonal – mode retrait de capital
-Dans `canton-compare.tsx` :
-- Switch de mode : `Revenu courant` (existant) / `Retrait capital LPP / 3a`.
-- En mode retrait : sélection canton résidence + canton de retrait (défaut ZG) + montant.
-- Calcul via barème spécifique prestations en capital (1/5 IFD + barème cantonal capital).
-- Split-screen côté résidence vs côté retrait + delta économisé.
-- Encart d'avertissement : domicile fiscal au moment du retrait requis.
+Si `contribution >= max` ET (3b absent OU sous-cotisé), afficher un encart explicite au-dessus du comparateur :
 
----
+> ✅ Cotisation 3a déjà au maximum légal (7'258 CHF). Levier d'optimisation restant : **ouvrir un 3B** + **fractionner les retraits** sur 3 à 5 comptes 3a.
 
-## Phase 2 – Cohérence inter-piliers AVS + LPP + 3e (priorité moyenne)
+Le summary recalcule alors le gain via le 3b + le fractionnement, plus via la cotisation 3a.
 
-### 2.1 · Module "Rente consolidée"
-Étendre `src/components/clients/ConsolidatedBenefitsCard.tsx` + `src/lib/pension-consolidation/` pour afficher dans un même bloc :
+### 3. Suggestion automatique du 3b cible
 
-- **Retraite** : AVS + LPP (+ rente 3a si applicable) — mensuel & annuel.
-- **Invalidité (AI)** : rente AI fédérale + rente LPP invalidité (60 % salaire assuré par défaut).
-- **Décès – conjoint** : rente AVS veuf/veuve (selon conditions légales : enfant à charge, ≥45 ans + ≥5 ans mariage) + rente LPP survivant (60 % rente vieillesse).
-- **Décès – orphelin** : rente AVS + LPP par enfant.
+Si `pillar3bYearly < 3'000`, le scénario projeté utilise 6'000 CHF/an comme cible (montant éditable). Sinon on garde la valeur saisie + 50 %, plafonnée à un montant raisonnable (10'000 CHF/an).
 
-### 2.2 · Hypothèses partagées
-Centraliser dans `pension-consolidation/` pour garantir que AVS, LPP, retirement.tsx utilisent **les mêmes** : âge, salaire, années de cotisation, plan LPP.
+### 4. Summary mis à jour
 
-### 2.3 · Split-screen "Couverture actuelle vs projetée"
-Sur la fiche client et dans `retirement.tsx`, appliquer le même layout `SplitCompareLayout` aux 3 cas (retraite / AI / décès) : couverture actuelle vs couverture avec optimisations Piliarys.
+Le résumé en bas du SplitCompareLayout combine :
 
-### 2.4 · Affichage rente totale
-Mensuel + annuel partout (fiche client, retirement, AVS-AI).
-
----
-
-## Hors scope
-
-- Refonte visuelle du dashboard.
-- Export PDF spécifique (réutilisation `ExportPdfButton` existant).
-- Migration base de données (rien de prévu — tout dérive de `clients`, `client_pension`, `client_assets`).
-
----
+- Économie d'impôt annuelle = (Δ 3a) ✕ taux marginal
+- Capital supplémentaire à la retraite = Δ(3a + 3b) projetés
+- Économie d'impôt au retrait = `staggered.savings` du retrait fractionné
+- Delta % = sur le capital net total après impôt de sortie
 
 ## Détails techniques
 
-- **Composant central** : `SplitCompareLayout` (props : `currentLabel`, `projectedLabel`, `rows: { label, currentValue, projectedValue, format }[]`, `summary: { annualSaving, retirementGain, deltaPercent }`).
-- **Réutilisation** : `CalcUI`, `MoneyTile`, `WikiTip`, `FiscalSnapshotBanner`, `usePrefillFromClient`.
-- **i18n** : tout nouveau texte dans `src/lib/i18n/fr.ts` (+ EN/DE/IT en stub).
-- **Barèmes capital cantonaux** : vérifier présence dans `tax_year_data`, ajouter via migration si manquant (Phase 1.4).
-- **Pas de DB change** dans Phase 1.1–1.3 ni Phase 2.
+Fichiers touchés :
 
----
+- `src/routes/_app/calculators/pillar3a.tsx`
+  - Calculer `projection3bOptimized` (3b avec cotisation cible)
+  - Étendre `compareRows` (8 lignes)
+  - Ajouter un bandeau conditionnel « déjà au max »
+  - Recalculer le `summary` du `SplitCompareLayout` pour intégrer 3b + fractionnement
+- `src/lib/clients/to-calculator-input.ts` (mapper `toPillar3aInput`)
+  - Pré-remplir `pillar3bCurrent` et `pillar3bYearly` depuis `client_pension.pillar_3b_accounts` (somme des soldes + estimation versement annuel si stocké)
+- Aucun changement de schéma DB, aucune nouvelle dépendance, aucun changement aux autres calculateurs.
 
-## Livraison suggérée
+## Hors scope (à confirmer si voulu plus tard)
 
-**Phase 1 en premier** (4-6 j) : débloque immédiatement les irritants signalés et installe le pattern split-screen partout. **Phase 2** (3-4 j) ensuite pour la consolidation inter-piliers.
+- Pré-remplissage du 3b côté wizard client (formulaire de saisie). Si la fiche n'a pas de 3b, le calculateur prend la valeur par défaut du formulaire et reste éditable.
+- Propagation de ce modèle « prévoyance privée totale » dans `ConsolidatedBenefitsCard` (déjà fait en phase 2, mais on pourra y brancher le 3b cible si tu valides la logique ici).
