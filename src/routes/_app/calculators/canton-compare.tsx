@@ -31,6 +31,7 @@ import { computeTaxGlobal } from "@/lib/tax-global/engine";
 import { createDefaultInput } from "@/lib/tax-global/profile";
 import type { TaxGlobalInput, Regime } from "@/lib/tax-global/types";
 import { CalcCard } from "@/components/calculators/CalcUI";
+import { SplitCompareLayout, type SplitRow } from "@/components/calculators/SplitCompareLayout";
 import { formatCHF } from "@/lib/format";
 import { ExportPdfButton } from "@/components/calculators/ExportPdfButton";
 import { exportCantonComparePdf } from "@/lib/pdf/reports";
