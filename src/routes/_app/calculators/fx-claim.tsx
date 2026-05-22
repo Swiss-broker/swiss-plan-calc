@@ -60,6 +60,7 @@ function newRow(date: string): FxTransaction {
 }
 
 function FxClaimCalc() {
+  const { clientId } = Route.useSearch();
   const header = useBrokerPdfHeader();
   const fetchRates = useServerFn(fetchMarketRates);
   const [taxYear, setTaxYear] = useState<number>(2024);
