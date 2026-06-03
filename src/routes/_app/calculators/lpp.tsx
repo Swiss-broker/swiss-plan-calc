@@ -85,8 +85,8 @@ function LppCalc() {
     canton: "VD",
     status: "single" as IncomeTaxInput["status"],
     children: 0,
-    buybackCapacity: 60_000,
-    actualBuyback: 60_000,
+    buybackCapacity: 0,
+    actualBuyback: 0,
     buybackYears: 3,
     // Mode rétroactif (uniquement quand currentBalance = 0)
     retroactiveMode: false,
