@@ -12,7 +12,7 @@ import type { Client, ClientPension, ClientAssets } from "./types";
 import { ageFromDob, parseChildren } from "./types";
 import type { IncomeTaxInput } from "@/lib/tax/income";
 import type { TaxStatusContext, WorkStatusContext } from "@/lib/optimizer";
-import { getTotalGrossIncomeOrUndef } from "./income";
+import { getTotalGrossIncomeOrUndef, getTotalGrossIncome } from "./income";
 import { estimateRetroactiveLppBalance } from "@/lib/lpp";
 
 /**
@@ -268,7 +268,7 @@ export function toPillar3aInput(b: ClientBundle) {
     contribution: numOrUndef(b.pension?.pillar_3a_annual_contribution),
     currentBalance: pillar3aSum > 0 ? pillar3aSum : undefined,
     yearsToRetirement: age !== null ? Math.max(1, 65 - age) : undefined,
-    hasLPP: Number(b.pension?.lpp_current_balance ?? 0) > 0,
+    hasLPP: Number(b.pension?.lpp_current_balance ?? 0) > 0 || Number(b.pension?.lpp_insured_salary ?? 0) > 0,
     pillar3bCurrent: pillar3bSum > 0 ? pillar3bSum : undefined,
   };
 }
@@ -315,10 +315,7 @@ export function toAvsAiInput(b: ClientBundle) {
     b.client.civil_status === "registered_partnership";
   const gender = (b.client.gender as "male" | "female" | "other" | null) ?? undefined;
   // AVS = revenu soumis à cotisations : salaire + bonus + autres revenus d'activité.
-  const avgIncome =
-    Number(b.client.gross_annual_salary ?? 0) +
-    Number(b.client.bonus ?? 0) +
-    Number(b.client.other_income ?? 0);
+  const avgIncome = getTotalGrossIncome(b.client);
 
   // Référence : âge 65 par défaut, ajusté côté composant via getReferenceAge.
   const retirementYear =

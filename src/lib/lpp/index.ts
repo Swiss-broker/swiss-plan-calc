@@ -94,7 +94,7 @@ export interface LPPProjectionResult {
 
 export function projectLPP(input: LPPProjectionInput): LPPProjectionResult {
   const yearsToRetire = Math.max(0, input.retirementAge - input.currentAge);
-  const grossReturn = (input.expectedReturnRate ?? 1.5) / 100;
+  const grossReturn = (input.expectedReturnRate ?? 1.25) / 100;
   const fee = (input.feeRate ?? 0) / 100;
   const netReturn = grossReturn - fee;
   const salaryGrowth = (input.salaryGrowthRate ?? 1) / 100;
