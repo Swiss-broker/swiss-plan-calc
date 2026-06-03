@@ -239,7 +239,27 @@ const wealthScaleStandard: BracketStep[] = [
   { from: 1_000_000, base: 2_450, rate: 0.45 },
   { from: 2_000_000, base: 6_950, rate: 0.6 },
 ];
+const BE_SINGLE: BracketStep[] = [
+  { from: 0, base: 0, rate: 0 },
+  { from: 100, base: 0, rate: 1.95 },
+  { from: 3_400, base: 66.3, rate: 2.5 },
+  { from: 16_500, base: 395, rate: 3.2 },
+  { from: 36_000, base: 1_019, rate: 3.75 },
+  { from: 86_400, base: 2_909, rate: 4.35 },
+  { from: 140_000, base: 5_241, rate: 4.87 },
+  { from: 200_000, base: 8_163, rate: 5.2 },
+];
 
+const BE_MARRIED: BracketStep[] = [
+  { from: 0, base: 0, rate: 0 },
+  { from: 200, base: 0, rate: 1.95 },
+  { from: 6_800, base: 128.7, rate: 2.5 },
+  { from: 33_000, base: 783, rate: 3.2 },
+  { from: 72_000, base: 2_031, rate: 3.75 },
+  { from: 172_800, base: 5_781, rate: 4.35 },
+  { from: 280_000, base: 10_444, rate: 4.87 },
+  { from: 400_000, base: 16_288, rate: 5.2 },
+];
 export const CANTON_SCALES: Record<string, CantonTaxScale> = {
   // === Suisse romande (selectable + comparable v1) ===
   // Note : `calibrationFactor` ajuste empiriquement l'impôt simple pour
@@ -378,6 +398,29 @@ export const CANTON_SCALES: Record<string, CantonTaxScale> = {
     wealthExemptionMarried: 200_000,
     capital: "Schwyz",
     calibrationFactor: 0.45, // calibre l'impôt simple (modèle générique low)
+  },
+  BE: {
+    single: BE_SINGLE,
+    married: BE_MARRIED,
+    cantonalMultiplier: 2.975,
+    communalMultiplierCapital: 1.54,
+    churchRateCatholic: 0.22,
+    churchRateProtestant: 0.22,
+    childDeduction: 9_200,
+    marriedDeduction: 0,
+    wealthScale: [
+      { from: 0, base: 0, rate: 0 },
+      { from: 100_000, base: 0, rate: 0.04 },
+      { from: 250_000, base: 60, rate: 0.07 },
+      { from: 500_000, base: 235, rate: 0.08 },
+      { from: 1_000_000, base: 635, rate: 0.1 },
+      { from: 2_000_000, base: 1_635, rate: 0.125 },
+    ],
+    wealthExemptionSingle: 100_000,
+    wealthExemptionMarried: 200_000,
+    capital: "Berne",
+    calibrationFactor: 1.0,
+    splittingMode: "married_scale",
   },
 };
 
@@ -529,47 +572,4 @@ export function computeWealthTax(opts: WealthComputeOptions): number {
 // =====================================================================
 //   Berne (BE) · comparable uniquement v1
 // =====================================================================
-const BE_SINGLE: BracketStep[] = [
-  { from: 0, base: 0, rate: 0 },
-  { from: 100, base: 0, rate: 1.95 },
-  { from: 3_400, base: 66.3, rate: 2.5 },
-  { from: 16_500, base: 395, rate: 3.2 },
-  { from: 36_000, base: 1_019, rate: 3.75 },
-  { from: 86_400, base: 2_909, rate: 4.35 },
-  { from: 140_000, base: 5_241, rate: 4.87 },
-  { from: 200_000, base: 8_163, rate: 5.2 },
-];
 
-const BE_MARRIED: BracketStep[] = [
-  { from: 0, base: 0, rate: 0 },
-  { from: 200, base: 0, rate: 1.95 },
-  { from: 6_800, base: 128.7, rate: 2.5 },
-  { from: 33_000, base: 783, rate: 3.2 },
-  { from: 72_000, base: 2_031, rate: 3.75 },
-  { from: 172_800, base: 5_781, rate: 4.35 },
-  { from: 280_000, base: 10_444, rate: 4.87 },
-  { from: 400_000, base: 16_288, rate: 5.2 },
-];
-CANTON_SCALES["BE"] = {
-  single: BE_SINGLE,
-  married: BE_MARRIED,
-  cantonalMultiplier: 2.975,
-  communalMultiplierCapital: 1.54,
-  churchRateCatholic: 0.22,
-  churchRateProtestant: 0.22,
-  childDeduction: 9_200,
-  marriedDeduction: 0,
-  wealthScale: [
-    { from: 0, base: 0, rate: 0 },
-    { from: 100_000, base: 0, rate: 0.04 },
-    { from: 250_000, base: 60, rate: 0.07 },
-    { from: 500_000, base: 235, rate: 0.08 },
-    { from: 1_000_000, base: 635, rate: 0.1 },
-    { from: 2_000_000, base: 1_635, rate: 0.125 },
-  ],
-  wealthExemptionSingle: 100_000,
-  wealthExemptionMarried: 200_000,
-  capital: "Berne",
-  calibrationFactor: 1.0,
-  splittingMode: "married_scale",
-};
