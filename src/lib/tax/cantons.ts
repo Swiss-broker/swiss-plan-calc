@@ -397,7 +397,7 @@ export const CANTON_SCALES: Record<string, CantonTaxScale> = {
     wealthExemptionSingle: 100_000,
     wealthExemptionMarried: 200_000,
     capital: "Schwyz",
-    calibrationFactor: 0.55, // calibre l'impôt simple (modèle générique low)
+    calibrationFactor: 0.65, // calibre l'impôt simple (modèle générique low)
   },
   BE: {
     single: BE_SINGLE,
