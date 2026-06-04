@@ -280,7 +280,7 @@ export const CANTON_SCALES: Record<string, CantonTaxScale> = {
     wealthExemptionSingle: 56_000,
     wealthExemptionMarried: 112_000,
     capital: "Lausanne",
-    calibrationFactor: 2.6240,    // AFC 2025 : 16'829 CHF → ICC cible 15'124
+    calibrationFactor: 2.6172,    // AFC 2025 : 16'829 CHF → ICC cible 15'124
     calibrationFactorMarried: 1.0,
     splittingMode: "married_scale",
   },
@@ -297,7 +297,7 @@ export const CANTON_SCALES: Record<string, CantonTaxScale> = {
     wealthExemptionSingle: 30_000,
     wealthExemptionMarried: 60_000,
     capital: "Sion",
-    calibrationFactor: 1.0332,    // AFC 2025 : 14'558 CHF → ICC cible 12'853
+    calibrationFactor: 1.0304,    // AFC 2025 : 14'558 CHF → ICC cible 12'853
     calibrationFactorMarried: 1.0,
   },
   FR: {
@@ -313,7 +313,7 @@ export const CANTON_SCALES: Record<string, CantonTaxScale> = {
     wealthExemptionSingle: 50_000,
     wealthExemptionMarried: 100_000,
     capital: "Fribourg",
-    calibrationFactor: 2.5378,    // AFC 2025 : 16'436 CHF → ICC cible 14'731
+    calibrationFactor: 2.5290,    // AFC 2025 : 16'436 CHF → ICC cible 14'731
     calibrationFactorMarried: 1.1,
   },
   NE: {
@@ -329,7 +329,7 @@ export const CANTON_SCALES: Record<string, CantonTaxScale> = {
     wealthExemptionSingle: 50_000,
     wealthExemptionMarried: 100_000,
     capital: "Neuchâtel",
-    calibrationFactor: 2.2071,    // AFC 2025 : 18'075 CHF → ICC cible 16'370
+    calibrationFactor: 2.2025,    // AFC 2025 : 18'075 CHF → ICC cible 16'370
   },
   GE: {
     single: GE_SINGLE,
@@ -351,7 +351,7 @@ export const CANTON_SCALES: Record<string, CantonTaxScale> = {
     wealthExemptionSingle: 82_200,
     wealthExemptionMarried: 164_400,
     capital: "Genève",
-    calibrationFactor: 2.2929,    // AFC 2025 : 15'508 CHF → ICC cible 13'803
+    calibrationFactor: 1.5849,    // AFC 2025 : 15'508 CHF → ICC cible 13'803
     splittingMode: "split_1.9",
   },
   JU: {
@@ -367,7 +367,7 @@ export const CANTON_SCALES: Record<string, CantonTaxScale> = {
     wealthExemptionSingle: 60_000,
     wealthExemptionMarried: 120_000,
     capital: "Delémont",
-    calibrationFactor: 0.8538,    // AFC 2025 : 15'560 CHF → ICC cible 13'855
+    calibrationFactor: 0.8511,    // AFC 2025 : 15'560 CHF → ICC cible 13'855
   },
 
   // === Référence comparateur uniquement (comparable v1, NON selectable) ===
@@ -382,7 +382,7 @@ export const CANTON_SCALES: Record<string, CantonTaxScale> = {
     wealthExemptionSingle: 100_000,
     wealthExemptionMarried: 200_000,
     capital: "Zoug",
-    calibrationFactor: 1.7721,    // AFC 2025 : 5'536 CHF → ICC cible 3'831
+    calibrationFactor: 1.7462,    // AFC 2025 : 5'536 CHF → ICC cible 3'831
   },
   SZ: {
     single: genericProgressive("low"),
@@ -395,7 +395,7 @@ export const CANTON_SCALES: Record<string, CantonTaxScale> = {
     wealthExemptionSingle: 100_000,
     wealthExemptionMarried: 200_000,
     capital: "Schwyz",
-    calibrationFactor: 1.3489,    // AFC 2025 : 8'664 CHF → ICC cible 6'959
+    calibrationFactor: 1.3375,    // AFC 2025 : 8'664 CHF → ICC cible 6'959
   },
   BE: {
     single: BE_SINGLE,
@@ -417,7 +417,7 @@ export const CANTON_SCALES: Record<string, CantonTaxScale> = {
     wealthExemptionSingle: 100_000,
     wealthExemptionMarried: 200_000,
     capital: "Berne",
-    calibrationFactor: 1.1372,    // AFC 2025 : 16'379 CHF → ICC cible 14'674
+    calibrationFactor: 1.1366,    // AFC 2025 : 16'379 CHF → ICC cible 14'674
     splittingMode: "married_scale",
   },
 };
