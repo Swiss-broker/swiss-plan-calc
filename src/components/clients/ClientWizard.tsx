@@ -55,9 +55,9 @@ import { useT } from "@/contexts/LanguageContext";
 const STEP_IDS = [1, 2, 3, 4, 5] as const;
 const STEP_KEYS = {
   1: { title: "wizard.step.identity.title", desc: "wizard.step.identity.desc" },
-  2: { title: "wizard.step.fiscal.title", desc: "wizard.step.fiscal.desc" },
-  3: { title: "wizard.step.activity.title", desc: "wizard.step.activity.desc" },
-  4: { title: "wizard.step.family.title", desc: "wizard.step.family.desc" },
+  2: { title: "wizard.step.family.title", desc: "wizard.step.family.desc" },
+  3: { title: "wizard.step.fiscal.title", desc: "wizard.step.fiscal.desc" },
+  4: { title: "wizard.step.activity.title", desc: "wizard.step.activity.desc" },
   5: { title: "wizard.step.patrimoine.title", desc: "wizard.step.patrimoine.desc" },
 } as const;
 const STEP_COUNT = 5;
@@ -211,10 +211,10 @@ const stepSchemas = {
     last_name: z.string().trim().min(1, "Nom requis").max(80),
     email: z.string().trim().email("Email invalide").max(255).or(z.literal("")),
   }),
-  2: z.object({
+  2: z.object({}),
+  3: z.object({
     canton: z.string().min(2, "Canton requis"),
   }),
-  3: z.object({}),
   4: z.object({}),
   5: z.object({}),
 } as const;
@@ -475,11 +475,11 @@ export function ClientWizard({ initial, mode, clientId }: ClientWizardProps) {
       </div>
 
       <div className="mt-8 rounded-2xl border border-border bg-card p-6 shadow-card sm:p-8">
-        {step === 1 && <StepIdentity form={form} update={update} errors={errors} />}
-        {step === 2 && <StepFiscal form={form} update={update} errors={errors} />}
-        {step === 3 && <StepActivity form={form} update={update} />}
-        {step === 4 && <StepFamily form={form} update={update} isMarried={isMarried} />}
-        {step === 5 && <StepPatrimoine form={form} update={update} workStatus={form.work_status} />}
+      {step === 1 && <StepIdentity form={form} update={update} errors={errors} />}
+{step === 2 && <StepFamily form={form} update={update} isMarried={isMarried} />}
+{step === 3 && <StepFiscal form={form} update={update} errors={errors} />}
+{step === 4 && <StepActivity form={form} update={update} />}
+{step === 5 && <StepPatrimoine form={form} update={update} workStatus={form.work_status} />}
       </div>
 
       <div className="mt-6 flex items-center justify-between">
