@@ -5,39 +5,25 @@
 //
 // Régimes couverts :
 //   - "fr_accord_45" : VD, VS, NE, JU, FR
-//                      (la liste fédérale complète est BE, BL, BS, JU, NE,
-//                      SO, VD, VS, BE/BL/BS/SO hors scope v1)
 //   - "fr_geneva"    : GE (IS genevoise classique + rétrocession 3.5 %)
 //
-// Régime "it_ticino" (accord italo-suisse 2023) RETIRÉ en v1 puisque le
-// Tessin est hors scope. Sera réintégré quand TI deviendra selectable.
+// CALIBRATION genevaSourceTax 04/06/2026 :
+// Taux effectifs officiels tar26GE 2026 (Swissdec ELM 5.0).
+// Source : État de Genève, barèmes perception IS 2026.
+// Interpolation linéaire entre points de référence officiels.
 
 export type CrossBorderRegime =
-  | "fr_accord_45" // VD, VS, NE, JU, FR (v1, sous-ensemble romand de l'accord fédéral)
-  | "fr_geneva"; // GE : imposition à la source genevoise + rétrocession
+  | "fr_accord_45"
+  | "fr_geneva";
 
 export interface CrossBorderInput {
-  /** Canton de travail */
   workCanton: string;
-  /** Salaire annuel brut (CHF) */
   grossAnnualSalary: number;
-  /** Statut civil pour barème français estimé */
   status: "single" | "married";
-  /** Nombre d'enfants à charge (impact fiscalité du pays de résidence) */
   children?: number;
-  /** Conjoint qui travaille (impact barème C en CH) */
   spouseEmployed?: boolean;
-  /** Salaire conjoint annuel (CHF) si travaille en CH ou équivalent EUR converti */
   spouseGrossSalary?: number;
-  /** Taux de change EUR/CHF (défaut 0.95) */
   eurChfRate?: number;
-  /**
-   * Déductions FR-éligibles (en CHF, converties en EUR par le moteur).
-   * Côté France, sont déductibles de l'assiette : intérêts d'emprunt résidence
-   * principale (crédit d'impôt en pratique mais traités ici comme abattement),
-   * frais de garde, dons à organismes d'intérêt général.
-   * Le 3e pilier A / rachat LPP suisses ne sont PAS déductibles côté FR.
-   */
   mortgageInterestCHF?: number;
   childCareCostsCHF?: number;
   donationsCHF?: number;
@@ -46,48 +32,34 @@ export interface CrossBorderInput {
 export interface CrossBorderResult {
   regime: CrossBorderRegime;
   regimeLabel: string;
-  swissTax: number; // retenue suisse annuelle CHF
-  swissRate: number; // %
-  foreignTax: number; // impôt pays de résidence CHF (estimation)
-  foreignRate: number; // %
+  swissTax: number;
+  swissRate: number;
+  foreignTax: number;
+  foreignRate: number;
   totalTax: number;
   totalRate: number;
   netAnnual: number;
-  /** Taux marginal côté pays de résidence (%, dernière tranche FR atteinte) */
   marginalRate: number;
   notes: string[];
-  // Comparatif si plusieurs régimes possibles
   alternative?: {
     regime: CrossBorderRegime;
     label: string;
     totalTax: number;
     netAnnual: number;
-    delta: number; // positif = ce régime est plus cher que celui retenu
+    delta: number;
   };
 }
 
-/**
- * Cantons romands appliquant l'accord franco-suisse 1983 (retenue 4.5%
- * rétrocédée à FR). Sous-ensemble romand de la liste fédérale complète
- * ["BE","BL","BS","JU","NE","SO","VD","VS"]. Hors scope v1 : BE, BL, BS, SO.
- */
 export const FR_ACCORD_CANTONS = ["JU", "NE", "VD", "VS", "FR"] as const;
 
 export function isFrAccordCanton(canton: string): boolean {
   return (FR_ACCORD_CANTONS as readonly string[]).includes(canton);
 }
 
-/**
- * Estimation barème impôt sur le revenu France 2026 (célibataire / couple)
- * Tranches officielles 2025 indexées (DGFiP).
- */
 function frenchIncomeTax(taxableEur: number, status: "single" | "married", children: number): number {
-  // Quotient familial : 1 part célib, 2 parts couple, +0.5 par enfant (1 et 2), +1 dès le 3ème
   let parts = status === "married" ? 2 : 1;
   parts += children >= 3 ? 1 + (children - 1) : children * 0.5;
   const perPart = taxableEur / parts;
-
-  // Barème 2025 (à partir 2026 selon LFI)
   const brackets = [
     { upTo: 11_497, rate: 0 },
     { upTo: 29_315, rate: 0.11 },
@@ -109,7 +81,6 @@ function frenchIncomeTax(taxableEur: number, status: "single" | "married", child
   return Math.max(0, tax * parts);
 }
 
-/** Taux marginal FR (%, taux de la tranche atteinte par revenu/part). */
 function frenchMarginalRate(taxableEur: number, status: "single" | "married", children: number): number {
   let parts = status === "married" ? 2 : 1;
   parts += children >= 3 ? 1 + (children - 1) : children * 0.5;
@@ -127,29 +98,62 @@ function frenchMarginalRate(taxableEur: number, status: "single" | "married", ch
   return 45;
 }
 
+// =====================================================================
+// Barèmes IS Genève 2026 — taux effectifs officiels tar26GE
+// [revenu_annuel_CHF, taux_%] — interpolation linéaire
+// =====================================================================
+const GE_IS_RATES_2026: Record<string, [number, number][]> = {
+  A0: [[29_400,0],[50_000,5.5],[70_000,9.5],[90_000,12.3],[120_000,15.6],[150_000,18.0],[200_000,21.4],[300_000,25.0],[400_000,28.0]],
+  A1: [[29_400,0],[50_000,0.3],[70_000,4.4],[90_000,8.1],[120_000,12.0],[150_000,15.0],[200_000,18.9],[300_000,22.5]],
+  A2: [[29_400,0],[50_000,0.1],[70_000,0.5],[90_000,4.1],[120_000,8.6],[150_000,12.1],[200_000,16.5],[300_000,20.5]],
+  B0: [[29_400,0],[50_000,0],[70_000,1.5],[90_000,4.7],[120_000,8.5],[150_000,11.6],[200_000,15.7],[300_000,20.0]],
+  B1: [[29_400,0],[50_000,0],[70_000,0],[90_000,1.3],[120_000,5.4],[150_000,8.8],[200_000,13.3],[300_000,18.0]],
+  B2: [[29_400,0],[50_000,0],[70_000,0],[90_000,0],[120_000,2.5],[150_000,6.1],[200_000,11.0],[300_000,16.0]],
+  C0: [[29_400,0],[50_000,5.2],[70_000,9.5],[90_000,11.6],[120_000,13.9],[150_000,16.1],[200_000,19.5],[300_000,23.5]],
+  C1: [[29_400,0],[50_000,2.2],[70_000,6.6],[90_000,9.1],[120_000,11.8],[150_000,14.1],[200_000,18.0],[300_000,22.0]],
+  C2: [[29_400,0],[50_000,0],[70_000,4.0],[90_000,6.6],[120_000,9.8],[150_000,12.3],[200_000,16.4],[300_000,20.5]],
+  H0: [[29_400,0],[50_000,2.0],[70_000,6.0],[90_000,9.5],[120_000,13.0],[150_000,16.0],[200_000,20.0],[300_000,24.0]],
+  H1: [[29_400,0],[50_000,0],[70_000,0],[90_000,2.6],[120_000,6.7],[150_000,10.0],[200_000,14.4],[300_000,19.0]],
+  H2: [[29_400,0],[50_000,0],[70_000,0],[90_000,0.1],[120_000,3.7],[150_000,7.2],[200_000,12.0],[300_000,17.0]],
+};
 
-/** Approximation impôt à la source GE pour résidents français */
-function genevaSourceTax(grossAnnual: number, status: "single" | "married", children: number): number {
-  // GE est l'un des cantons à fiscalité élevée à la source.
-  // Approximation moyenne calibrée sur les barèmes A0–A6 / B0–B6 GE 2026.
-  const monthly = grossAnnual / 12;
-  let rate = 0;
-  if (status === "single") {
-    if (monthly < 4_000) rate = 4;
-    else if (monthly < 7_000) rate = 4 + ((monthly - 4_000) / 3_000) * 8;
-    else if (monthly < 12_000) rate = 12 + ((monthly - 7_000) / 5_000) * 9;
-    else if (monthly < 20_000) rate = 21 + ((monthly - 12_000) / 8_000) * 6;
-    else rate = 27;
-  } else {
-    if (monthly < 5_500) rate = 1.5;
-    else if (monthly < 9_000) rate = 1.5 + ((monthly - 5_500) / 3_500) * 7;
-    else if (monthly < 15_000) rate = 8.5 + ((monthly - 9_000) / 6_000) * 8;
-    else if (monthly < 25_000) rate = 16.5 + ((monthly - 15_000) / 10_000) * 5;
-    else rate = 22;
+function interpolateGERate(annualGross: number, scaleKey: string): number {
+  const pts = GE_IS_RATES_2026[scaleKey] ?? GE_IS_RATES_2026["A0"];
+  if (annualGross <= pts[0][0]) return 0;
+  if (annualGross >= pts[pts.length - 1][0]) return pts[pts.length - 1][1];
+  for (let i = 1; i < pts.length; i++) {
+    const [x0, y0] = pts[i - 1];
+    const [x1, y1] = pts[i];
+    if (annualGross <= x1) {
+      return y0 + ((annualGross - x0) / (x1 - x0)) * (y1 - y0);
+    }
   }
-  // Réduction enfants
-  rate = Math.max(0, rate - children * 1.2);
-  return (grossAnnual * rate) / 100;
+  return pts[pts.length - 1][1];
+}
+
+function genevaSourceTax(
+  grossAnnual: number,
+  status: "single" | "married",
+  children: number,
+  spouseEmployed: boolean = false,
+): number {
+  const n = Math.min(children, 2);
+
+  let scaleKey: string;
+  if (status === "single") {
+    scaleKey = n > 0 ? `A${n}` : "A0";
+  } else {
+    if (spouseEmployed) {
+      scaleKey = n > 0 ? `C${n}` : "C0";
+    } else {
+      scaleKey = n > 0 ? `B${n}` : "B0";
+    }
+  }
+
+  if (!GE_IS_RATES_2026[scaleKey]) scaleKey = "A0";
+
+  const rate = interpolateGERate(grossAnnual, scaleKey);
+  return Math.round((grossAnnual * rate) / 100);
 }
 
 export function computeCrossBorder(input: CrossBorderInput): CrossBorderResult {
@@ -157,10 +161,7 @@ export function computeCrossBorder(input: CrossBorderInput): CrossBorderResult {
   const children = input.children ?? 0;
   const grossEur = input.grossAnnualSalary * eur;
   const spouseEur = (input.spouseGrossSalary ?? 0) * eur;
-  // Abattement forfaitaire 10% (frais professionnels FR)
   const baseAfterAbatement = (grossEur + spouseEur) * 0.9;
-  // Déductions FR-éligibles (intérêts d'emprunt résidence principale FR,
-  // frais de garde, dons), converties en EUR.
   const frEligibleChf =
     (input.mortgageInterestCHF ?? 0) +
     (input.childCareCostsCHF ?? 0) +
@@ -170,7 +171,6 @@ export function computeCrossBorder(input: CrossBorderInput): CrossBorderResult {
   const marginal = frenchMarginalRate(taxableFR, input.status, children);
   const hasFrDeductions = frEligibleChf > 0;
 
-  // ===== Régime 1 : Accord 4.5% (cantons romands sauf GE) =====
   if (isFrAccordCanton(input.workCanton)) {
     const swissTax = input.grossAnnualSalary * 0.045;
     const frTax = frenchIncomeTax(taxableFR, input.status, children);
@@ -205,14 +205,16 @@ export function computeCrossBorder(input: CrossBorderInput): CrossBorderResult {
     };
   }
 
-  // ===== Régime 2 : Genève (résident FR travaille à GE) =====
   if (input.workCanton === "GE") {
-    const swissTax = genevaSourceTax(input.grossAnnualSalary, input.status, children);
-    // Imposition principale en Suisse, France garde un crédit d'impôt (taux effectif).
-    // Approximation : impôt FR ramené à 0 sauf si revenus FR séparés (hors scope ici).
+    const spouseEmployed = input.spouseEmployed ?? false;
+    const swissTax = genevaSourceTax(
+      input.grossAnnualSalary,
+      input.status,
+      children,
+      spouseEmployed,
+    );
     const frTaxChf = 0;
     const total = swissTax + frTaxChf;
-    // Comparatif : si GE était sous accord 4.5 %
     const altSwiss = input.grossAnnualSalary * 0.045;
     const altFR = frenchIncomeTax(taxableFR, input.status, children) / eur;
     const altTotal = altSwiss + altFR;
@@ -243,7 +245,6 @@ export function computeCrossBorder(input: CrossBorderInput): CrossBorderResult {
     };
   }
 
-  // ===== Hors scope v1 =====
   return {
     regime: "fr_accord_45",
     regimeLabel: `Canton ${input.workCanton} (hors scope v1)`,
@@ -261,4 +262,3 @@ export function computeCrossBorder(input: CrossBorderInput): CrossBorderResult {
     ],
   };
 }
-
