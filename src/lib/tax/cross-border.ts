@@ -52,8 +52,7 @@ export interface CrossBorderResult {
 
 export const FR_ACCORD_CANTONS = ["JU", "NE", "VD", "VS"] as const;
 export function isFrAccordCanton(canton: string): boolean {
-  return (export const FR_ACCORD_CANTONS = ["JU", "NE", "VD", "VS"] as const; as readonly string[]).includes(canton);
-}
+return (FR_ACCORD_CANTONS as readonly string[]).includes(canton);}
 
 function frenchIncomeTax(taxableEur: number, status: "single" | "married", children: number): number {
   let parts = status === "married" ? 2 : 1;
