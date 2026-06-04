@@ -381,7 +381,7 @@ export const CANTON_SCALES: Record<string, CantonTaxScale> = {
     wealthExemptionSingle: 100_000,
     wealthExemptionMarried: 200_000,
     capital: "Zoug",
-    calibrationFactor: 1.0,
+    calibrationFactor: 1.35,
   },
   // Schwyz · canton à fiscalité avantageuse, ajouté en référence
   // (commune par défaut : Schwyz, multiplicateur communal 2026 ≈ 1.45 sur
