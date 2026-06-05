@@ -206,21 +206,6 @@ function AvsAiCalc() {
       <GuideMode open={guideOpen} onClose={() => setGuideOpen(false)} steps={guideSteps} title={t("calc.avs.guide_title")} />
       {client && <ClientLinkBanner client={client} />}
       <div className="flex justify-end gap-2">
-        <SaveSimulationButton
-          kind="avs_ai"
-          inputs={form}
-          summary={{
-            monthlyPension: projection.primary.monthlyPension,
-            annualPension: projection.primary.annualPension,
-            theoreticalAnnualPension: projection.primary.theoreticalAnnualPension,
-            effectiveYears: projection.primary.effectiveYears,
-            missingYears: projection.primary.missingYears,
-            isCouple: form.isCouple,
-            combinedAnnualPension: projection.combinedAnnualPension ?? 0,
-            departureYear: form.departureYear,
-          }}
-          defaultTitle={`AVS/AI · ${form.birthYear} → retraite ${form.retirementYear}`}
-        />
         <GuideToggleButton onClick={() => setGuideOpen(true)} />
       </div>
       <div className="grid grid-cols-1 gap-6 md:grid-cols-5">
