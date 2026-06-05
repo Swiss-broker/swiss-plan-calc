@@ -6,6 +6,7 @@
 // Régimes couverts :
 //   - "fr_accord_45" : VD, VS, NE, JU, FR
 //   - "fr_geneva"    : GE (IS genevoise classique + rétrocession 3.5 %)
+//   - "fr_fribourg"  : FR (IS cantonale Fribourg, hors accord 1983)
 //
 // CALIBRATION genevaSourceTax 04/06/2026 :
 // Taux effectifs officiels tar26GE 2026 (Swissdec ELM 5.0).
@@ -14,7 +15,8 @@
 
 export type CrossBorderRegime =
   | "fr_accord_45"
-  | "fr_geneva";
+  | "fr_geneva"
+  | "fr_fribourg";
 
 export interface CrossBorderInput {
   workCanton: string;
@@ -369,7 +371,7 @@ export function computeCrossBorder(input: CrossBorderInput): CrossBorderResult {
       spouseEmployed,
     );
     return {
-      regime: "fr_geneva" as CrossBorderRegime,
+      regime: "fr_fribourg",
       regimeLabel: "Fribourg — Impôt à la source (barème cantonal FR)",
       swissTax: Math.round(swissTax),
       swissRate: Math.round((swissTax / input.grossAnnualSalary) * 1000) / 10,

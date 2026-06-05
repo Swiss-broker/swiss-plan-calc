@@ -275,7 +275,7 @@ export function exportLppPdf(args: {
   pdf.section("Comprendre votre 2e pilier");
   pdf.paragraph(
     "La LPP (Loi sur la prévoyance professionnelle) est obligatoire dès CHF 22'680 de salaire annuel. Elle se compose de la part " +
-      "obligatoire (taux de conversion légal de 6,8 %) et d'une éventuelle part surobligatoire (taux librement fixé par la caisse). " +
+      "obligatoire (taux de conversion retenu : 6,0 %, taux légal minimal 2026 : 6,8 %) et d'une éventuelle part surobligatoire (taux librement fixé par la caisse). " +
       "Les bonifications de vieillesse s'accumulent sur le salaire coordonné (salaire brut moins la déduction de coordination de CHF 26'460, " +
       "plafonné à CHF 90'720 en 2026).",
   );

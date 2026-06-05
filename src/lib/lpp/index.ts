@@ -7,7 +7,7 @@ import { computeIncomeTax, type IncomeTaxInput } from "../tax/income";
 export const LPP_COORDINATION_DEDUCTION_2026 = 26_460;
 export const LPP_MAX_INSURED_SALARY_2026 = 90_720; // 7.5x rente AVS max
 export const LPP_MIN_ANNUAL_SALARY_2026 = 22_680;
-export const LPP_CONVERSION_RATE_2026 = 6.8; // taux légal LPP
+export const LPP_CONVERSION_RATE_2026 = 6.0; // taux retenu (taux légal minimal = 6.8%)
 export const LPP_INTEREST_MIN_2026 = 1.25; // taux minimal LPP 2026
 
 export function computeLppInsuredSalary(
@@ -43,13 +43,13 @@ export interface LPPProjectionInput {
   retirementAge: number;
   currentBalance: number;
   insuredSalary: number;
-  /** Taux de croissance annuel attendu de la caisse, brut (default 1.5%) */
+  /** Taux de croissance annuel attendu de la caisse, brut (default 1.25%) */
   expectedReturnRate?: number;
   /** Frais annuels (TER + frais admin) appliqués sur le capital, en % (default 0) */
   feeRate?: number;
   /** Croissance salariale annuelle (default 1%) */
   salaryGrowthRate?: number;
-  /** Taux de conversion à la retraite (default 6.8 ou propre à la caisse) */
+  /** Taux de conversion à la retraite (default 6.0 (taux légal minimal 6.8%) ou propre à la caisse) */
   conversionRate?: number;
   /** Bonifications additionnelles plan sur-obligatoire (% sup.) */
   extraCreditRate?: number;
@@ -299,7 +299,7 @@ export function annuityVsLumpSum(input: AnnuityVsLumpSumInput): AnnuityVsLumpSum
   const totalRente = annualPension * input.yearsAlive;
   const totalRenteAfterTax = totalRente * (1 - input.rentMarginalRate / 100);
 
-  const r = (input.selfReturnRate ?? 1.5) / 100;
+  const r = (input.selfReturnRate ?? 1.25) / 100;
   const netCapital = input.capital - input.lumpSumTax;
   // Annuité fictive si capital placé : rendement annuel + ponction progressive
   const totalCapital = netCapital * Math.pow(1 + r, input.yearsAlive);

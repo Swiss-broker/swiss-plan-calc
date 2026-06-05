@@ -134,8 +134,8 @@ const FR: WikiArticle[] = [
     tags: ["LPP", "conversion", "retraite"],
     body: (
       <ul className="list-disc pl-5 space-y-1.5">
-        <li><strong>Taux légal 2026</strong> : 6.8 % (en baisse continue, certaines caisses appliquent déjà 5.5 %).</li>
-        <li>Capital de 500 000 CHF × 6.8 % = 34 000 CHF de rente annuelle viagère.</li>
+<li><strong>Taux retenu : 6.0 %</strong> (hypothèse prudente · taux légal minimal 2026 : 6.8 %, certaines caisses appliquent déjà 5.5 %).</li>  
+      <li>Capital de 500 000 CHF × 6.0 % = 30 000 CHF de rente annuelle viagère.</li>
         <li><strong>Rente</strong> : sécurité à vie + rente de conjoint, mais imposée à 100 %.</li>
         <li><strong>Capital</strong> : flexibilité + transmission héritiers, mais imposé une fois (taux réduit) puis fortune imposable.</li>
         <li>Mixte 50/50 souvent optimal. Décision irrévocable, à signifier 3 ans avant la retraite en général.</li>
@@ -373,8 +373,8 @@ const DE: WikiArticle[] = [
     tags: ["BVG", "Umwandlung", "Pensionierung"],
     body: (
       <ul className="list-disc pl-5 space-y-1.5">
-        <li><strong>Gesetzlicher Satz 2026</strong>: 6.8 % (kontinuierlich sinkend, manche Kassen wenden bereits 5.5 % an).</li>
-        <li>Kapital von 500'000 CHF × 6.8 % = 34'000 CHF lebenslange Jahresrente.</li>
+<li><strong>Angewandter Satz: 6.0 %</strong> (vorsichtige Hypothese · gesetzlicher Mindestsatz 2026: 6.8 %, manche Kassen wenden bereits 5.5 % an).</li>       
+<li>Kapital von 500'000 CHF × 6.0 % = 30'000 CHF lebenslange Jahresrente.</li>
         <li><strong>Rente</strong>: lebenslange Sicherheit + Ehegattenrente, aber zu 100 % steuerbar.</li>
         <li><strong>Kapital</strong>: Flexibilität + Vererbung, aber einmalig (zu reduziertem Satz) besteuert, danach vermögenssteuerpflichtig.</li>
         <li>50/50-Mix oft optimal. Unwiderruflicher Entscheid, in der Regel 3 Jahre vor der Pensionierung anzukündigen.</li>
@@ -612,8 +612,8 @@ const EN: WikiArticle[] = [
     tags: ["BVG", "conversion", "retirement"],
     body: (
       <ul className="list-disc pl-5 space-y-1.5">
-        <li><strong>Statutory rate 2026</strong>: 6.8% (steadily decreasing, some funds already apply 5.5%).</li>
-        <li>CHF 500,000 capital × 6.8% = CHF 34,000 lifetime annual pension.</li>
+<li><strong>Rate used: 6.0%</strong> (prudent assumption · legal minimum 2026: 6.8%, some funds already apply 5.5%).</li>
+        <li>CHF 500,000 capital × 6.0% = CHF 30,000 lifetime annual pension.</li>
         <li><strong>Pension</strong>: lifelong security + spouse's pension, but 100% taxed.</li>
         <li><strong>Lump-sum</strong>: flexibility + transmission to heirs, but taxed once (reduced rate) then becomes taxable wealth.</li>
         <li>50/50 mix often optimal. Irrevocable decision, usually announced 3 years before retirement.</li>
@@ -851,8 +851,8 @@ const IT: WikiArticle[] = [
     tags: ["LPP", "conversione", "pensionamento"],
     body: (
       <ul className="list-disc pl-5 space-y-1.5">
-        <li><strong>Aliquota legale 2026</strong>: 6,8 % (in calo continuo, alcune casse applicano già 5,5 %).</li>
-        <li>Capitale di 500'000 CHF × 6,8 % = 34'000 CHF di rendita annua vitalizia.</li>
+<li><strong>Aliquota applicata: 6,0 %</strong> (ipotesi prudente · aliquota legale minima 2026: 6,8 %, alcune casse applicano già 5,5 %).</li>
+        <li>Capitale di 500'000 CHF × 6,0 % = 30'000 CHF di rendita annua vitalizia.</li>
         <li><strong>Rendita</strong>: sicurezza a vita + rendita per coniuge, ma imposta al 100 %.</li>
         <li><strong>Capitale</strong>: flessibilità + trasmissione agli eredi, ma imposto una volta (aliquota ridotta) poi sostanza imponibile.</li>
         <li>Mix 50/50 spesso ottimale. Decisione irrevocabile, in genere da annunciare 3 anni prima del pensionamento.</li>

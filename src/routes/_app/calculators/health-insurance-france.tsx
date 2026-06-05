@@ -17,7 +17,7 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
-import { CalcCard, MoneyTile, Row } from "@/components/calculators/CalcUI";
+import { CalcCard, MoneyTile, Row, HelpDot } from "@/components/calculators/CalcUI";
 import { ExportPdfButton } from "@/components/calculators/ExportPdfButton";
 import { SaveSimulationButton } from "@/components/calculators/SaveSimulationButton";
 import { ClientLinkBanner } from "@/components/calculators/ClientLinkBanner";
@@ -77,6 +77,7 @@ function HealthInsuranceFranceCalc() {
               label="Salaire suisse brut annuel N-2 (CHF)"
               value={form.swissGrossSalaryCHF}
               onChange={(v) => set("swissGrossSalaryCHF", v)}
+              tip="Salaire de l'année N-2 (pour 2026 = vos revenus 2024). Base de calcul de la cotisation CMU, pas le salaire actuel."
             />
             <Field label="Situation civile (info contextuelle)">
               <Select
@@ -94,17 +95,20 @@ function HealthInsuranceFranceCalc() {
               label="Enfants à charge (impacte LAMal)"
               value={form.childrenCount}
               onChange={(v) => set("childrenCount", v)}
+              tip="Sans effet sur la CMU. Impacte uniquement le calcul LAMal (prime mensuelle par enfant)."
             />
             <NumField
               label="Taux de change CHF → EUR"
               value={form.chfToEurRate}
               onChange={(v) => set("chfToEurRate", v)}
               step={0.01}
+              tip="Taux utilisé pour convertir votre salaire suisse en euros. Taux indicatif moyen 2026."
             />
             <NumField
               label="Année fiscale de référence"
               value={form.taxYear}
               onChange={(v) => set("taxYear", v)}
+              tip="Détermine l'abattement officiel applicable. 2026 : 12 015 €. Révisé chaque année par l'administration française."
             />
           </div>
           <div className="mt-3 flex items-start gap-2 rounded-md border bg-muted/30 p-3 text-xs text-muted-foreground">
@@ -127,12 +131,14 @@ function HealthInsuranceFranceCalc() {
               value={form.lamalAdultMonthlyCHF ?? 200}
               onChange={(v) => set("lamalAdultMonthlyCHF", v)}
               step={1}
+              tip="Prime mensuelle indicative. Varie selon la caisse maladie, la franchise et le canton de domicile en France."
             />
             <NumField
               label="Tarif enfant (CHF/mois)"
               value={form.lamalChildMonthlyCHF ?? 49.4}
               onChange={(v) => set("lamalChildMonthlyCHF", v)}
               step={0.1}
+              tip="Prime mensuelle par enfant. Gratuit jusqu'à 18 ans dans certaines caisses selon les options choisies."
             />
           </div>
         </CalcCard>
@@ -254,24 +260,31 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
   );
 }
 
+// APRÈS
 function NumField({
   label,
   value,
   onChange,
   step,
+  tip,
 }: {
   label: string;
   value: number;
   onChange: (v: number) => void;
   step?: number;
+  tip?: string;
 }) {
   return (
-    <Field label={label}>
+    <div className="space-y-1.5">
+      <Label className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+        <span>{label}</span>
+        {tip && <HelpDot tip={tip} />}
+      </Label>
       <BaseNumField
         value={String(value)}
         onChange={(v) => onChange(Number(v) || 0)}
         step={step}
       />
-    </Field>
+    </div>
   );
 }

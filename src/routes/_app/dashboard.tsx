@@ -27,6 +27,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useT, useLanguage } from "@/contexts/LanguageContext";
 import { formatDateShort } from "@/lib/i18n/format";
 import { t as translate } from "@/lib/i18n";
+import { KIND_LABELS } from "@/lib/history/types";
 
 export const Route = createFileRoute("/_app/dashboard")({
   head: () => ({ meta: [{ title: translate("dash.head.title") }] }),
@@ -198,7 +199,7 @@ function Dashboard() {
         />
         <KpiCard
           label={t("dash.kpi.calculators")}
-          value={11}
+          value={12}
           hint={t("dash.kpi.calculators.hint")}
           icon={Calculator} accent="from-amber-500/15 to-amber-500/0" iconColor="text-amber-500"
         />
@@ -246,7 +247,7 @@ function Dashboard() {
                       {formatDateShort(s.created_at, lang)}
                     </div>
                   </div>
-                  <Badge variant="secondary" className="ml-2 text-[10px]">{s.kind}</Badge>
+                  <Badge variant="secondary" className="ml-2 text-[10px]">{KIND_LABELS[s.kind as keyof typeof KIND_LABELS] ?? s.kind}</Badge>
                 </li>
               ))}
             </ul>

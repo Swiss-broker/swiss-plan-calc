@@ -436,7 +436,7 @@ function CantonCompareCalc() {
         }
       >
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          <NumField label="Salaire brut annuel (CHF)" value={base.grossSalary} onChange={(v) => set("grossSalary", v)} wikiId="ifd-icc" wikiTip={t("calc.canton_compare.tip.gross")} />
+          <NumField label="Salaire brut annuel (CHF)" value={base.grossSalary} onChange={(v) => set("grossSalary", v)} wikiTip={t("calc.canton_compare.tip.gross")} />
           <NumField label="Bonus / 13e (CHF)" value={base.bonus} onChange={(v) => set("bonus", v)} />
           <NumField label="Autres revenus (CHF)" value={base.otherIncome} onChange={(v) => set("otherIncome", v)} />
 

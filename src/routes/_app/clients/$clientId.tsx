@@ -1,4 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { useT } from "@/contexts/LanguageContext";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import {
@@ -75,6 +76,7 @@ export const Route = createFileRoute("/_app/clients/$clientId")({
 });
 
 function ClientDetailPage() {
+  const t = useT();
   const { clientId } = Route.useParams();
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -109,7 +111,7 @@ function ClientDetailPage() {
       if (error) throw error;
     },
     onSuccess: (_d, archived) => {
-      toast.success(archived ? "Client archivé" : "Client restauré");
+      toast.success(archived ? t("clients.toast.archived") : t("clients.toast.restored"));
       qc.invalidateQueries({ queryKey: ["client", clientId] });
       qc.invalidateQueries({ queryKey: ["client-bundle", clientId] });
       qc.invalidateQueries({ queryKey: ["clients"] });
@@ -125,7 +127,7 @@ function ClientDetailPage() {
       if (error) throw error;
     },
     onSuccess: () => {
-      toast.success("Statut fiscal vérifié");
+      toast.success(t("clients.toast.status_verified"));
       qc.invalidateQueries({ queryKey: ["client", clientId] });
       qc.invalidateQueries({ queryKey: ["client-bundle", clientId] });
     },
@@ -143,7 +145,7 @@ function ClientDetailPage() {
       if (error) throw error;
     },
     onSuccess: () => {
-      toast.success("Client supprimé");
+      toast.success(t("clients.toast.deleted"));
       qc.invalidateQueries({ queryKey: ["clients"] });
       navigate({ to: "/clients" });
     },
@@ -167,7 +169,7 @@ function ClientDetailPage() {
       setNoteBody("");
       qc.invalidateQueries({ queryKey: ["client", clientId] });
       qc.invalidateQueries({ queryKey: ["client-bundle", clientId] });
-      toast.success("Note ajoutée");
+      toast.success(t("clients.toast.note_added"));
     },
   });
   const deleteNote = useMutation({

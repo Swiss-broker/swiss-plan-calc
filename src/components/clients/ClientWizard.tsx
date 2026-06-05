@@ -903,8 +903,8 @@ function StepActivity({ form, update }: StepProps) {
           />
         </Field>
       )}
-      <Field label="Secteur d'activité / Métier" htmlFor="sector"
-        hint="Informatif — aide le courtier au suivi et à la personnalisation">
+      <Field label={t("wizard.field.activity_sector")} htmlFor="sector"
+        hint={t("wizard.field.activity_sector.hint")}>
         <Input
           id="sector"
           value={form.activity_sector}
@@ -1032,7 +1032,7 @@ function StepFamily({
                   />
                 </div>
               </Field>
-              <Field label="Mode salaire conjoint">
+              <Field label={t("wizard.field.spouse_salary_mode")}>
                 <Select
                   value={form.spouse_salary_is_fictif ? "fictif" : "reel"}
                   onValueChange={(v) => {
@@ -1053,7 +1053,7 @@ function StepFamily({
                   </SelectContent>
                 </Select>
               </Field>
-              <Field label="Lieu de travail du conjoint">
+              <Field label={t("wizard.field.spouse_work_location")}>
                 <Select
                   value={form.spouse_work_location}
                   onValueChange={(v) => update("spouse_work_location", v as "switzerland" | "france" | "none")}
@@ -1160,7 +1160,7 @@ function StepPatrimoine({
                 suffix="CHF"
               />
             </Field>
-            <Field label="Capacité de rachat LPP (CHF)" hint="Montant figurant sur le certificat LPP annuel de la caisse.">
+            <Field label={t("wizard.lpp.buyback")} hint={t("wizard.lpp.buyback.hint")}>
   <input
     type="number"
     className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"

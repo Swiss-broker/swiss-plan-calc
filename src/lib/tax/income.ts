@@ -212,9 +212,13 @@ export function computeIncomeTax(input: IncomeTaxInput): IncomeTaxBreakdown {
   const lppTotal = social.lpp + spouseSocial.lpp;
 
   // 3a (plafonné)
+  const spouseHasLPP = isMarried && (input.spouseGrossSalary ?? 0) > 0;
+  const pillar3aCap = isMarried
+    ? PILLAR_3A_MAX_2026_LPP + (spouseHasLPP ? PILLAR_3A_MAX_2026_LPP : 0)
+    : PILLAR_3A_MAX_2026_LPP;
   const pillar3a = Math.min(
     input.pillar3aContributions ?? 0,
-    isMarried ? PILLAR_3A_MAX_2026_LPP * 2 : PILLAR_3A_MAX_2026_LPP,
+    pillar3aCap,
   );
 
   // Rachat LPP (entièrement déductible)

@@ -20,7 +20,7 @@ export const LPP_2026 = {
   /** Taux d'intérêt minimal LPP (%) */
   minInterestRate: 1.25,
   /** Taux de conversion légal LPP à 65 ans (%) */
-  conversionRate: 6.8,
+  conversionRate: 6.0,
   /** Bonifications de vieillesse (% du salaire coordonné) */
   ageCredits: {
     "25-34": 7,

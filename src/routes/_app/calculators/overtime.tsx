@@ -277,12 +277,14 @@ function OvertimeCalc() {
               value={result.taxSavingsCHF}
               tone="success"
               big
+              tip="Montant économisé sur l'impôt sur le revenu français grâce à l'exonération des heures supplémentaires. Applicable uniquement pour les frontaliers accord 1983."
             />
             <MoneyTile
               label="Économie annuelle (EUR)"
               value={result.taxSavingsEUR}
               tone="primary"
               hint={`Taux marginal IR FR ${result.marginalRatePct}%`}
+              tip="Même économie convertie en euros. Calculée en appliquant votre taux marginal IR France au salaire exonéré retenu."
             />
           </Row>
           {!result.hasFrenchExemption && (

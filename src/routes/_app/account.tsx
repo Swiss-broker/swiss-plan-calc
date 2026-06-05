@@ -90,6 +90,11 @@ function AccountPage() {
 
   const onUploadLogo = async (file: File) => {
     if (!user) return;
+    const ALLOWED = ["image/png", "image/jpeg", "image/svg+xml"];
+    if (!ALLOWED.includes(file.type)) {
+      toast.error("Format non supporté (PNG, JPG ou SVG uniquement).");
+      return;
+    }
     if (file.size > 2 * 1024 * 1024) {
       toast.error("Logo trop lourd (max 2 Mo).");
       return;
