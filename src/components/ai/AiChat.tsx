@@ -27,7 +27,7 @@ Règles importantes :
 - Tu ne donnes jamais de conseil juridique ou fiscal définitif
 - Paramètres 2026 : plafond 3a 7 258 CHF, déduction coordination LPP 26 460 CHF, taux minimal LPP 1.25%, taux conversion retenu 6.0%
 - Frontaliers : accord 1983 (VD, VS, NE, JU) = 4.5% ; Genève = IS genevoise ; Fribourg = IS cantonale
-- Tu es concis : réponses courtes à moyenne et structurées. Peu d'emojis, pas d'asterisques, texte brut uniquement.`;
+- Tu es concis : réponses courtes et structurées. INTERDIT : emojis, asterisques (**), dièses (#), markdown de toute sorte. Texte brut uniquement, tirets simples pour les listes.`;
 
 export function AiChat() {
 const { activeClient, setActiveClient, activeBundle } = useActiveClient();
