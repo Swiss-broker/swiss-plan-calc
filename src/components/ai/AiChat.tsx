@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { useActiveClient } from "@/contexts/ActiveClientContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Textarea } from "@/components/ui/textarea";
+import ReactMarkdown from "react-markdown";
 
 interface Message {
   id: string;
@@ -234,9 +235,20 @@ PATRIMOINE
                     </div>
                     <div className={`max-w-[80%] rounded-2xl px-3 py-2 text-sm leading-relaxed
                       ${msg.role === "user" ? "rounded-tr-sm bg-primary text-primary-foreground" : "rounded-tl-sm bg-muted/60 text-foreground"}`}>
-                      {msg.content.split("\n").map((line, i) => (
-                        <span key={i}>{line}{i < msg.content.split("\n").length - 1 && <br />}</span>
-                      ))}
+                      <ReactMarkdown
+  components={{
+    p: ({ children }) => <p className="mb-1 last:mb-0">{children}</p>,
+    strong: ({ children }) => <span className="font-semibold">{children}</span>,
+    ul: ({ children }) => <ul className="ml-3 list-disc space-y-0.5">{children}</ul>,
+    ol: ({ children }) => <ol className="ml-3 list-decimal space-y-0.5">{children}</ol>,
+    li: ({ children }) => <li className="text-sm">{children}</li>,
+    h1: ({ children }) => <p className="font-semibold">{children}</p>,
+    h2: ({ children }) => <p className="font-semibold">{children}</p>,
+    h3: ({ children }) => <p className="font-semibold">{children}</p>,
+  }}
+>
+  {msg.content}
+</ReactMarkdown>
                     </div>
                   </div>
                 ))}
