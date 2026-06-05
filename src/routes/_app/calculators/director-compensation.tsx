@@ -930,6 +930,19 @@ function RecommendationCard({
         <MoneyTile label={t("calc.dir.reco.tile.div")} value={best.company.dividendsPaid} tone="primary" tip={t("calc.dir.reco.tile.div.tip")} />
         <MoneyTile label={t("calc.dir.reco.tile.res")} value={best.retainedInCompany} tone="default" tip={t("calc.dir.reco.tile.res.tip")} />
       </div>
+      {best.company.dividendsPaid > 0 && (
+        <div className="flex items-start gap-2 rounded-lg border border-blue-200 bg-blue-50 p-3 text-xs text-blue-900 dark:border-blue-700/40 dark:bg-blue-950/30 dark:text-blue-100">
+          <Info className="mt-0.5 h-4 w-4 shrink-0" />
+          <div>
+            <p className="font-semibold">Impôt anticipé 35% sur les dividendes</p>
+            <p className="mt-1 text-blue-800/90 dark:text-blue-100/80">
+              La société verse {formatCHF(Math.round(best.company.dividendsPaid * 0.35))} à l'AFC (35% de {formatCHF(best.company.dividendsPaid)}).
+              Le dirigeant reçoit {formatCHF(Math.round(best.company.dividendsPaid * 0.65))} sur son compte, puis récupère les {formatCHF(Math.round(best.company.dividendsPaid * 0.35))} via sa déclaration fiscale annuelle (formulaire 110 Sàrl / 103 SA).
+              Si les dividendes ne sont pas déclarés, le droit au remboursement s'éteint définitivement.
+            </p>
+          </div>
+        </div>
+      )}
       {current && (
         <div className="mt-5 rounded-xl border border-primary/30 bg-card/60 p-4">
           <div className="text-xs font-semibold uppercase tracking-wider text-primary">
