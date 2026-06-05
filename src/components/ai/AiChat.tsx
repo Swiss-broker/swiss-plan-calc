@@ -30,7 +30,7 @@ Règles importantes :
 - Tu es concis : réponses courtes à moyenne et structurées. Peu d'emojis, pas d'asterisques, texte brut uniquement.`;
 
 export function AiChat() {
-const { activeClient, setActiveClient } = useActiveClient();
+const { activeClient, setActiveClient, activeBundle } = useActiveClient();
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
@@ -84,9 +84,40 @@ const { activeClient, setActiveClient } = useActiveClient();
     setLoading(true);
 
     try {
-      const clientContext = activeClient
-        ? `\n\nCONTEXTE CLIENT ACTIF — ${activeClient.first_name} ${activeClient.last_name} :\n- Canton : ${activeClient.canton ?? "non renseigné"}\n- Statut fiscal : ${activeClient.tax_status ?? "non renseigné"}\n- Salaire brut annuel : ${activeClient.gross_annual_salary ? Number(activeClient.gross_annual_salary).toLocaleString("fr-CH") + " CHF" : "non renseigné"}\n- Situation civile : ${activeClient.civil_status ?? "non renseigné"}\n- Permis : ${activeClient.permit ?? "non renseigné"}`
-        : "";
+      const p = activeBundle?.pension;
+      const a = activeBundle?.assets;
+      const clientContext = activeClient ? `
+
+CONTEXTE CLIENT ACTIF — ${activeClient.first_name} ${activeClient.last_name} :
+
+IDENTITÉ
+- Âge : ${activeClient.date_of_birth ? new Date().getFullYear() - new Date(activeClient.date_of_birth).getFullYear() + " ans" : "non renseigné"}
+- Canton : ${activeClient.canton ?? "non renseigné"}
+- Statut fiscal : ${activeClient.tax_status ?? "non renseigné"}
+- Situation civile : ${activeClient.civil_status ?? "non renseigné"}
+- Permis : ${activeClient.permit ?? "non renseigné"}
+- Enfants : ${Array.isArray(activeClient.children) ? activeClient.children.length : 0}
+
+REVENUS
+- Salaire brut annuel : ${activeClient.gross_annual_salary ? Number(activeClient.gross_annual_salary).toLocaleString("fr-CH") + " CHF" : "non renseigné"}
+- Bonus / 13e : ${activeClient.bonus ? Number(activeClient.bonus).toLocaleString("fr-CH") + " CHF" : "0 CHF"}
+- Autres revenus : ${activeClient.other_income ? Number(activeClient.other_income).toLocaleString("fr-CH") + " CHF" : "0 CHF"}
+- Salaire conjoint : ${activeClient.spouse_gross_annual_salary ? Number(activeClient.spouse_gross_annual_salary).toLocaleString("fr-CH") + " CHF" : "non renseigné"}
+- Employeur : ${activeClient.employer ?? "non renseigné"}
+
+PRÉVOYANCE
+- Avoir LPP actuel : ${p ? Number(p.lpp_current_balance).toLocaleString("fr-CH") + " CHF" : "non renseigné"}
+- Salaire assuré LPP : ${p ? Number(p.lpp_insured_salary).toLocaleString("fr-CH") + " CHF" : "non renseigné"}
+- Capacité de rachat LPP : ${p ? Number(p.lpp_max_buyback).toLocaleString("fr-CH") + " CHF" : "non renseigné"}
+- Versement 3a annuel : ${p ? Number(p.pillar_3a_annual_contribution).toLocaleString("fr-CH") + " CHF" : "non renseigné"}
+- LPP conjoint : ${p ? Number(p.spouse_lpp_balance).toLocaleString("fr-CH") + " CHF" : "non renseigné"}
+- 3a conjoint : ${p ? Number(p.spouse_pillar_3a_balance).toLocaleString("fr-CH") + " CHF" : "non renseigné"}
+
+PATRIMOINE
+- Comptes bancaires : ${a ? Number(a.bank_accounts).toLocaleString("fr-CH") + " CHF" : "non renseigné"}
+- Titres / portefeuille : ${a ? Number(a.securities).toLocaleString("fr-CH") + " CHF" : "non renseigné"}
+- Immobilier (valeur) : ${a ? Number(a.real_estate_value).toLocaleString("fr-CH") + " CHF" : "non renseigné"}
+- Dette hypothécaire : ${a ? Number(a.mortgage_debt).toLocaleString("fr-CH") + " CHF" : "non renseigné"}` : "";
       const history = [...messages, userMessage]
         .filter((m) => m.id !== "welcome")
         .map((m) => ({ role: m.role, content: m.content }));
