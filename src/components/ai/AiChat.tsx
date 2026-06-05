@@ -50,11 +50,11 @@ const { activeClient, setActiveClient } = useActiveClient();
           if (data) setActiveClient(data);
         });
     }
-  }, [window.location.search]);
+  }, []);
 
   const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, open, minimized, scrollToBottom]);
+  }, []);
 
   useEffect(() => {
     if (open && !minimized) scrollToBottom();
