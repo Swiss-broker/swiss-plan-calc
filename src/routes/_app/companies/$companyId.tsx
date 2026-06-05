@@ -47,6 +47,7 @@ import { toast } from "sonner";
 import { DeleteConfirmDialog } from "@/components/common/DeleteConfirmDialog";
 import { ArchiveConfirmDialog } from "@/components/common/ArchiveConfirmDialog";
 import { AttachDirectorDialog } from "@/components/companies/AttachDirectorDialog";
+import { AiAnalysisCompany } from "@/components/ai/AiAnalysis";
 
 export const Route = createFileRoute("/_app/companies/$companyId")({
   head: () => ({ meta: [{ title: "Société · SwissBroker Pro" }] }),
@@ -265,6 +266,36 @@ function CompanyDetailPage() {
         <Kpi label="Dirigeants rattachés" value={String(directors.length)} icon={Users} />
       </div>
 
+<div className="mt-6 space-y-4">
+        <AiAnalysisCompany company={company} directors={directors} />
+        <div className="rounded-xl border border-border bg-card p-4">
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <TrendingUp className="h-5 w-5 text-primary" />
+              <div>
+                <div className="text-sm font-semibold">Comparateur rémunération dirigeant</div>
+                <div className="text-xs text-muted-foreground">Salaire vs dividendes · économie fiscale chiffrée</div>
+              </div>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {directors.length === 0 ? (
+                <Button size="sm" onClick={() => setAttachOpen(true)}>
+                  <UserPlus className="h-4 w-4" /> Rattacher un dirigeant
+                </Button>
+              ) : (
+                directors.map((d) => (
+                  <Button asChild size="sm" key={d.id}>
+                    <Link to="/calculators/director-compensation" search={{ clientId: d.id, companyId }}>
+                      <TrendingUp className="h-3.5 w-3.5" />
+                      {d.last_name.toUpperCase()} {d.first_name}
+                    </Link>
+                  </Button>
+                ))
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
       <Tabs value={tab} onValueChange={setTab} className="mt-8">
         <TabsList className="flex h-auto w-full flex-wrap justify-start gap-1 bg-muted p-1">
           <TabsTrigger value="overview">Synthèse</TabsTrigger>
