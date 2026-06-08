@@ -14,6 +14,41 @@ export type Database = {
   }
   public: {
     Tables: {
+      ai_conversations: {
+        Row: {
+          broker_id: string
+          client_id: string | null
+          created_at: string | null
+          id: string
+          messages: Json
+          updated_at: string | null
+        }
+        Insert: {
+          broker_id: string
+          client_id?: string | null
+          created_at?: string | null
+          id?: string
+          messages?: Json
+          updated_at?: string | null
+        }
+        Update: {
+          broker_id?: string
+          client_id?: string | null
+          created_at?: string | null
+          id?: string
+          messages?: Json
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_conversations_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       client_assets: {
         Row: {
           bank_accounts: number

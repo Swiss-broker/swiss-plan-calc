@@ -3,6 +3,7 @@ import { Sparkles, X, Send, Loader2, ChevronDown, Bot, User } from "lucide-react
 import { Button } from "@/components/ui/button";
 import { useActiveClient } from "@/contexts/ActiveClientContext";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 import { Textarea } from "@/components/ui/textarea";
 import ReactMarkdown from "react-markdown";
 
@@ -32,6 +33,8 @@ Règles importantes :
 
 export function AiChat() {
 const { activeClient, setActiveClient, activeBundle } = useActiveClient();
+const { user } = useAuth();
+  const conversationIdRef = useRef<string | null>(null);
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
@@ -71,6 +74,32 @@ const { activeClient, setActiveClient, activeBundle } = useActiveClient();
       }]);
     }
   }, [open, minimized, messages.length]);
+  const saveConversation = async (msgs: Message[]) => {
+    if (!user) return;
+    const payload = {
+      broker_id: user.id,
+      client_id: activeClient?.id ?? null,
+      messages: msgs.filter(m => m.id !== "welcome").map(m => ({
+        role: m.role,
+        content: m.content,
+        timestamp: m.timestamp.toISOString(),
+      })),
+      updated_at: new Date().toISOString(),
+    };
+    if (conversationIdRef.current) {
+      await supabase
+        .from("ai_conversations")
+        .update(payload)
+        .eq("id", conversationIdRef.current);
+    } else {
+      const { data } = await supabase
+        .from("ai_conversations")
+        .insert(payload)
+        .select("id")
+        .single();
+      if (data) conversationIdRef.current = data.id;
+    }
+  };
 
   const sendMessage = async () => {
     if (!input.trim() || loading) return;
@@ -150,6 +179,12 @@ PATRIMOINE
           timestamp: new Date(),
         },
       ]);
+      await saveConversation([...messages, userMessage, {
+        id: Date.now().toString(),
+        role: "assistant" as const,
+        content: assistantContent,
+        timestamp: new Date(),
+      }]);
     } catch {
       setMessages((prev) => [
         ...prev,
@@ -216,7 +251,7 @@ PATRIMOINE
                 <ChevronDown className={`h-4 w-4 transition-transform ${minimized ? "rotate-180" : ""}`} />
               </button>
               <button
-                onClick={() => { setOpen(false); setMinimized(false); }}
+                onClick={() => { setOpen(false); setMinimized(false); conversationIdRef.current = null; setMessages([]); }}
                 className="rounded-md p-1.5 text-white/80 hover:bg-white/10 hover:text-white"
               >
                 <X className="h-4 w-4" />

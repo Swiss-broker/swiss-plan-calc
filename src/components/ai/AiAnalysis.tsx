@@ -138,7 +138,7 @@ export function AiAnalysisCompany({ company, directors }: CompanyProps) {
 SOCIÉTÉ : ${company.legal_name}
 - Forme juridique : ${company.legal_form}
 - Canton siège : ${company.canton ?? "non renseigné"}
-- Fondée en : ${company.founded_year ?? "non renseigné"}
+- Fondée en : ${company.founding_year ?? "non renseigné"}
 - Bénéfice annuel : ${company.annual_profit ? Number(company.annual_profit).toLocaleString("fr-CH") + " CHF" : "non renseigné"}
 - Bénéfices en réserve : ${company.retained_earnings ? Number(company.retained_earnings).toLocaleString("fr-CH") + " CHF" : "0 CHF"}
 - Chiffre d'affaires : ${company.annual_revenue ? Number(company.annual_revenue).toLocaleString("fr-CH") + " CHF" : "non renseigné"}
