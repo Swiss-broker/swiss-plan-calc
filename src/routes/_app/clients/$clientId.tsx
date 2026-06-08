@@ -20,6 +20,7 @@ import {
   Wallet,
   Landmark,
   FolderOpen,
+  MessageSquare,
 } from "lucide-react";
 import { DocumentsTab } from "@/components/clients/DocumentsTab";
 import { supabase } from "@/integrations/supabase/client";
@@ -68,7 +69,7 @@ import { ClientCompanyCard } from "@/components/clients/ClientCompanyCard";
 import { DeleteConfirmDialog } from "@/components/common/DeleteConfirmDialog";
 import { ArchiveConfirmDialog } from "@/components/common/ArchiveConfirmDialog";
 import { LEGAL_FORM_LABELS, type Company } from "@/lib/companies/types";
-import { AlertTriangle, Building2, ClipboardList, MessageSquare } from "lucide-react";
+
 import { AiAnalysis } from "@/components/ai/AiAnalysis";
 import { AiConversationsTab } from "@/components/ai/AiConversationsTab";
 import { SessionSummaryTab } from "@/components/clients/SessionSummaryTab";
