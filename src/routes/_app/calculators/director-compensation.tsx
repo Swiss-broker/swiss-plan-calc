@@ -252,41 +252,8 @@ function DirectorCompensationCalc() {
         <CrossCalcImpactBanner calculator="director-compensation" clientId={clientId} />
         <GuideMode open={guideOpen} onClose={() => setGuideOpen(false)} steps={guideSteps} title={t("calc.dir.guide.title")} />
         <div className="flex justify-end gap-2">
-          <ExportPdfButton
-            onClick={() =>
-              exportDirectorCompensationPdf({
-                header: brokerHeader,
-                inputs,
-                results: strategiesForCompare,
-                recommended: recommendation.best,
-                current: currentResult,
-                clientName: linkedClient ? `${linkedClient.first_name} ${linkedClient.last_name}` : null,
-                companyName: linkedCompany?.legal_name ?? null,
-              })
-            }
-          />
-          <SaveSimulationButton
-            kind="director_compensation"
-            inputs={{ ...inputs, hasCurrent, current, custom }}
-            summary={{
-              recommendedLabel: recommendation.best.strategy.label,
-              recommendedDirectorNet: recommendation.best.directorNet,
-              recommendedTotalCharges: recommendation.best.totalTaxAndCharges,
-              currentDirectorNet: currentResult?.directorNet ?? 0,
-              gainAnnual: currentResult
-                ? Math.max(0, recommendation.best.directorNet - currentResult.directorNet)
-                : 0,
-              totalProfit: inputs.totalProfit,
-              companyCanton: inputs.companyCanton,
-              directorCanton: inputs.directorCanton,
-            }}
-            defaultTitle={`Dirigeant ${inputs.companyCanton} · profit ${inputs.totalProfit} CHF`}
-          />
           <GuideToggleButton onClick={() => setGuideOpen(true)} />
         </div>
-        {(linkedClient || linkedCompany) && (
-          <LinkBanner client={linkedClient} company={linkedCompany} />
-        )}
 
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-5">
           {/* Inputs */}
@@ -517,6 +484,38 @@ function DirectorCompensationCalc() {
         </div>
 
         <LegalDisclaimer />
+        <div className="flex flex-wrap justify-end gap-2">
+          <ExportPdfButton
+            onClick={() =>
+              exportDirectorCompensationPdf({
+                header: brokerHeader,
+                inputs,
+                results: strategiesForCompare,
+                recommended: recommendation.best,
+                current: currentResult,
+                clientName: linkedClient ? `${linkedClient.first_name} ${linkedClient.last_name}` : null,
+                companyName: linkedCompany?.legal_name ?? null,
+              })
+            }
+          />
+          <SaveSimulationButton
+            kind="director_compensation"
+            inputs={{ ...inputs, hasCurrent, current, custom }}
+            summary={{
+              recommendedLabel: recommendation.best.strategy.label,
+              recommendedDirectorNet: recommendation.best.directorNet,
+              recommendedTotalCharges: recommendation.best.totalTaxAndCharges,
+              currentDirectorNet: currentResult?.directorNet ?? 0,
+              gainAnnual: currentResult
+                ? Math.max(0, recommendation.best.directorNet - currentResult.directorNet)
+                : 0,
+              totalProfit: inputs.totalProfit,
+              companyCanton: inputs.companyCanton,
+              directorCanton: inputs.directorCanton,
+            }}
+            defaultTitle={`Dirigeant ${inputs.companyCanton} · profit ${inputs.totalProfit} CHF`}
+          />
+        </div>
       </div>
     </TooltipProvider>
   );
