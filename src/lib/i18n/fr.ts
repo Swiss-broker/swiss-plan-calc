@@ -1611,7 +1611,7 @@ export const fr: Record<string, string> = {
   "wizard.field.cross_border_start_year": "Début d'activité en Suisse (frontalier)",
   "wizard.field.cross_border_start_year.hint": "Première année de travail en Suisse.",
   "wizard.field.avs_contribution_start_year": "Début cotisation AVS (override)",
-  "wizard.field.avs_contribution_start_year.hint": "Si vide : calculé automatiquement (max entre arrivée CH et 21 ans).",
+  "wizard.field.avs_contribution_start_year.hint": "Si vide : calculé automatiquement. La cotisation AVS commence à 21 ans ou à l'arrivée en Suisse, selon ce qui est le plus tardif.",
   "wizard.field.avs_contribution_start_year.placeholder": "auto",
   "calc.vested.search.title": "Avoirs LPP/libre passage oubliés ?",
   "calc.vested.search.body": "La Centrale du 2ᵉ pilier (Stiftung Auffangeinrichtung BVG) recense gratuitement les avoirs de prévoyance non réclamés. Démarche officielle, gratuite, courrier ou en ligne.",
