@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { ClientPrefillBadge } from "@/components/calculators/ClientPrefillBadge";
 import { useMemo, useState, useEffect } from "react";import {
   Select,
   SelectContent,
@@ -348,8 +349,10 @@ useEffect(() => {
                   </SelectContent>
                 </Select>
               </div>
-              <NumField label={t("pension.gross_salary_annual")} value={form.grossSalary} onChange={(v) => set("grossSalary", v)} />
-              <NumField label={t("calc.p3a.field.contribution_max", { max })} value={form.contribution} onChange={(v) => set("contribution", Math.min(v, max))} wikiId="p3a-base" wikiTip={t("calc.p3a.tip.contribution_max")} />
+<div className="space-y-1">
+  <NumField label={t("pension.gross_salary_annual")} value={form.grossSalary} onChange={(v) => set("grossSalary", v)} />
+  <ClientPrefillBadge show={!!prefill?.grossSalary && form.grossSalary === prefill.grossSalary} clientName={client ? `${client.first_name} ${client.last_name}` : undefined} />
+</div>              <NumField label={t("calc.p3a.field.contribution_max", { max })} value={form.contribution} onChange={(v) => set("contribution", Math.min(v, max))} wikiId="p3a-base" wikiTip={t("calc.p3a.tip.contribution_max")} />
             </div>
           </CalcCard>
         </div>
@@ -450,8 +453,14 @@ useEffect(() => {
 
         <CalcCard title={t("calc.p3a.projection_card")}>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <NumField label={t("calc.p3a.field.current_balance")} value={form.currentBalance} onChange={(v) => set("currentBalance", v)} />
-            <NumField label={t("pension.years_to_retirement")} value={form.yearsToRetirement} onChange={(v) => set("yearsToRetirement", v)} />
+            <div className="space-y-1">
+  <NumField label={t("calc.p3a.field.current_balance")} value={form.currentBalance} onChange={(v) => set("currentBalance", v)} />
+  <ClientPrefillBadge show={!!prefill?.currentBalance && form.currentBalance === prefill.currentBalance} clientName={client ? `${client.first_name} ${client.last_name}` : undefined} />
+</div>
+            <div className="space-y-1">
+  <NumField label={t("pension.years_to_retirement")} value={form.yearsToRetirement} onChange={(v) => set("yearsToRetirement", v)} />
+  <ClientPrefillBadge show={!!prefill?.yearsToRetirement && form.yearsToRetirement === prefill.yearsToRetirement} clientName={client ? `${client.first_name} ${client.last_name}` : undefined} />
+</div>
             <NumField label={t("pension.expected_return")} value={form.expectedReturn} onChange={(v) => set("expectedReturn", v)} step={0.1} />
           </div>
           <div className="mt-4 grid grid-cols-2 gap-3">
