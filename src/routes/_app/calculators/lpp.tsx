@@ -52,6 +52,7 @@ import { SplitCompareLayout, type SplitRow } from "@/components/calculators/Spli
 import { useT } from "@/contexts/LanguageContext";
 import { useClientDashboard } from "@/hooks/use-client-dashboard";
 import { CrossCalcImpactBanner } from "@/components/calculators/CrossCalcImpactBanner";
+import { ClientPrefillBadge } from "@/components/calculators/ClientPrefillBadge";
 
 const searchSchema = z.object({
   clientId: fallback(z.string().uuid().optional(), undefined),
@@ -302,10 +303,13 @@ function LppCalc() {
               }}
               onRecalcAuto={recalcAuto}
             />
+            <ClientPrefillBadge show={!!prefill?.grossSalary && form.grossSalary === prefill.grossSalary} clientName={client ? `${client.first_name} ${client.last_name}` : undefined} />
             <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
               <NumField label={t("pension.current_age")} value={form.currentAge} onChange={(v) => set("currentAge", v)} />
+              <ClientPrefillBadge show={!!prefill?.currentAge && form.currentAge === prefill.currentAge} clientName={client ? `${client.first_name} ${client.last_name}` : undefined} />
               <NumField label={t("pension.retirement_age")} value={form.retirementAge} onChange={(v) => set("retirementAge", v)} />
               <NumField label={t("calc.lpp.field.current_balance")} value={form.currentBalance} onChange={(v) => set("currentBalance", v)} wikiId="lpp-coordination" wikiTip={t("calc.lpp.tip.balance")} />
+              <ClientPrefillBadge show={!!prefill?.currentBalance && form.currentBalance === prefill.currentBalance} clientName={client ? `${client.first_name} ${client.last_name}` : undefined} />
               <NumField label={t("calc.lpp.field.expected_return")} value={form.expectedReturnRate} onChange={(v) => set("expectedReturnRate", v)} step={0.1} wikiId="lpp-credits" wikiTip={t("calc.lpp.tip.return")} />
               <NumField label={t("calc.lpp.field.fees")} value={form.feeRate} onChange={(v) => set("feeRate", v)} step={0.05} />
               <NumField label={t("calc.lpp.field.salary_growth")} value={form.salaryGrowthRate} onChange={(v) => set("salaryGrowthRate", v)} step={0.1} />
@@ -514,6 +518,7 @@ function LppCalc() {
                 <NumField label={t("calc.lpp.field.children")} value={form.children} onChange={(v) => set("children", v)} wikiTip={t("calc.lpp.tip.children")} />
               )}
               <NumField label={t("calc.lpp.field.buyback_capacity")} value={form.buybackCapacity} onChange={(v) => set("buybackCapacity", v)} wikiId="lpp-rachat" wikiTip={t("calc.lpp.tip.buyback_capacity")} />
+              <ClientPrefillBadge show={!!prefill?.buybackCapacity && form.buybackCapacity === prefill.buybackCapacity} clientName={client ? `${client.first_name} ${client.last_name}` : undefined} />
               <NumField label={t("calc.lpp.field.actual_buyback")} value={form.actualBuyback} onChange={(v) => set("actualBuyback", v)} wikiTip={t("calc.lpp.tip.actual_buyback")} />
               <NumField label={t("calc.lpp.field.buyback_years")} value={form.buybackYears} onChange={(v) => set("buybackYears", v)} wikiId="lpp-rachat" wikiTip={t("calc.lpp.tip.buyback_years")} />
             </div>
