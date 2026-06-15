@@ -19,6 +19,7 @@ const authSearchSchema = z.object({
   mode: z.enum(["signin", "signup"]).optional(),
   plan: z.enum(["starter", "pro", "cabinet"]).optional(),
   session_id: z.string().optional(),
+  confirmed: z.string().optional(),
 });
 
 export const Route = createFileRoute("/auth")({
@@ -55,6 +56,7 @@ function AuthPage() {
   const [mode, setMode] = useState<"signin" | "signup">(search.mode ?? "signin");
   const selectedPlan = search.plan ?? "pro";
   const sessionId = search.session_id;
+  const confirmed = search.confirmed;
   const [stripeEmail, setStripeEmail] = useState<string>("");
 
   useEffect(() => {
@@ -71,6 +73,33 @@ function AuthPage() {
       navigate({ to: "/dashboard" });
     }
   }, [isAuthenticated, isLoading, navigate]);
+
+  if (confirmed === "pending") {
+    return (
+      <div className="relative min-h-screen overflow-hidden bg-hero">
+        <div className="absolute inset-0 grid-bg opacity-40" aria-hidden />
+        <div className="relative mx-auto flex min-h-screen max-w-md flex-col items-center justify-center px-4 py-8">
+          <div className="w-full rounded-2xl border border-border bg-card p-8 shadow-elegant text-center">
+            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-success/10">
+              <span className="text-3xl">📧</span>
+            </div>
+            <h1 className="text-2xl font-bold tracking-tight">Vérifiez vos emails</h1>
+            <p className="mt-3 text-sm text-muted-foreground">
+              Un email de confirmation a été envoyé à votre adresse. Cliquez sur le lien dans cet email pour activer votre compte et accéder à SwissBroker Pro.
+            </p>
+            <p className="mt-4 text-xs text-muted-foreground">
+              Pensez à vérifier vos spams si vous ne recevez pas l'email dans les prochaines minutes.
+            </p>
+            <div className="mt-6">
+              <Link to="/auth" className="text-sm font-medium text-primary hover:underline">
+                Retour à la connexion
+              </Link>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-hero">
