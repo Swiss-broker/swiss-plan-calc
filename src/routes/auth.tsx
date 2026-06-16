@@ -133,7 +133,7 @@ function AuthPage() {
                 id="otp"
                 type="text"
                 inputMode="numeric"
-                maxLength={6}
+                maxLength={8}
                 value={otpToken}
                 onChange={(e) => setOtpToken(e.target.value.replace(/\D/g, ""))}
                 placeholder="123456"
@@ -145,7 +145,7 @@ function AuthPage() {
 
             {otpError && <p className="text-sm text-destructive text-center">{otpError}</p>}
 
-            <Button type="submit" className="h-11 w-full shadow-elegant" disabled={otpLoading || otpToken.length !== 6}>
+            <Button type="submit" className="h-11 w-full shadow-elegant" disabled={otpLoading || otpToken.length < 6}>
               {otpLoading && <Loader2 className="h-4 w-4 animate-spin" />}
               Confirmer et accéder au paiement
             </Button>
