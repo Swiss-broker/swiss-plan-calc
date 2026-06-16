@@ -229,7 +229,7 @@ function SignupForm({ plan, onEmailSent }: { plan: string; onEmailSent: (email: 
     setLoading(true);
 
     // emailRedirectTo pointe vers la page de checkout Stripe
-    const redirectTo = `${window.location.origin}/auth/confirm?plan=${plan}`;
+    const redirectTo = `${window.location.origin}/auth/confirm?plan=${plan}&email=${encodeURIComponent(values.email)}`;
 
     const { error } = await supabase.auth.signUp({
       email: values.email,

@@ -1,11 +1,15 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { z } from "zod";
 import { Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 const confirmSearchSchema = z.object({
   plan: z.enum(["starter", "pro", "cabinet"]).optional(),
+  email: z.string().optional(),
 });
 
 export const Route = createFileRoute("/auth/confirm")({
@@ -22,69 +26,125 @@ const PRICE_IDS: Record<string, string> = {
 function ConfirmPage() {
   const search = Route.useSearch();
   const navigate = useNavigate();
-  const [error, setError] = useState<string | null>(null);
   const plan = search.plan ?? "pro";
+  const emailFromSearch = search.email ?? "";
 
-  useEffect(() => {
-    const redirect = async () => {
-      // Attendre que Supabase traite le token de confirmation dans l'URL
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+  const [email, setEmail] = useState(emailFromSearch);
+  const [token, setToken] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-      if (sessionError || !session) {
-        setError("Lien invalide ou expiré. Veuillez recommencer l'inscription.");
-        return;
-      }
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setError(null);
 
-      const priceId = PRICE_IDS[plan];
-      if (!priceId) {
-        navigate({ to: "/dashboard" });
-        return;
-      }
+    // Vérifie le code OTP avec Supabase
+    const { data, error: otpError } = await supabase.auth.verifyOtp({
+      email,
+      token,
+      type: "signup",
+    });
 
-      try {
-        const { data, error: fnError } = await supabase.functions.invoke("stripe-checkout", {
-          body: {
-            priceId,
-            brokerId: session.user.id,
-            brokerEmail: session.user.email,
-            plan,
-          },
-        });
+    if (otpError || !data.session) {
+      setLoading(false);
+      setError("Code incorrect ou expiré. Vérifiez le code reçu par email.");
+      return;
+    }
 
-        if (fnError || !data?.url) throw new Error("Erreur Stripe");
-        window.location.href = data.url;
-      } catch {
-        setError("Erreur lors de la redirection vers le paiement. Contactez le support.");
-      }
-    };
+    // Code valide — on lance Stripe
+    const priceId = PRICE_IDS[plan];
+    if (!priceId) {
+      navigate({ to: "/dashboard" });
+      return;
+    }
 
-    redirect();
-  }, [plan, navigate]);
-
-  if (error) {
-    return (
-      <div className="relative min-h-screen overflow-hidden bg-hero flex items-center justify-center px-4">
-        <div className="w-full max-w-md rounded-2xl border border-border bg-card p-8 shadow-elegant text-center">
-          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-destructive/10">
-            <span className="text-3xl">⚠️</span>
-          </div>
-          <h1 className="text-xl font-bold">Une erreur est survenue</h1>
-          <p className="mt-3 text-sm text-muted-foreground">{error}</p>
-          <a href="/auth?mode=signup" className="mt-6 inline-block text-sm font-medium text-primary hover:underline">
-            Recommencer l'inscription
-          </a>
-        </div>
-      </div>
-    );
-  }
+    try {
+      const { data: stripeData, error: fnError } = await supabase.functions.invoke("stripe-checkout", {
+        body: {
+          priceId,
+          brokerId: data.session.user.id,
+          brokerEmail: data.session.user.email,
+          plan,
+        },
+      });
+      if (fnError || !stripeData?.url) throw new Error("Erreur Stripe");
+      window.location.href = stripeData.url;
+    } catch {
+      setError("Erreur lors de la redirection vers le paiement. Contactez le support.");
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-hero flex items-center justify-center px-4">
-      <div className="w-full max-w-md rounded-2xl border border-border bg-card p-8 shadow-elegant text-center">
-        <Loader2 className="mx-auto h-10 w-10 animate-spin text-primary" />
-        <p className="mt-4 text-sm text-muted-foreground">
-          Confirmation en cours, redirection vers le paiement...
-        </p>
+      <div className="absolute inset-0 grid-bg opacity-40" aria-hidden />
+      <div className="relative w-full max-w-md rounded-2xl border border-border bg-card p-8 shadow-elegant">
+        <div className="text-center mb-6">
+          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
+            <span className="text-3xl">📧</span>
+          </div>
+          <h1 className="text-2xl font-bold tracking-tight">Vérifiez vos emails</h1>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Saisissez le code à 6 chiffres reçu par email pour continuer.
+          </p>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-1.5">
+            <Label htmlFor="email">Votre email</Label>
+            <Input
+              id="email"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="votre@email.com"
+              required
+            />
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="token">Code de confirmation</Label>
+            <Input
+              id="token"
+              type="text"
+              inputMode="numeric"
+              maxLength={6}
+              value={token}
+              onChange={(e) => setToken(e.target.value.replace(/\D/g, ""))}
+              placeholder="123456"
+              className="text-center text-2xl tracking-widest font-bold"
+              required
+            />
+          </div>
+
+          {error && (
+            <p className="text-sm text-destructive text-center">{error}</p>
+          )}
+
+          <Button type="submit" className="h-11 w-full shadow-elegant" disabled={loading || token.length !== 6}>
+            {loading && <Loader2 className="h-4 w-4 animate-spin" />}
+            Confirmer et accéder au paiement
+          </Button>
+        </form>
+
+        <div className="mt-6 space-y-3">
+          <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground text-center">
+            Vous ne trouvez pas l'email ?
+          </p>
+          <div className="rounded-lg border border-border bg-muted/40 p-3">
+            <p className="text-xs text-muted-foreground text-center">
+              Vérifiez vos <strong>courriers indésirables</strong>.<br />
+              Expéditeur : <strong>noreply@swissbrokerpro.ch</strong>
+            </p>
+          </div>
+        </div>
+
+        <div className="mt-4 text-center">
+          <a href="/auth?mode=signup" className="text-xs text-muted-foreground hover:text-foreground underline">
+            Recommencer l'inscription
+          </a>
+        </div>
       </div>
     </div>
   );
