@@ -251,8 +251,8 @@ function SignupForm({ plan, onEmailSent }: { plan: string; onEmailSent: (email: 
       return;
     }
 
-    // Affiche la page "vérifiez vos emails"
-    onEmailSent(values.email);
+    // Redirige vers la page de saisie du code OTP
+    window.location.href = `/auth/confirm?plan=${plan}&email=${encodeURIComponent(values.email)}`;
   };
 
   return (
