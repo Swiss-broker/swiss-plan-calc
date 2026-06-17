@@ -329,8 +329,12 @@ function AccountPage() {
             </div>
           )}
           {plan !== "expired" && (
-            <div className="rounded-lg bg-muted/40 border border-border p-4">
-              <p className="text-xs text-muted-foreground">Pour modifier votre plan, contactez le support à <strong>support@swissbrokerpro.ch</strong></p>
+            <div className="rounded-lg bg-muted/40 border border-border p-4 flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium">Gérer mon abonnement</p>
+                <p className="text-xs text-muted-foreground mt-0.5">Annuler, voir vos factures, mettre à jour votre moyen de paiement.</p>
+              </div>
+              <ManageSubscriptionButton email={user?.email ?? ""} />
             </div>
           )}
         </div>
@@ -405,5 +409,35 @@ function AccountPage() {
         </div>
       )}
     </div>
+  );
+}
+
+function ManageSubscriptionButton({ email }: { email: string }) {
+  const [loading, setLoading] = useState(false);
+
+  const handleClick = async () => {
+    setLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("stripe-portal", {
+        body: { brokerEmail: email },
+      });
+      if (error || !data?.url) throw new Error("Erreur portail");
+      window.location.href = data.url;
+    } catch {
+      toast.error("Impossible d'accéder au portail. Contactez le support.");
+      setLoading(false);
+    }
+  };
+
+  return (
+    <button
+      type="button"
+      onClick={handleClick}
+      disabled={loading}
+      className="inline-flex items-center gap-2 rounded-lg border border-border bg-background px-4 py-2 text-sm font-medium hover:bg-muted transition-colors shrink-0"
+    >
+      {loading && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+      Gérer →
+    </button>
   );
 }
