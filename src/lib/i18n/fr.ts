@@ -1169,10 +1169,10 @@ export const fr: Record<string, string> = {
   "landing.cta.signin": "Se connecter",
   "landing.cta.try": "Essayer gratuitement",
   "landing.cta.try_short": "Essayer",
-  "landing.hero.badge": "Le seul outil qui couvre tout — fiscal, LPP, frontaliers, retraite",
+  "landing.hero.badge": "Le seul outil qui couvre tout : fiscal, LPP, frontaliers, retraite",
   "landing.hero.title.prefix": "Préparez chaque rendez-vous client en",
   "landing.hero.title.highlight": "20 minutes.",
-  "landing.hero.subtitle": "Les calculateurs publics font les impôts. SwissBroker Pro fait tout le reste. LPP, 3e pilier, frontaliers France-Suisse, optimisation fiscale cantonale, scénarios retraite — centralisé, chiffré, prêt à présenter à votre client.",
+  "landing.hero.subtitle": "Les calculateurs publics font les impôts. SwissBroker Pro fait tout le reste. LPP, 3e pilier, frontaliers France-Suisse, optimisation fiscale cantonale, scénarios retraite — centralisé, chiffré, prêt à présenter.",
   "landing.hero.cta.signup": "Créer mon compte gratuit",
   "landing.hero.cta.modules": "Voir les modules",
   "landing.hero.check.free": "Gratuit en v1",
@@ -1229,7 +1229,7 @@ export const fr: Record<string, string> = {
   "landing.cta.title": "Vos clients méritent mieux qu'un tableur.",
   "landing.cta.desc": "Rejoignez les premiers courtiers suisses romands à optimiser leurs rendez-vous clients avec SwissBroker Pro.",
   "landing.cta.button": "Créer mon compte courtier",
-  "landing.footer.brand": "SwissBroker Pro — Conçu pour les courtiers suisses",
+  "landing.footer.brand": "SwissBroker Pro · Conçu pour les courtiers suisses",
   "landing.footer.scope": "Suisse romande et frontaliers France",
 
   // === Auth (signup / signin) ===

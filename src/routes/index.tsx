@@ -21,18 +21,7 @@ export const Route = createFileRoute("/")({
   component: Landing,
 });
 
-function useCountUp(target: number, inView: boolean) {
-  const motionVal = useMotionValue(0);
-  const spring = useSpring(motionVal, { duration: 1800, bounce: 0 });
-  const [display, setDisplay] = useState("0");
-  useEffect(() => {
-    if (inView) motionVal.set(target);
-  }, [inView, target, motionVal]);
-  useEffect(() => {
-    return spring.on("change", (v) => setDisplay(Math.round(v).toLocaleString("fr-CH")));
-  }, [spring]);
-  return display;
-}
+
 
 function Landing() {
   const [pricingOpen, setPricingOpen] = useState(false);
@@ -41,7 +30,7 @@ function Landing() {
       <Header onPricingOpen={() => setPricingOpen(true)} />
       {pricingOpen && <PricingModal onClose={() => setPricingOpen(false)} />}
       <Hero onPricingOpen={() => setPricingOpen(true)} />
-      <Problem />
+      <StatsBar />
       <Features />
       <Modules />
       <Optimization />
@@ -182,53 +171,50 @@ function Hero({ onPricingOpen }: { onPricingOpen: () => void }) {
   );
 }
 
-function Problem() {
+function StatsBar() {
   const ref = useRef(null);
   const inView = useInView(ref, { once: true, margin: "-100px" });
-  const items = [
-    { icon: "📂", text: "Des fichiers Excel dispersés sur votre bureau" },
-    { icon: "🔍", text: "Des barèmes PDF à chercher sur l'AFC à chaque RDV" },
-    { icon: "⏱", text: "2 à 3 heures de préparation pour un seul client" },
-    { icon: "🤯", text: "Des outils différents pour chaque type de calcul" },
+  const stats = [
+    { value: 12, label: "Modules de calcul" },
+    { value: 9, label: "Cantons couverts" },
+    { value: 2026, label: "Barèmes officiels" },
+    { value: 20, label: "Minutes par RDV" },
   ];
   return (
-    <section ref={ref} className="border-t border-border/50 py-20 bg-muted/20">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          animate={inView ? { opacity: 1, y: 0 } : {}}
-          transition={{ duration: 0.6 }}
-          className="mx-auto max-w-2xl text-center mb-12"
-        >
-          <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">Vous vous reconnaissez ?</h2>
-          <p className="mt-4 text-muted-foreground">Avant SwissBroker Pro, préparer un rendez-vous ressemblait à ça.</p>
-        </motion.div>
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {items.map((item, i) => (
+    <section ref={ref} className="border-t border-border/50 bg-gradient-to-b from-primary/5 to-transparent">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-16">
+        <div className="grid grid-cols-2 gap-8 lg:grid-cols-4">
+          {stats.map((s, i) => (
             <motion.div
               key={i}
-              initial={{ opacity: 0, y: 40 }}
+              initial={{ opacity: 0, y: 20 }}
               animate={inView ? { opacity: 1, y: 0 } : {}}
               transition={{ duration: 0.5, delay: i * 0.1 }}
-              className="rounded-2xl border border-border bg-card p-5 text-center"
+              className="text-center"
             >
-              <div className="text-3xl mb-3">{item.icon}</div>
-              <p className="text-sm text-muted-foreground">{item.text}</p>
+              <div className="text-4xl font-extrabold text-primary tabular-nums">
+                <AnimatedCounter value={s.value} inView={inView} />
+              </div>
+              <p className="mt-1 text-sm text-muted-foreground">{s.label}</p>
             </motion.div>
           ))}
         </div>
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={inView ? { opacity: 1, y: 0 } : {}}
-          transition={{ duration: 0.6, delay: 0.5 }}
-          className="mt-10 text-center"
-        >
-          <p className="text-lg font-semibold text-foreground">SwissBroker Pro centralise tout ça en un seul endroit.</p>
-          <p className="mt-2 text-muted-foreground">20 minutes de préparation. Des chiffres officiels. Un PDF prêt à montrer.</p>
-        </motion.div>
       </div>
     </section>
   );
+}
+
+function AnimatedCounter({ value, inView }: { value: number; inView: boolean }) {
+  const motionVal = useMotionValue(0);
+  const spring = useSpring(motionVal, { duration: 1800, bounce: 0 });
+  const [display, setDisplay] = useState("0");
+  useEffect(() => {
+    if (inView) motionVal.set(value);
+  }, [inView, value, motionVal]);
+  useEffect(() => {
+    return spring.on("change", (v) => setDisplay(Math.round(v).toLocaleString("fr-CH")));
+  }, [spring]);
+  return <>{display}</>;
 }
 
 function Features() {
@@ -236,10 +222,10 @@ function Features() {
   const inView = useInView(ref, { once: true, margin: "-100px" });
   const t = useT();
   const items = [
-    { icon: Clock, title: t("landing.feature.exact.title"), desc: t("landing.feature.exact.desc"), stat: "20", statSuffix: " min", statLabel: "de préparation" },
-    { icon: Calculator, title: t("landing.feature.proj.title"), desc: t("landing.feature.proj.desc"), stat: "12", statSuffix: "", statLabel: "modules de calcul" },
-    { icon: Sparkles, title: t("landing.feature.opt.title"), desc: t("landing.feature.opt.desc"), stat: "9", statSuffix: "", statLabel: "cantons couverts" },
-    { icon: Shield, title: t("landing.feature.priv.title"), desc: t("landing.feature.priv.desc"), stat: "100", statSuffix: "%", statLabel: "privé et sécurisé" },
+    { icon: Clock, title: t("landing.feature.exact.title"), desc: t("landing.feature.exact.desc") },
+    { icon: Calculator, title: t("landing.feature.proj.title"), desc: t("landing.feature.proj.desc") },
+    { icon: Sparkles, title: t("landing.feature.opt.title"), desc: t("landing.feature.opt.desc") },
+    { icon: Shield, title: t("landing.feature.priv.title"), desc: t("landing.feature.priv.desc") },
   ];
   return (
     <section id="features" ref={ref} className="border-t border-border/50 py-24">
@@ -263,8 +249,7 @@ function Features() {
   );
 }
 
-function FeatureCard({ item, index, inView }: { item: { icon: React.ElementType; title: string; desc: string; stat: string; statSuffix: string; statLabel: string }; index: number; inView: boolean }) {
-  const count = useCountUp(parseInt(item.stat), inView);
+function FeatureCard({ item, index, inView }: { item: { icon: React.ElementType; title: string; desc: string }; index: number; inView: boolean }) {
   return (
     <motion.div
       initial={{ opacity: 0, y: 50 }}
@@ -276,10 +261,6 @@ function FeatureCard({ item, index, inView }: { item: { icon: React.ElementType;
     >
       <div className="mb-4 inline-flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10 text-primary transition-colors group-hover:bg-primary group-hover:text-primary-foreground">
         <item.icon className="h-5 w-5" />
-      </div>
-      <div className="mb-3">
-        <span className="text-3xl font-extrabold text-primary tabular-nums">{count}{item.statSuffix}</span>
-        <span className="ml-2 text-xs text-muted-foreground">{item.statLabel}</span>
       </div>
       <h3 className="text-base font-semibold">{item.title}</h3>
       <p className="mt-2 text-sm text-muted-foreground">{item.desc}</p>
