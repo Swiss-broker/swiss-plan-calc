@@ -21,6 +21,7 @@ const TABS = [
   { id: "profil", label: "Profil", icon: User },
   { id: "cabinet", label: "Mon cabinet", icon: Building2 },
   { id: "abonnement", label: "Abonnement", icon: CreditCard },
+  { id: "paiements", label: "Mes paiements", icon: CreditCard },
   { id: "pdf", label: "Rapports PDF", icon: FileText },
 ] as const;
 
@@ -381,15 +382,33 @@ function AccountPage() {
             </div>
           )}
 
-          {/* Compte bancaire pour facturation RDV */}
-          <div className="rounded-lg border border-border p-4">
-            <h3 className="text-sm font-semibold mb-1">Facturation client</h3>
-            <p className="text-xs text-muted-foreground mb-3">
-              SwissBroker Pro vous permet de facturer vos honoraires de conseil directement à vos clients depuis l'application. Vous générez un lien de paiement que vous envoyez par email ou SMS. Une fois réglé, le PDF de synthèse du rendez-vous se débloque automatiquement. SwissBroker Pro retient 10% de commission sur chaque paiement, le reste est viré directement sur votre compte bancaire. Pour activer cette fonctionnalité, connectez votre IBAN ci-dessous.
+
+        </div>
+      )}
+
+      {/* Contenu onglet Mes paiements */}
+      {activeTab === "paiements" && (
+        <div className="mt-6 space-y-5">
+          {/* Section IBAN */}
+          <div className="rounded-2xl border border-border bg-card p-6 shadow-card space-y-4">
+            <h2 className="text-base font-semibold">Compte bancaire pour facturation</h2>
+            <p className="text-xs text-muted-foreground">
+              Connectez votre compte bancaire pour recevoir les paiements de vos clients directement. SwissBroker Pro retient 10% de commission sur chaque paiement, le reste est viré automatiquement sur votre compte.
             </p>
             {connectComplete ? (
-              <div className="flex items-center gap-2 text-sm text-success font-medium">
-                <span>✅</span> Compte bancaire connecté
+              <div className="space-y-3">
+                <div className="flex items-center gap-2 text-sm text-success font-medium">
+                  <span>✅</span> Compte bancaire connecté
+                </div>
+                <button
+                  type="button"
+                  onClick={onConnectBankAccount}
+                  disabled={connectLoading}
+                  className="inline-flex items-center gap-2 rounded-lg border border-border bg-background px-4 py-2 text-sm font-medium hover:bg-muted transition-colors"
+                >
+                  {connectLoading && <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-primary border-t-transparent" />}
+                  Modifier mon compte bancaire
+                </button>
               </div>
             ) : (
               <button
@@ -403,6 +422,9 @@ function AccountPage() {
               </button>
             )}
           </div>
+
+          {/* Liste des paiements reçus */}
+          <PaiementsHistory userId={user?.id ?? ""} />
         </div>
       )}
 
@@ -505,5 +527,61 @@ function ManageSubscriptionButton({ email }: { email: string }) {
       {loading && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
       Gérer →
     </button>
+  );
+}
+
+function PaiementsHistory({ userId }: { userId: string }) {
+  const [invoices, setInvoices] = useState<Array<{
+    id: string;
+    amount_chf: number;
+    status: string;
+    stripe_payment_link: string | null;
+    created_at: string;
+    client_id: string | null;
+  }>>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!userId) return;
+    supabase
+      .from("rdv_invoices")
+      .select("id,amount_chf,status,stripe_payment_link,created_at,client_id")
+      .eq("broker_id", userId)
+      .order("created_at", { ascending: false })
+      .then(({ data }) => {
+        setInvoices((data as typeof invoices) ?? []);
+        setLoading(false);
+      });
+  }, [userId]);
+
+  return (
+    <div className="rounded-2xl border border-border bg-card p-6 shadow-card space-y-4">
+      <h2 className="text-base font-semibold">Historique des paiements</h2>
+      {loading ? (
+        <p className="text-sm text-muted-foreground">Chargement...</p>
+      ) : invoices.length === 0 ? (
+        <p className="text-sm text-muted-foreground">Aucun paiement reçu pour l'instant. Les paiements de vos clients apparaîtront ici.</p>
+      ) : (
+        <div className="space-y-2">
+          {invoices.map((inv) => (
+            <div key={inv.id} className="flex items-center justify-between rounded-lg border border-border p-3">
+              <div>
+                <p className="text-sm font-medium">{(inv.amount_chf / 100).toLocaleString("fr-CH", { minimumFractionDigits: 2 })} CHF</p>
+                <p className="text-xs text-muted-foreground">{new Date(inv.created_at).toLocaleDateString("fr-CH")}</p>
+              </div>
+              <div className="flex items-center gap-2">
+                {inv.status === "paid" ? (
+                  <span className="rounded-full bg-success/10 px-2 py-0.5 text-xs font-medium text-success">Payé</span>
+                ) : inv.status === "pending" ? (
+                  <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800">En attente</span>
+                ) : (
+                  <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">{inv.status}</span>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
   );
 }
