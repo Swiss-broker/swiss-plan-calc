@@ -572,44 +572,78 @@ function PaiementsHistory({ userId }: { userId: string }) {
       });
   }, [userId]);
 
+  const paidInvoices = invoices.filter(inv => inv.status === "paid");
+  const totalBrut = paidInvoices.reduce((sum, inv) => sum + inv.amount_chf, 0) / 100;
+  const totalNet = totalBrut * 0.9;
+  const totalCommission = totalBrut * 0.1;
+
   return (
-    <div className="rounded-2xl border border-border bg-card p-6 shadow-card space-y-4">
-      <h2 className="text-base font-semibold">Historique des paiements</h2>
-      {loading ? (
-        <p className="text-sm text-muted-foreground">Chargement...</p>
-      ) : invoices.length === 0 ? (
-        <p className="text-sm text-muted-foreground">Aucun paiement reçu pour l instant. Les paiements de vos clients apparaitront ici.</p>
-      ) : (
-        <div className="space-y-2">
-          {invoices.map((inv) => (
-            <div key={inv.id} className="flex items-center justify-between rounded-lg border border-border p-3">
-              <div>
-                <p className="text-sm font-semibold">{inv.clientName}</p>
-                <p className="text-sm text-muted-foreground">{(inv.amount_chf / 100).toLocaleString("fr-CH", { minimumFractionDigits: 2 })} CHF</p>
-                <p className="text-xs text-muted-foreground">{new Date(inv.created_at).toLocaleDateString("fr-CH")}</p>
-              </div>
-              <div className="flex flex-col items-end gap-1">
-                {inv.status === "paid" ? (
-                  <span className="rounded-full bg-success/10 px-2 py-0.5 text-xs font-medium text-success">Paye</span>
-                ) : inv.status === "pending" ? (
-                  <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800">En attente</span>
-                ) : (
-                  <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">{inv.status}</span>
-                )}
-                {inv.status === "pending" && inv.stripe_payment_link && (
-                  <button
-                    type="button"
-                    onClick={() => { navigator.clipboard.writeText(inv.stripe_payment_link!); }}
-                    className="text-xs text-primary underline hover:no-underline"
-                  >
-                    Copier le lien
-                  </button>
-                )}
-              </div>
+    <div className="space-y-4">
+      {/* Bloc solde */}
+      {!loading && (
+        <div className="rounded-2xl bg-gradient-to-br from-primary/10 to-primary/5 border border-primary/20 p-6">
+          <p className="text-xs font-medium text-primary/70 uppercase tracking-wide mb-1">Solde total encaissé</p>
+          <p className="text-4xl font-bold text-primary">{totalNet.toLocaleString("fr-CH", { minimumFractionDigits: 2 })} CHF</p>
+          <div className="mt-4 grid grid-cols-2 gap-3">
+            <div className="rounded-xl bg-white/60 border border-primary/10 p-3">
+              <p className="text-xs text-muted-foreground">Montant brut facturé</p>
+              <p className="text-lg font-semibold mt-0.5">{totalBrut.toLocaleString("fr-CH", { minimumFractionDigits: 2 })} CHF</p>
             </div>
-          ))}
+            <div className="rounded-xl bg-white/60 border border-primary/10 p-3">
+              <p className="text-xs text-muted-foreground">Commission SwissBroker Pro</p>
+              <p className="text-lg font-semibold mt-0.5 text-muted-foreground">- {totalCommission.toLocaleString("fr-CH", { minimumFractionDigits: 2 })} CHF</p>
+            </div>
+          </div>
+          <p className="text-xs text-muted-foreground mt-3">{paidInvoices.length} paiement{paidInvoices.length > 1 ? "s" : ""} reçu{paidInvoices.length > 1 ? "s" : ""}</p>
         </div>
       )}
+
+      {/* Liste des paiements */}
+      <div className="rounded-2xl border border-border bg-card p-6 shadow-card space-y-3">
+        <h2 className="text-base font-semibold">Historique des paiements</h2>
+        {loading ? (
+          <p className="text-sm text-muted-foreground">Chargement...</p>
+        ) : invoices.length === 0 ? (
+          <p className="text-sm text-muted-foreground">Aucun paiement pour l instant. Les paiements de vos clients apparaitront ici.</p>
+        ) : (
+          <div className="space-y-2">
+            {invoices.map((inv) => (
+              <div key={inv.id} className="flex items-center justify-between rounded-xl border border-border bg-background p-4 hover:border-primary/30 transition-colors">
+                <div className="flex items-center gap-3">
+                  <div className={`h-9 w-9 rounded-full flex items-center justify-center text-sm font-bold ${
+                    inv.status === "paid" ? "bg-success/10 text-success" : "bg-amber-100 text-amber-800"
+                  }`}>
+                    {inv.clientName?.charAt(0).toUpperCase() ?? "?"}
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold">{inv.clientName}</p>
+                    <p className="text-xs text-muted-foreground">{new Date(inv.created_at).toLocaleDateString("fr-CH", { day: "2-digit", month: "long", year: "numeric" })}</p>
+                  </div>
+                </div>
+                <div className="flex flex-col items-end gap-1">
+                  <p className="text-sm font-bold">{(inv.amount_chf / 100).toLocaleString("fr-CH", { minimumFractionDigits: 2 })} CHF</p>
+                  {inv.status === "paid" ? (
+                    <span className="rounded-full bg-success/10 px-2 py-0.5 text-xs font-medium text-success">Paye</span>
+                  ) : (
+                    <div className="flex flex-col items-end gap-1">
+                      <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800">En attente</span>
+                      {inv.stripe_payment_link && (
+                        <button
+                          type="button"
+                          onClick={() => { navigator.clipboard.writeText(inv.stripe_payment_link!); }}
+                          className="text-xs text-primary underline hover:no-underline"
+                        >
+                          Copier le lien
+                        </button>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
