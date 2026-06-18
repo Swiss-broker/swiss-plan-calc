@@ -1,6 +1,8 @@
 // Onglet "Synthèse RDV" sur la fiche client.
 // Liste les simulations rattachées + agrège les gains chiffrables.
 import { useState } from "react";
+import { supabase as supabaseClient } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 import { Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -33,6 +35,39 @@ export function SessionSummaryTab({ clientId, clientName }: { clientId: string; 
   const t = useT();
   const qc = useQueryClient();
   const [reportOpen, setReportOpen] = useState(false);
+  const [invoiceOpen, setInvoiceOpen] = useState(false);
+  const [invoiceAmount, setInvoiceAmount] = useState<number>(150);
+  const [invoiceDesc, setInvoiceDesc] = useState("");
+  const [invoiceLoading, setInvoiceLoading] = useState(false);
+  const [invoiceLink, setInvoiceLink] = useState<string | null>(null);
+  const { user } = useAuth();
+
+  const onGenerateInvoice = async () => {
+    if (!user) return;
+    if (invoiceAmount < 80) {
+      toast.error("Le montant minimum est de 80 CHF.");
+      return;
+    }
+    setInvoiceLoading(true);
+    try {
+      const { data, error } = await supabaseClient.functions.invoke("stripe-rdv-invoice", {
+        body: {
+          brokerId: user.id,
+          clientId,
+          amountChf: invoiceAmount,
+          description: invoiceDesc || `Conseil en prévoyance - ${clientName}`,
+          returnUrl: window.location.origin,
+        },
+      });
+      if (error || !data?.paymentLink) throw new Error(error?.message ?? "Erreur génération lien");
+      setInvoiceLink(data.paymentLink);
+      toast.success("Lien de paiement généré.");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Erreur génération lien");
+    } finally {
+      setInvoiceLoading(false);
+    }
+  };
 
   const { data: entries = [], isLoading } = useQuery({
     queryKey: ["client-simulations", clientId],
@@ -153,8 +188,77 @@ export function SessionSummaryTab({ clientId, clientName }: { clientId: string; 
         </CardContent>
       </Card>
 
-      {/* BLOC 3 · Bouton préparer dossier de synthèse PDF */}
-      <div className="flex justify-end">
+      {/* BLOC 3 · Facturation RDV */}
+      {invoiceOpen && (
+        <div className="rounded-2xl border border-border bg-card p-5 shadow-card space-y-4">
+          <h3 className="text-base font-semibold">Facturer ce rendez-vous</h3>
+          <p className="text-xs text-muted-foreground">Générez un lien de paiement à envoyer à votre client. Le PDF de synthèse se débloque automatiquement après paiement. Minimum 80 CHF.</p>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div className="space-y-1.5">
+              <label className="text-xs font-medium text-muted-foreground">Montant (CHF)</label>
+              <input
+                type="number"
+                min={80}
+                value={invoiceAmount}
+                onChange={(e) => setInvoiceAmount(Number(e.target.value))}
+                className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-xs font-medium text-muted-foreground">Description (optionnel)</label>
+              <input
+                type="text"
+                value={invoiceDesc}
+                onChange={(e) => setInvoiceDesc(e.target.value)}
+                placeholder={`Conseil en prévoyance - ${clientName}`}
+                className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+              />
+            </div>
+          </div>
+          {invoiceLink ? (
+            <div className="rounded-lg border border-success/30 bg-success/5 p-4 space-y-3">
+              <p className="text-sm font-medium text-success">Lien de paiement généré</p>
+              <p className="text-xs text-muted-foreground break-all">{invoiceLink}</p>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => { navigator.clipboard.writeText(invoiceLink); toast.success("Lien copié"); }}
+                  className="rounded-lg border border-border bg-background px-3 py-1.5 text-xs font-medium hover:bg-muted"
+                >
+                  Copier le lien
+                </button>
+                <a href={`mailto:?subject=Votre facture SwissBroker Pro&body=Voici votre lien de paiement : ${invoiceLink}`}
+                  className="rounded-lg bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90"
+                >
+                  Envoyer par email
+                </a>
+              </div>
+            </div>
+          ) : (
+            <div className="flex gap-2">
+              <Button onClick={onGenerateInvoice} disabled={invoiceLoading} className="gap-2">
+                {invoiceLoading && <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white border-t-transparent" />}
+                Générer le lien de paiement
+              </Button>
+              <Button variant="outline" onClick={() => setInvoiceOpen(false)}>Annuler</Button>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* BLOC 4 · Boutons actions */}
+      <div className="flex flex-wrap justify-end gap-3">
+        {!invoiceOpen && (
+          <Button
+            size="lg"
+            variant="outline"
+            className="gap-2"
+            onClick={() => { setInvoiceOpen(true); setInvoiceLink(null); }}
+          >
+            <span>💶</span>
+            Facturer ce RDV
+          </Button>
+        )}
         <Button
           size="lg"
           className="gap-2 shine"
