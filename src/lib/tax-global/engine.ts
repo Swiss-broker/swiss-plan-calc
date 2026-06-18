@@ -26,14 +26,16 @@ function computeGrossForRegime(g: TaxGlobalInput, regime: Regime): number {
       return (
         g.grossSalary +
         g.bonus +
-        (couple && g.spouseEmployed ? g.spouseGrossSalary : 0)
+        (couple && g.spouseEmployed ? g.spouseGrossSalary : 0) +
+        g.otherIncome +
+        g.rentalIncome
       );
     case "cross_border_ge":
     case "cross_border_fr_1983":
     case "cross_border_other":
-      return g.grossSalary + g.bonus;
+      return g.grossSalary + g.bonus + g.otherIncome + g.rentalIncome;
     default:
-      return g.grossSalary + g.bonus;
+      return g.grossSalary + g.bonus + g.otherIncome + g.rentalIncome;
   }
 }
 
