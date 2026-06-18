@@ -18,7 +18,6 @@ Deno.serve(async (req) => {
     const body = await req.text();
     const event = JSON.parse(body);
 
-    // Met à jour le plan en base via l'email du broker
     const updatePlan = async (email: string, plan: string) => {
       const res = await fetch(
         `${supabaseUrl}/rest/v1/profiles?email=eq.${encodeURIComponent(email)}`,
@@ -36,16 +35,14 @@ Deno.serve(async (req) => {
       return res.ok;
     };
 
-    // Paiement confirmé → activer le bon plan
+    // ── Abonnement SwissBroker Pro ──
     if (event.type === "checkout.session.completed") {
       const session = event.data.object;
       const email = session.customer_details?.email ?? session.customer_email;
-      // Le plan est passé dans les metadata Stripe au moment du checkout
       const plan = session.metadata?.plan ?? "pro";
       if (email) await updatePlan(email, plan);
     }
 
-    // Abonnement résilié → expirer l'accès
     if (event.type === "customer.subscription.deleted") {
       const subscription = event.data.object;
       const customerRes = await fetch(
@@ -56,7 +53,6 @@ Deno.serve(async (req) => {
       if (customer.email) await updatePlan(customer.email, "expired");
     }
 
-    // Paiement échoué → expirer l'accès
     if (event.type === "invoice.payment_failed") {
       const invoice = event.data.object;
       const customerRes = await fetch(
@@ -65,6 +61,45 @@ Deno.serve(async (req) => {
       );
       const customer = await customerRes.json();
       if (customer.email) await updatePlan(customer.email, "expired");
+    }
+
+    // ── Paiement RDV courtier → débloquer le PDF ──
+    if (event.type === "payment_intent.succeeded") {
+      const pi = event.data.object;
+      const brokerId = pi.metadata?.broker_id;
+      const clientId = pi.metadata?.client_id;
+
+      if (brokerId) {
+        // Marquer la facture comme payée et PDF débloqué
+        await fetch(
+          `${supabaseUrl}/rest/v1/rdv_invoices?stripe_payment_intent_id=eq.${pi.id}`,
+          {
+            method: "PATCH",
+            headers: {
+              "apikey": supabaseKey,
+              "Authorization": `Bearer ${supabaseKey}`,
+              "Content-Type": "application/json",
+              "Prefer": "return=minimal",
+            },
+            body: JSON.stringify({ status: "paid", pdf_unlocked: true }),
+          }
+        );
+
+        // Marquer aussi le compte Connect comme onboarding complet si ce n'est pas fait
+        await fetch(
+          `${supabaseUrl}/rest/v1/broker_connect_accounts?broker_id=eq.${brokerId}`,
+          {
+            method: "PATCH",
+            headers: {
+              "apikey": supabaseKey,
+              "Authorization": `Bearer ${supabaseKey}`,
+              "Content-Type": "application/json",
+              "Prefer": "return=minimal",
+            },
+            body: JSON.stringify({ onboarding_complete: true }),
+          }
+        );
+      }
     }
 
     return new Response(JSON.stringify({ received: true }), {

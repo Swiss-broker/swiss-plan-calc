@@ -49,6 +49,33 @@ export type Database = {
           },
         ]
       }
+      broker_connect_accounts: {
+        Row: {
+          broker_id: string
+          created_at: string
+          id: string
+          onboarding_complete: boolean
+          stripe_account_id: string
+          updated_at: string
+        }
+        Insert: {
+          broker_id: string
+          created_at?: string
+          id?: string
+          onboarding_complete?: boolean
+          stripe_account_id: string
+          updated_at?: string
+        }
+        Update: {
+          broker_id?: string
+          created_at?: string
+          id?: string
+          onboarding_complete?: boolean
+          stripe_account_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       client_assets: {
         Row: {
           bank_accounts: number
@@ -600,6 +627,53 @@ export type Database = {
         }
         Relationships: []
       }
+      rdv_invoices: {
+        Row: {
+          amount_chf: number
+          broker_id: string
+          client_id: string | null
+          created_at: string
+          id: string
+          pdf_unlocked: boolean
+          status: string
+          stripe_payment_intent_id: string | null
+          stripe_payment_link: string | null
+          updated_at: string
+        }
+        Insert: {
+          amount_chf: number
+          broker_id: string
+          client_id?: string | null
+          created_at?: string
+          id?: string
+          pdf_unlocked?: boolean
+          status?: string
+          stripe_payment_intent_id?: string | null
+          stripe_payment_link?: string | null
+          updated_at?: string
+        }
+        Update: {
+          amount_chf?: number
+          broker_id?: string
+          client_id?: string | null
+          created_at?: string
+          id?: string
+          pdf_unlocked?: boolean
+          status?: string
+          stripe_payment_intent_id?: string | null
+          stripe_payment_link?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rdv_invoices_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       scenarios: {
         Row: {
           broker_id: string
@@ -917,7 +991,7 @@ export type Database = {
     }
     Enums: {
       app_language: "fr" | "de" | "en" | "it"
-            broker_plan:
+      broker_plan:
         | "free"
         | "pro"
         | "enterprise"
@@ -925,6 +999,7 @@ export type Database = {
         | "starter"
         | "cabinet"
         | "internal"
+        | "expired"
       civil_status:
         | "single"
         | "married"
@@ -1145,6 +1220,7 @@ export const Constants = {
         "starter",
         "cabinet",
         "internal",
+        "expired",
       ],
       civil_status: [
         "single",

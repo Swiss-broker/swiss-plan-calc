@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
+import { useEffect as useEffectConnect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useT } from "@/contexts/LanguageContext";
 import { getSelectableCantons, isSelectableCanton, CANTON_BY_CODE } from "@/lib/swiss/cantons";
@@ -61,6 +62,48 @@ function AccountPage() {
   const [saving, setSaving] = useState(false);
   const [plan, setPlan] = useState<string>("trial");
   const [sendingReset, setSendingReset] = useState(false);
+  const [connectLoading, setConnectLoading] = useState(false);
+  const [connectComplete, setConnectComplete] = useState(false);
+
+  // Vérifier si le compte Connect est déjà configuré
+  useEffectConnect(() => {
+    if (!user) return;
+    supabase
+      .from("broker_connect_accounts")
+      .select("onboarding_complete")
+      .eq("broker_id", user.id)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (data?.onboarding_complete) setConnectComplete(true);
+      });
+    // Détecter le retour du flux Stripe Connect
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("connect") === "success") {
+      supabase
+        .from("broker_connect_accounts")
+        .update({ onboarding_complete: true })
+        .eq("broker_id", user.id)
+        .then(() => setConnectComplete(true));
+    }
+  }, [user]);
+
+  const onConnectBankAccount = async () => {
+    if (!user) return;
+    setConnectLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("stripe-connect-onboard", {
+        body: {
+          brokerId: user.id,
+          brokerEmail: user.email,
+          returnUrl: `${window.location.origin}/account`,
+        },
+      });
+      if (error || !data?.url) throw new Error("Erreur connexion compte");
+      window.location.href = data.url;
+    } catch {
+      setConnectLoading(false);
+    }
+  };
   const [profile, setProfile] = useState({
     first_name: "",
     last_name: "",
@@ -337,6 +380,29 @@ function AccountPage() {
               <ManageSubscriptionButton email={user?.email ?? ""} />
             </div>
           )}
+
+          {/* Compte bancaire pour facturation RDV */}
+          <div className="rounded-lg border border-border p-4">
+            <h3 className="text-sm font-semibold mb-1">Facturation client</h3>
+            <p className="text-xs text-muted-foreground mb-3">
+              Connectez votre compte bancaire pour facturer vos clients directement depuis SwissBroker Pro. SwissBroker Pro retient 10% de commission.
+            </p>
+            {connectComplete ? (
+              <div className="flex items-center gap-2 text-sm text-success font-medium">
+                <span>✅</span> Compte bancaire connecté
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={onConnectBankAccount}
+                disabled={connectLoading}
+                className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary/90 transition-colors"
+              >
+                {connectLoading && <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white border-t-transparent" />}
+                Connecter mon compte bancaire
+              </button>
+            )}
+          </div>
         </div>
       )}
 
