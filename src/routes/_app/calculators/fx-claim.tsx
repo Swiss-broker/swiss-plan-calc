@@ -72,6 +72,7 @@ function FxClaimCalc() {
     { ...newRow(`${2024}-12-15`), amount: 8000, label: "Salaire décembre" },
   ]);
   const [loading, setLoading] = useState(false);
+  const currentYear = new Date().getFullYear();
 
   const afcRate = useMemo(() => {
     const override = parseFloat(afcOverride.replace(",", "."));
@@ -212,16 +213,20 @@ function FxClaimCalc() {
               />
             </div>
             <div className="space-y-1.5 flex items-end">
-              <Button
-                type="button"
-                variant="outline"
-                className="w-full"
-                onClick={fillMarketRates}
-                disabled={loading}
-              >
-                <RefreshCw className={`h-4 w-4 mr-2 ${loading ? "animate-spin" : ""}`} />
-                Taux BNS/ECB
-              </Button>
+              <div className="space-y-1">
+                <p className="text-xs text-muted-foreground">Taux journalier réel</p>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full"
+                  onClick={fillMarketRates}
+                  disabled={loading}
+                  title="Récupère automatiquement le taux de change réel du jour de chaque versement via la Banque Centrale Européenne"
+                >
+                  <RefreshCw className={`h-4 w-4 mr-2 ${loading ? "animate-spin" : ""}`} />
+                  {loading ? "Récupération..." : "Récupérer les taux"}
+                </Button>
+              </div>
             </div>
           </div>
         </CalcCard>
@@ -270,12 +275,15 @@ function FxClaimCalc() {
                         />
                       </TableCell>
                       <TableCell>
-                        <Input
-                          type="number"
-                          step="0.0001"
-                          value={r.marketRate || ""}
-                          onChange={(e) => updateRow(i, { marketRate: Number(e.target.value) || 0 })}
-                        />
+                        <div className="flex items-center gap-1">
+                          <Input
+                            type="text"
+                            value={r.marketRate ? r.marketRate.toFixed(4) : ""}
+                            onChange={(e) => updateRow(i, { marketRate: parseFloat(e.target.value.replace(",", ".")) || 0 })}
+                            placeholder="Auto"
+                            className={r.marketRate ? "border-success/50 bg-success/5" : ""}
+                          />
+                        </div>
                       </TableCell>
                       <TableCell className={`text-right tabular-nums ${deltaEur > 0 ? "text-success" : deltaEur < 0 ? "text-warning" : ""}`}>
                         {deltaEur !== 0 ? deltaEur.toLocaleString("fr-CH", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " €" : "—"}
