@@ -74,6 +74,20 @@ export function SessionSummaryTab({ clientId, clientName }: { clientId: string; 
     }
   };
 
+  // Vérifier si le PDF est débloqué via une facture payée
+  const { data: pdfUnlocked = false } = useQuery({
+    queryKey: ["pdf-unlocked", clientId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("rdv_invoices")
+        .select("pdf_unlocked")
+        .eq("client_id", clientId)
+        .eq("pdf_unlocked", true)
+        .maybeSingle();
+      return !!data;
+    },
+  });
+
   const { data: entries = [], isLoading } = useQuery({
     queryKey: ["client-simulations", clientId],
     queryFn: async () => {
@@ -271,7 +285,7 @@ export function SessionSummaryTab({ clientId, clientName }: { clientId: string; 
           disabled={entries.length === 0}
         >
           <FileText className="h-4 w-4" />
-          {t("client.session.prepare_pdf_button", { name: clientName })}
+          {pdfUnlocked ? "📄 PDF débloqué — Générer la synthèse" : t("client.session.prepare_pdf_button", { name: clientName })}
         </Button>
       </div>
 
