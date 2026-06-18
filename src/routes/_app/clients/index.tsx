@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { usePlan } from "@/contexts/PlanContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -58,6 +59,7 @@ export const Route = createFileRoute("/_app/clients/")({
 function ClientsListPage() {
   const t = useT();
   const { user } = useAuth();
+  const { canAddClient, limits, plan } = usePlan();
   const navigate = useNavigate();
   const qc = useQueryClient();
   const [search, setSearch] = useState("");
@@ -127,10 +129,24 @@ function ClientsListPage() {
           <h1 className="text-3xl font-bold tracking-tight">{t("clients.title")}</h1>
           <p className="mt-1 text-sm text-muted-foreground">{t("clients.subtitle")}</p>
         </div>
-        <Button onClick={() => navigate({ to: "/clients/new" })} className="shadow-elegant">
-          <PlusCircle className="h-4 w-4" />
-          {t("clients.new")}
-        </Button>
+        <div className="flex flex-col items-end gap-1">
+          <Button
+            onClick={() => {
+              if (!canAddClient(clients.filter(c => !c.archived).length)) return;
+              navigate({ to: "/clients/new" });
+            }}
+            disabled={!canAddClient(clients.filter(c => !c.archived).length)}
+            className="shadow-elegant"
+          >
+            <PlusCircle className="h-4 w-4" />
+            {t("clients.new")}
+          </Button>
+          {limits.maxClients !== null && (
+            <span className="text-xs text-muted-foreground">
+              {clients.filter(c => !c.archived).length} / {limits.maxClients} clients
+            </span>
+          )}
+        </div>
       </div>
 
       <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -155,7 +171,7 @@ function ClientsListPage() {
         {isLoading ? (
           <div className="p-12 text-center text-sm text-muted-foreground">{t("common.loading")}</div>
         ) : filtered.length === 0 ? (
-          <EmptyState onCreate={() => navigate({ to: "/clients/new" })} hasSearch={!!search} />
+          <EmptyState onCreate={() => { if (canAddClient(0)) navigate({ to: "/clients/new" }); }} hasSearch={!!search} />
         ) : (
           <Table>
             <TableHeader>

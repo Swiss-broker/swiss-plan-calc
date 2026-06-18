@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { usePlan } from "@/contexts/PlanContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -68,6 +69,7 @@ export const Route = createFileRoute("/_app/companies/")({
 function CompaniesListPage() {
   const t = useT();
   const { user } = useAuth();
+  const { canAddCompany, limits } = usePlan();
   const navigate = useNavigate();
   const qc = useQueryClient();
   const [search, setSearch] = useState("");
@@ -154,10 +156,24 @@ function CompaniesListPage() {
           <h1 className="text-3xl font-bold tracking-tight">{t("companies.title")}</h1>
           <p className="mt-1 text-sm text-muted-foreground">{t("companies.subtitle")}</p>
         </div>
-        <Button onClick={() => navigate({ to: "/companies/new" })} className="shadow-elegant">
-          <PlusCircle className="h-4 w-4" />
-          {t("companies.new")}
-        </Button>
+        <div className="flex flex-col items-end gap-1">
+          <Button
+            onClick={() => {
+              if (!canAddCompany(companies.filter((c: {archived?: boolean}) => !c.archived).length)) return;
+              navigate({ to: "/companies/new" });
+            }}
+            disabled={!canAddCompany(companies.filter((c: {archived?: boolean}) => !c.archived).length)}
+            className="shadow-elegant"
+          >
+            <PlusCircle className="h-4 w-4" />
+            {t("companies.new")}
+          </Button>
+          {limits.maxCompanies !== null && (
+            <span className="text-xs text-muted-foreground">
+              {companies.filter((c: {archived?: boolean}) => !c.archived).length} / {limits.maxCompanies} sociétés
+            </span>
+          )}
+        </div>
       </div>
 
       <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -198,7 +214,7 @@ function CompaniesListPage() {
           <div className="p-12 text-center text-sm text-muted-foreground">{t("common.loading")}</div>
         ) : filtered.length === 0 ? (
           <EmptyState
-            onCreate={() => navigate({ to: "/companies/new" })}
+            onCreate={() => { if (canAddCompany(companies.filter((c: {archived?: boolean}) => !c.archived).length)) navigate({ to: "/companies/new" }); }}
             hasSearch={!!search || formFilter !== "all"}
           />
         ) : (

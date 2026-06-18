@@ -17,6 +17,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger, SheetTitle, SheetHeader } from "@/components/ui/sheet";
 import { useAuth } from "@/contexts/AuthContext";
+import { usePlan } from "@/contexts/PlanContext";
 import { useT } from "@/contexts/LanguageContext";
 import { LanguageSwitcher } from "@/components/common/LanguageSwitcher";
 import { cn } from "@/lib/utils";
