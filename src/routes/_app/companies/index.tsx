@@ -159,10 +159,10 @@ function CompaniesListPage() {
         <div className="flex flex-col items-end gap-1">
           <Button
             onClick={() => {
-              if (!canAddCompany(companies.filter((c: {archived?: boolean}) => !c.archived).length)) return;
+              if (!canAddCompany(companies.length)) return;
               navigate({ to: "/companies/new" });
             }}
-            disabled={!canAddCompany(companies.filter((c: {archived?: boolean}) => !c.archived).length)}
+            disabled={!canAddCompany(companies.length)}
             className="shadow-elegant"
           >
             <PlusCircle className="h-4 w-4" />
@@ -170,7 +170,7 @@ function CompaniesListPage() {
           </Button>
           {limits.maxCompanies !== null && (
             <span className="text-xs text-muted-foreground">
-              {companies.filter((c: {archived?: boolean}) => !c.archived).length} / {limits.maxCompanies} sociétés
+              {companies.length} / {limits.maxCompanies} sociétés
             </span>
           )}
         </div>
@@ -214,7 +214,7 @@ function CompaniesListPage() {
           <div className="p-12 text-center text-sm text-muted-foreground">{t("common.loading")}</div>
         ) : filtered.length === 0 ? (
           <EmptyState
-            onCreate={() => { if (canAddCompany(companies.filter((c: {archived?: boolean}) => !c.archived).length)) navigate({ to: "/companies/new" }); }}
+            onCreate={() => { if (canAddCompany(companies.length)) navigate({ to: "/companies/new" }); }}
             hasSearch={!!search || formFilter !== "all"}
           />
         ) : (
