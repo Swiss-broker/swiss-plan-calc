@@ -106,17 +106,42 @@ export function computeTaxGlobal(g: TaxGlobalInput): TaxGlobalResult {
 
   // ─────────────────────── RÉSIDENT ORDINAIRE ───────────────────────
   if (det.regime === "resident_ordinary") {
-    const income = computeIncomeTax(toIncomeTaxInput(g));
-    const gross = computeGrossForRegime(g, det.regime);
-    // Pas d'estimation LAMal automatique pour résident : les primes sont déjà
-    // déductibles via `healthInsurancePremiums` (forfait cantonal). Afficher une
-    // estimation séparée serait trompeur, laissé à 0, le net cash reste cohérent.
-    const lamal = 0;
+    const incomeTaxInput = toIncomeTaxInput(g);
+
+    let income = computeIncomeTax(incomeTaxInput);
+
+    // Progressivité avec revenu étranger (art. 7 LIFD / art. 6 LHID)
+    // Le revenu étranger est exempté d'impôt CH mais retenu pour déterminer
+    // le taux applicable au revenu suisse (méthode d'exemption avec réserve
+    // de progressivité). On calcule l'impôt sur le revenu mondial, puis on
+    // applique le taux effectif mondial uniquement sur le revenu suisse.
     if (g.foreignIncome > 0) {
+      const grossSwiss = income.grossIncome;
+      const grossWorldwide = grossSwiss + g.foreignIncome;
+      // Impôt théorique sur revenu mondial (pour obtenir le taux progressif)
+      const incomeWorldwide = computeIncomeTax({
+        ...incomeTaxInput,
+        grossSalary: incomeTaxInput.grossSalary + g.foreignIncome,
+      });
+      // Taux effectif mondial
+      const worldwideEffectiveRate = grossWorldwide > 0
+        ? incomeWorldwide.totalTax / incomeWorldwide.grossIncome
+        : 0;
+      // Impôt recalculé : taux mondial × revenu suisse uniquement
+      const taxWithProgressivity = Math.round(grossSwiss * worldwideEffectiveRate);
+      // On remplace uniquement le totalTax et l'effectiveRate
+      income = {
+        ...income,
+        totalTax: taxWithProgressivity,
+        effectiveRate: grossSwiss > 0 ? (taxWithProgressivity / grossSwiss) * 100 : 0,
+      };
       notes.push(
-        "Revenu étranger : NON pris en compte dans ce calcul. À reporter manuellement en déclaration suisse pour la progressivité (méthode d'exemption avec réserve de progressivité).",
+        "Revenu étranger de " + g.foreignIncome.toLocaleString("fr-CH") + " CHF pris en compte pour la progressivité (art. 7 LIFD). Taux effectif mondial " + (worldwideEffectiveRate * 100).toFixed(1) + "% appliqué sur le revenu suisse uniquement.",
       );
     }
+
+    const gross = computeGrossForRegime(g, det.regime);
+    const lamal = 0;
     if (g.imputedRent > 0) {
       notes.push(
         "Valeur locative incluse dans le revenu imposable (impôt) mais exclue du net cash affiché.",
