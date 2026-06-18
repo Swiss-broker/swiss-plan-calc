@@ -13,7 +13,7 @@ export interface PlanLimits {
 
 export const PLAN_LIMITS: Record<BrokerPlan, PlanLimits> = {
   trial:    { maxClients: 20,   maxCompanies: 4,    maxPdfPerMonth: null, maxAiPerDay: null },
-  starter:  { maxClients: 10,   maxCompanies: 2,    maxPdfPerMonth: 10,   maxAiPerDay: 10   },
+  starter:  { maxClients: 10,   maxCompanies: 2,    maxPdfPerMonth: null, maxAiPerDay: null },
   pro:      { maxClients: 20,   maxCompanies: 4,    maxPdfPerMonth: null, maxAiPerDay: null },
   cabinet:  { maxClients: null, maxCompanies: null, maxPdfPerMonth: null, maxAiPerDay: null },
   expired:  { maxClients: 0,    maxCompanies: 0,    maxPdfPerMonth: 0,    maxAiPerDay: 0    },

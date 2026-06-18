@@ -36,7 +36,7 @@ const PLAN_CONFIG: Record<string, { label: string; color: string; features: stri
   starter: {
     label: "Starter — 490 CHF/mois",
     color: "bg-blue-100 text-blue-800 border-blue-200",
-    features: ["10 clients max", "2 sociétés max", "Tous les calculateurs", "10 exports PDF/mois", "IA 10 conversations/jour"],
+    features: ["10 clients max", "2 sociétés max", "Tous les calculateurs", "Exports PDF illimités", "Conversations IA illimitées"],
   },
   pro: {
     label: "Pro — 790 CHF/mois",
