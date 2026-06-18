@@ -538,6 +538,7 @@ function PaiementsHistory({ userId }: { userId: string }) {
     stripe_payment_link: string | null;
     created_at: string;
     client_id: string | null;
+    clientName?: string;
   }>>([]);
   const [loading, setLoading] = useState(true);
 
@@ -548,8 +549,25 @@ function PaiementsHistory({ userId }: { userId: string }) {
       .select("id,amount_chf,status,stripe_payment_link,created_at,client_id")
       .eq("broker_id", userId)
       .order("created_at", { ascending: false })
-      .then(({ data }) => {
-        setInvoices((data as typeof invoices) ?? []);
+      .then(async ({ data }) => {
+        if (!data) { setLoading(false); return; }
+        const clientIds = [...new Set(data.map(d => d.client_id).filter(Boolean))];
+        let clientMap: Record<string, string> = {};
+        if (clientIds.length > 0) {
+          const { data: clients } = await supabase
+            .from("clients")
+            .select("id,first_name,last_name")
+            .in("id", clientIds as string[]);
+          if (clients) {
+            clientMap = Object.fromEntries(
+              clients.map(c => [c.id, `${c.first_name} ${c.last_name}`.trim()])
+            );
+          }
+        }
+        setInvoices(data.map(inv => ({
+          ...inv,
+          clientName: inv.client_id ? (clientMap[inv.client_id] ?? "Client inconnu") : "—",
+        })));
         setLoading(false);
       });
   }, [userId]);
@@ -560,22 +578,32 @@ function PaiementsHistory({ userId }: { userId: string }) {
       {loading ? (
         <p className="text-sm text-muted-foreground">Chargement...</p>
       ) : invoices.length === 0 ? (
-        <p className="text-sm text-muted-foreground">Aucun paiement reçu pour l'instant. Les paiements de vos clients apparaîtront ici.</p>
+        <p className="text-sm text-muted-foreground">Aucun paiement reçu pour l instant. Les paiements de vos clients apparaitront ici.</p>
       ) : (
         <div className="space-y-2">
           {invoices.map((inv) => (
             <div key={inv.id} className="flex items-center justify-between rounded-lg border border-border p-3">
               <div>
-                <p className="text-sm font-medium">{(inv.amount_chf / 100).toLocaleString("fr-CH", { minimumFractionDigits: 2 })} CHF</p>
+                <p className="text-sm font-semibold">{inv.clientName}</p>
+                <p className="text-sm text-muted-foreground">{(inv.amount_chf / 100).toLocaleString("fr-CH", { minimumFractionDigits: 2 })} CHF</p>
                 <p className="text-xs text-muted-foreground">{new Date(inv.created_at).toLocaleDateString("fr-CH")}</p>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex flex-col items-end gap-1">
                 {inv.status === "paid" ? (
-                  <span className="rounded-full bg-success/10 px-2 py-0.5 text-xs font-medium text-success">Payé</span>
+                  <span className="rounded-full bg-success/10 px-2 py-0.5 text-xs font-medium text-success">Paye</span>
                 ) : inv.status === "pending" ? (
                   <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800">En attente</span>
                 ) : (
                   <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">{inv.status}</span>
+                )}
+                {inv.status === "pending" && inv.stripe_payment_link && (
+                  <button
+                    type="button"
+                    onClick={() => { navigator.clipboard.writeText(inv.stripe_payment_link!); }}
+                    className="text-xs text-primary underline hover:no-underline"
+                  >
+                    Copier le lien
+                  </button>
                 )}
               </div>
             </div>
