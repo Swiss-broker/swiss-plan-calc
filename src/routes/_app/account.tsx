@@ -385,7 +385,7 @@ function AccountPage() {
           <div className="rounded-lg border border-border p-4">
             <h3 className="text-sm font-semibold mb-1">Facturation client</h3>
             <p className="text-xs text-muted-foreground mb-3">
-              Connectez votre compte bancaire pour facturer vos clients directement depuis SwissBroker Pro. SwissBroker Pro retient 10% de commission.
+              SwissBroker Pro vous permet de facturer vos honoraires de conseil directement à vos clients depuis l'application. Vous générez un lien de paiement que vous envoyez par email ou SMS. Une fois réglé, le PDF de synthèse du rendez-vous se débloque automatiquement. SwissBroker Pro retient 10% de commission sur chaque paiement, le reste est viré directement sur votre compte bancaire. Pour activer cette fonctionnalité, connectez votre IBAN ci-dessous.
             </p>
             {connectComplete ? (
               <div className="flex items-center gap-2 text-sm text-success font-medium">
