@@ -32,3 +32,5 @@ dist-ssr
 *.sw?
 .env
 *.icloud
+.vercel
+.env*

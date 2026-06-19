@@ -12,6 +12,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { LanguageProvider, useLanguage } from "@/contexts/LanguageContext";
 import { ActiveClientProvider } from "@/contexts/ActiveClientContext";
 import { PlanProvider } from "@/contexts/PlanContext";
+import { GuideProvider } from "@/contexts/GuideContext";
 import { t as translate } from "@/lib/i18n";
 
 const rootSearchSchema = z.object({
@@ -59,11 +60,13 @@ function RootComponent() {
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <PlanProvider>
+        <GuideProvider>
         <ActiveClientProvider>
         <LanguageProvider>
           <LanguageScopedTree />
         </LanguageProvider>
         </ActiveClientProvider>
+        </GuideProvider>
         </PlanProvider>
       </AuthProvider>
     </QueryClientProvider>

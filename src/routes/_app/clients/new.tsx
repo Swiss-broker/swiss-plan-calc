@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { ClientWizard } from "@/components/clients/ClientWizard";
+import { ClientFormGuide } from "@/components/guides/ClientFormGuide";
 import { t } from "@/lib/i18n";
 
 export const Route = createFileRoute("/_app/clients/new")({
@@ -8,5 +9,10 @@ export const Route = createFileRoute("/_app/clients/new")({
 });
 
 function NewClientPage() {
-  return <ClientWizard mode="create" />;
+  return (
+    <>
+      <ClientFormGuide />
+      <ClientWizard mode="create" />
+    </>
+  );
 }

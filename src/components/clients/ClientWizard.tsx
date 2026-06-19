@@ -556,7 +556,7 @@ function Field({
 function StepIdentity({ form, update, errors }: StepProps) {
   const t = useT();
   return (
-    <div className="grid gap-4 sm:grid-cols-2">
+    <div className="grid gap-4 sm:grid-cols-2" data-guide="client-identity">
       <Field label={t("wizard.field.first_name")} htmlFor="fn" error={errors?.first_name}>
         <Input
           id="fn"
@@ -848,7 +848,7 @@ function StepActivity({ form, update }: StepProps) {
     : t("wizard.field.other_income");
 
   return (
-    <div className="grid gap-4 sm:grid-cols-2">
+    <div className="grid gap-4 sm:grid-cols-2" data-guide="client-income">
       <Field label={t("wizard.field.work_status")}>
         <Select
           value={form.work_status}

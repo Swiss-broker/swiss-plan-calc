@@ -580,6 +580,7 @@ export type Database = {
           default_canton: string | null
           email: string
           first_name: string | null
+          guides_seen: string[]
           id: string
           last_name: string | null
           logo_url: string | null
@@ -597,6 +598,7 @@ export type Database = {
           default_canton?: string | null
           email: string
           first_name?: string | null
+          guides_seen?: string[]
           id: string
           last_name?: string | null
           logo_url?: string | null
@@ -614,6 +616,7 @@ export type Database = {
           default_canton?: string | null
           email?: string
           first_name?: string | null
+          guides_seen?: string[]
           id?: string
           last_name?: string | null
           logo_url?: string | null
