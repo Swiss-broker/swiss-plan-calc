@@ -113,8 +113,8 @@ function VestedBenefitsCalc() {
   const [guideOpen, setGuideOpen] = useState(false);
   const guideSteps: GuideStep[] = [
     { title: t("calc.vested.step.welcome.t"), body: t("calc.vested.step.welcome.b") },
-    { title: t("calc.vested.step.capital.t"), body: t("calc.vested.step.capital.b") },
-    { title: t("calc.vested.step.split.t"), body: t("calc.vested.step.split.b") },
+    { target: "vested-initial-balance", title: t("calc.vested.step.capital.t"), body: t("calc.vested.step.capital.b") },
+    { target: "vested-withdrawal-canton", title: t("calc.vested.step.split.t"), body: t("calc.vested.step.split.b") },
   ];
 
   return (
@@ -147,7 +147,7 @@ function VestedBenefitsCalc() {
       <div className="md:col-span-2">
         <CalcCard title={t("calc.vested.params_card")} description={t("calc.vested.params_desc")}>
           <div className="space-y-4">
-            <Field label={t("calc.vested.field.initial")} wikiId="lpp-conversion" wikiTip={t("calc.vested.tip.initial")}>
+         <Field label={t("calc.vested.field.initial")} wikiId="lpp-conversion" wikiTip={t("calc.vested.tip.initial")} data-guide="vested-initial-balance">
               <BaseNumField
                 value={String(form.initialBalance)}
                 onChange={(v) => set("initialBalance", Number(v) || 0)}
@@ -162,7 +162,7 @@ function VestedBenefitsCalc() {
               />
               <ClientPrefillBadge show={!!prefill?.yearsToRetirement && form.yearsToRetirement === prefill.yearsToRetirement} clientName={client ? `${client.first_name} ${client.last_name}` : undefined} />
             </Field>
-            <Field label={t("calc.vested.field.canton")} wikiId="lpp-conversion" wikiTip={t("calc.vested.tip.canton")}>
+            <Field label={t("calc.vested.field.canton")} wikiId="lpp-conversion" wikiTip={t("calc.vested.tip.canton")} data-guide="vested-withdrawal-canton">
               <Select value={form.withdrawalCanton} onValueChange={(v) => set("withdrawalCanton", v)}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
