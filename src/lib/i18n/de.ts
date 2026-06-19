@@ -1800,4 +1800,12 @@ export const de: Record<string, string> = {
   "calc.global.guide.s9.title": "Grenzgänger und Wechselkurs",
   "calc.global.guide.s9.body": "Bei Grenzgänger-Regimen rechnet der EUR/CHF-Wechselkurs die eingegebenen Beträge automatisch in beide Richtungen um.",
   "calc.global.guide.s10.title": "Ergebnis",
+  "calc.fx_claim.title": "Wechselkurs-Reklamation",
+  "enum.civil_status.cohabiting": "Konkubinat",
+  "clients.toast.status_verified": "Steuerstatus bestätigt",
+  "clients.toast.note_added": "Notiz hinzugefügt",
+  "wizard.field.activity_sector": "Tätigkeitsbereich / Beruf",
+  "wizard.field.activity_sector.hint": "Informativ, hilft dem Berater bei Nachverfolgung und Personalisierung",
+  "wizard.field.spouse_salary_mode": "Gehaltsmodus Ehepartner",
+  "wizard.field.spouse_work_location": "Arbeitsort des Ehepartners",
   "calc.global.guide.s10.body": "Das Endergebnis berücksichtigt das Regime, die anwendbaren Abzüge und die Progression. Prüfen Sie stets, ob es dem tatsächlichen Profil des Kunden entspricht.",};
