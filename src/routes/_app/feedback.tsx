@@ -1,19 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Loader2, Trash2, MessageSquare } from "lucide-react";
+import { Loader2, MessageSquare } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { toast } from "sonner";
 
 type FeedbackRow = {
   id: string;
@@ -36,7 +27,7 @@ const CATEGORY_LABEL: Record<FeedbackRow["category"], string> = {
 
 const STATUS_LABEL: Record<FeedbackRow["status"], string> = {
   new: "Nouveau",
-  in_review: "En revue",
+  in_review: "En cours de traitement",
   planned: "Planifié",
   resolved: "Résolu",
   dismissed: "Écarté",
@@ -58,35 +49,17 @@ function FeedbackPage() {
   const { user } = useAuth();
   const [rows, setRows] = useState<FeedbackRow[] | null>(null);
 
-  const load = async () => {
+  useEffect(() => {
     if (!user) return;
-    const { data, error } = await supabase
+    supabase
       .from("user_feedback")
       .select("id,category,status,subject,message,page_path,rating,created_at")
-      .order("created_at", { ascending: false });
-    if (error) {
-      toast.error(error.message);
-      return;
-    }
-    setRows((data ?? []) as FeedbackRow[]);
-  };
-
-  useEffect(() => {
-    void load();
+      .eq("broker_id", user.id)
+      .order("created_at", { ascending: false })
+      .then(({ data, error }) => {
+        if (!error) setRows((data ?? []) as FeedbackRow[]);
+      });
   }, [user]);
-
-  const updateStatus = async (id: string, status: FeedbackRow["status"]) => {
-    const { error } = await supabase.from("user_feedback").update({ status }).eq("id", id);
-    if (error) return toast.error(error.message);
-    setRows((prev) => prev?.map((r) => (r.id === id ? { ...r, status } : r)) ?? null);
-  };
-
-  const remove = async (id: string) => {
-    if (!confirm("Supprimer ce feedback ?")) return;
-    const { error } = await supabase.from("user_feedback").delete().eq("id", id);
-    if (error) return toast.error(error.message);
-    setRows((prev) => prev?.filter((r) => r.id !== id) ?? null);
-  };
 
   return (
     <div className="mx-auto w-full max-w-5xl space-y-6 p-6">
@@ -95,7 +68,7 @@ function FeedbackPage() {
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Mes feedbacks</h1>
           <p className="text-sm text-muted-foreground">
-            Historique des retours envoyés depuis l'application.
+            Historique des retours envoyés à l'équipe SwissBroker.
           </p>
         </div>
       </div>
@@ -107,7 +80,7 @@ function FeedbackPage() {
       ) : rows.length === 0 ? (
         <Card>
           <CardContent className="py-12 text-center text-sm text-muted-foreground">
-            Aucun feedback pour le moment. Utilisez le bouton « Feedback » en bas à droite.
+            Aucun feedback pour le moment. Utilisez le bouton Feedback en bas au centre.
           </CardContent>
         </Card>
       ) : (
@@ -127,37 +100,7 @@ function FeedbackPage() {
                       <span className="text-xs">
                         {new Date(r.created_at).toLocaleString("fr-CH")}
                       </span>
-                      {r.page_path && (
-                        <code className="rounded bg-muted px-1.5 py-0.5 text-xs">
-                          {r.page_path}
-                        </code>
-                      )}
                     </CardDescription>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Select
-                      value={r.status}
-                      onValueChange={(v) => updateStatus(r.id, v as FeedbackRow["status"])}
-                    >
-                      <SelectTrigger className="h-8 w-[140px] text-xs">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {Object.entries(STATUS_LABEL).map(([v, l]) => (
-                          <SelectItem key={v} value={v}>
-                            {l}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => remove(r.id)}
-                      aria-label="Supprimer"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
                   </div>
                 </div>
               </CardHeader>
@@ -169,5 +112,5 @@ function FeedbackPage() {
         </div>
       )}
     </div>
-  );
+  )
 }
