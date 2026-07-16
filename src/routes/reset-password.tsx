@@ -54,13 +54,18 @@ function ResetPasswordPage() {
   const onSubmit = async (values: ResetValues) => {
     setLoading(true);
     const { error } = await supabase.auth.updateUser({ password: values.password });
-    setLoading(false);
     if (error) {
+      setLoading(false);
       toast.error("Erreur lors de la mise à jour du mot de passe.");
       return;
     }
-    toast.success("Mot de passe mis à jour avec succès.");
-    navigate({ to: "/dashboard" });
+    // On déconnecte explicitement la session de récupération pour forcer
+    // une reconnexion manuelle avec le nouveau mot de passe, plutôt que
+    // de laisser la personne accéder directement au dashboard.
+    await supabase.auth.signOut();
+    setLoading(false);
+    toast.success("Mot de passe mis à jour. Connectez-vous avec votre nouveau mot de passe.");
+    navigate({ to: "/auth" });
   };
 
   if (!ready) {
