@@ -4,7 +4,7 @@ import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
-import { ArrowLeft, Loader2 } from "lucide-react";
+import { ArrowLeft, Loader2, Eye, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -316,6 +316,7 @@ function SigninForm() {
     resolver: zodResolver(signinSchema),
     defaultValues: { email: "", password: "" },
   });
+  const [showPassword, setShowPassword] = useState(false);
 
   const onSubmit = async (values: SigninValues) => {
     setLoading(true);
@@ -364,7 +365,23 @@ function SigninForm() {
             Mot de passe oublié ?
           </button>
         </div>
-        <Input id="password" type="password" autoComplete="current-password" {...form.register("password")} />
+        <div className="relative">
+          <Input
+            id="password"
+            type={showPassword ? "text" : "password"}
+            autoComplete="current-password"
+            className="pr-10"
+            {...form.register("password")}
+          />
+          <button
+            type="button"
+            onClick={() => setShowPassword((v) => !v)}
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+            tabIndex={-1}
+          >
+            {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+          </button>
+        </div>
       </div>
       {resetSent && (
         <div className="rounded-lg bg-success/10 border border-success/20 p-3 text-center">
