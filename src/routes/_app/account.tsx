@@ -161,7 +161,7 @@ function AccountPage() {
     if (!user?.email) return;
     setSendingReset(true);
     await supabase.auth.resetPasswordForEmail(user.email, {
-      redirectTo: `${window.location.origin}/auth`,
+      redirectTo: `${window.location.origin}/reset-password`,
     });
     setSendingReset(false);
     toast.success("Email de réinitialisation envoyé");

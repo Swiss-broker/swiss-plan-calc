@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AppRouteImport } from './routes/_app'
 import { Route as IndexRouteImport } from './routes/index'
@@ -50,6 +51,11 @@ import { Route as AppCompaniesCompanyIdEditRouteImport } from './routes/_app/com
 import { Route as AppClientsClientIdScenariosRouteImport } from './routes/_app/clients/$clientId_.scenarios'
 import { Route as AppClientsClientIdEditRouteImport } from './routes/_app/clients/$clientId_.edit'
 
+const ResetPasswordRoute = ResetPasswordRouteImport.update({
+  id: '/reset-password',
+  path: '/reset-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
   path: '/auth',
@@ -263,6 +269,7 @@ const AppClientsClientIdEditRoute = AppClientsClientIdEditRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRouteWithChildren
+  '/reset-password': typeof ResetPasswordRoute
   '/account': typeof AppAccountRoute
   '/calculators': typeof AppCalculatorsRouteWithChildren
   '/companies': typeof AppCompaniesRouteWithChildren
@@ -304,6 +311,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRouteWithChildren
+  '/reset-password': typeof ResetPasswordRoute
   '/account': typeof AppAccountRoute
   '/dashboard': typeof AppDashboardRoute
   '/feedback': typeof AppFeedbackRoute
@@ -345,6 +353,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_app': typeof AppRouteWithChildren
   '/auth': typeof AuthRouteWithChildren
+  '/reset-password': typeof ResetPasswordRoute
   '/_app/account': typeof AppAccountRoute
   '/_app/calculators': typeof AppCalculatorsRouteWithChildren
   '/_app/companies': typeof AppCompaniesRouteWithChildren
@@ -388,6 +397,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/auth'
+    | '/reset-password'
     | '/account'
     | '/calculators'
     | '/companies'
@@ -429,6 +439,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/auth'
+    | '/reset-password'
     | '/account'
     | '/dashboard'
     | '/feedback'
@@ -469,6 +480,7 @@ export interface FileRouteTypes {
     | '/'
     | '/_app'
     | '/auth'
+    | '/reset-password'
     | '/_app/account'
     | '/_app/calculators'
     | '/_app/companies'
@@ -512,6 +524,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AppRoute: typeof AppRouteWithChildren
   AuthRoute: typeof AuthRouteWithChildren
+  ResetPasswordRoute: typeof ResetPasswordRoute
   ClientUploadTokenRoute: typeof ClientUploadTokenRoute
   SharedTokenRoute: typeof SharedTokenRoute
   ApiPublicClientUploadTokenRoute: typeof ApiPublicClientUploadTokenRoute
@@ -519,6 +532,13 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/reset-password': {
+      id: '/reset-password'
+      path: '/reset-password'
+      fullPath: '/reset-password'
+      preLoaderRoute: typeof ResetPasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/auth': {
       id: '/auth'
       path: '/auth'
@@ -912,6 +932,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AppRoute: AppRouteWithChildren,
   AuthRoute: AuthRouteWithChildren,
+  ResetPasswordRoute: ResetPasswordRoute,
   ClientUploadTokenRoute: ClientUploadTokenRoute,
   SharedTokenRoute: SharedTokenRoute,
   ApiPublicClientUploadTokenRoute: ApiPublicClientUploadTokenRoute,

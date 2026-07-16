@@ -339,7 +339,7 @@ function SigninForm() {
     }
     setResetLoading(true);
     await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/auth`,
+      redirectTo: `${window.location.origin}/reset-password`,
     });
     setResetLoading(false);
     setResetSent(true);
