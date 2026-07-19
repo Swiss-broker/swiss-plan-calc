@@ -820,7 +820,7 @@ function drawComparisonPage(
 ) {
   pdf.section("Synthèse globale · Situation avant et après optimisation");
   pdf.paragraph(
-    "Ce tableau agrège les résultats de l'ensemble des simulations sélectionnées et chiffre l'impact global des optimisations identifiées.",
+    "Ce tableau agrège les résultats de l'ensemble des simulations sélectionnées et chiffre l'impact global des optimisations identifiées pour ce client. Chaque ligne compare la situation de départ (avant toute action) à la situation projetée une fois l'optimisation mise en œuvre.",
     { muted: true, italic: true },
   );
 
@@ -879,12 +879,25 @@ function drawComparisonPage(
     });
   } else {
     pdf.table(["Indicateur", "Avant", "Après", "Delta"], rows);
+    pdf.spacer(2);
+    pdf.paragraph(
+      "La colonne « Delta » indique le gain net apporté par chaque optimisation, ponctuel pour un rachat ou un retrait, récurrent lorsqu'il s'agit d'une économie annuelle. Ces montants sont ensuite consolidés ci-dessous.",
+      { muted: true, italic: true },
+    );
   }
 
   // Bloc "Gain total identifié"
   const totals = computeTotals(entries);
   pdf.spacer(4);
   drawGainHighlight(pdf, totals);
+
+  if (totals.oneTime > 0 || totals.annual > 0) {
+    pdf.spacer(3);
+    pdf.paragraph(
+      "Ce total combine les gains ponctuels (rachats, retraits optimisés) et les économies récurrentes projetées sur 10 ans, à situation constante. Il s'agit d'un ordre de grandeur destiné à objectiver la conversation avec le client, pas d'un engagement contractuel : chaque optimisation nécessite une mise en œuvre concrète et un suivi dans le temps.",
+      { muted: true, italic: true },
+    );
+  }
 }
 
 function formatDelta(v: number): string {
@@ -952,19 +965,31 @@ function drawGainHighlight(pdf: ReportPdf, totals: Totals) {
 // ============================================================================
 function drawConclusionPage(pdf: ReportPdf, entries: HistoryEntry[]) {
   pdf.section("Recommandations chiffrées");
+  const gains = entries
+    .map((e) => ({ entry: e, gain: extractGain(e) }))
+    .filter((x) => x.gain.type !== "none")
+    .sort((a, b) => b.gain.amount - a.gain.amount);
+
   if (entries.length === 0) {
     pdf.paragraph("Aucune recommandation : effectuez d'abord des simulations depuis la fiche client.", {
       italic: true,
       muted: true,
     });
+  } else if (gains.length === 0) {
+    pdf.paragraph(
+      "Les simulations réalisées documentent la situation du client mais n'ont pas fait ressortir de gain chiffrable direct. Elles restent néanmoins utiles pour objectiver les choix à venir.",
+      { italic: true, muted: true },
+    );
   } else {
+    pdf.paragraph(
+      `${gains.length} optimisation${gains.length > 1 ? "s ont" : " a"} été identifiée${gains.length > 1 ? "s" : ""} sur la base des simulations réalisées avec ce client, classées ci-dessous par ordre d'impact financier décroissant.`,
+    );
+    pdf.spacer(2);
     let n = 1;
-    for (const e of entries) {
-      const g = extractGain(e);
-      if (g.type === "none") continue;
+    for (const { gain: g } of gains) {
       const amount =
-        g.type === "annual" ? `${formatCHF(g.amount)} / an` : formatCHF(g.amount);
-      pdf.paragraph(`${n}. ${g.label} · Gain estimé : ${amount}.${g.details ? ` ${g.details}.` : ""}`);
+        g.type === "annual" ? `${formatCHF(g.amount)} par an` : `${formatCHF(g.amount)}, gain ponctuel`;
+      pdf.paragraph(`${n}. ${g.label}. Gain estimé : ${amount}.${g.details ? ` ${g.details}.` : ""}`);
       n++;
     }
   }
@@ -972,15 +997,14 @@ function drawConclusionPage(pdf: ReportPdf, entries: HistoryEntry[]) {
   pdf.spacer(4);
   pdf.section("Prochaines étapes");
   pdf.paragraph(
-    "Prenez rendez-vous avec votre courtier pour mettre en œuvre ces optimisations. Les démarches administratives (rachat LPP, ouverture d'un 3e pilier, changement de canton, restructuration de la rémunération dirigeant) peuvent être accompagnées par votre conseiller.",
+    "Prenez rendez-vous avec votre courtier pour mettre en œuvre ces optimisations. Les démarches administratives (rachat LPP, ouverture d'un 3e pilier, changement de canton, restructuration de la rémunération dirigeant) peuvent être accompagnées par votre conseiller, qui reste votre interlocuteur privilégié pour toute question complémentaire.",
   );
 
   pdf.spacer(4);
   pdf.section("Avertissement");
   pdf.paragraph(
-    `Les projections présentées dans ce document sont des estimations basées sur les paramètres fiscaux et sociaux en vigueur en ${new Date().getFullYear()}. Elles ne constituent ni un conseil fiscal ni un engagement contractuel. Les barèmes peuvent évoluer et les hypothèses (rendement, durée, revenu) peuvent ne pas se réaliser. Une analyse personnalisée auprès d'un fiduciaire ou d'un fiscaliste est recommandée avant toute décision.`,
+    `Les projections présentées dans ce document sont des estimations basées sur les paramètres fiscaux et sociaux en vigueur en ${new Date().getFullYear()}. Elles ne constituent ni un conseil fiscal ni un engagement contractuel. Les barèmes peuvent évoluer et les hypothèses retenues (rendement, durée, revenu, stabilité de la situation personnelle) peuvent ne pas se réaliser telles quelles. Une analyse personnalisée auprès d'un fiduciaire ou d'un fiscaliste est recommandée avant toute décision définitive.`,
     { muted: true },
   );
 }
-
 export { makeFilename };
