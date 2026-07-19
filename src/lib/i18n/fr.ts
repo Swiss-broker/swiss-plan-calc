@@ -177,6 +177,16 @@ export const fr: Record<string, string> = {
   "calc.tou.desc":
     "Éligibilité 90 % et comparatif IS retenue vs taxation ordinaire ultérieure.",
   "calc.retirement.title": "Rente vs capital",
+  "calc.retirement.intro.body": "Ce calculateur compare deux façons de toucher le capital LPP à la retraite : le retrait en rente viagère (versée à vie, imposée chaque année comme un revenu) ou le retrait en capital en une fois (imposé une seule fois, puis à faire fructifier soi-même). Modifiez les hypothèses ci-dessous pour voir quelle option est la plus avantageuse pour ce client.",
+  "calc.retirement.caption.capital": "Point de départ de toute la comparaison : c'est ce montant qui sera soit converti en rente, soit retiré en capital.",
+  "calc.retirement.caption.civil_status": "Détermine le barème d'imposition appliqué à l'impôt unique sur le capital retiré (marié = barème plus favorable).",
+  "calc.retirement.caption.conversion_rate": "Ce taux transforme le capital en rente annuelle. Plus il est élevé, plus la rente est avantageuse face au capital.",
+  "calc.retirement.caption.life_years": "Plus cette durée est longue, plus la rente devient avantageuse (elle est versée plus longtemps).",
+  "calc.retirement.caption.return_rate": "Rendement que le client pourrait obtenir en plaçant lui-même le capital. Plus il est élevé, plus le capital devient avantageux face à la rente.",
+  "calc.retirement.explain.title": "Comment cette recommandation est calculée",
+  "calc.retirement.explain.line1": "Scénario rente : le capital est converti en rente annuelle (taux de conversion), versée chaque année pendant la durée saisie, puis imposée chaque année au taux marginal indiqué.",
+  "calc.retirement.explain.line2": "Scénario capital : le capital subit d'abord l'impôt unique sur le retrait (calculé ci-dessus), puis le solde net est supposé placé au rendement indiqué pendant la même durée.",
+  "calc.retirement.explain.line3": "La recommandation compare le total net réellement perçu sur toute la durée dans les deux scénarios. Si l'écart est faible, un mix rente/capital est proposé pour équilibrer sécurité et performance.",
   "calc.retirement.desc": "Compare rente LPP à vie ou retrait en capital + placement.",
   "calc.director.title": "Salaire / dividende dirigeant",
   "calc.director.desc":

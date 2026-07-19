@@ -125,11 +125,24 @@ const projectedCapital = dashboard?.lpp?.projectedCapitalAt65;
       <div className="flex justify-end"><GuideToggleButton onClick={() => setGuideOpen(true)} /></div>
 
       {client && <ClientLinkBanner client={client} />}
+
+      {/* Bloc d'intro toujours visible, pas de survol necessaire */}
+      <div className="rounded-2xl border border-primary/30 bg-primary/5 p-4">
+        <p className="text-sm text-foreground">
+          {t("calc.retirement.intro.body")}
+        </p>
+      </div>
+
       <div className="grid grid-cols-1 gap-6 md:grid-cols-5">
         <div className="md:col-span-3">
           <CalcCard title={t("calc.retirement.section.title")} description={t("calc.retirement.section.desc")}>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <NumField label={t("calc.retirement.field.capital")} value={form.capital} onChange={(v) => set("capital", v)} wikiId="lpp-conversion" wikiTip={t("calc.retirement.tip.capital")} />
+              <div className="space-y-1">
+                <NumField label={t("calc.retirement.field.capital")} value={form.capital} onChange={(v) => set("capital", v)} wikiId="lpp-conversion" wikiTip={t("calc.retirement.tip.capital")} />
+                <p className="text-[10px] text-muted-foreground">
+                  {t("calc.retirement.caption.capital")}
+                </p>
+              </div>
               <ClientPrefillBadge show={!!prefill?.capital && form.capital === prefill.capital} clientName={client ? `${client.first_name} ${client.last_name}` : undefined} />
               <div className="space-y-1.5">
                 <Label className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
@@ -159,12 +172,29 @@ const projectedCapital = dashboard?.lpp?.projectedCapitalAt65;
                     <SelectItem value="single_with_children">{t("calc.status.single_with_children")}</SelectItem>
                   </SelectContent>
                 </Select>
+                <p className="text-[10px] text-muted-foreground">
+                  {t("calc.retirement.caption.civil_status")}
+                </p>
                 <ClientPrefillBadge show={!!prefill?.status && form.status === prefill.status} clientName={client ? `${client.first_name} ${client.last_name}` : undefined} />
               </div>
-<div data-guide="retirement-conversion-rate">
+              <div data-guide="retirement-conversion-rate" className="space-y-1">
                 <NumField label={t("calc.retirement.field.conversion_rate")} value={form.conversionRate} onChange={(v) => set("conversionRate", v)} step={0.05} wikiId="lpp-conversion" wikiTip={t("calc.retirement.tip.conversion_rate")} />
-              </div>              <NumField label={t("calc.retirement.field.life_years")} value={form.yearsAlive} onChange={(v) => set("yearsAlive", v)} wikiId="lpp-conversion" wikiTip={t("calc.retirement.tip.life_years")} />
-              <NumField label={t("calc.retirement.field.return_rate")} value={form.selfReturnRate} onChange={(v) => set("selfReturnRate", v)} step={0.1} wikiId="lpp-conversion" wikiTip={t("calc.retirement.tip.return_rate")} />
+                <p className="text-[10px] text-muted-foreground">
+                  {t("calc.retirement.caption.conversion_rate")}
+                </p>
+              </div>
+              <div className="space-y-1">
+                <NumField label={t("calc.retirement.field.life_years")} value={form.yearsAlive} onChange={(v) => set("yearsAlive", v)} wikiId="lpp-conversion" wikiTip={t("calc.retirement.tip.life_years")} />
+                <p className="text-[10px] text-muted-foreground">
+                  {t("calc.retirement.caption.life_years")}
+                </p>
+              </div>
+              <div className="space-y-1">
+                <NumField label={t("calc.retirement.field.return_rate")} value={form.selfReturnRate} onChange={(v) => set("selfReturnRate", v)} step={0.1} wikiId="lpp-conversion" wikiTip={t("calc.retirement.tip.return_rate")} />
+                <p className="text-[10px] text-muted-foreground">
+                  {t("calc.retirement.caption.return_rate")}
+                </p>
+              </div>
               <div className="space-y-1">
                 <NumField label={t("calc.retirement.field.marginal_rate")} value={form.rentMarginalRate} onChange={(v) => set("rentMarginalRate", v)} step={0.5} suffix="%" wikiId="lpp-conversion" wikiTip="Le taux marginal correspond à l'impôt prélevé sur chaque franc supplémentaire de revenu (ici, la rente LPP), en fonction de la situation fiscale globale du client. Estimé depuis sa situation actuelle, ajustez selon vos hypothèses pour la retraite." />
                 <p className="text-[10px] text-muted-foreground">
@@ -242,6 +272,18 @@ const projectedCapital = dashboard?.lpp?.projectedCapitalAt65;
           </div>
         );
       })()}
+
+      {/* Bloc explicatif toujours visible : comment la reco est calculee */}
+      <div className="rounded-2xl border border-border bg-card p-5">
+        <div className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+          {t("calc.retirement.explain.title")}
+        </div>
+        <ul className="mt-2 space-y-1.5 text-[12px] text-muted-foreground">
+          <li>• {t("calc.retirement.explain.line1")}</li>
+          <li>• {t("calc.retirement.explain.line2")}</li>
+          <li>• {t("calc.retirement.explain.line3")}</li>
+        </ul>
+      </div>
 
       <div className={`rounded-2xl border p-5 ${
         compare.recommendation === "mixed"
