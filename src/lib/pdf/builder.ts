@@ -224,22 +224,10 @@ export class ReportPdf {
       }
     }
 
-    const contactParts: string[] = [];
-    if (this.header.brokerEmail) contactParts.push(this.header.brokerEmail);
-    if (this.header.brokerPhone) contactParts.push(this.header.brokerPhone);
     // Zone titre droite réserve 70 mm · la zone identité prend ce qui reste
     const titleZoneW = 70;
-    const identityMaxW = Math.max(40, pageWidth - margin - textX - titleZoneW - 6);
-    // Le nom du cabinet n'est plus affiche a cote du logo : il est deja visible
-    // dans le pied de page de chaque page, l'afficher deux fois etait redondant.
-    let yCursor = zoneTop + 5;
-    if (contactParts.length) {
-      doc.setFont("helvetica", "normal");
-      doc.setFontSize(8.5);
-      doc.setTextColor(...this.muted);
-      const contactLines = doc.splitTextToSize(contactParts.join("  ·  "), identityMaxW) as string[];
-      doc.text(contactLines[0], textX, yCursor);
-    }
+    // Ni le cabinet, ni l'email, ni le telephone ne sont repetes a cote du logo :
+    // deja visibles sur la couverture et dans le pied de page de chaque page.
 
     // 3. Zone titre rapport à droite (right-aligned)
     const rightX = pageWidth - margin;
@@ -367,12 +355,13 @@ export class ReportPdf {
   }
 
   /** Grille de tuiles : libellé + valeur (CHF) en grand, style "card" moderne */
+  /** Grille de tuiles : libellé + valeur (CHF) en grand, style "card" moderne */
   metricsGrid(items: Array<{ label: string; value: number | string; tone?: "primary" | "success" | "warning" }>) {
     const cols = items.length <= 2 ? items.length : items.length === 3 ? 3 : 2;
     const rows = Math.ceil(items.length / cols);
     const gap = 4;
     const tileW = (this.contentWidth - gap * (cols - 1)) / cols;
-    const tileH = 22;
+    const tileH = 26;
     this.ensureSpace(rows * (tileH + gap) + 2);
     items.forEach((it, idx) => {
       const r = Math.floor(idx / cols);
@@ -391,15 +380,23 @@ export class ReportPdf {
       this.doc.rect(x, y, tileW, tileH, "FD");
       this.doc.setFillColor(...accent);
       this.doc.rect(x, y, 1.5, tileH, "F");
+      const maxTextW = tileW - 8;
+      // Libelle sur 2 lignes max, pour ne jamais deborder sur la tuile voisine
       this.doc.setFont("helvetica", "normal");
       this.doc.setFontSize(7.5);
       this.doc.setTextColor(...this.muted);
-      this.doc.text(it.label.toUpperCase(), x + 5, y + 6);
+      const labelLines = this.doc.splitTextToSize(it.label.toUpperCase(), maxTextW) as string[];
+      this.doc.text(labelLines.slice(0, 2), x + 5, y + 6);
+      // Valeur : taille de police reduite automatiquement si le texte est long
+      // (ex. un nom de strategie personnalise), et repliee sur 2 lignes si besoin.
+      const rawValue = typeof it.value === "number" ? formatCHF(it.value) : it.value;
+      const valueFontSize = rawValue.length > 18 ? 10 : rawValue.length > 12 ? 12 : 14;
       this.doc.setFont("helvetica", "bold");
-      this.doc.setFontSize(14);
+      this.doc.setFontSize(valueFontSize);
       this.doc.setTextColor(...this.ink);
-      const value = typeof it.value === "number" ? formatCHF(it.value) : it.value;
-      this.doc.text(value, x + 5, y + 16);
+      const valueLines = this.doc.splitTextToSize(rawValue, maxTextW) as string[];
+      const valueY = labelLines.length > 1 ? y + 20 : y + 17;
+      this.doc.text(valueLines.slice(0, 2), x + 5, valueY);
     });
     this.cursorY += rows * (tileH + gap) + 4;
     return this;
@@ -452,12 +449,7 @@ export class ReportPdf {
 
   private drawFooter() {
     const { doc, margin, pageWidth, pageHeight, muted, primary } = this;
-    const pageCount = doc.getNumberOfPages();
     const current = doc.getCurrentPageInfo().pageNumber;
-    // Evite de redessiner le footer plusieurs fois sur la meme page : les tableaux
-    // declenchent didDrawPage a chaque rendu, et finalize() repasse sur toutes les
-    // pages ensuite. Sans ce garde-fou, une page avec plusieurs tableaux affiche
-    // plusieurs footers superposes (texte qui se chevauche en bas de page).
     if (this.footerDrawnPages.has(current)) return;
     this.footerDrawnPages.add(current);
     doc.setDrawColor(...primary);
@@ -480,7 +472,22 @@ export class ReportPdf {
     if (cabinetCenter) {
       doc.text(cabinetCenter, pageWidth / 2, pageHeight - 7, { align: "center" });
     }
+    // Le numero de page n'est PAS dessine ici : au moment ou didDrawPage declenche
+    // ce footer sur une page, les pages suivantes n'existent pas encore, donc le
+    // total serait faux (ex. "Page 7 / 7" au lieu de "Page 7 / 14"). Il est dessine
+    // separement par drawPageNumber(), appele une seule fois a la toute fin sur
+    // chaque page, quand le nombre total de pages est enfin connu.
+  }
+  /** Dessine le numero de page avec le total final. Appele uniquement depuis finalize(). */
+  private drawPageNumber() {
+    const { doc, margin, pageWidth, pageHeight, muted } = this;
+    const pageCount = doc.getNumberOfPages();
+    const current = doc.getCurrentPageInfo().pageNumber;
+    doc.setFillColor(255, 255, 255);
+    doc.rect(pageWidth - margin - 35, pageHeight - 11, 35, 6, "F");
     doc.setFont("helvetica", "bold");
+    doc.setFontSize(7.5);
+    doc.setTextColor(...muted);
     doc.text(
       t("pdf.footer.page", { current, total: pageCount }, `Page ${current} / ${pageCount}`),
       pageWidth - margin,
@@ -490,12 +497,11 @@ export class ReportPdf {
   }
 
   finalize() {
-    // Footer sur toutes les pages déjà dessiné via didDrawPage des tableaux,
-    // mais on s'assure qu'au moins la première page (sans tableau) ait un footer.
     const total = this.doc.getNumberOfPages();
     for (let i = 1; i <= total; i++) {
       this.doc.setPage(i);
       this.drawFooter();
+      this.drawPageNumber();
     }
     return this;
   }

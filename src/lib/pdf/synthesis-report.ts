@@ -557,11 +557,15 @@ function formatMetrics(
       if (num(s.totalTax)) out.push({ label: "Impôt total", value: num(s.totalTax), tone: "warning" });
       if (num(s.netIncome)) out.push({ label: "Revenu net", value: num(s.netIncome), tone: "success" });
       break;
-    case "retirement":
+    case "retirement": {
       if (num(s.netAnnuity)) out.push({ label: "Net rente", value: num(s.netAnnuity) });
       if (num(s.netLumpSum)) out.push({ label: "Net capital", value: num(s.netLumpSum) });
-      if (str(s.recommendation)) out.push({ label: "Recommandation", value: str(s.recommendation)! });
+      const reco = str(s.recommendation);
+      const recoLabel =
+        reco === "annuity" ? "La rente viagère" : reco === "lump_sum" ? "Le retrait en capital" : reco === "mixed" ? "Solution mixte" : undefined;
+      if (recoLabel) out.push({ label: "Option recommandée", value: recoLabel, tone: "success" });
       break;
+    }
     case "avs_ai":
       if (num(s.annualPension)) out.push({ label: "Rente AVS annuelle", value: num(s.annualPension) });
       if (num(s.missingYears)) out.push({ label: "Années manquantes", value: String(num(s.missingYears)), tone: "warning" });
