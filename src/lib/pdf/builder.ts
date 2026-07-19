@@ -224,35 +224,15 @@ export class ReportPdf {
       }
     }
 
-    const cabinet = this.header.brokerageName?.trim();
-    const brokerName = this.header.brokerName?.trim();
-    const primaryLine = cabinet || brokerName || "Rapport de simulation";
-    const secondaryLine = cabinet && brokerName ? brokerName : undefined;
     const contactParts: string[] = [];
     if (this.header.brokerEmail) contactParts.push(this.header.brokerEmail);
     if (this.header.brokerPhone) contactParts.push(this.header.brokerPhone);
-
     // Zone titre droite réserve 70 mm · la zone identité prend ce qui reste
     const titleZoneW = 70;
     const identityMaxW = Math.max(40, pageWidth - margin - textX - titleZoneW - 6);
-
-    // Ligne 1 : cabinet (ou nom courtier en fallback)
-    doc.setTextColor(...this.ink);
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(13);
-    const primaryLines = doc.splitTextToSize(primaryLine, identityMaxW) as string[];
-    doc.text(primaryLines[0], textX, zoneTop + 5);
-
-    let yCursor = zoneTop + 10.5;
-    if (secondaryLine) {
-      doc.setFont("helvetica", "normal");
-      doc.setFontSize(10);
-      doc.setTextColor(...this.ink);
-      const sLines = doc.splitTextToSize(secondaryLine, identityMaxW) as string[];
-      doc.text(sLines[0], textX, yCursor);
-      yCursor += 4.5;
-    }
-
+    // Le nom du cabinet n'est plus affiche a cote du logo : il est deja visible
+    // dans le pied de page de chaque page, l'afficher deux fois etait redondant.
+    let yCursor = zoneTop + 5;
     if (contactParts.length) {
       doc.setFont("helvetica", "normal");
       doc.setFontSize(8.5);
@@ -278,13 +258,9 @@ export class ReportPdf {
     doc.setLineWidth(0.5);
     doc.line(margin, headerH - 2, pageWidth - margin, headerH - 2);
 
-    // 5. Sous-titre sous l'en-tête
-    if (this.header.subtitle) {
-      doc.setTextColor(...this.muted);
-      doc.setFont("helvetica", "normal");
-      doc.setFontSize(9.5);
-      doc.text(this.header.subtitle, margin, headerH + 5);
-    }
+   // Sous-titre volontairement retire de l'en-tete repete : redondant avec le nom
+    // du client deja visible dans chaque section, et provoquait un chevauchement
+    // avec le bandeau colore des titres de page.
   }
 
   ensureSpace(needed: number) {
