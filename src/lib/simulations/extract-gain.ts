@@ -74,21 +74,30 @@ export function extractGain(entry: HistoryEntry): ExtractedGain {
       const diff = Math.abs(annuity - lump);
       if (diff <= 0) return none();
       const reco = s(summary.recommendation);
+      // Traduit le code technique en texte lisible pour le client
+      const recoLabel =
+        reco === "annuity" ? "la rente viagère" : reco === "lump_sum" ? "le retrait en capital" : "une solution mixte";
       return {
         type: "one_time",
         amount: diff,
         label: "Stratégie rente vs capital",
-        details: reco ? `Recommandation : ${reco}` : "Différence entre stratégies",
+        details: reco ? `Option recommandée : ${recoLabel}` : "Différence entre stratégies",
       };
     }
     case "investment_compare": {
       const amount = Math.abs(num(summary.netDifference));
       if (amount <= 0) return none();
+      const inputs = (entry.inputs ?? {}) as Record<string, unknown>;
+      const a = (inputs.a ?? {}) as Record<string, unknown>;
+      const b = (inputs.b ?? {}) as Record<string, unknown>;
+      const winner = s(summary.winner);
+      // Traduit "a"/"b" en le vrai nom de l'investissement saisi par le courtier
+      const winnerName = winner === "a" ? (s(a.name) || "Investissement A") : winner === "b" ? (s(b.name) || "Investissement B") : undefined;
       return {
         type: "one_time",
         amount,
         label: "Comparateur d'investissements",
-        details: s(summary.winner) ? `Avantage : ${s(summary.winner)}` : undefined,
+        details: winnerName ? `Option la plus avantageuse : ${winnerName}` : undefined,
       };
     }
     case "avs_ai": {

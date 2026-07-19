@@ -536,7 +536,7 @@ function formatMetrics(
       break;
     case "pillar3a":
       if (num(s.taxSavings)) out.push({ label: "Économie fiscale annuelle", value: num(s.taxSavings), tone: "success" });
-      if (num(s.projectedBalance)) out.push({ label: "Capital projeté", value: num(s.projectedBalance), tone: "primary" });
+      if (num(s.finalBalance)) out.push({ label: "Capital projeté", value: num(s.finalBalance), tone: "primary" });
       break;
     case "canton_compare":
       if (str(s.referenceCanton)) out.push({ label: "Canton actuel", value: cantonName(str(s.referenceCanton)) });
@@ -751,7 +751,7 @@ function buildComment(entry: HistoryEntry): string | null {
       const sec = num(s.securityFinalBalance);
       if (!r || !sec) return null;
       const diff = Math.max(0, r - sec);
-      return `La stratégie de placement recommandée vous projette un capital de libre passage de ${formatCHF(r)} à l'échéance, contre ${formatCHF(sec)} pour une stratégie purement sécuritaire, soit un gain potentiel de ${formatCHF(diff)} avant fiscalité au retrait. Ce résultat dépend directement du niveau de risque que vous acceptez sur l'horizon de placement retenu. Point de vigilance : ces projections restent des hypothèses de rendement, non garanties ; votre horizon de placement et votre tolérance au risque doivent être validés avant toute mise en œuvre.`;
+      return `La stratégie de placement recommandée vous projette un capital de libre passage de ${formatCHF(r)} à l'échéance, contre ${formatCHF(sec)} pour une stratégie purement sécuritaire, soit un gain potentiel de ${formatCHF(diff)} avant fiscalité au retrait. Ce résultat dépend directement du niveau de risque que vous acceptez sur l'horizon de placement retenu. Point de vigilance : ces projections restent des hypothèses de rendement, non garanties ; votre horizon de placement et votre tolérance au risque doivent être validés avant toute mise en oeuvre.`;
     }
     case "investment_compare": {
       const i = (entry.inputs ?? {}) as Record<string, unknown>;
@@ -842,7 +842,7 @@ function drawComparisonPage(
 ) {
   pdf.section("Synthèse globale · Situation avant et après optimisation");
   pdf.paragraph(
-    "Ce tableau agrège les résultats de l'ensemble des simulations sélectionnées et chiffre l'impact global des optimisations identifiées pour ce client. Chaque ligne compare la situation de départ (avant toute action) à la situation projetée une fois l'optimisation mise en œuvre.",
+    "Ce tableau agrège les résultats de l'ensemble des simulations sélectionnées et chiffre l'impact global des optimisations identifiées pour ce client. Chaque ligne compare la situation de départ (avant toute action) à la situation projetée une fois l'optimisation mise en oeuvre.",
     { muted: true, italic: true },
   );
 
@@ -863,7 +863,7 @@ function drawComparisonPage(
   // 3a
   const p3a = entries.find((e) => e.kind === "pillar3a");
   if (p3a) {
-    const proj = num(p3a.summary?.projectedBalance);
+    const proj = num(p3a.summary?.finalBalance);
     rows.push(["Pilier 3a cumulé à la retraite", formatCHF(0), formatCHF(proj), formatDelta(proj)]);
   }
   // Canton compare
@@ -916,7 +916,7 @@ function drawComparisonPage(
   if (totals.oneTime > 0 || totals.annual > 0) {
     pdf.spacer(3);
     pdf.paragraph(
-      "Ce total combine les gains ponctuels (rachats, retraits optimisés) et les économies récurrentes projetées sur 10 ans, à situation constante. Il s'agit d'un ordre de grandeur destiné à objectiver la conversation avec le client, pas d'un engagement contractuel : chaque optimisation nécessite une mise en œuvre concrète et un suivi dans le temps.",
+      "Ce total combine les gains ponctuels (rachats, retraits optimisés) et les économies récurrentes projetées sur 10 ans, à situation constante. Il s'agit d'un ordre de grandeur destiné à objectiver la conversation avec le client, pas d'un engagement contractuel : chaque optimisation nécessite une mise en oeuvre concrète et un suivi dans le temps.",
       { muted: true, italic: true },
     );
   }
@@ -1019,7 +1019,7 @@ function drawConclusionPage(pdf: ReportPdf, entries: HistoryEntry[]) {
   pdf.spacer(4);
   pdf.section("Prochaines étapes");
   pdf.paragraph(
-    "Prenez rendez-vous avec votre courtier pour mettre en œuvre ces optimisations. Les démarches administratives (rachat LPP, ouverture d'un 3e pilier, changement de canton, restructuration de la rémunération dirigeant) peuvent être accompagnées par votre conseiller, qui reste votre interlocuteur privilégié pour toute question complémentaire.",
+    "Prenez rendez-vous avec votre courtier pour mettre en oeuvre ces optimisations. Les démarches administratives (rachat LPP, ouverture d'un 3e pilier, changement de canton, restructuration de la rémunération dirigeant) peuvent être accompagnées par votre conseiller, qui reste votre interlocuteur privilégié pour toute question complémentaire.",
   );
 
   pdf.spacer(4);
