@@ -249,6 +249,50 @@ const FR: WikiArticle[] = [
       </>
     ),
   },
+  {
+    id: "simulations-multiples",
+    category: "Synthèse & rendez-vous",
+    title: "Comparer plusieurs situations avec un même calculateur",
+    tags: ["simulation", "comparaison", "synthèse", "avant/après"],
+    body: (
+      <ul className="list-disc pl-5 space-y-1.5">
+        <li>Un même calculateur peut être <strong>sauvegardé plusieurs fois</strong> pour un même client : rien n'empêche d'enregistrer une première fois « tel quel », puis de modifier certains paramètres (état civil, canton, rachat LPP, etc.) et de sauvegarder à nouveau.</li>
+        <li>Chaque sauvegarde crée une <strong>entrée distincte</strong> dans l'historique du client, visible dans « Simulations rattachées » sur sa fiche.</li>
+        <li>Utilité concrète : simuler « Situation actuelle » vs « Situation après un changement de vie » (mariage, naissance, déménagement, rachat LPP) pour un même client, sur le même calculateur.</li>
+        <li>Ces deux versions peuvent ensuite être <strong>sélectionnées ensemble</strong> au moment de générer le dossier de synthèse PDF, pour que le client voie noir sur blanc l'impact chiffré du changement.</li>
+        <li>Pense à donner un titre clair à chaque simulation (champ « Titre » lors de la sauvegarde) pour les distinguer facilement dans la liste, par exemple « Fiscal global · situation actuelle » et « Fiscal global · après mariage ».</li>
+      </ul>
+    ),
+  },
+  {
+    id: "synthese-pdf",
+    category: "Synthèse & rendez-vous",
+    title: "Générer la synthèse PDF du rendez-vous",
+    tags: ["pdf", "synthèse", "rendez-vous", "paiement"],
+    body: (
+      <ul className="list-disc pl-5 space-y-1.5">
+        <li>Le dossier de synthèse PDF se génère depuis la fiche client, onglet « Synthèse RDV », une fois qu'au moins une simulation a été sauvegardée.</li>
+        <li>Toutes les simulations sauvegardées pour ce client apparaissent dans « Simulations rattachées » : possibilité de <strong>sélectionner tout</strong> ou seulement certaines, selon ce qui est pertinent pour le rendez-vous en cours.</li>
+        <li>La génération du PDF est <strong>débloquée après paiement</strong> du rendez-vous par le client (minimum 80 CHF), via le bouton « Facturer ce RDV » qui crée un lien de paiement Stripe.</li>
+        <li>Le PDF final contient : le profil du client, une page par simulation sélectionnée (paramètres, résultats, analyse rédigée), un tableau comparatif avant/après, et une conclusion avec recommandations chiffrées.</li>
+        <li>Le nom du cabinet, le logo et les coordonnées affichés dans le PDF proviennent du profil courtier (« Mon profil »), pensez à les renseigner avant le premier envoi à un client.</li>
+      </ul>
+    ),
+  },
+  {
+    id: "profil-courtier-paiements",
+    category: "Prise en main",
+    title: "Compléter son profil courtier (paiements, RIB)",
+    tags: ["profil", "stripe", "paiement", "rib", "iban"],
+    body: (
+      <ul className="list-disc pl-5 space-y-1.5">
+        <li>Pour pouvoir facturer un rendez-vous et débloquer les synthèses PDF, le courtier doit d'abord <strong>connecter son compte bancaire</strong> via Stripe Connect, depuis « Mon profil ».</li>
+        <li>Sans cette étape, toute tentative de facturation renvoie une erreur explicite invitant à compléter le profil, aucun paiement ne peut être encaissé tant que ce n'est pas fait.</li>
+        <li>Une fois le compte connecté, une commission de 10 % est prélevée automatiquement par la plateforme sur chaque paiement encaissé, le solde étant transféré directement au courtier.</li>
+        <li>Le profil permet aussi de personnaliser les rapports PDF envoyés aux clients : nom du cabinet, logo, couleurs, mention de pied de page.</li>
+      </ul>
+    ),
+  },
 ];
 
 // =====================================================================
@@ -488,6 +532,50 @@ const DE: WikiArticle[] = [
       </>
     ),
   },
+  {
+    id: "simulations-multiples",
+    category: "Synthese & Termin",
+    title: "Mehrere Situationen mit demselben Rechner vergleichen",
+    tags: ["simulation", "vergleich", "synthese"],
+    body: (
+      <ul className="list-disc pl-5 space-y-1.5">
+        <li>Derselbe Rechner kann für denselben Kunden <strong>mehrmals gespeichert</strong> werden: zuerst «wie sie ist», dann nach Änderung bestimmter Parameter (Zivilstand, Kanton, LPP-Einkauf usw.) erneut speichern.</li>
+        <li>Jede Speicherung erstellt einen <strong>eigenen Eintrag</strong> in der Kundenhistorie, sichtbar unter «Verknüpfte Simulationen» im Kundendossier.</li>
+        <li>Konkreter Nutzen: «Aktuelle Situation» vs. «Situation nach einer Lebensveränderung» (Heirat, Geburt, Umzug, LPP-Einkauf) für denselben Kunden simulieren.</li>
+        <li>Beide Versionen können anschliessend gemeinsam für die PDF-Synthese <strong>ausgewählt</strong> werden, damit der Kunde die konkreten Auswirkungen schwarz auf weiss sieht.</li>
+        <li>Jeder Simulation einen klaren Titel geben (Feld «Titel» beim Speichern), um sie in der Liste leicht zu unterscheiden.</li>
+      </ul>
+    ),
+  },
+  {
+    id: "synthese-pdf",
+    category: "Synthese & Termin",
+    title: "PDF-Synthese des Termins erstellen",
+    tags: ["pdf", "synthese", "termin", "zahlung"],
+    body: (
+      <ul className="list-disc pl-5 space-y-1.5">
+        <li>Die PDF-Synthese wird im Kundendossier unter «RDV-Synthese» erstellt, sobald mindestens eine Simulation gespeichert wurde.</li>
+        <li>Alle gespeicherten Simulationen erscheinen unter «Verknüpfte Simulationen»: es können <strong>alle oder nur bestimmte</strong> ausgewählt werden.</li>
+        <li>Die PDF-Erstellung wird erst nach <strong>Zahlung</strong> des Termins durch den Kunden freigeschaltet (mindestens 80 CHF), über den Button «Termin fakturieren».</li>
+        <li>Das PDF enthält: Kundenprofil, eine Seite pro ausgewählter Simulation, eine Vorher/Nachher-Tabelle und eine Schlussfolgerung mit bezifferten Empfehlungen.</li>
+        <li>Kanzleiname, Logo und Kontaktdaten im PDF stammen aus dem Maklerprofil («Mein Profil»).</li>
+      </ul>
+    ),
+  },
+  {
+    id: "profil-courtier-paiements",
+    category: "Erste Schritte",
+    title: "Maklerprofil vervollständigen (Zahlungen, Bankkonto)",
+    tags: ["profil", "stripe", "zahlung", "iban"],
+    body: (
+      <ul className="list-disc pl-5 space-y-1.5">
+        <li>Um einen Termin zu fakturieren und PDF-Synthesen freizuschalten, muss der Makler zuerst sein <strong>Bankkonto verbinden</strong> via Stripe Connect, unter «Mein Profil».</li>
+        <li>Ohne diesen Schritt zeigt jeder Fakturierungsversuch einen klaren Fehler an.</li>
+        <li>Nach der Verbindung wird automatisch eine Provision von 10 % einbehalten, der Rest wird direkt an den Makler überwiesen.</li>
+        <li>Das Profil erlaubt auch die Personalisierung der PDF-Berichte: Kanzleiname, Logo, Farben, Fusszeile.</li>
+      </ul>
+    ),
+  },
 ];
 
 // =====================================================================
@@ -677,6 +765,50 @@ const EN: WikiArticle[] = [
         <li>Vaud example: scale × 154.5 (canton) × 78 (Lausanne) / 100.</li>
         <li><strong>Church tax</strong>: added if a denomination is declared (Catholic, Protestant).</li>
         <li>Typical total burden: 18 to 35% depending on canton, commune and income.</li>
+      </ul>
+    ),
+  },
+  {
+    id: "simulations-multiples",
+    category: "Summary & Meeting",
+    title: "Comparing multiple situations with the same calculator",
+    tags: ["simulation", "comparison", "summary"],
+    body: (
+      <ul className="list-disc pl-5 space-y-1.5">
+        <li>The same calculator can be <strong>saved multiple times</strong> for the same client: save it once "as is", then change certain parameters (marital status, canton, LPP buyback, etc.) and save again.</li>
+        <li>Each save creates a <strong>separate entry</strong> in the client's history, visible under "Linked simulations" on their file.</li>
+        <li>Practical use: simulate "Current situation" vs. "Situation after a life change" (marriage, birth, relocation, LPP buyback) for the same client.</li>
+        <li>Both versions can then be <strong>selected together</strong> when generating the PDF summary, so the client sees the concrete impact of the change in black and white.</li>
+        <li>Give each simulation a clear title (the "Title" field when saving) to distinguish them easily in the list.</li>
+      </ul>
+    ),
+  },
+  {
+    id: "synthese-pdf",
+    category: "Summary & Meeting",
+    title: "Generating the meeting PDF summary",
+    tags: ["pdf", "summary", "meeting", "payment"],
+    body: (
+      <ul className="list-disc pl-5 space-y-1.5">
+        <li>The PDF summary is generated from the client's file, "Meeting summary" tab, once at least one simulation has been saved.</li>
+        <li>All saved simulations for that client appear under "Linked simulations": you can select <strong>all or only some</strong> of them.</li>
+        <li>PDF generation is <strong>unlocked after payment</strong> of the meeting by the client (minimum CHF 80), via the "Invoice this meeting" button.</li>
+        <li>The final PDF includes: the client profile, one page per selected simulation, a before/after comparison table, and a conclusion with quantified recommendations.</li>
+        <li>The firm name, logo and contact details shown in the PDF come from the broker profile ("My profile").</li>
+      </ul>
+    ),
+  },
+  {
+    id: "profil-courtier-paiements",
+    category: "Getting started",
+    title: "Completing your broker profile (payments, bank account)",
+    tags: ["profile", "stripe", "payment", "iban"],
+    body: (
+      <ul className="list-disc pl-5 space-y-1.5">
+        <li>To invoice a meeting and unlock PDF summaries, the broker must first <strong>connect their bank account</strong> via Stripe Connect, from "My profile".</li>
+        <li>Without this step, any invoicing attempt returns a clear error.</li>
+        <li>Once connected, a 10% commission is automatically deducted, the rest being transferred directly to the broker.</li>
+        <li>The profile also allows customizing PDF reports: firm name, logo, colors, footer note.</li>
       </ul>
     ),
   },
@@ -871,6 +1003,50 @@ const IT: WikiArticle[] = [
         <li>Capitale bloccato fino a 5 anni prima dell'età di riferimento AVS.</li>
         <li>Imposto al prelievo a <strong>aliquota ridotta separata</strong> (in media 1/5 della tariffa ordinaria).</li>
         <li>Strategia: aprire 3 - 5 conti 3a e prelevarli in anni diversi per scaglionare l'imposta.</li>
+      </ul>
+    ),
+  },
+  {
+    id: "simulations-multiples",
+    category: "Sintesi & appuntamento",
+    title: "Confrontare più situazioni con lo stesso calcolatore",
+    tags: ["simulazione", "confronto", "sintesi"],
+    body: (
+      <ul className="list-disc pl-5 space-y-1.5">
+        <li>Lo stesso calcolatore può essere <strong>salvato più volte</strong> per lo stesso cliente: salvarlo una prima volta «così com'è», poi modificare alcuni parametri (stato civile, cantone, riscatto LPP, ecc.) e salvare di nuovo.</li>
+        <li>Ogni salvataggio crea una <strong>voce distinta</strong> nella cronologia del cliente, visibile in «Simulazioni collegate» sulla sua scheda.</li>
+        <li>Utilità concreta: simulare «Situazione attuale» vs «Situazione dopo un cambiamento di vita» (matrimonio, nascita, trasloco, riscatto LPP) per lo stesso cliente.</li>
+        <li>Entrambe le versioni possono poi essere <strong>selezionate insieme</strong> al momento di generare la sintesi PDF, così il cliente vede concretamente l'impatto del cambiamento.</li>
+        <li>Dare a ogni simulazione un titolo chiaro (campo «Titolo» al momento del salvataggio) per distinguerle facilmente nella lista.</li>
+      </ul>
+    ),
+  },
+  {
+    id: "synthese-pdf",
+    category: "Sintesi & appuntamento",
+    title: "Generare la sintesi PDF dell'appuntamento",
+    tags: ["pdf", "sintesi", "appuntamento", "pagamento"],
+    body: (
+      <ul className="list-disc pl-5 space-y-1.5">
+        <li>La sintesi PDF si genera dalla scheda cliente, scheda «Sintesi appuntamento», una volta salvata almeno una simulazione.</li>
+        <li>Tutte le simulazioni salvate per quel cliente appaiono in «Simulazioni collegate»: è possibile selezionarle <strong>tutte o solo alcune</strong>.</li>
+        <li>La generazione del PDF è <strong>sbloccata dopo il pagamento</strong> dell'appuntamento da parte del cliente (minimo 80 CHF), tramite il pulsante «Fatturare questo appuntamento».</li>
+        <li>Il PDF finale contiene: il profilo del cliente, una pagina per simulazione selezionata, una tabella comparativa prima/dopo, e una conclusione con raccomandazioni quantificate.</li>
+        <li>Il nome dello studio, il logo e i contatti mostrati nel PDF provengono dal profilo del consulente («Il mio profilo»).</li>
+      </ul>
+    ),
+  },
+  {
+    id: "profil-courtier-paiements",
+    category: "Primi passi",
+    title: "Completare il profilo consulente (pagamenti, conto bancario)",
+    tags: ["profilo", "stripe", "pagamento", "iban"],
+    body: (
+      <ul className="list-disc pl-5 space-y-1.5">
+        <li>Per fatturare un appuntamento e sbloccare le sintesi PDF, il consulente deve prima <strong>collegare il proprio conto bancario</strong> tramite Stripe Connect, da «Il mio profilo».</li>
+        <li>Senza questo passaggio, ogni tentativo di fatturazione restituisce un errore chiaro.</li>
+        <li>Una volta collegato, viene trattenuta automaticamente una commissione del 10%, il resto viene trasferito direttamente al consulente.</li>
+        <li>Il profilo permette anche di personalizzare i report PDF: nome dello studio, logo, colori, nota a piè di pagina.</li>
       </ul>
     ),
   },
