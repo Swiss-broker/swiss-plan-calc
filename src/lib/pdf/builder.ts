@@ -268,8 +268,8 @@ export class ReportPdf {
     doc.setTextColor(...this.muted);
     doc.text(t("pdf.chrome.report", undefined, "RAPPORT"), rightX, zoneTop + 4, { align: "right" });
     doc.setFont("helvetica", "bold");
-    doc.setFontSize(13);
-    doc.setTextColor(...this.primary);
+    doc.setFontSize(10);
+    doc.setTextColor(...this.muted);
     const titleLines = doc.splitTextToSize(this.header.title, titleZoneW) as string[];
     doc.text(titleLines.slice(0, 2), rightX, zoneTop + 10, { align: "right" });
 
@@ -296,20 +296,18 @@ export class ReportPdf {
 
   section(title: string) {
     title = sanitizePdfText(title);
-    this.ensureSpace(14);
-    const { doc, margin, primary } = this;
-    // Petit carré couleur primaire à gauche du titre
+    this.ensureSpace(18);
+    const { doc, margin, contentWidth, primary } = this;
+    // Bandeau colore pleine largeur : rend le titre de la page (ex. "Fiscal global")
+    // immediatement identifiable, plus visible que l'en-tete repete en haut de chaque page.
+    const barH = 9;
     doc.setFillColor(...primary);
-    doc.rect(margin, this.cursorY - 3, 2.5, 2.5, "F");
-    doc.setTextColor(...this.ink);
+    doc.rect(margin, this.cursorY - 6, contentWidth, barH, "F");
+    doc.setTextColor(255, 255, 255);
     doc.setFont("helvetica", "bold");
-    doc.setFontSize(12);
-    doc.text(title, margin + 5, this.cursorY);
-    // Filet fin sous le titre
-    doc.setDrawColor(...this.border);
-    doc.setLineWidth(0.2);
-    doc.line(margin, this.cursorY + 2.5, this.pageWidth - margin, this.cursorY + 2.5);
-    this.cursorY += 8;
+    doc.setFontSize(13);
+    doc.text(title, margin + 4, this.cursorY);
+    this.cursorY += 10;
     return this;
   }
 
@@ -480,6 +478,10 @@ export class ReportPdf {
     const { doc, margin, pageWidth, pageHeight, muted, primary } = this;
     const pageCount = doc.getNumberOfPages();
     const current = doc.getCurrentPageInfo().pageNumber;
+    // Evite de redessiner le footer plusieurs fois sur la meme page : les tableaux
+    // declenchent didDrawPage a chaque rendu, et finalize() repasse sur toutes les
+    // pages ensuite. Sans ce garde-fou, une page avec plusieurs tableaux affiche
+    // plusieurs footers superposes (texte qui se chevauche en bas de page).
     if (this.footerDrawnPages.has(current)) return;
     this.footerDrawnPages.add(current);
     doc.setDrawColor(...primary);
