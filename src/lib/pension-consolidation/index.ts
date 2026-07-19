@@ -1,3 +1,4 @@
+// src/lib/pension-consolidation.ts
 // Consolidation 1er + 2e pilier, vision globale des prestations futures
 // pour les 3 événements clés : retraite, invalidité, décès.
 //
@@ -52,6 +53,11 @@ export interface ConsolidatedBenefits {
   disability: ConsolidatedScenario | null;
   death: ConsolidatedScenario | null;
 }
+
+// Plafond légal de cotisation 3a pour un salarié affilié LPP (2026).
+// Partagé entre buildOptimizedBundle et getOptimizationAssumptions
+// pour ne jamais avoir deux valeurs qui divergent.
+const PILLAR_3A_MAX_LPP = 7_258;
 
 // ────────────────────────────────────────────────────────────
 // Helpers internes
@@ -388,7 +394,6 @@ function buildOptimizedBundle(b: ClientBundle): ClientBundle {
         ]
       : existingPlanned;
 
-  const PILLAR_3A_MAX_LPP = 7_258;
   const current3a = Number(pension.pillar_3a_annual_contribution ?? 0);
   const optimized3a = Math.max(current3a, PILLAR_3A_MAX_LPP);
 
@@ -399,6 +404,46 @@ function buildOptimizedBundle(b: ClientBundle): ClientBundle {
       lpp_planned_buybacks: optimizedPlanned,
       pillar_3a_annual_contribution: optimized3a,
     } as ClientBundle["pension"],
+  };
+}
+
+/**
+ * Hypothèses de la simulation "optimisée", à afficher au courtier
+ * pour expliquer pourquoi le 2e pilier bouge entre actuel et projeté.
+ * Ne modifie rien, lecture seule.
+ */
+export interface OptimizationAssumptions {
+  lppBuybackAmount: number;
+  pillar3aCurrent: number;
+  pillar3aOptimized: number;
+  pillar3aIncreased: boolean;
+}
+
+export function getOptimizationAssumptions(b: ClientBundle): OptimizationAssumptions {
+  const pension = (b.pension ?? {}) as Record<string, unknown> & {
+    lpp_planned_buybacks?: unknown;
+    lpp_max_buyback?: number | string | null;
+    pillar_3a_annual_contribution?: number | string | null;
+  };
+
+  const buybackCapacity = Number(pension.lpp_max_buyback ?? 0);
+  const existingPlanned = Array.isArray(pension.lpp_planned_buybacks)
+    ? (pension.lpp_planned_buybacks as Array<{ amount?: number }>)
+    : [];
+  const plannedTotal = existingPlanned.reduce(
+    (s, r) => s + Number(r?.amount ?? 0),
+    0,
+  );
+  const lppBuybackAmount = Math.max(0, buybackCapacity - plannedTotal);
+
+  const pillar3aCurrent = Number(pension.pillar_3a_annual_contribution ?? 0);
+  const pillar3aOptimized = Math.max(pillar3aCurrent, PILLAR_3A_MAX_LPP);
+
+  return {
+    lppBuybackAmount,
+    pillar3aCurrent,
+    pillar3aOptimized,
+    pillar3aIncreased: pillar3aOptimized > pillar3aCurrent,
   };
 }
 
