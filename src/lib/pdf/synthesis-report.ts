@@ -689,41 +689,47 @@ function buildComment(entry: HistoryEntry): string | null {
       const sav = num(s.totalTaxSavings);
       if (!cap || !sav) return null;
       const rate = ((sav / cap) * 100).toFixed(1).replace(".", ",");
-      return `Le rachat de ${formatCHF(cap)} étalé sur ${years} an${years > 1 ? "s" : ""} génère une économie fiscale totale de ${formatCHF(sav)}, soit un retour fiscal moyen de ${rate} %. Ce capital sera capitalisé dans le 2e pilier jusqu'à la retraite. Attention : un rachat est bloqué pendant 3 ans avant tout retrait en capital.`;
+      return `Un rachat de ${formatCHF(cap)}, étalé sur ${years} an${years > 1 ? "s" : ""}, génère une économie fiscale totale de ${formatCHF(sav)}, soit un retour fiscal moyen de ${rate} % du montant racheté. Concrètement, chaque franc versé dans le 2e pilier réduit d'autant le revenu imposable l'année du versement, tout en renforçant le capital de prévoyance qui sera converti en rente ou retiré à la retraite. Point de vigilance : un rachat LPP bloque tout retrait en capital pendant les 3 années qui suivent (art. 79b al. 3 LPP), à anticiper si un achat immobilier ou un départ à l'étranger est envisagé sur cet horizon.`;
     }
     case "pillar3a": {
       const sav = num(s.taxSavings);
       const c = num(i.contribution);
       if (!sav || !c) return null;
-      return `Le versement annuel de ${formatCHF(c)} sur le 3e pilier A génère une économie fiscale récurrente de ${formatCHF(sav)} par an, intégralement déductible du revenu imposable. Le capital constitué sera disponible 5 ans avant l'âge ordinaire de la retraite, ou plus tôt en cas d'achat immobilier ou de départ définitif de Suisse.`;
+      return `Le versement annuel de ${formatCHF(c)} sur le 3e pilier A génère une économie fiscale récurrente de ${formatCHF(sav)} par an, intégralement déductible du revenu imposable dans la limite du plafond légal. Sur 10 ans, cette économie représente ${formatCHF(sav * 10)} cumulés, en plus de la constitution d'un capital de prévoyance supplémentaire. Point de vigilance : ce capital reste bloqué jusqu'à 5 ans avant l'âge ordinaire de la retraite, sauf exceptions prévues par la loi (achat de la résidence principale, départ définitif de Suisse, passage à l'indépendance).`;
     }
     case "canton_compare": {
       const sav = num(s.maxSavings);
       const cheap = str(s.cheapestCanton);
       const ref = str(s.referenceCanton);
       if (!sav || !cheap || !ref) return null;
-      return `Un déménagement de ${cantonName(ref)} vers ${cantonName(cheap)} permettrait une économie annuelle de ${formatCHF(sav)} sur la charge fiscale, soit ${formatCHF(sav * 10)} cumulés sur 10 ans. Cette option mérite une analyse approfondie tenant compte de l'environnement professionnel et personnel.`;
+      return `À revenu identique, un déménagement de ${cantonName(ref)} vers ${cantonName(cheap)} permettrait une économie annuelle de ${formatCHF(sav)} sur la charge fiscale totale, soit ${formatCHF(sav * 10)} cumulés sur 10 ans si la situation reste stable. Cet écart s'explique par les différences de barèmes cantonaux et de multiplicateurs communaux entre les deux cantons. Point de vigilance : un changement de domicile a des conséquences qui dépassent la seule fiscalité (emploi, scolarité des enfants, distance, coût de la vie local) et mérite une réflexion globale avant toute décision.`;
     }
     case "retirement": {
       const a = num(s.netAnnuity);
       const l = num(s.netLumpSum);
       const reco = str(s.recommendation);
       if (!a || !l) return null;
-      return `Le calcul compare la rente viagère (${formatCHF(a)} net annuel) au retrait en capital (${formatCHF(l)} net après impôt). ${reco ? `Recommandation : ${reco}.` : ""} Le choix dépend de l'espérance de vie, des autres revenus, du conjoint et de la volonté de transmission.`;
+      const recoTxt =
+        reco === "annuity"
+          ? "La rente viagère ressort comme l'option la plus avantageuse dans ce scénario, offrant un revenu garanti à vie."
+          : reco === "lump_sum"
+            ? "Le retrait en capital ressort comme l'option la plus avantageuse dans ce scénario, sous réserve d'une gestion disciplinée du capital sur la durée."
+            : "Les deux options sont proches en termes de résultat net, une solution mixte permettant d'équilibrer sécurité et performance.";
+      return `La comparaison oppose la rente viagère (${formatCHF(a)} net par an, versée à vie) au retrait en capital (${formatCHF(l)} net après l'impôt unique sur le capital de prévoyance). ${recoTxt} Ce choix dépend fortement de facteurs propres au client : son espérance de vie, l'existence d'un conjoint à protéger, sa tolérance au risque de placement, et une éventuelle volonté de transmission du capital restant à ses héritiers, ce que la rente viagère ne permet pas.`;
     }
     case "director_compensation": {
       const reco = num(s.recommendedDirectorNet);
       const cur = num(s.currentDirectorNet);
       const gain = num(s.gainAnnual) || (cur > 0 ? reco - cur : 0);
       if (gain <= 0) return null;
-      return `L'optimisation du mix salaire / dividende permet un gain net annuel de ${formatCHF(gain)} pour le dirigeant, à structure de société constante. Sur 10 ans, le bénéfice cumulé atteint ${formatCHF(gain * 10)}.`;
+      return `En ajustant le mix salaire / dividende / réserves à structure de société constante, le dirigeant peut dégager un gain net annuel de ${formatCHF(gain)}, soit ${formatCHF(gain * 10)} cumulés sur 10 ans. Ce gain provient de l'optimisation des charges sociales et de la fiscalité différenciée entre salaire et dividendes qualifiés. Point de vigilance : toute réduction significative du salaire doit rester compatible avec l'usage de la branche, au risque d'une requalification par l'AFC ou l'AVS au titre de la théorie du dividende dissimulé (art. 58 CO).`;
     }
     case "vested_benefits": {
       const r = num(s.recommendedFinalBalance);
       const sec = num(s.securityFinalBalance);
       if (!r || !sec) return null;
       const diff = Math.max(0, r - sec);
-      return `Le scénario recommandé projette un capital de ${formatCHF(r)} à la retraite, contre ${formatCHF(sec)} pour la stratégie de sécurité, soit un gain potentiel de ${formatCHF(diff)} (hors fiscalité au retrait).`;
+      return `La stratégie de placement recommandée projette un capital de libre passage de ${formatCHF(r)} à l'échéance, contre ${formatCHF(sec)} pour une stratégie purement sécuritaire, soit un gain potentiel de ${formatCHF(diff)} avant fiscalité au retrait. Ce résultat dépend directement du niveau de risque accepté sur l'horizon de placement retenu. Point de vigilance : ces projections restent des hypothèses de rendement, non garanties ; l'horizon de placement et la tolérance au risque du client doivent être validés avant toute mise en œuvre.`;
     }
     case "investment_compare": {
       const i = (entry.inputs ?? {}) as Record<string, unknown>;
@@ -738,14 +744,14 @@ function buildComment(entry: HistoryEntry): string | null {
       const aNet = num(s.aFinalNet);
       const bNet = num(s.bFinalNet);
       if (!diff || !w || w === "tie") {
-        return `Sur ${years || "l'horizon retenu"} an${(years || 0) > 1 ? "s" : ""}, les deux placements (${nameA} et ${nameB}) aboutissent à un capital net comparable. La décision se jouera donc sur la liquidité, la fiscalité personnelle et l'aversion au risque.${entry.note ? ` ${entry.note.trim()}` : ""}`;
+        return `Sur ${years || "l'horizon retenu"} an${(years || 0) > 1 ? "s" : ""}, les deux placements comparés (${nameA} et ${nameB}) aboutissent à un capital net final comparable, une fois frais et fiscalité de sortie déduits. La décision se jouera donc surtout sur des critères non chiffrés : liquidité du placement, appétence au risque, et cohérence avec les autres avoirs du client.${entry.note ? ` ${entry.note.trim()}` : ""}`;
       }
       const winnerName = w === "a" ? nameA : nameB;
       const loserName = w === "a" ? nameB : nameA;
       const winnerNet = w === "a" ? aNet : bNet;
       const loserNet = w === "a" ? bNet : aNet;
-      const pctTxt = pct ? ` soit +${formatPct(pct)}` : "";
-      return `Sur ${years || "l'horizon retenu"} an${(years || 0) > 1 ? "s" : ""}, ${winnerName} dégage un capital net de ${formatCHF(winnerNet)} contre ${formatCHF(loserNet)} pour ${loserName}, soit un avantage net de ${formatCHF(diff)}${pctTxt} en faveur de ${winnerName}. Cette comparaison intègre les frais de gestion annuels et l'imposition à la sortie ; elle est exprimée en valeurs nominales (hors inflation).${entry.note ? ` ${entry.note.trim()}` : ""}`;
+      const pctTxt = pct ? ` (soit +${formatPct(pct)})` : "";
+      return `Sur ${years || "l'horizon retenu"} an${(years || 0) > 1 ? "s" : ""}, ${winnerName} dégage un capital net de ${formatCHF(winnerNet)} contre ${formatCHF(loserNet)} pour ${loserName}, un avantage net de ${formatCHF(diff)}${pctTxt} en faveur de ${winnerName}. Cette comparaison intègre les frais de gestion annuels et l'imposition à la sortie, et reste exprimée en valeurs nominales, sans effet de l'inflation.${entry.note ? ` ${entry.note.trim()}` : ""}`;
     }
     case "health_insurance_france": {
       const reco = str(s.recommended);
@@ -754,8 +760,8 @@ function buildComment(entry: HistoryEntry): string | null {
       if (!reco || !cot) return entry.note?.trim() || null;
       const recoLabel = reco === "LAMAL" ? "LAMal (Suisse)" : "CMU (France, gérée par le CNTFS via l'URSSAF)";
       const otherLabel = reco === "LAMAL" ? "CMU" : "LAMal";
-      const savTxt = sav > 0 ? ` Économie annuelle vs ${otherLabel} : ${formatCHF(sav)}.` : "";
-      return `Pour ce profil de frontalier, l'option ${recoLabel} ressort comme la plus avantageuse avec une cotisation annuelle estimée à ${formatCHF(cot)}.${savTxt} Calcul basé sur les barèmes 2026 (PASS = 47'100 EUR, taux CMU 8%, abattement individuel de 25% du PASS).${entry.note ? ` ${entry.note.trim()}` : ""}`;
+      const savTxt = sav > 0 ? ` Cela représente une économie annuelle de ${formatCHF(sav)} par rapport à l'option ${otherLabel}.` : "";
+      return `Pour ce profil de frontalier, l'affiliation ${recoLabel} ressort comme la plus avantageuse, avec une cotisation annuelle estimée à ${formatCHF(cot)}.${savTxt} Ce calcul s'appuie sur les barèmes 2026 (PASS 47'100 EUR, taux CMU 8 %, abattement individuel de 25 % du PASS). Point de vigilance : le choix entre CMU et LAMal engage sur une période donnée et a des conséquences sur la couverture maladie de toute la famille, à valider au cas par cas.${entry.note ? ` ${entry.note.trim()}` : ""}`;
     }
     case "overtime": {
       const net = num(s.netOvertimeCHF);
@@ -763,12 +769,38 @@ function buildComment(entry: HistoryEntry): string | null {
       const total = num(s.totalTaxOnOvertime);
       const brut = num(s.overtimeCHF);
       if (!brut) return entry.note?.trim() || null;
-      const savTxt = sav > 0 ? ` L'exonération France sur les heures sup génère une économie fiscale de ${formatCHF(sav)}.` : "";
-      return `Sur ${formatCHF(brut)} d'heures supplémentaires brutes, l'imposition combinée Suisse/France atteint ${formatCHF(total)}, pour un net en poche de ${formatCHF(net)}.${savTxt}${entry.note ? ` ${entry.note.trim()}` : ""}`;
+      const savTxt = sav > 0 ? ` L'exonération partielle côté français sur les heures supplémentaires génère une économie fiscale de ${formatCHF(sav)}.` : "";
+      return `Sur ${formatCHF(brut)} d'heures supplémentaires brutes, l'imposition combinée Suisse/France atteint ${formatCHF(total)}, pour un montant net effectivement perçu de ${formatCHF(net)}.${savTxt}${entry.note ? ` ${entry.note.trim()}` : ""}`;
+    }
+    case "avs_ai": {
+      const monthly = num(s.monthlyPension);
+      const annual = num(s.annualPension);
+      const theoretical = num(s.theoreticalAnnualPension);
+      const missing = num(s.missingYears);
+      const isCouple = Boolean(s.isCouple);
+      const combined = num(s.combinedAnnualPension);
+      if (!annual) return null;
+      const missingTxt =
+        missing > 0
+          ? ` Il manque actuellement ${missing} année${missing > 1 ? "s" : ""} de cotisation pour atteindre la rente complète (${formatCHF(theoretical)} par an), chaque année manquante réduisant la rente d'environ 1/44e.`
+          : ` La carrière de cotisation est complète (échelle 44), la rente correspond donc au maximum atteignable pour ce revenu déterminant.`;
+      const coupleTxt = isCouple && combined > 0 ? ` En couple, la rente combinée plafonnée s'élève à ${formatCHF(combined)} par an (plafond légal de 150 % de la rente maximale individuelle).` : "";
+      return `La rente AVS/AI projetée s'élève à ${formatCHF(monthly)} par mois, soit ${formatCHF(annual)} par an.${missingTxt}${coupleTxt} Cette estimation reste indicative : la rente définitive est arrêtée par la caisse de compensation cantonale sur la base de l'Extrait de Compte Individuel (CI) officiel, à demander gratuitement avant tout engagement définitif du client sur cette base.`;
+    }
+    case "tax_global": {
+      const total = num(s.totalTaxCHF);
+      const net = num(s.netAnnualCHF);
+      const eff = num(s.effectiveRate);
+      const marg = num(s.marginalRate);
+      const regimeLabel = str(s.regimeLabel);
+      const foreignShare = num(s.foreignShareCHF);
+      if (!total) return null;
+      const regimeTxt = regimeLabel ? ` selon le régime fiscal détecté : ${regimeLabel}` : "";
+      const foreignTxt = foreignShare > 0 ? ` Une part de ${formatCHF(foreignShare)} relève d'un revenu de source étrangère, prise en compte uniquement pour déterminer le taux d'imposition applicable (méthode d'exemption avec réserve de progressivité), sans être elle-même imposée en Suisse.` : "";
+      return `La charge fiscale totale estimée s'élève à ${formatCHF(total)} par an${regimeTxt}, pour un revenu net disponible de ${formatCHF(net)}. Le taux effectif ressort à ${formatPct(eff)} du revenu brut, tandis que le taux marginal de ${formatPct(marg)} indique la charge fiscale sur le prochain franc gagné, un repère utile pour évaluer l'intérêt d'une déduction supplémentaire (3a, rachat LPP).${foreignTxt} Cette estimation se base sur les barèmes 2026 et la situation déclarée ; elle doit être confirmée par la déclaration fiscale officielle du client.`;
     }
     case "cross_border":
     case "tou":
-    case "avs_ai":
     case "income_tax":
     case "source_tax":
       return entry.note?.trim() || null;
