@@ -131,6 +131,7 @@ function hex(h: string | undefined, fb: [number, number, number]): [number, numb
 }
 
 export class ReportPdf {
+  private footerDrawnPages = new Set<number>();
   doc: jsPDF;
   cursorY = 0;
   margin = 15;
@@ -479,6 +480,8 @@ export class ReportPdf {
     const { doc, margin, pageWidth, pageHeight, muted, primary } = this;
     const pageCount = doc.getNumberOfPages();
     const current = doc.getCurrentPageInfo().pageNumber;
+    if (this.footerDrawnPages.has(current)) return;
+    this.footerDrawnPages.add(current);
     doc.setDrawColor(...primary);
     doc.setLineWidth(0.4);
     doc.line(margin, pageHeight - 12, pageWidth - margin, pageHeight - 12);
