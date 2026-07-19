@@ -60,7 +60,7 @@ const MODULES: ModuleDef[] = [
     descKey: "calc.module.assurances.desc",
     links: [
       { to: "/calculators/health-insurance-france", labelKey: "calc.sublink.health_cmu_lamal" },
-      { href: "https://primeinfos.ch", labelKey: "calc.sublink.health_lamal_residents" },
+      { href: "https://www.priminfo.admin.ch", labelKey: "calc.sublink.health_lamal_residents" },
     ],
   },
   {
