@@ -59,13 +59,28 @@ export function SessionSummaryTab({ clientId, clientName }: { clientId: string; 
           returnUrl: window.location.origin,
         },
       });
-      if (error || !data?.paymentLink) throw new Error(error?.message ?? "Erreur génération lien");
+      if (error || !data?.paymentLink) {
+        // Le message generique de supabase-js ("non-2xx status code") ne contient
+        // jamais le vrai message d'erreur. Il faut lire le corps de la reponse HTTP
+        // brute stockee dans error.context pour recuperer le vrai texte JSON.
+        let realMessage = error?.message ?? "Erreur génération lien";
+        const ctx = (error as unknown as { context?: Response })?.context;
+        if (ctx && typeof ctx.json === "function") {
+          try {
+            const body = await ctx.json();
+            if (body?.error) realMessage = String(body.error);
+          } catch {
+            // le corps n'est pas du JSON exploitable, on garde le message generique
+          }
+        }
+        throw new Error(realMessage);
+      }
       setInvoiceLink(data.paymentLink);
       toast.success("Lien de paiement généré.");
     } catch (e) {
       const msg = e instanceof Error ? e.message : "Erreur génération lien";
       if (msg.includes("Compte bancaire non configuré")) {
-        toast.error("Compte bancaire non connecté. Allez dans Mon profil → Abonnement pour connecter votre IBAN.");
+        toast.error("Compte bancaire non connecté. Allez dans Mon profil → Abonnement pour connecter votre IBAN avant de facturer un client.");
       } else {
         toast.error(msg);
       }
