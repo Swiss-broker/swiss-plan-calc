@@ -14,6 +14,104 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_messages: {
+        Row: {
+          broker_id: string
+          content: string
+          created_at: string
+          id: string
+          read: boolean
+          sender: string
+          sender_name: string
+        }
+        Insert: {
+          broker_id: string
+          content: string
+          created_at?: string
+          id?: string
+          read?: boolean
+          sender: string
+          sender_name: string
+        }
+        Update: {
+          broker_id?: string
+          content?: string
+          created_at?: string
+          id?: string
+          read?: boolean
+          sender?: string
+          sender_name?: string
+        }
+        Relationships: []
+      }
+      admin_notifications: {
+        Row: {
+          admin_id: string
+          body: string | null
+          created_at: string
+          id: string
+          link: string | null
+          read: boolean
+          title: string
+          type: string
+        }
+        Insert: {
+          admin_id: string
+          body?: string | null
+          created_at?: string
+          id?: string
+          link?: string | null
+          read?: boolean
+          title: string
+          type: string
+        }
+        Update: {
+          admin_id?: string
+          body?: string | null
+          created_at?: string
+          id?: string
+          link?: string | null
+          read?: boolean
+          title?: string
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "admin_notifications_admin_id_fkey"
+            columns: ["admin_id"]
+            isOneToOne: false
+            referencedRelation: "admin_users"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      admin_users: {
+        Row: {
+          created_at: string
+          display_name: string
+          email: string
+          id: string
+          settings: Json
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          display_name: string
+          email: string
+          id?: string
+          settings?: Json
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          display_name?: string
+          email?: string
+          id?: string
+          settings?: Json
+          user_id?: string
+        }
+        Relationships: []
+      }
       ai_conversations: {
         Row: {
           broker_id: string
@@ -573,6 +671,74 @@ export type Database = {
           },
         ]
       }
+      feedback_messages: {
+        Row: {
+          content: string
+          created_at: string
+          feedback_id: string
+          id: string
+          sender: string
+          sender_name: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          feedback_id: string
+          id?: string
+          sender: string
+          sender_name: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          feedback_id?: string
+          id?: string
+          sender?: string
+          sender_name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "feedback_messages_feedback_id_fkey"
+            columns: ["feedback_id"]
+            isOneToOne: false
+            referencedRelation: "user_feedback"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notifications: {
+        Row: {
+          body: string | null
+          broker_id: string
+          created_at: string
+          id: string
+          link: string | null
+          read: boolean
+          title: string
+          type: string
+        }
+        Insert: {
+          body?: string | null
+          broker_id: string
+          created_at?: string
+          id?: string
+          link?: string | null
+          read?: boolean
+          title: string
+          type: string
+        }
+        Update: {
+          body?: string | null
+          broker_id?: string
+          created_at?: string
+          id?: string
+          link?: string | null
+          read?: boolean
+          title?: string
+          type?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           brokerage_name: string | null
@@ -905,6 +1071,10 @@ export type Database = {
       }
       user_feedback: {
         Row: {
+          admin_reply: string | null
+          admin_reply_at: string | null
+          admin_reply_by: string | null
+          archived: boolean
           broker_id: string
           category: Database["public"]["Enums"]["feedback_category"]
           context: Json
@@ -918,6 +1088,10 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          admin_reply?: string | null
+          admin_reply_at?: string | null
+          admin_reply_by?: string | null
+          archived?: boolean
           broker_id: string
           category?: Database["public"]["Enums"]["feedback_category"]
           context?: Json
@@ -931,6 +1105,10 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          admin_reply?: string | null
+          admin_reply_at?: string | null
+          admin_reply_by?: string | null
+          archived?: boolean
           broker_id?: string
           category?: Database["public"]["Enums"]["feedback_category"]
           context?: Json
@@ -941,6 +1119,71 @@ export type Database = {
           rating?: number | null
           status?: Database["public"]["Enums"]["feedback_status"]
           subject?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      wiki_article_translations: {
+        Row: {
+          article_id: string
+          body_markdown: string
+          language: string
+          title: string
+        }
+        Insert: {
+          article_id: string
+          body_markdown: string
+          language: string
+          title: string
+        }
+        Update: {
+          article_id?: string
+          body_markdown?: string
+          language?: string
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "wiki_article_translations_article_id_fkey"
+            columns: ["article_id"]
+            isOneToOne: false
+            referencedRelation: "wiki_articles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      wiki_articles: {
+        Row: {
+          category: string
+          created_at: string
+          id: string
+          published_at: string | null
+          slug: string
+          sources: Json
+          status: string
+          tags: string[]
+          updated_at: string
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          id?: string
+          published_at?: string | null
+          slug: string
+          sources?: Json
+          status?: string
+          tags?: string[]
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          id?: string
+          published_at?: string | null
+          slug?: string
+          sources?: Json
+          status?: string
+          tags?: string[]
           updated_at?: string
         }
         Relationships: []

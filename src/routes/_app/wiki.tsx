@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { zodValidator, fallback } from "@tanstack/zod-adapter";
 import { z } from "zod";
+import ReactMarkdown from "react-markdown";
 import {
   BookOpen,
   Search,
@@ -20,7 +21,16 @@ import {
 } from "@/components/ui/accordion";
 import { Badge } from "@/components/ui/badge";
 import { useT, useLanguage } from "@/contexts/LanguageContext";
-import { getWikiArticles, getWikiCategories, type WikiArticle } from "@/lib/wiki/articles";
+import { supabase } from "@/integrations/supabase/client";
+
+// Remplace l'ancien type importé depuis lib/wiki/articles (fichier statique, plus utilisé ici)
+type WikiArticle = {
+  id: string; // correspond au slug en base
+  category: string;
+  title: string;
+  tags: string[];
+  bodyMarkdown: string;
+};
 
 const searchSchema = z.object({
   article: fallback(z.string().optional(), undefined),
@@ -35,8 +45,49 @@ export const Route = createFileRoute("/_app/wiki")({
 function WikiPage() {
   const t = useT();
   const { lang } = useLanguage();
-  const ARTICLES = useMemo(() => getWikiArticles(lang), [lang]);
-  const CATEGORIES = useMemo(() => getWikiCategories(lang), [lang]);
+
+  const [ARTICLES, setARTICLES] = useState<WikiArticle[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  // Charge les articles publiés depuis Supabase, filtrés sur la langue active
+  useEffect(() => {
+    let cancelled = false;
+    async function loadArticles() {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from("wiki_article_translations")
+        .select("title, body_markdown, wiki_articles!inner(slug, category, tags, status)")
+        .eq("language", lang)
+        .eq("wiki_articles.status", "published");
+
+      if (cancelled) return;
+      if (error) {
+        console.error("Erreur chargement wiki:", error);
+        setARTICLES([]);
+        setLoading(false);
+        return;
+      }
+
+      const mapped: WikiArticle[] = (data ?? []).map((row: any) => ({
+        id: row.wiki_articles.slug,
+        category: row.wiki_articles.category,
+        tags: row.wiki_articles.tags ?? [],
+        title: row.title,
+        bodyMarkdown: row.body_markdown,
+      }));
+      setARTICLES(mapped);
+      setLoading(false);
+    }
+    loadArticles();
+    return () => {
+      cancelled = true;
+    };
+  }, [lang]);
+
+  const CATEGORIES = useMemo(
+    () => Array.from(new Set(ARTICLES.map((a) => a.category))),
+    [ARTICLES]
+  );
 
   const { article: targetArticle } = Route.useSearch();
   const [q, setQ] = useState("");
@@ -118,7 +169,11 @@ function WikiPage() {
         </div>
       </div>
 
-      {grouped.size === 0 ? (
+      {loading ? (
+        <div className="mt-8 rounded-2xl border border-dashed p-10 text-center text-sm text-muted-foreground">
+          {t("wiki.loading") ?? "Chargement..."}
+        </div>
+      ) : grouped.size === 0 ? (
         <div className="mt-8 rounded-2xl border border-dashed p-10 text-center text-sm text-muted-foreground">
           {t("wiki.empty")}
         </div>
@@ -150,7 +205,9 @@ function WikiPage() {
                         </div>
                       </AccordionTrigger>
                       <AccordionContent className="text-sm text-muted-foreground leading-relaxed pl-6">
-                        {a.body}
+                        <div className="prose prose-sm max-w-none prose-p:my-2 prose-ul:my-2 prose-strong:text-foreground">
+                          <ReactMarkdown>{a.bodyMarkdown}</ReactMarkdown>
+                        </div>
                         <div className="mt-3 flex flex-wrap gap-1">
                           {a.tags.map((tag) => (
                             <Badge key={tag} variant="secondary" className="text-[10px]">
