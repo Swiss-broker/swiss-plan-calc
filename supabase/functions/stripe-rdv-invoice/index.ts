@@ -37,6 +37,43 @@ Deno.serve(async (req) => {
     // Commission 10% pour SwissBroker Pro
     const applicationFee = Math.round(amountCentimes * 0.10);
 
+    // Récupère l'identité actuelle du client pour figer un instantané
+    // au moment du paiement (empêche le déblocage PDF de survivre à un
+    // changement d'identité sur la fiche client).
+    let snapshot: {
+      snapshot_first_name: string | null;
+      snapshot_last_name: string | null;
+      snapshot_date_of_birth: string | null;
+      snapshot_gender: string | null;
+      snapshot_nationality: string | null;
+      snapshot_email: string | null;
+    } = {
+      snapshot_first_name: null,
+      snapshot_last_name: null,
+      snapshot_date_of_birth: null,
+      snapshot_gender: null,
+      snapshot_nationality: null,
+      snapshot_email: null,
+    };
+    if (clientId) {
+      const clientRes = await fetch(
+        `${supabaseUrl}/rest/v1/clients?id=eq.${clientId}&select=first_name,last_name,date_of_birth,gender,nationality,email`,
+        { headers: { "apikey": supabaseKey, "Authorization": `Bearer ${supabaseKey}` } }
+      );
+      const clients = await clientRes.json();
+      if (clients.length) {
+        const c = clients[0];
+        snapshot = {
+          snapshot_first_name: c.first_name ?? null,
+          snapshot_last_name: c.last_name ?? null,
+          snapshot_date_of_birth: c.date_of_birth ?? null,
+          snapshot_gender: c.gender ?? null,
+          snapshot_nationality: c.nationality ?? null,
+          snapshot_email: c.email ?? null,
+        };
+      }
+    }
+
     // Créer un Payment Intent avec transfert automatique
     const piRes = await fetch("https://api.stripe.com/v1/payment_intents", {
       method: "POST",
@@ -93,7 +130,7 @@ Deno.serve(async (req) => {
     const paymentLink = await linkRes.json();
     if (!linkRes.ok) throw new Error(paymentLink.error?.message ?? "Erreur création lien");
 
-    // Sauvegarder la facture en base
+    // Sauvegarder la facture en base, avec l'instantané d'identité du client
     await fetch(`${supabaseUrl}/rest/v1/rdv_invoices`, {
       method: "POST",
       headers: {
@@ -110,6 +147,7 @@ Deno.serve(async (req) => {
         stripe_payment_link: paymentLink.url,
         status: "pending",
         pdf_unlocked: false,
+        ...snapshot,
       }),
     });
 

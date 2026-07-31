@@ -804,6 +804,12 @@ export type Database = {
           created_at: string
           id: string
           pdf_unlocked: boolean
+          snapshot_date_of_birth: string | null
+          snapshot_email: string | null
+          snapshot_first_name: string | null
+          snapshot_gender: string | null
+          snapshot_last_name: string | null
+          snapshot_nationality: string | null
           status: string
           stripe_payment_intent_id: string | null
           stripe_payment_link: string | null
@@ -816,6 +822,12 @@ export type Database = {
           created_at?: string
           id?: string
           pdf_unlocked?: boolean
+          snapshot_date_of_birth?: string | null
+          snapshot_email?: string | null
+          snapshot_first_name?: string | null
+          snapshot_gender?: string | null
+          snapshot_last_name?: string | null
+          snapshot_nationality?: string | null
           status?: string
           stripe_payment_intent_id?: string | null
           stripe_payment_link?: string | null
@@ -828,6 +840,12 @@ export type Database = {
           created_at?: string
           id?: string
           pdf_unlocked?: boolean
+          snapshot_date_of_birth?: string | null
+          snapshot_email?: string | null
+          snapshot_first_name?: string | null
+          snapshot_gender?: string | null
+          snapshot_last_name?: string | null
+          snapshot_nationality?: string | null
           status?: string
           stripe_payment_intent_id?: string | null
           stripe_payment_link?: string | null
