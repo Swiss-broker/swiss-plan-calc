@@ -1,6 +1,6 @@
 // Wizard partagé (création + édition) · 5 étapes.
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { ChevronLeft, ChevronRight, Save, Loader2, Plus, X } from "lucide-react";
 import { z } from "zod";
@@ -62,6 +62,16 @@ const STEP_KEYS = {
 } as const;
 const STEP_COUNT = 5;
 
+// Champs d'identité surveillés pour le verrouillage PDF : téléphone et
+// permis de séjour exclus volontairement (voir SessionSummaryTab.tsx).
+const IDENTITY_WARNING_FIELDS = [
+  "first_name",
+  "last_name",
+  "date_of_birth",
+  "gender",
+  "nationality",
+  "email",
+] as const;
 
 export interface PensionAccount {
   institution: string;
@@ -252,6 +262,46 @@ export function ClientWizard({ initial, mode, clientId }: ClientWizardProps) {
   const [form, setForm] = useState<FormState>(() => initialForm(initial));
   const [errors, setErrors] = useState<Record<string, string>>({});
 
+  // Instantané de l'identité telle qu'elle était au chargement du formulaire,
+  // pour détecter si le courtier modifie un champ sensible pour la synthèse PDF.
+  const originalIdentity = useRef({
+    first_name: initial?.client?.first_name ?? "",
+    last_name: initial?.client?.last_name ?? "",
+    date_of_birth: initial?.client?.date_of_birth ?? "",
+    gender: (initial?.client?.gender as string | null) ?? "",
+    nationality: initial?.client?.nationality ?? "",
+    email: initial?.client?.email ?? "",
+  });
+
+  // Existe-t-il une facture RDV payée et débloquée pour ce client ? Seulement
+  // pertinent en édition. Sert à ne montrer l'avertissement que si un PDF est
+  // effectivement susceptible d'être reverrouillé par la modification en cours.
+  const { data: hasUnlockedInvoice = false } = useQuery({
+    queryKey: ["client-has-unlocked-invoice", clientId],
+    enabled: mode === "edit" && !!clientId,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("rdv_invoices")
+        .select("id")
+        .eq("client_id", clientId as string)
+        .eq("pdf_unlocked", true)
+        .limit(1);
+      return !!(data && data.length > 0);
+    },
+  });
+
+  const identityFieldsChanged = () => {
+    const o = originalIdentity.current;
+    return (
+      form.first_name.trim() !== o.first_name ||
+      form.last_name.trim() !== o.last_name ||
+      form.date_of_birth !== o.date_of_birth ||
+      (form.gender || "") !== o.gender ||
+      form.nationality !== o.nationality ||
+      form.email.trim() !== o.email
+    );
+  };
+
   // Suggestion auto du statut fiscal : uniquement à la création, et seulement
   // tant que le courtier n'a pas modifié manuellement le champ. En édition,
   // on respecte intégralement la valeur existante.
@@ -401,7 +451,17 @@ export function ClientWizard({ initial, mode, clientId }: ClientWizardProps) {
       qc.invalidateQueries({ queryKey: ["client-edit", savedId] });
       qc.invalidateQueries({ queryKey: ["client-full", savedId] });
       qc.invalidateQueries({ queryKey: ["clients"] });
-      toast.success(mode === "edit" ? t("wizard.toast.updated") : t("wizard.toast.created"));
+      qc.invalidateQueries({ queryKey: ["client-identity", savedId] });
+      qc.invalidateQueries({ queryKey: ["pdf-unlocked", savedId] });
+
+      if (mode === "edit" && hasUnlockedInvoice && identityFieldsChanged()) {
+        toast.warning(
+          "Identité modifiée : la synthèse PDF de ce client a été reverrouillée. Une nouvelle facturation sera nécessaire pour la débloquer.",
+          { duration: 8000 },
+        );
+      } else {
+        toast.success(mode === "edit" ? t("wizard.toast.updated") : t("wizard.toast.created"));
+      }
       navigate({ to: "/clients/$clientId", params: { clientId: savedId } });
     },
     onError: (e: Error) => toast.error(e.message),
@@ -452,6 +512,9 @@ export function ClientWizard({ initial, mode, clientId }: ClientWizardProps) {
   const currentTitle = t(STEP_KEYS[step as 1 | 2 | 3 | 4 | 5].title);
   const currentDesc = t(STEP_KEYS[step as 1 | 2 | 3 | 4 | 5].desc);
 
+  const showIdentityWarning =
+    mode === "edit" && step === 1 && hasUnlockedInvoice && identityFieldsChanged();
+
   return (
     <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
       <div className="flex items-center justify-between gap-3">
@@ -470,6 +533,12 @@ export function ClientWizard({ initial, mode, clientId }: ClientWizardProps) {
       </div>
 
       <Progress value={progress} className="mt-4 h-1.5" />
+
+      {showIdentityWarning && (
+        <div className="mt-4 rounded-lg border border-warning/40 bg-warning/10 p-3 text-sm text-warning-foreground">
+          ⚠️ Ce client a une synthèse PDF déjà débloquée par paiement. Modifier le prénom, nom, date de naissance, genre, nationalité ou email va <strong>reverrouiller</strong> cette synthèse à l'enregistrement. Une nouvelle facturation sera nécessaire pour la redébloquer.
+        </div>
+      )}
 
       <div className="mt-6 hidden grid-cols-5 gap-2 sm:grid">
         {STEP_IDS.map((id) => (
@@ -1356,4 +1425,3 @@ function PensionAccountsEditor({
     </div>
   );
 }
-
