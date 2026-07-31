@@ -262,6 +262,13 @@ export function ClientWizard({ initial, mode, clientId }: ClientWizardProps) {
   const [form, setForm] = useState<FormState>(() => initialForm(initial));
   const [errors, setErrors] = useState<Record<string, string>>({});
 
+  // ID de la fiche client en cours d'édition. En mode "edit", il est connu
+  // dès le départ (prop clientId). En mode "create", il est vide au départ
+  // et se remplit après la toute première sauvegarde (étape 1), pour que
+  // les sauvegardes suivantes (étapes 2 à 5) mettent à jour cette même
+  // fiche au lieu d'en créer une nouvelle à chaque clic.
+  const currentClientId = useRef<string | undefined>(clientId);
+
   // Instantané de l'identité telle qu'elle était au chargement du formulaire,
   // pour détecter si le courtier modifie un champ sensible pour la synthèse PDF.
   const originalIdentity = useRef({
@@ -274,16 +281,16 @@ export function ClientWizard({ initial, mode, clientId }: ClientWizardProps) {
   });
 
   // Existe-t-il une facture RDV payée et débloquée pour ce client ? Seulement
-  // pertinent en édition. Sert à ne montrer l'avertissement que si un PDF est
-  // effectivement susceptible d'être reverrouillé par la modification en cours.
+  // pertinent une fois la fiche créée. Sert à ne montrer l'avertissement que
+  // si un PDF est effectivement susceptible d'être reverrouillé.
   const { data: hasUnlockedInvoice = false } = useQuery({
-    queryKey: ["client-has-unlocked-invoice", clientId],
-    enabled: mode === "edit" && !!clientId,
+    queryKey: ["client-has-unlocked-invoice", currentClientId.current],
+    enabled: !!currentClientId.current,
     queryFn: async () => {
       const { data } = await supabase
         .from("rdv_invoices")
         .select("id")
-        .eq("client_id", clientId as string)
+        .eq("client_id", currentClientId.current as string)
         .eq("pdf_unlocked", true)
         .limit(1);
       return !!(data && data.length > 0);
@@ -380,10 +387,10 @@ export function ClientWizard({ initial, mode, clientId }: ClientWizardProps) {
       };
 
       let savedId: string;
-      if (mode === "edit" && clientId) {
-        const { error } = await supabase.from("clients").update(payload).eq("id", clientId);
+      if (currentClientId.current) {
+        const { error } = await supabase.from("clients").update(payload).eq("id", currentClientId.current);
         if (error) throw error;
-        savedId = clientId;
+        savedId = currentClientId.current;
       } else {
         const { data, error } = await supabase
           .from("clients")
@@ -392,6 +399,7 @@ export function ClientWizard({ initial, mode, clientId }: ClientWizardProps) {
           .single();
         if (error) throw error;
         savedId = data.id;
+        currentClientId.current = savedId;
       }
 
       // Pension upsert
@@ -453,16 +461,18 @@ export function ClientWizard({ initial, mode, clientId }: ClientWizardProps) {
       qc.invalidateQueries({ queryKey: ["clients"] });
       qc.invalidateQueries({ queryKey: ["client-identity", savedId] });
       qc.invalidateQueries({ queryKey: ["pdf-unlocked", savedId] });
+      qc.invalidateQueries({ queryKey: ["client-has-unlocked-invoice", savedId] });
 
-      if (mode === "edit" && hasUnlockedInvoice && identityFieldsChanged()) {
+      if (hasUnlockedInvoice && identityFieldsChanged()) {
         toast.warning(
           "Identité modifiée : la synthèse PDF de ce client a été reverrouillée. Une nouvelle facturation sera nécessaire pour la débloquer.",
           { duration: 8000 },
         );
+      } else if (step < STEP_COUNT) {
+        toast.success(`Étape "${currentTitle}" enregistrée.`);
       } else {
         toast.success(mode === "edit" ? t("wizard.toast.updated") : t("wizard.toast.created"));
       }
-      navigate({ to: "/clients/$clientId", params: { clientId: savedId } });
     },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -498,6 +508,16 @@ export function ClientWizard({ initial, mode, clientId }: ClientWizardProps) {
     if (step < STEP_COUNT) setStep(step + 1);
   };
   const prev = () => step > 1 && setStep(step - 1);
+
+  // Sauvegarde immédiate de l'étape en cours, sans quitter le wizard.
+  // Valide uniquement les champs de l'étape courante (pas les 5 étapes).
+  const saveStep = () => {
+    if (!validateStep(step)) return;
+    save.mutate();
+  };
+
+  // Sauvegarde finale : valide les 5 étapes, sauvegarde, puis quitte le
+  // wizard vers la fiche client.
   const submit = () => {
     for (let i = 1; i <= STEP_COUNT; i++) {
       if (!validateStep(i)) {
@@ -505,7 +525,11 @@ export function ClientWizard({ initial, mode, clientId }: ClientWizardProps) {
         return;
       }
     }
-    save.mutate();
+    save.mutate(undefined, {
+      onSuccess: (savedId) => {
+        navigate({ to: "/clients/$clientId", params: { clientId: savedId } });
+      },
+    });
   };
 
   const progress = useMemo(() => (step / STEP_COUNT) * 100, [step]);
@@ -513,7 +537,7 @@ export function ClientWizard({ initial, mode, clientId }: ClientWizardProps) {
   const currentDesc = t(STEP_KEYS[step as 1 | 2 | 3 | 4 | 5].desc);
 
   const showIdentityWarning =
-    mode === "edit" && step === 1 && hasUnlockedInvoice && identityFieldsChanged();
+    step === 1 && hasUnlockedInvoice && identityFieldsChanged();
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
@@ -539,6 +563,7 @@ export function ClientWizard({ initial, mode, clientId }: ClientWizardProps) {
           ⚠️ Ce client a une synthèse PDF déjà débloquée par paiement. Modifier le prénom, nom, date de naissance, genre, nationalité ou email va <strong>reverrouiller</strong> cette synthèse à l'enregistrement. Une nouvelle facturation sera nécessaire pour la redébloquer.
         </div>
       )}
+
       <div className="mt-6 hidden grid-cols-5 gap-2 sm:grid">
         {STEP_IDS.map((id) => (
           <button
@@ -571,20 +596,30 @@ export function ClientWizard({ initial, mode, clientId }: ClientWizardProps) {
         <Button variant="outline" onClick={prev} disabled={step === 1}>
           <ChevronLeft className="h-4 w-4" /> {t("common.previous")}
         </Button>
-        {step < STEP_COUNT ? (
-          <Button onClick={next}>
-            {t("common.next")} <ChevronRight className="h-4 w-4" />
-          </Button>
-        ) : (
-          <Button onClick={submit} disabled={save.isPending} className="shadow-elegant">
+        <div className="flex items-center gap-2">
+          <Button variant="outline" onClick={saveStep} disabled={save.isPending}>
             {save.isPending ? (
               <Loader2 className="h-4 w-4 animate-spin" />
             ) : (
               <Save className="h-4 w-4" />
             )}
-            {mode === "edit" ? t("wizard.btn.save") : t("wizard.btn.create")}
+            Sauvegarder cette étape
           </Button>
-        )}
+          {step < STEP_COUNT ? (
+            <Button onClick={next}>
+              {t("common.next")} <ChevronRight className="h-4 w-4" />
+            </Button>
+          ) : (
+            <Button onClick={submit} disabled={save.isPending} className="shadow-elegant">
+              {save.isPending ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Save className="h-4 w-4" />
+              )}
+              {mode === "edit" ? t("wizard.btn.save") : t("wizard.btn.create")}
+            </Button>
+          )}
+        </div>
       </div>
     </div>
   );
