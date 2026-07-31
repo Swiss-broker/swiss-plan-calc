@@ -19,8 +19,6 @@ import {
 } from "@/lib/pillar3";
 import { CalcCard, MoneyTile, Row } from "@/components/calculators/CalcUI";
 import type { IncomeTaxInput } from "@/lib/tax/income";
-import { ExportPdfButton } from "@/components/calculators/ExportPdfButton";
-import { exportPillar3aPdf } from "@/lib/pdf/reports";
 import { SaveSimulationButton } from "@/components/calculators/SaveSimulationButton";
 import { useAuth } from "@/contexts/AuthContext";
 import { useBrokerPdfHeader } from "@/hooks/useBrokerPdfHeader";
@@ -251,14 +249,6 @@ function Pillar3aCalc() {
 
   const { user } = useAuth();
   const brokerHeader = useBrokerPdfHeader();
-  const handleExport = () =>
-    exportPillar3aPdf({
-      header: brokerHeader,
-      input: form,
-      taxSavings: savings,
-      projection,
-      staggered: stag,
-    });
 
   const projection3b = useMemo(() => {
     const r = form.pillar3bReturn / 100;
@@ -531,7 +521,6 @@ useEffect(() => {
           }}
           defaultTitle={`3a ${form.canton} · ${form.contribution} CHF/an`}
         />
-        <ExportPdfButton onClick={handleExport} />
       </div>
     </div>
   );

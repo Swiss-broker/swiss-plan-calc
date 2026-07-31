@@ -21,7 +21,6 @@ import {
   ComposedChart,
 } from "recharts";
 import { CalcCard, MoneyTile, Row } from "@/components/calculators/CalcUI";
-import { ExportPdfButton } from "@/components/calculators/ExportPdfButton";
 import { getWithdrawalCantons } from "@/lib/swiss/cantons";
 import {
   compareVestedStrategies,
@@ -30,7 +29,6 @@ import {
   type VestedStrategy,
 } from "@/lib/lpp/vested";
 import { formatCHF } from "@/lib/format";
-import { exportVestedBenefitsPdf } from "@/lib/pdf/reports";
 import { SaveSimulationButton } from "@/components/calculators/SaveSimulationButton";
 
 import { zodValidator, fallback } from "@tanstack/zod-adapter";
@@ -136,7 +134,7 @@ function VestedBenefitsCalc() {
               rel="noopener noreferrer"
               className="inline-flex items-center gap-1 text-sm font-medium text-primary underline-offset-4 hover:underline"
             >
-              {t("calc.vested.search.cta")} →
+              {t("calc.vested.search.cta")} {"\u2192"}
             </a>
           </div>
         </div>
@@ -210,15 +208,6 @@ function VestedBenefitsCalc() {
               yearsToRetirement: form.yearsToRetirement,
             }}
             defaultTitle={`Libre passage · ${form.initialBalance} CHF / ${form.yearsToRetirement} ans`}
-          />
-          <ExportPdfButton
-            onClick={() =>
-              exportVestedBenefitsPdf({
-                input: form,
-                projections,
-                recommended,
-              })
-            }
           />
         </div>
         <CalcCard title={t("calc.vested.projection_card")}>
