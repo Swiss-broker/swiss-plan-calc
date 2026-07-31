@@ -535,11 +535,10 @@ export function ClientWizard({ initial, mode, clientId }: ClientWizardProps) {
       <Progress value={progress} className="mt-4 h-1.5" />
 
       {showIdentityWarning && (
-        <div className="mt-4 rounded-lg border border-warning/40 bg-warning/10 p-3 text-sm text-warning-foreground">
+        <div className="mt-4 rounded-lg border border-warning/40 bg-warning/10 p-3 text-sm text-foreground">
           ⚠️ Ce client a une synthèse PDF déjà débloquée par paiement. Modifier le prénom, nom, date de naissance, genre, nationalité ou email va <strong>reverrouiller</strong> cette synthèse à l'enregistrement. Une nouvelle facturation sera nécessaire pour la redébloquer.
         </div>
       )}
-
       <div className="mt-6 hidden grid-cols-5 gap-2 sm:grid">
         {STEP_IDS.map((id) => (
           <button
