@@ -19,7 +19,6 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 import { CalcCard, MoneyTile, Row } from "@/components/calculators/CalcUI";
-import { ExportPdfButton } from "@/components/calculators/ExportPdfButton";
 import { SaveSimulationButton } from "@/components/calculators/SaveSimulationButton";
 import { ClientLinkBanner } from "@/components/calculators/ClientLinkBanner";
 import { CANTONS, CANTON_BY_CODE } from "@/lib/swiss/cantons";
@@ -30,7 +29,6 @@ import {
   type OvertimeTaxStatus,
   type SalaryCurrency,
 } from "@/lib/overtime-fr";
-import { exportOvertimePdf } from "@/lib/pdf/reports";
 import { usePrefillFromClient, useHydrateFormFromPrefill } from "@/hooks/usePrefillFromClient";
 import { CrossCalcImpactBanner } from "@/components/calculators/CrossCalcImpactBanner";
 
@@ -212,30 +210,6 @@ function OvertimeCalc() {
       </div>
 
       <div className="space-y-4 md:col-span-2">
-        <div className="flex justify-end gap-2">
-          <SaveSimulationButton
-            kind="overtime"
-            inputs={form}
-            summary={{
-              status: result.status,
-              annualHours: result.annualHours,
-              exemptHoursRetained: result.exemptHoursRetained,
-              exemptSalaryRetainedEUR: result.exemptSalaryRetainedEUR,
-              exemptSalaryRetainedCHF: result.exemptSalaryRetainedCHF,
-              taxSavingsEUR: result.taxSavingsEUR,
-              taxSavingsCHF: result.taxSavingsCHF,
-              // compat
-              overtimeCHF: result.overtimeCHF,
-              netOvertimeCHF: result.netOvertimeCHF,
-              totalTaxOnOvertime: result.totalTaxOnOvertime,
-              taxSavings: result.taxSavings,
-              hasFrenchExemption: result.hasFrenchExemption,
-            }}
-            defaultTitle={`Heures sup · ${form.workCanton} · ${result.exemptHoursRetained} h exonérées`}
-          />
-          <ExportPdfButton onClick={() => exportOvertimePdf({ input: form, result })} />
-        </div>
-
         <CalcCard title="1 · Calcul des heures">
           <div className="space-y-2 text-sm">
             <KV label="Heures hebdomadaires" value={`${result.weeklyHours} h/sem`} />
@@ -350,6 +324,29 @@ function OvertimeCalc() {
             {" "}
             {OVERTIME_PARAMS_2026.salaryCapEUR.toLocaleString("fr-FR")} €
           </span>
+        </div>
+
+        <div className="flex justify-end">
+          <SaveSimulationButton
+            kind="overtime"
+            inputs={form}
+            summary={{
+              status: result.status,
+              annualHours: result.annualHours,
+              exemptHoursRetained: result.exemptHoursRetained,
+              exemptSalaryRetainedEUR: result.exemptSalaryRetainedEUR,
+              exemptSalaryRetainedCHF: result.exemptSalaryRetainedCHF,
+              taxSavingsEUR: result.taxSavingsEUR,
+              taxSavingsCHF: result.taxSavingsCHF,
+              // compat
+              overtimeCHF: result.overtimeCHF,
+              netOvertimeCHF: result.netOvertimeCHF,
+              totalTaxOnOvertime: result.totalTaxOnOvertime,
+              taxSavings: result.taxSavings,
+              hasFrenchExemption: result.hasFrenchExemption,
+            }}
+            defaultTitle={`Heures sup · ${form.workCanton} · ${result.exemptHoursRetained} h exonérées`}
+          />
         </div>
       </div>
     </div>

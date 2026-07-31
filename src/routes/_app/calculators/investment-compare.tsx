@@ -28,12 +28,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ExportPdfButton } from "@/components/calculators/ExportPdfButton";
 import { SaveSimulationButton } from "@/components/calculators/SaveSimulationButton";
 import { GuideMode, GuideToggleButton, type GuideStep } from "@/components/calculators/GuideMode";
 import { useT } from "@/contexts/LanguageContext";
-import { useBrokerPdfHeader } from "@/hooks/useBrokerPdfHeader";
-import { ReportPdf, makeFilename, type PdfHeaderInfo } from "@/lib/pdf/builder";
 import { formatCHF, formatPct } from "@/lib/format";
 import {
   compareInvestments,
@@ -111,9 +108,6 @@ function InvestmentCompareCalc() {
     setA({ ...DEFAULT_A, name: t("calc.invcompare.default_a") });
     setB({ ...DEFAULT_B, name: t("calc.invcompare.default_b") });
   };
-
-  const brokerHeader = useBrokerPdfHeader();
-  const handleExport = () => exportInvestmentComparePdf({ header: brokerHeader, comparison, t });
 
   const guideSteps: GuideStep[] = [
     { title: t("calc.invcompare.step.welcome.t"), body: t("calc.invcompare.step.welcome.b") },
@@ -266,7 +260,6 @@ function InvestmentCompareCalc() {
           }}
           defaultTitle={`${a.name || "A"} vs ${b.name || "B"} · ${a.durationYears} ans`}
         />
-        <ExportPdfButton onClick={handleExport} />
       </div>
     </div>
   );
@@ -443,87 +436,4 @@ function NumField({
       />
     </div>
   );
-}
-
-function exportInvestmentComparePdf(args: {
-  header?: Partial<PdfHeaderInfo>;
-  comparison: ReturnType<typeof compareInvestments>;
-  t: (k: string, p?: Record<string, string | number>, fb?: string) => string;
-}) {
-  const { comparison, t } = args;
-  const a = comparison.a;
-  const b = comparison.b;
-  const pdf = new ReportPdf({
-    title: t("calc.invcompare.title"),
-    subtitle: t("calc.invcompare.subtitle"),
-    ...args.header,
-  } as PdfHeaderInfo);
-
-  pdf.situationBanner(t("calc.invcompare.summary_title").toUpperCase());
-
-  pdf.section(t("calc.invcompare.summary_title"));
-  if (comparison.winner === "tie") {
-    pdf.paragraph(t("calc.invcompare.tie"));
-  } else {
-    const winner = comparison.winner === "a" ? a : b;
-    const loser = comparison.winner === "a" ? b : a;
-    pdf.metricsGrid([
-      { label: t("calc.invcompare.res.net") + " · " + a.input.name, value: a.finalNetCapital, tone: comparison.winner === "a" ? "success" : "primary" },
-      { label: t("calc.invcompare.res.net") + " · " + b.input.name, value: b.finalNetCapital, tone: comparison.winner === "b" ? "success" : "primary" },
-      { label: "Δ " + t("calc.invcompare.summary_title"), value: formatCHF(comparison.netDifference), tone: "success" },
-      { label: t("calc.invcompare.in_favor_of", { name: winner.input.name }), value: formatPct(comparison.pctAdvantage), tone: "success" },
-    ]);
-    pdf.callout(
-      t("calc.invcompare.summary_text", {
-        years: winner.input.durationYears,
-        winner: winner.input.name,
-        loser: loser.input.name,
-        amount: formatCHF(comparison.netDifference),
-        pct: formatPct(comparison.pctAdvantage),
-      }),
-      "success",
-    );
-  }
-
-  pdf.section(t("calc.invcompare.chart_title"));
-  pdf.table(
-    [
-      "",
-      a.input.name || t("calc.invcompare.investment_a"),
-      b.input.name || t("calc.invcompare.investment_b"),
-    ],
-    [
-      [t("calc.invcompare.field.type"), t(`calc.invcompare.type.${a.input.type}`), t(`calc.invcompare.type.${b.input.type}`)],
-      [t("calc.invcompare.field.duration"), `${a.input.durationYears} ${t("common.years.short")}`, `${b.input.durationYears} ${t("common.years.short")}`],
-      [t("calc.invcompare.field.initial"), formatCHF(a.input.initialCapital), formatCHF(b.input.initialCapital)],
-      [t("calc.invcompare.field.frequency"), t(`calc.invcompare.freq.${a.input.contributionFrequency}`), t(`calc.invcompare.freq.${b.input.contributionFrequency}`)],
-      [t("calc.invcompare.field.contribution"), formatCHF(a.input.periodicContribution), formatCHF(b.input.periodicContribution)],
-      [t("calc.invcompare.field.return"), formatPct(a.input.grossReturnRate), formatPct(b.input.grossReturnRate)],
-      [t("calc.invcompare.field.fees"), formatPct(a.input.annualFeeRate), formatPct(b.input.annualFeeRate)],
-      [t("calc.invcompare.field.exit_tax"), formatPct(a.input.exitTaxRate), formatPct(b.input.exitTaxRate)],
-      [t("calc.invcompare.field.interest_mode"), t(`calc.invcompare.mode.${a.input.interestMode ?? "compound"}`), t(`calc.invcompare.mode.${b.input.interestMode ?? "compound"}`)],
-      ["n/a", "n/a", "n/a"],
-      [t("calc.invcompare.res.gross"), formatCHF(a.finalGrossCapital), formatCHF(b.finalGrossCapital)],
-      [t("calc.invcompare.res.gain"), formatCHF(a.grossGain), formatCHF(b.grossGain)],
-      [t("calc.invcompare.res.fees"), formatCHF(a.feesImpact), formatCHF(b.feesImpact)],
-      [t("calc.invcompare.res.tax"), formatCHF(a.exitTax), formatCHF(b.exitTax)],
-      [t("calc.invcompare.res.net"), formatCHF(a.finalNetCapital), formatCHF(b.finalNetCapital)],
-    ],
-    { highlightLast: true },
-  );
-
-  for (const r of [a, b]) {
-    pdf.section(r.input.name);
-    pdf.metricsGrid([
-      { label: t("calc.invcompare.res.net"), value: r.finalNetCapital, tone: "success" },
-      { label: t("calc.invcompare.res.gross"), value: r.finalGrossCapital, tone: "primary" },
-      { label: t("calc.invcompare.res.gain"), value: r.grossGain },
-      { label: t("calc.invcompare.res.tax"), value: r.exitTax, tone: "warning" },
-    ]);
-  }
-
-  pdf.spacer(2);
-  pdf.paragraph(t("calc.invcompare.nominal_notice"), { italic: true, muted: true });
-
-  pdf.save(makeFilename("investment_compare"));
 }
