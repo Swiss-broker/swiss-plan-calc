@@ -13,8 +13,6 @@ import {
 import { getWithdrawalCantons } from "@/lib/swiss/cantons";
 import { annuityVsLumpSum, capitalWithdrawalTax } from "@/lib/lpp";
 import { CalcCard, MoneyTile, Row } from "@/components/calculators/CalcUI";
-import { ExportPdfButton } from "@/components/calculators/ExportPdfButton";
-import { exportRetirementPdf } from "@/lib/pdf/reports";
 import { SaveSimulationButton } from "@/components/calculators/SaveSimulationButton";
 import { useAuth } from "@/contexts/AuthContext";
 import { useBrokerPdfHeader } from "@/hooks/useBrokerPdfHeader";
@@ -103,14 +101,6 @@ const projectedCapital = dashboard?.lpp?.projectedCapitalAt65;
 
   const { user } = useAuth();
   const brokerHeader = useBrokerPdfHeader();
-  const handleExport = () =>
-    exportRetirementPdf({
-      header: brokerHeader,
-      input: form,
-      lumpTax,
-      compare,
-      reco,
-    });
   const [guideOpen, setGuideOpen] = useState(false);
     const guideSteps: GuideStep[] = [
     { title: t("calc.retirement.guide.s1.title"), body: t("calc.retirement.guide.s1.body") },
@@ -313,7 +303,6 @@ const projectedCapital = dashboard?.lpp?.projectedCapitalAt65;
           }}
           defaultTitle={`Retraite ${form.canton} · capital ${form.capital}`}
         />
-        <ExportPdfButton onClick={handleExport} />
       </div>
     </div>
   );

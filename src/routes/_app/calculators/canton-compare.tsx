@@ -33,8 +33,6 @@ import type { TaxGlobalInput, Regime } from "@/lib/tax-global/types";
 import { CalcCard } from "@/components/calculators/CalcUI";
 import { SplitCompareLayout, type SplitRow } from "@/components/calculators/SplitCompareLayout";
 import { formatCHF } from "@/lib/format";
-import { ExportPdfButton } from "@/components/calculators/ExportPdfButton";
-import { exportCantonComparePdf } from "@/lib/pdf/reports";
 import { SaveSimulationButton } from "@/components/calculators/SaveSimulationButton";
 import { useBrokerPdfHeader } from "@/hooks/useBrokerPdfHeader";
 import { useT } from "@/contexts/LanguageContext";
@@ -290,24 +288,6 @@ function CantonCompareCalc() {
   const hasReferences = data.some((d) => REFERENCE_CODES.has(d.code));
 
   const brokerHeader = useBrokerPdfHeader();
-  const handleExport = () =>
-    exportCantonComparePdf({
-      header: brokerHeader,
-      input: {
-        grossSalary: base.grossSalary,
-        spouseGrossSalary: base.spouseGrossSalary,
-        status:
-          base.civilStatus === "married" || base.civilStatus === "registered_partnership"
-            ? "married"
-            : base.children > 0
-              ? "single_with_children"
-              : "single",
-        children: base.children,
-        netWealth: base.netWealth,
-        referenceCanton,
-      },
-      rows: data,
-    });
   const [guideOpen, setGuideOpen] = useState(false);
   const guideSteps: GuideStep[] = [
     { title: t("calc.canton_compare.guide.s1.title"), body: t("calc.canton_compare.guide.s1.body") },
@@ -690,7 +670,6 @@ function CantonCompareCalc() {
           }}
           defaultTitle={`Comparateur Suisse romande · réf ${referenceCanton}`}
         />
-        <ExportPdfButton onClick={handleExport} />
       </div>
     </div>
   );

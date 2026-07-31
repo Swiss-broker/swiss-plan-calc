@@ -36,8 +36,6 @@ import { CalcCard, MoneyTile, Row } from "@/components/calculators/CalcUI";
 import { formatCHF } from "@/lib/format";
 const fmtCHF = formatCHF;
 import type { IncomeTaxInput } from "@/lib/tax/income";
-import { ExportPdfButton } from "@/components/calculators/ExportPdfButton";
-import { exportLppPdf } from "@/lib/pdf/reports";
 import { SaveSimulationButton } from "@/components/calculators/SaveSimulationButton";
 import { useAuth } from "@/contexts/AuthContext";
 import { useBrokerPdfHeader } from "@/hooks/useBrokerPdfHeader";
@@ -221,13 +219,6 @@ function LppCalc() {
 
   const { user } = useAuth();
   const brokerHeader = useBrokerPdfHeader();
-  const handleExport = () =>
-    exportLppPdf({
-      header: brokerHeader,
-      input: form,
-      projection,
-      buybackPlan,
-    });
   const [guideOpen, setGuideOpen] = useState(false);
   const guideSteps: GuideStep[] = [
     { title: t("calc.lpp.step.welcome.t"), body: t("calc.lpp.step.welcome.b") },
@@ -634,7 +625,6 @@ function LppCalc() {
           }}
           defaultTitle={`LPP ${form.currentAge}→${form.retirementAge} ans · ${form.canton}`}
         />
-        <ExportPdfButton onClick={handleExport} />
       </div>
     </div>
   );
@@ -1217,5 +1207,4 @@ function SummaryRow({
         <span className="text-muted-foreground"> {t("calc.lpp.cert.per_year_short")}</span>
       </span>
     </div>
-  );
-}
+  );}
