@@ -293,6 +293,7 @@ function CantonCompareCalc() {
     { title: t("calc.canton_compare.guide.s1.title"), body: t("calc.canton_compare.guide.s1.body") },
     { target: "canton-gross-salary", title: t("calc.canton_compare.guide.s2.title"), body: t("calc.canton_compare.guide.s2.body") },
     { target: "canton-ranking", title: t("calc.canton_compare.guide.s3.title"), body: t("calc.canton_compare.guide.s3.body") },
+    { target: "canton-save", title: t("calc.canton_compare.guide.s4.title"), body: t("calc.canton_compare.guide.s4.body") },
   ];
 
   const isCouple =
@@ -657,7 +658,7 @@ function CantonCompareCalc() {
         </div>
       </CalcCard>
 
-      <div className="flex flex-wrap justify-end gap-2">
+      <div className="flex flex-wrap justify-end gap-2" data-guide="canton-save">
         <SaveSimulationButton
           kind="canton_compare"
           inputs={{ ...base, referenceCanton }}

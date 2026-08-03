@@ -277,6 +277,7 @@ useEffect(() => {
     { target: "p3a-contribution", title: t("calc.p3a.step.cap.t"), body: t("calc.p3a.step.cap.b") },
     { target: "p3a-expected-return", title: t("calc.p3a.step.assumptions.t"), body: t("calc.p3a.step.assumptions.b") },
     { target: "p3a-3b-yearly", title: t("calc.p3a.step.p3b.t"), body: t("calc.p3a.step.p3b.b") },
+    { target: "p3a-save", title: t("calc.p3a.step.save.t"), body: t("calc.p3a.step.save.b") },
   ];
 
   return (
@@ -506,7 +507,7 @@ useEffect(() => {
         </div>
       </CalcCard>
 
-      <div className="flex flex-wrap justify-end gap-2">
+      <div className="flex flex-wrap justify-end gap-2" data-guide="p3a-save">
         <SaveSimulationButton
           kind="pillar3a"
           inputs={form}

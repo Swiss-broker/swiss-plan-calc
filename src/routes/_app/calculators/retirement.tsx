@@ -106,6 +106,7 @@ const projectedCapital = dashboard?.lpp?.projectedCapitalAt65;
     { title: t("calc.retirement.guide.s1.title"), body: t("calc.retirement.guide.s1.body") },
     { target: "retirement-conversion-rate", title: t("calc.retirement.guide.s2.title"), body: t("calc.retirement.guide.s2.body") },
     { target: "retirement-lump-tax", title: t("calc.retirement.guide.s3.title"), body: t("calc.retirement.guide.s3.body") },
+    { target: "retirement-save", title: t("calc.retirement.guide.s4.title"), body: t("calc.retirement.guide.s4.body") },
   ];
 
   return (
@@ -291,7 +292,7 @@ const projectedCapital = dashboard?.lpp?.projectedCapitalAt65;
 
       {bundle && <ConsolidatedBenefitsCard bundle={bundle} />}
 
-      <div className="flex flex-wrap justify-end gap-2">
+      <div className="flex flex-wrap justify-end gap-2" data-guide="retirement-save">
         <SaveSimulationButton
           kind="retirement"
           inputs={form}
