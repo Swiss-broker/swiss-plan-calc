@@ -60,9 +60,14 @@ Deno.serve(async (req) => {
         `${supabaseUrl}/rest/v1/clients?id=eq.${clientId}&select=first_name,last_name,date_of_birth,gender,nationality,email`,
         { headers: { "apikey": supabaseKey, "Authorization": `Bearer ${supabaseKey}` } }
       );
-      const clients = await clientRes.json();
-      if (clients.length) {
-        const c = clients[0];
+      const clientBody = await clientRes.json();
+      if (!clientRes.ok) {
+        // On log l'erreur exacte pour pouvoir la lire dans les logs Supabase,
+        // mais on ne bloque pas la création de la facture pour autant :
+        // le paiement doit pouvoir se faire même si l'instantané échoue.
+        console.error("Erreur récupération identité client pour snapshot:", clientRes.status, JSON.stringify(clientBody));
+      } else if (Array.isArray(clientBody) && clientBody.length > 0) {
+        const c = clientBody[0];
         snapshot = {
           snapshot_first_name: c.first_name ?? null,
           snapshot_last_name: c.last_name ?? null,
@@ -71,7 +76,11 @@ Deno.serve(async (req) => {
           snapshot_nationality: c.nationality ?? null,
           snapshot_email: c.email ?? null,
         };
+      } else {
+        console.error("Aucun client trouvé pour clientId lors du snapshot:", clientId, JSON.stringify(clientBody));
       }
+    } else {
+      console.error("Aucun clientId transmis à stripe-rdv-invoice, snapshot impossible.");
     }
 
     // Créer un Payment Intent avec transfert automatique
@@ -131,7 +140,7 @@ Deno.serve(async (req) => {
     if (!linkRes.ok) throw new Error(paymentLink.error?.message ?? "Erreur création lien");
 
     // Sauvegarder la facture en base, avec l'instantané d'identité du client
-    await fetch(`${supabaseUrl}/rest/v1/rdv_invoices`, {
+    const invoiceInsertRes = await fetch(`${supabaseUrl}/rest/v1/rdv_invoices`, {
       method: "POST",
       headers: {
         "apikey": supabaseKey,
@@ -150,6 +159,10 @@ Deno.serve(async (req) => {
         ...snapshot,
       }),
     });
+    if (!invoiceInsertRes.ok) {
+      const errBody = await invoiceInsertRes.text();
+      console.error("Erreur insertion rdv_invoices:", invoiceInsertRes.status, errBody);
+    }
 
     return new Response(JSON.stringify({
       paymentLink: paymentLink.url,

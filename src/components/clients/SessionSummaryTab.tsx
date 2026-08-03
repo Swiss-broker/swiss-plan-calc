@@ -13,6 +13,7 @@ import {
   ExternalLink,
   CalendarClock,
   ShieldAlert,
+  Loader2,
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -66,6 +67,7 @@ export function SessionSummaryTab({ clientId, clientName }: { clientId: string; 
   const [invoiceDesc, setInvoiceDesc] = useState("");
   const [invoiceLoading, setInvoiceLoading] = useState(false);
   const [invoiceLink, setInvoiceLink] = useState<string | null>(null);
+  const [sendingEmail, setSendingEmail] = useState(false);
   const { user } = useAuth();
 
   const onGenerateInvoice = async () => {
@@ -116,7 +118,8 @@ export function SessionSummaryTab({ clientId, clientName }: { clientId: string; 
   };
 
   // Identité actuelle du client, utilisée pour vérifier qu'elle correspond
-  // toujours à l'instantané pris au moment du paiement.
+  // toujours à l'instantané pris au moment du paiement, et pour récupérer
+  // l'email sans avoir à le redemander au courtier lors de l'envoi du lien.
   const { data: currentIdentity } = useQuery({
     queryKey: ["client-identity", clientId],
     queryFn: async () => {
@@ -129,6 +132,44 @@ export function SessionSummaryTab({ clientId, clientName }: { clientId: string; 
       return data as IdentitySnapshot;
     },
   });
+
+  const onSendInvoiceEmail = async () => {
+    if (!invoiceLink) return;
+    if (!currentIdentity?.email) {
+      toast.error("Ce client n'a pas d'adresse email renseignée dans sa fiche.");
+      return;
+    }
+    setSendingEmail(true);
+    try {
+      const { data, error } = await supabaseClient.functions.invoke("send-rdv-payment-link", {
+        body: {
+          clientEmail: currentIdentity.email,
+          clientName,
+          brokerName: user?.user_metadata?.first_name ?? undefined,
+          amountChf: invoiceAmount,
+          paymentLink: invoiceLink,
+        },
+      });
+      if (error || !data?.sent) {
+        let realMessage = error?.message ?? "Erreur envoi email";
+        const ctx = (error as unknown as { context?: Response })?.context;
+        if (ctx && typeof ctx.json === "function") {
+          try {
+            const body = await ctx.json();
+            if (body?.error) realMessage = String(body.error);
+          } catch {
+            // corps non exploitable
+          }
+        }
+        throw new Error(realMessage);
+      }
+      toast.success(`Email envoyé à ${currentIdentity.email}`);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Erreur envoi email");
+    } finally {
+      setSendingEmail(false);
+    }
+  };
 
   // Vérifier si le PDF est débloqué : une facture payée doit exister ET
   // l'identité actuelle du client doit correspondre à l'instantané pris
@@ -411,12 +452,21 @@ export function SessionSummaryTab({ clientId, clientName }: { clientId: string; 
                 >
                   Copier le lien
                 </button>
-                <a href={`mailto:?subject=Votre facture SwissBroker Pro&body=Voici votre lien de paiement : ${invoiceLink}`}
-                  className="rounded-lg bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90"
+                <button
+                  type="button"
+                  onClick={onSendInvoiceEmail}
+                  disabled={sendingEmail}
+                  className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-60"
                 >
-                  Envoyer par email
-                </a>
+                  {sendingEmail && <Loader2 className="h-3 w-3 animate-spin" />}
+                  {currentIdentity?.email ? `Envoyer à ${currentIdentity.email}` : "Envoyer par email"}
+                </button>
               </div>
+              {!currentIdentity?.email && (
+                <p className="text-[11px] text-warning-foreground">
+                  ⚠️ Ce client n'a pas d'adresse email renseignée. Ajoutez-en une dans sa fiche pour pouvoir envoyer le lien par email.
+                </p>
+              )}
             </div>
           ) : (
             <div className="flex gap-2">
