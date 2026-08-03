@@ -2,7 +2,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
-import { ChevronLeft, ChevronRight, Save, Loader2, Plus, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, Save, Loader2, Plus, X, ArrowLeft } from "lucide-react";
 import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -264,10 +264,13 @@ export function ClientWizard({ initial, mode, clientId }: ClientWizardProps) {
 
   // ID de la fiche client en cours d'édition. En mode "edit", il est connu
   // dès le départ (prop clientId). En mode "create", il est vide au départ
-  // et se remplit après la toute première sauvegarde (étape 1), pour que
-  // les sauvegardes suivantes (étapes 2 à 5) mettent à jour cette même
-  // fiche au lieu d'en créer une nouvelle à chaque clic.
+  // et se remplit après la toute première sauvegarde, pour que les
+  // sauvegardes suivantes mettent à jour cette même fiche au lieu d'en
+  // créer une nouvelle à chaque clic.
   const currentClientId = useRef<string | undefined>(clientId);
+  // Forcer un re-render une fois currentClientId rempli en mode création,
+  // pour faire apparaître le bouton "Retour à la fiche" à la place d'"Annuler".
+  const [, forceRerender] = useState(0);
 
   // Instantané de l'identité telle qu'elle était au chargement du formulaire,
   // pour détecter si le courtier modifie un champ sensible pour la synthèse PDF.
@@ -400,6 +403,7 @@ export function ClientWizard({ initial, mode, clientId }: ClientWizardProps) {
         if (error) throw error;
         savedId = data.id;
         currentClientId.current = savedId;
+        forceRerender((n) => n + 1);
       }
 
       // Pension upsert
@@ -468,10 +472,8 @@ export function ClientWizard({ initial, mode, clientId }: ClientWizardProps) {
           "Identité modifiée : la synthèse PDF de ce client a été reverrouillée. Une nouvelle facturation sera nécessaire pour la débloquer.",
           { duration: 8000 },
         );
-      } else if (step < STEP_COUNT) {
-        toast.success(`Étape "${currentTitle}" enregistrée.`);
       } else {
-        toast.success(mode === "edit" ? t("wizard.toast.updated") : t("wizard.toast.created"));
+        toast.success("Étape enregistrée.");
       }
     },
     onError: (e: Error) => toast.error(e.message),
@@ -509,27 +511,12 @@ export function ClientWizard({ initial, mode, clientId }: ClientWizardProps) {
   };
   const prev = () => step > 1 && setStep(step - 1);
 
-  // Sauvegarde immédiate de l'étape en cours, sans quitter le wizard.
-  // Valide uniquement les champs de l'étape courante (pas les 5 étapes).
+  // Sauvegarde l'étape en cours, sans quitter le wizard. Le courtier peut
+  // ensuite continuer à modifier d'autres étapes, ou utiliser "Retour à la
+  // fiche" (en haut) pour sortir volontairement quand il a terminé.
   const saveStep = () => {
     if (!validateStep(step)) return;
     save.mutate();
-  };
-
-  // Sauvegarde finale : valide les 5 étapes, sauvegarde, puis quitte le
-  // wizard vers la fiche client.
-  const submit = () => {
-    for (let i = 1; i <= STEP_COUNT; i++) {
-      if (!validateStep(i)) {
-        setStep(i);
-        return;
-      }
-    }
-    save.mutate(undefined, {
-      onSuccess: (savedId) => {
-        navigate({ to: "/clients/$clientId", params: { clientId: savedId } });
-      },
-    });
   };
 
   const progress = useMemo(() => (step / STEP_COUNT) * 100, [step]);
@@ -538,6 +525,12 @@ export function ClientWizard({ initial, mode, clientId }: ClientWizardProps) {
 
   const showIdentityWarning =
     step === 1 && hasUnlockedInvoice && identityFieldsChanged();
+
+  // Tant que la fiche n'existe pas encore (création, avant toute
+  // sauvegarde), on propose "Annuler". Dès qu'elle existe (édition, ou
+  // création après la première sauvegarde), on propose "Retour à la fiche"
+  // à la place, jamais les deux en même temps.
+  const canReturnToProfile = !!currentClientId.current;
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
@@ -551,9 +544,22 @@ export function ClientWizard({ initial, mode, clientId }: ClientWizardProps) {
             <span className="text-muted-foreground/70"> · {currentDesc}</span>
           </p>
         </div>
-        <Button variant="ghost" onClick={() => navigate({ to: "/clients" })}>
-          {t("common.cancel")}
-        </Button>
+        <div className="flex items-center gap-2">
+          {canReturnToProfile ? (
+            <Button
+              variant="outline"
+              onClick={() =>
+                navigate({ to: "/clients/$clientId", params: { clientId: currentClientId.current as string } })
+              }
+            >
+              <ArrowLeft className="h-4 w-4" /> Retour à la fiche
+            </Button>
+          ) : (
+            <Button variant="ghost" onClick={() => navigate({ to: "/clients" })}>
+              {t("common.cancel")}
+            </Button>
+          )}
+        </div>
       </div>
 
       <Progress value={progress} className="mt-4 h-1.5" />
@@ -597,7 +603,12 @@ export function ClientWizard({ initial, mode, clientId }: ClientWizardProps) {
           <ChevronLeft className="h-4 w-4" /> {t("common.previous")}
         </Button>
         <div className="flex items-center gap-2">
-          <Button variant="outline" onClick={saveStep} disabled={save.isPending}>
+          {step < STEP_COUNT && (
+            <Button variant="outline" onClick={next}>
+              {t("common.next")} <ChevronRight className="h-4 w-4" />
+            </Button>
+          )}
+          <Button onClick={saveStep} disabled={save.isPending} className="shadow-elegant">
             {save.isPending ? (
               <Loader2 className="h-4 w-4 animate-spin" />
             ) : (
@@ -605,20 +616,6 @@ export function ClientWizard({ initial, mode, clientId }: ClientWizardProps) {
             )}
             Sauvegarder cette étape
           </Button>
-          {step < STEP_COUNT ? (
-            <Button onClick={next}>
-              {t("common.next")} <ChevronRight className="h-4 w-4" />
-            </Button>
-          ) : (
-            <Button onClick={submit} disabled={save.isPending} className="shadow-elegant">
-              {save.isPending ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <Save className="h-4 w-4" />
-              )}
-              {mode === "edit" ? t("wizard.btn.save") : t("wizard.btn.create")}
-            </Button>
-          )}
         </div>
       </div>
     </div>
