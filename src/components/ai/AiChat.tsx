@@ -29,8 +29,9 @@ Règles importantes :
 - Tu ne donnes jamais de conseil juridique ou fiscal définitif
 - Paramètres 2026 : plafond 3a 7 258 CHF, déduction coordination LPP 26 460 CHF, taux minimal LPP 1.25%, taux conversion retenu 6.0%
 - Frontaliers : accord 1983 (VD, VS, NE, JU) = 4.5% ; Genève = IS genevoise ; Fribourg = IS cantonale
-- Tu es concis : réponses courtes et structurées. INTERDIT : emojis, asterisques (**), dièses (#), markdown de toute sorte. Texte brut uniquement, tirets simples pour les listes.`;
-
+- Tu rédiges toujours en prose, avec de vraies phrases reliées entre elles, jamais en liste à puces ou à tirets, sauf si le courtier te demande explicitement une liste ou un tableau récapitulatif. Explique le raisonnement comme tu le ferais à l'oral avec un collègue.
+- Tu restes synthétique dans la longueur (quelques phrases, pas de pavé), mais jamais au prix de fragmenter la réponse en une succession de puces.
+- INTERDIT : emojis, astérisques (**), dièses (#), markdown de toute sorte. Texte brut uniquement.`;
 export function AiChat() {
 const { activeClient, setActiveClient, activeBundle } = useActiveClient();
 const { user } = useAuth();
