@@ -36,6 +36,15 @@ const str = (v: unknown): string | undefined => {
   if (typeof v === "string" && v.trim()) return v;
   return undefined;
 };
+// Distingue "la donnée existe" (y compris si elle vaut 0, un résultat
+// parfaitement valide) de "la donnée est absente". Avant ce correctif,
+// `if (num(x))` traitait 0 comme absent et faisait disparaître des tuiles
+// et des paragraphes entiers alors que 0 est une information à part entière.
+const has = (v: unknown): boolean => {
+  if (typeof v === "number") return Number.isFinite(v);
+  if (typeof v === "string") return v.trim() !== "" && !Number.isNaN(Number(v));
+  return false;
+};
 
 const STATUS_FR: Record<string, string> = {
   single: "Célibataire",
@@ -562,36 +571,42 @@ function formatMetrics(
   const out: Array<{ label: string; value: number | string; tone?: "primary" | "success" | "warning" }> = [];
   switch (entry.kind) {
     case "lpp":
-      if (num(s.projectedBalance)) out.push({ label: "Capital projeté", value: num(s.projectedBalance), tone: "primary" });
-      if (num(s.totalTaxSavings)) out.push({ label: "Économie fiscale rachats", value: num(s.totalTaxSavings), tone: "success" });
-      if (num(s.annualPension)) out.push({ label: "Rente annuelle", value: num(s.annualPension) });
+      if (has(s.projectedBalance)) out.push({ label: "Capital projeté", value: num(s.projectedBalance), tone: "primary" });
+      if (has(s.totalTaxSavings)) out.push({ label: "Économie fiscale rachats", value: num(s.totalTaxSavings), tone: "success" });
+      if (has(s.annualPension)) out.push({ label: "Rente annuelle", value: num(s.annualPension) });
+      if (has(s.monthlyPension)) out.push({ label: "Rente mensuelle", value: num(s.monthlyPension) });
+      if (has(s.totalBuybacks)) out.push({ label: "Rachats cumulés", value: num(s.totalBuybacks) });
       break;
     case "pillar3a":
-      if (num(s.taxSavings)) out.push({ label: "Économie fiscale annuelle", value: num(s.taxSavings), tone: "success" });
-      if (num(s.finalBalance)) out.push({ label: "Capital projeté", value: num(s.finalBalance), tone: "primary" });
+      if (has(s.taxSavings)) out.push({ label: "Économie fiscale annuelle", value: num(s.taxSavings), tone: "success" });
+      if (has(s.finalBalance)) out.push({ label: "Capital projeté", value: num(s.finalBalance), tone: "primary" });
+      if (has(s.effectiveCost)) out.push({ label: "Coût net réel", value: num(s.effectiveCost) });
+      if (has(s.marginalRate)) out.push({ label: "Taux marginal", value: formatPct(num(s.marginalRate)), tone: "warning" });
+      if (has(s.totalContributions)) out.push({ label: "Cotisations cumulées", value: num(s.totalContributions) });
       break;
     case "canton_compare":
       if (str(s.referenceCanton)) out.push({ label: "Canton actuel", value: cantonName(str(s.referenceCanton)) });
-      if (num(s.referenceTax)) out.push({ label: "Charge fiscale actuelle", value: num(s.referenceTax), tone: "warning" });
+      if (has(s.referenceTax)) out.push({ label: "Charge fiscale actuelle", value: num(s.referenceTax), tone: "warning" });
       if (str(s.cheapestCanton)) out.push({ label: "Canton le moins cher", value: cantonName(str(s.cheapestCanton)) });
-      if (num(s.cheapestTax)) out.push({ label: "Charge fiscale la plus basse", value: num(s.cheapestTax) });
-      if (num(s.maxSavings)) out.push({ label: "Économie max annuelle", value: num(s.maxSavings), tone: "success" });
+      if (has(s.cheapestTax)) out.push({ label: "Charge fiscale la plus basse", value: num(s.cheapestTax) });
+      if (has(s.maxSavings)) out.push({ label: "Économie max annuelle", value: num(s.maxSavings), tone: "success" });
       break;
     case "tax_global":
-      if (num(s.totalTaxCHF)) out.push({ label: "Impôt total", value: num(s.totalTaxCHF), tone: "warning" });
-      if (num(s.netAnnualCHF)) out.push({ label: "Revenu net annuel", value: num(s.netAnnualCHF), tone: "success" });
-      if (num(s.effectiveRate)) out.push({ label: "Taux effectif", value: formatPct(num(s.effectiveRate)) });
-      if (num(s.marginalRate)) out.push({ label: "Taux marginal", value: formatPct(num(s.marginalRate)) });
+      if (has(s.totalTaxCHF)) out.push({ label: "Impôt total", value: num(s.totalTaxCHF), tone: "warning" });
+      if (has(s.netAnnualCHF)) out.push({ label: "Revenu net annuel", value: num(s.netAnnualCHF), tone: "success" });
+      if (has(s.effectiveRate)) out.push({ label: "Taux effectif", value: formatPct(num(s.effectiveRate)) });
+      if (has(s.marginalRate)) out.push({ label: "Taux marginal", value: formatPct(num(s.marginalRate)) });
       if (str(s.regimeLabel)) out.push({ label: "Régime fiscal", value: str(s.regimeLabel)! });
       break;
     case "income_tax":
     case "source_tax":
-      if (num(s.totalTax)) out.push({ label: "Impôt total", value: num(s.totalTax), tone: "warning" });
-      if (num(s.netIncome)) out.push({ label: "Revenu net", value: num(s.netIncome), tone: "success" });
+      if (has(s.totalTax)) out.push({ label: "Impôt total", value: num(s.totalTax), tone: "warning" });
+      if (has(s.netIncome)) out.push({ label: "Revenu net", value: num(s.netIncome), tone: "success" });
       break;
     case "retirement": {
-      if (num(s.netAnnuity)) out.push({ label: "Net rente", value: num(s.netAnnuity) });
-      if (num(s.netLumpSum)) out.push({ label: "Net capital", value: num(s.netLumpSum) });
+      if (has(s.netAnnuity)) out.push({ label: "Net rente", value: num(s.netAnnuity) });
+      if (has(s.netLumpSum)) out.push({ label: "Net capital", value: num(s.netLumpSum) });
+      if (has(s.lumpTaxTotal)) out.push({ label: "Impôt retrait capital", value: num(s.lumpTaxTotal), tone: "warning" });
       const reco = str(s.recommendation);
       const recoLabel =
         reco === "annuity" ? "La rente viagère" : reco === "lump_sum" ? "Le retrait en capital" : reco === "mixed" ? "Solution mixte" : undefined;
@@ -599,24 +614,25 @@ function formatMetrics(
       break;
     }
     case "avs_ai":
-      if (num(s.annualPension)) out.push({ label: "Rente AVS annuelle", value: num(s.annualPension) });
-      if (num(s.missingYears)) out.push({ label: "Années manquantes", value: String(num(s.missingYears)), tone: "warning" });
+      if (has(s.annualPension)) out.push({ label: "Rente AVS annuelle", value: num(s.annualPension) });
+      if (has(s.monthlyPension)) out.push({ label: "Rente AVS mensuelle", value: num(s.monthlyPension) });
+      if (has(s.missingYears)) out.push({ label: "Années manquantes", value: String(num(s.missingYears)), tone: "warning" });
       break;
     case "vested_benefits":
-      if (num(s.recommendedFinalBalance)) out.push({ label: "Capital projeté (recommandé)", value: num(s.recommendedFinalBalance), tone: "primary" });
-      if (num(s.securityFinalBalance)) out.push({ label: "Capital projeté (sécurité)", value: num(s.securityFinalBalance) });
+      if (has(s.recommendedFinalBalance)) out.push({ label: "Capital projeté (recommandé)", value: num(s.recommendedFinalBalance), tone: "primary" });
+      if (has(s.securityFinalBalance)) out.push({ label: "Capital projeté (sécurité)", value: num(s.securityFinalBalance) });
       break;
     case "cross_border":
-      if (num(s.currentTax)) out.push({ label: "Charge fiscale actuelle", value: num(s.currentTax), tone: "warning" });
-      if (num(s.alternativeDelta)) out.push({ label: "Économie potentielle", value: num(s.alternativeDelta), tone: "success" });
+      if (has(s.currentTax)) out.push({ label: "Charge fiscale actuelle", value: num(s.currentTax), tone: "warning" });
+      if (has(s.alternativeDelta)) out.push({ label: "Économie potentielle", value: num(s.alternativeDelta), tone: "success" });
       break;
     case "tou":
-      if (num(s.touSaving)) out.push({ label: "Économie TOU", value: num(s.touSaving), tone: "success" });
+      if (has(s.touSaving)) out.push({ label: "Économie TOU", value: num(s.touSaving), tone: "success" });
       break;
     case "director_compensation":
-      if (num(s.recommendedDirectorNet)) out.push({ label: "Net dirigeant optimisé", value: num(s.recommendedDirectorNet), tone: "success" });
-      if (num(s.currentDirectorNet)) out.push({ label: "Net dirigeant actuel", value: num(s.currentDirectorNet) });
-      if (num(s.gainAnnual)) out.push({ label: "Gain annuel", value: num(s.gainAnnual), tone: "primary" });
+      if (has(s.recommendedDirectorNet)) out.push({ label: "Net dirigeant optimisé", value: num(s.recommendedDirectorNet), tone: "success" });
+      if (has(s.currentDirectorNet)) out.push({ label: "Net dirigeant actuel", value: num(s.currentDirectorNet) });
+      if (has(s.gainAnnual)) out.push({ label: "Gain annuel", value: num(s.gainAnnual), tone: "primary" });
       break;
     case "investment_compare": {
       const i = (entry.inputs ?? {}) as Record<string, unknown>;
@@ -624,10 +640,10 @@ function formatMetrics(
       const b = (i.b ?? {}) as Record<string, unknown>;
       const nameA = str(a.name) || "A";
       const nameB = str(b.name) || "B";
-      if (num(s.aFinalNet)) out.push({ label: `Capital net · ${nameA}`, value: num(s.aFinalNet) });
-      if (num(s.bFinalNet)) out.push({ label: `Capital net · ${nameB}`, value: num(s.bFinalNet) });
-      if (num(s.netDifference)) out.push({ label: "Différence nette", value: num(s.netDifference), tone: "primary" });
-      if (num(s.pctAdvantage)) out.push({ label: "Avantage relatif", value: formatPct(num(s.pctAdvantage)), tone: "success" });
+      if (has(s.aFinalNet)) out.push({ label: `Capital net · ${nameA}`, value: num(s.aFinalNet) });
+      if (has(s.bFinalNet)) out.push({ label: `Capital net · ${nameB}`, value: num(s.bFinalNet) });
+      if (has(s.netDifference)) out.push({ label: "Différence nette", value: num(s.netDifference), tone: "primary" });
+      if (has(s.pctAdvantage)) out.push({ label: "Avantage relatif", value: formatPct(num(s.pctAdvantage)), tone: "success" });
       const w = str(s.winner);
       if (w && w !== "tie") out.push({ label: "Stratégie gagnante", value: w === "a" ? nameA : nameB, tone: "success" });
       break;
@@ -636,17 +652,17 @@ function formatMetrics(
       const reco = str(s.recommended);
       const recoLabel = reco === "LAMAL" ? "LAMal (Suisse)" : reco === "CMU" ? "CMU (France)" : "—";
       if (reco) out.push({ label: "Option recommandée", value: recoLabel, tone: "primary" });
-      if (num(s.recommendedAnnualCHF)) out.push({ label: "Cotisation annuelle (recommandé)", value: num(s.recommendedAnnualCHF), tone: "success" });
-      if (num(s.savingsCHF)) out.push({ label: "Économie vs autre option", value: num(s.savingsCHF), tone: "success" });
-      if (num(s.cmuAnnualCHF)) out.push({ label: "CMU", value: num(s.cmuAnnualCHF) });
-      if (num(s.lamalAnnualCHF)) out.push({ label: "LAMal", value: num(s.lamalAnnualCHF) });
+      if (has(s.recommendedAnnualCHF)) out.push({ label: "Cotisation annuelle (recommandé)", value: num(s.recommendedAnnualCHF), tone: "success" });
+      if (has(s.savingsCHF)) out.push({ label: "Économie vs autre option", value: num(s.savingsCHF), tone: "success" });
+      if (has(s.cmuAnnualCHF)) out.push({ label: "CMU", value: num(s.cmuAnnualCHF) });
+      if (has(s.lamalAnnualCHF)) out.push({ label: "LAMal", value: num(s.lamalAnnualCHF) });
       break;
     }
     case "overtime": {
-      if (num(s.netOvertimeCHF)) out.push({ label: "Net perçu sur heures sup", value: num(s.netOvertimeCHF), tone: "success" });
-      if (num(s.taxSavings)) out.push({ label: "Économie fiscale (exonération FR)", value: num(s.taxSavings), tone: "success" });
-      if (num(s.totalTaxOnOvertime)) out.push({ label: "Impôt total heures sup", value: num(s.totalTaxOnOvertime), tone: "warning" });
-      if (num(s.overtimeCHF)) out.push({ label: "Heures sup brutes", value: num(s.overtimeCHF) });
+      if (has(s.netOvertimeCHF)) out.push({ label: "Net perçu sur heures sup", value: num(s.netOvertimeCHF), tone: "success" });
+      if (has(s.taxSavings)) out.push({ label: "Économie fiscale (exonération FR)", value: num(s.taxSavings), tone: "success" });
+      if (has(s.totalTaxOnOvertime)) out.push({ label: "Impôt total heures sup", value: num(s.totalTaxOnOvertime), tone: "warning" });
+      if (has(s.overtimeCHF)) out.push({ label: "Heures sup brutes", value: num(s.overtimeCHF) });
       break;
     }
   }
