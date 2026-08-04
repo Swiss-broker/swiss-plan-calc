@@ -59,7 +59,35 @@ const localizeRegime = (v: unknown) => {
   const k = typeof v === "string" ? v : "";
   return REGIME_FR[k] ?? (k || undefined);
 };
+// ============================================================================
+// EXPLICATIONS PÉDAGOGIQUES PAR TYPE DE CALCULATEUR
+// Un paragraphe fixe, écrit comme un courtier l'expliquerait à un client qui
+// découvre le sujet, affiché en tête de chaque page de simulation.
+// ============================================================================
+const EXPLAIN_FR: Partial<Record<SimulationKind, string>> = {
+  lpp: "La LPP (loi sur la prévoyance professionnelle) constitue votre 2e pilier, un régime obligatoire pour tout salarié dont le revenu dépasse le seuil d'entrée légal. Chaque mois, une cotisation est prélevée sur votre salaire et abondée par votre employeur, puis capitalisée avec intérêts jusqu'à votre retraite. Vous pouvez, sous conditions, effectuer des rachats volontaires pour combler des lacunes de cotisation : chaque rachat réduit votre revenu imposable l'année du versement, tout en renforçant votre capital de prévoyance.",
+  pillar3a: "Le 3e pilier A est la prévoyance individuelle liée, facultative mais fortement encouragée par l'État suisse via une déduction fiscale intégrale des cotisations versées, dans la limite d'un plafond annuel. Ce capital reste bloqué jusqu'à 5 ans avant l'âge de la retraite, sauf exceptions prévues par la loi (achat d'un logement, départ définitif de Suisse, passage à l'indépendance), en échange de quoi il bénéficie d'une fiscalité très favorable, tant à l'entrée qu'à la sortie.",
+  canton_compare: "La charge fiscale varie fortement d'un canton suisse à l'autre pour un même revenu, en raison de barèmes et de multiplicateurs communaux propres à chaque collectivité. Ce comparateur simule votre imposition dans plusieurs cantons à situation strictement identique, pour objectiver l'écart réel que représenterait un changement de domicile, indépendamment de toute autre considération personnelle ou professionnelle.",
+  tax_global: "Ce calculateur reconstitue votre charge fiscale globale annuelle, impôt fédéral direct et impôt cantonal et communal réunis, sur la base de votre situation personnelle et professionnelle. Il fait ressortir votre taux d'imposition effectif (moyenne sur l'ensemble du revenu) et votre taux marginal (charge sur le prochain franc gagné), ce dernier étant l'indicateur clé pour évaluer l'intérêt d'une déduction supplémentaire comme un versement 3a ou un rachat LPP.",
+  income_tax: "Ce calcul détermine l'impôt sur le revenu dû pour votre situation, sur la base des barèmes cantonaux et fédéraux en vigueur.",
+  source_tax: "L'impôt à la source s'applique automatiquement aux salariés étrangers ne disposant pas d'un permis d'établissement C, par prélèvement direct sur le salaire par l'employeur, selon un barème dépendant de votre situation familiale et de votre canton.",
+  retirement: "Au moment de la retraite, la LPP offre le choix entre percevoir une rente viagère garantie à vie, ou retirer tout ou partie du capital de prévoyance en une fois. Ce choix est déterminant et largement irréversible : ce calculateur compare les deux options sur la base de votre espérance de vie, du taux de conversion applicable et de votre profil fiscal, pour objectiver la décision.",
+  avs_ai: "L'AVS (assurance-vieillesse et survivants) constitue le 1er pilier, le socle obligatoire du système de prévoyance suisse. Son montant dépend directement du nombre d'années de cotisation complètes (44 ans pour une carrière pleine) et du revenu annuel moyen déterminant sur l'ensemble de la carrière ; toute année manquante réduit la rente finale de façon proportionnelle.",
+  vested_benefits: "Le libre passage correspond à votre avoir LPP en transit entre deux emplois, ou lorsque vous quittez temporairement le marché du travail suisse. Ce capital doit obligatoirement être placé sur un compte ou une police de libre passage, avec un choix de stratégie de placement qui influence directement le capital disponible à votre prochaine affiliation ou à la retraite.",
+  cross_border: "En tant que travailleur frontalier, votre régime d'imposition dépend d'accords bilatéraux spécifiques entre la Suisse et votre pays de résidence, qui peuvent différer sensiblement d'un canton de travail à l'autre. Ce calculateur compare votre charge fiscale sous différents régimes applicables à votre situation.",
+  tou: "La taxation ordinaire ultérieure (TOU) permet à certains contribuables imposés à la source de demander un passage à la taxation ordinaire, ouvrant droit à des déductions supplémentaires (3a, frais professionnels effectifs, pension alimentaire, etc.) non prises en compte par le barème source. Ce calcul objective l'intérêt financier d'une telle démarche.",
+  director_compensation: "En tant que dirigeant actionnaire de votre société, la répartition entre salaire, dividendes et réserves conservées en société a un impact direct sur votre charge sociale et fiscale globale, salaire et dividendes n'étant pas taxés de la même manière. Ce calculateur simule différentes répartitions pour identifier la structure la plus avantageuse à votre situation, dans le respect des règles fiscales applicables.",
+  investment_compare: "Ce calculateur compare deux enveloppes ou stratégies de placement sur un horizon donné, en tenant compte des frais de gestion annuels et de la fiscalité applicable à la sortie, pour déterminer laquelle vous laisse le capital net le plus élevé à l'échéance.",
+  health_insurance_france: "En tant que frontalier résidant en France, vous bénéficiez d'un droit d'option entre l'assurance maladie suisse (LAMal) et la couverture maladie universelle française (CMU), gérée par le régime frontalier. Ce choix, à exercer dans les 3 mois suivant le début de votre activité frontalière, engage votre couverture pour une période durable et mérite une comparaison chiffrée précise.",
+  overtime: "Les travailleurs frontaliers relevant de l'accord franco-suisse de 1983 bénéficient, sous conditions, d'une exonération partielle d'impôt sur le revenu français au titre de leurs heures supplémentaires. Ce calculateur détermine le montant exonérable et l'économie fiscale réelle qui en découle.",
+};
 
+function explainKind(kind: SimulationKind): string {
+  return (
+    EXPLAIN_FR[kind] ??
+    "Cette simulation présente les résultats du calculateur correspondant, sur la base des données saisies pour ce client."
+  );
+}
 // ============================================================================
 
 export interface SynthesisReportArgs {
@@ -346,6 +374,10 @@ function drawSimulationPage(pdf: ReportPdf, entry: HistoryEntry, includeCharts: 
   const kindLabel = KIND_LABELS[entry.kind as SimulationKind] || entry.kind;
   pdf.section(kindLabel);
   pdf.paragraph(entry.title, { italic: true, muted: true });
+
+  // Explication pédagogique : de quoi parle ce calculateur, en langage clair.
+  pdf.spacer(1);
+  pdf.paragraph(explainKind(entry.kind as SimulationKind));
 
   // Section 1 · paramètres
   const params = formatInputs(entry);
