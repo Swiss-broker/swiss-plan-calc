@@ -257,10 +257,44 @@ export class ReportPdf {
       this.cursorY = this.margin + 5;
     }
   }
-
+/** Titre principal d'une page de calculateur (ex. "Pilier 3a"), visuellement
+   * distinct des sous-titres de section (Paramètres, Résultats, Analyse...) :
+   * bandeau plus haut, police plus grande, nom de la simulation intégré en
+   * sous-ligne. Sert de repère immédiat pour savoir "où on en est" dans le
+   * dossier, sans confusion avec les sous-sections qui suivent.
+   */
+  calculatorTitle(title: string, subtitle?: string) {
+    title = sanitizePdfText(title);
+    const safeSubtitle = subtitle && subtitle.trim() ? sanitizePdfText(subtitle.trim()) : undefined;
+    const { doc, margin, contentWidth, primary } = this;
+    const barH = safeSubtitle ? 22 : 15;
+    this.ensureSpace(barH + 15);
+    const top = this.cursorY - 6;
+    doc.setFillColor(...primary);
+    doc.roundedRect(margin, top, contentWidth, barH, 1.5, 1.5, "F");
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(17);
+    doc.setTextColor(255, 255, 255);
+    doc.text(title, margin + 5, top + 10);
+    if (safeSubtitle) {
+      doc.setFont("helvetica", "italic");
+      doc.setFontSize(9.5);
+      doc.setTextColor(226, 232, 245);
+      const subtitleLines = doc.splitTextToSize(safeSubtitle, contentWidth - 10) as string[];
+      doc.text(subtitleLines.slice(0, 1), margin + 5, top + 17);
+    }
+    this.cursorY = top + barH + 8;
+    return this;
+  }
+  
   section(title: string) {
     title = sanitizePdfText(title);
-    this.ensureSpace(18);
+    // On réserve la place du bandeau ET d'un minimum de contenu qui doit
+    // suivre (au moins 2-3 lignes de texte ou une tuile). Avant ce correctif,
+    // seule la hauteur du bandeau était vérifiée : un titre de section
+    // pouvait donc s'afficher tout seul en bas de page, avec son contenu
+    // rejeté sur la page suivante (ex. "Analyse" orphelin, texte séparé).
+    this.ensureSpace(35);
     const { doc, margin, contentWidth, primary } = this;
     // Bandeau colore pleine largeur : rend le titre de la page (ex. "Fiscal global")
     // immediatement identifiable, plus visible que l'en-tete repete en haut de chaque page.

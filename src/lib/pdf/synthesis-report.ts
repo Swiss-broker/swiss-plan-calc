@@ -381,8 +381,7 @@ function drawClientProfile(
 // ============================================================================
 function drawSimulationPage(pdf: ReportPdf, entry: HistoryEntry, includeCharts: boolean) {
   const kindLabel = KIND_LABELS[entry.kind as SimulationKind] || entry.kind;
-  pdf.section(kindLabel);
-  pdf.paragraph(entry.title, { italic: true, muted: true });
+  pdf.calculatorTitle(kindLabel, entry.title);
 
   // Explication pédagogique : de quoi parle ce calculateur, en langage clair.
   pdf.spacer(1);
