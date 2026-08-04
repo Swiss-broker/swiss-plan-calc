@@ -715,6 +715,55 @@ function drawSimpleChart(pdf: ReportPdf, entry: HistoryEntry) {
           right: { label: "Régime alternatif", value: num(s.alternativeTax) },
         };
       break;
+    case "pillar3a":
+      if (num(s.totalContributions) && num(s.finalBalance))
+        pair = {
+          left: { label: "Cotisations versées", value: num(s.totalContributions) },
+          right: { label: "Capital projeté", value: num(s.finalBalance) },
+        };
+      break;
+    case "lpp":
+      if (num(s.projectedBalanceNoYield) && num(s.projectedBalance))
+        pair = {
+          left: { label: "Capital sans rendement", value: num(s.projectedBalanceNoYield) },
+          right: { label: "Capital projeté", value: num(s.projectedBalance) },
+        };
+      break;
+    case "tax_global":
+      if (num(s.netAnnualCHF) && num(s.totalTaxCHF))
+        pair = {
+          left: { label: "Impôt total", value: num(s.totalTaxCHF) },
+          right: { label: "Revenu net annuel", value: num(s.netAnnualCHF) },
+        };
+      break;
+    case "canton_compare":
+      if (num(s.referenceTax) && num(s.cheapestTax))
+        pair = {
+          left: { label: str(s.referenceCanton) ? cantonName(str(s.referenceCanton)) : "Canton actuel", value: num(s.referenceTax) },
+          right: { label: str(s.cheapestCanton) ? cantonName(str(s.cheapestCanton)) : "Canton le moins cher", value: num(s.cheapestTax) },
+        };
+      break;
+    case "avs_ai":
+      if (num(s.theoreticalAnnualPension) && num(s.annualPension) && num(s.missingYears) > 0)
+        pair = {
+          left: { label: "Rente actuelle projetée", value: num(s.annualPension) },
+          right: { label: "Rente pleine (44 ans)", value: num(s.theoreticalAnnualPension) },
+        };
+      break;
+    case "health_insurance_france":
+      if (num(s.cmuAnnualCHF) && num(s.lamalAnnualCHF))
+        pair = {
+          left: { label: "CMU (France)", value: num(s.cmuAnnualCHF) },
+          right: { label: "LAMal (Suisse)", value: num(s.lamalAnnualCHF) },
+        };
+      break;
+    case "overtime":
+      if (num(s.overtimeCHF) && num(s.netOvertimeCHF))
+        pair = {
+          left: { label: "Heures sup brutes", value: num(s.overtimeCHF) },
+          right: { label: "Net perçu", value: num(s.netOvertimeCHF) },
+        };
+      break;
   }
   if (!pair) return;
   pdf.spacer(2);
