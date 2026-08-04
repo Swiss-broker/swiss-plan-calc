@@ -761,28 +761,39 @@ function buildComment(entry: HistoryEntry): string | null {
       const cap = num(i.buybackCapacity);
       const years = Math.max(1, num(i.buybackYears));
       const sav = num(s.totalTaxSavings);
-      if (!cap || !sav) return null;
-      const rate = ((sav / cap) * 100).toFixed(1).replace(".", ",");
-      return `Un rachat de ${formatCHF(cap)}, étalé sur ${years} an${years > 1 ? "s" : ""}, vous ferait économiser ${formatCHF(sav)} d'impôts au total, soit un retour fiscal moyen de ${rate} % du montant racheté. Concrètement, chaque franc versé dans votre 2e pilier réduit d'autant votre revenu imposable l'année du versement, tout en renforçant votre capital de prévoyance qui sera converti en rente ou retiré à la retraite. Point de vigilance : un rachat LPP bloque tout retrait en capital pendant les 3 années qui suivent (art. 79b al. 3 LPP), à anticiper si un achat immobilier ou un départ à l'étranger est envisagé sur cet horizon.`;
+      const proj = num(s.projectedBalance);
+      if (!has(s.totalTaxSavings) && !has(s.projectedBalance)) return null;
+      if (sav > 0) {
+        const rate = ((sav / Math.max(1, cap)) * 100).toFixed(1).replace(".", ",");
+        return `Un rachat de ${formatCHF(cap)}, étalé sur ${years} an${years > 1 ? "s" : ""}, vous ferait économiser ${formatCHF(sav)} d'impôts au total, soit un retour fiscal moyen de ${rate} % du montant racheté. Concrètement, chaque franc versé dans votre 2e pilier réduit d'autant votre revenu imposable l'année du versement, tout en renforçant votre capital de prévoyance qui sera converti en rente ou retiré à la retraite. Point de vigilance : un rachat LPP bloque tout retrait en capital pendant les 3 années qui suivent (art. 79b al. 3 LPP), à anticiper si un achat immobilier ou un départ à l'étranger est envisagé sur cet horizon.`;
+      }
+      return `Votre capital LPP projeté à la retraite s'élève à ${formatCHF(proj)}, sur la base des paramètres saisis (âge, salaire assuré, rendement attendu). Aucun rachat n'a été simulé ici, ou celui-ci ne génère pas d'économie fiscale supplémentaire dans ce scénario ; une capacité de rachat existe peut-être encore, à vérifier sur le certificat de prévoyance du client.`;
     }
     case "pillar3a": {
       const sav = num(s.taxSavings);
       const c = num(i.contribution);
-      if (!sav || !c) return null;
-      return `Votre versement annuel de ${formatCHF(c)} sur le 3e pilier A vous fait économiser ${formatCHF(sav)} d'impôts chaque année, intégralement déductible de votre revenu imposable dans la limite du plafond légal. Sur 10 ans, cette économie représente ${formatCHF(sav * 10)} cumulés, en plus de la constitution d'un capital de prévoyance supplémentaire. Point de vigilance : ce capital reste bloqué jusqu'à 5 ans avant l'âge ordinaire de la retraite, sauf exceptions prévues par la loi (achat de votre résidence principale, départ définitif de Suisse, passage à l'indépendance).`;
+      const bal = num(s.finalBalance);
+      if (!has(s.taxSavings) && !has(s.finalBalance)) return null;
+      if (sav > 0 && c > 0) {
+        return `Votre versement annuel de ${formatCHF(c)} sur le 3e pilier A vous fait économiser ${formatCHF(sav)} d'impôts chaque année, intégralement déductible de votre revenu imposable dans la limite du plafond légal. Sur 10 ans, cette économie représente ${formatCHF(sav * 10)} cumulés, en plus de la constitution d'un capital de prévoyance supplémentaire. Point de vigilance : ce capital reste bloqué jusqu'à 5 ans avant l'âge ordinaire de la retraite, sauf exceptions prévues par la loi (achat de votre résidence principale, départ définitif de Suisse, passage à l'indépendance).`;
+      }
+      return `Sur la base d'un versement annuel de ${formatCHF(c)}, votre capital 3a projeté à la retraite atteindrait ${formatCHF(bal)}. Aucune économie fiscale supplémentaire n'a été chiffrée dans ce scénario précis, votre taux marginal d'imposition étant peut-être déjà nul ou très faible sur cette tranche de revenu ; le 3a conserve néanmoins tout son intérêt comme outil d'épargne bloquée à long terme.`;
     }
     case "canton_compare": {
       const sav = num(s.maxSavings);
       const cheap = str(s.cheapestCanton);
       const ref = str(s.referenceCanton);
-      if (!sav || !cheap || !ref) return null;
-      return `À revenu identique, un déménagement de ${cantonName(ref)} vers ${cantonName(cheap)} vous ferait économiser ${formatCHF(sav)} par an sur votre charge fiscale totale, soit ${formatCHF(sav * 10)} cumulés sur 10 ans si votre situation reste stable. Cet écart s'explique par les différences de barèmes cantonaux et de multiplicateurs communaux entre les deux cantons. Point de vigilance : un changement de domicile a des conséquences qui dépassent la seule fiscalité (emploi, scolarité des enfants, distance, coût de la vie local) et mérite une réflexion globale avant toute décision.`;
+      if (!cheap || !ref) return null;
+      if (sav > 0) {
+        return `À revenu identique, un déménagement de ${cantonName(ref)} vers ${cantonName(cheap)} vous ferait économiser ${formatCHF(sav)} par an sur votre charge fiscale totale, soit ${formatCHF(sav * 10)} cumulés sur 10 ans si votre situation reste stable. Cet écart s'explique par les différences de barèmes cantonaux et de multiplicateurs communaux entre les deux cantons. Point de vigilance : un changement de domicile a des conséquences qui dépassent la seule fiscalité (emploi, scolarité des enfants, distance, coût de la vie local) et mérite une réflexion globale avant toute décision.`;
+      }
+      return `Pour ce profil, le canton de ${cantonName(ref)} ressort déjà comme le plus avantageux ou proche du plus avantageux parmi les cantons comparés (${cantonName(cheap)}) : un changement de domicile n'apporterait pas d'économie fiscale significative dans ce scénario précis.`;
     }
     case "retirement": {
       const a = num(s.netAnnuity);
       const l = num(s.netLumpSum);
+      if (!has(s.netAnnuity) && !has(s.netLumpSum)) return null;
       const reco = str(s.recommendation);
-      if (!a || !l) return null;
       const recoTxt =
         reco === "annuity"
           ? "La rente viagère ressort comme l'option la plus avantageuse dans votre scénario, avec un revenu garanti à vie."
@@ -794,21 +805,24 @@ function buildComment(entry: HistoryEntry): string | null {
     case "director_compensation": {
       const reco = num(s.recommendedDirectorNet);
       const cur = num(s.currentDirectorNet);
-      const gain = num(s.gainAnnual) || (cur > 0 ? reco - cur : 0);
-      if (gain <= 0) return null;
-      return `En ajustant le mix salaire / dividende / réserves à structure de société constante, vous pourriez dégager un gain net annuel de ${formatCHF(gain)}, soit ${formatCHF(gain * 10)} cumulés sur 10 ans. Ce gain provient de l'optimisation des charges sociales et de la fiscalité différenciée entre salaire et dividendes qualifiés. Point de vigilance : toute réduction significative de votre salaire doit rester compatible avec l'usage de la branche, au risque d'une requalification par l'AFC ou l'AVS au titre de la théorie du dividende dissimulé (art. 58 CO).`;
+      const gain = has(s.gainAnnual) ? num(s.gainAnnual) : (cur > 0 ? reco - cur : 0);
+      if (!has(s.recommendedDirectorNet)) return null;
+      if (gain > 0) {
+        return `En ajustant le mix salaire / dividende / réserves à structure de société constante, vous pourriez dégager un gain net annuel de ${formatCHF(gain)}, soit ${formatCHF(gain * 10)} cumulés sur 10 ans. Ce gain provient de l'optimisation des charges sociales et de la fiscalité différenciée entre salaire et dividendes qualifiés. Point de vigilance : toute réduction significative de votre salaire doit rester compatible avec l'usage de la branche, au risque d'une requalification par l'AFC ou l'AVS au titre de la théorie du dividende dissimulé (art. 58 CO).`;
+      }
+      return `La répartition actuelle entre salaire et dividendes ressort déjà comme proche de l'optimum pour ce profil de société : le gain supplémentaire identifié en ajustant le mix salaire / dividende / réserves reste marginal ou nul dans ce scénario précis.`;
     }
     case "vested_benefits": {
       const r = num(s.recommendedFinalBalance);
       const sec = num(s.securityFinalBalance);
-      if (!r || !sec) return null;
+      if (!has(s.recommendedFinalBalance) || !has(s.securityFinalBalance)) return null;
       const diff = Math.max(0, r - sec);
       return `La stratégie de placement recommandée vous projette un capital de libre passage de ${formatCHF(r)} à l'échéance, contre ${formatCHF(sec)} pour une stratégie purement sécuritaire, soit un gain potentiel de ${formatCHF(diff)} avant fiscalité au retrait. Ce résultat dépend directement du niveau de risque que vous acceptez sur l'horizon de placement retenu. Point de vigilance : ces projections restent des hypothèses de rendement, non garanties ; votre horizon de placement et votre tolérance au risque doivent être validés avant toute mise en oeuvre.`;
     }
     case "investment_compare": {
-      const i = (entry.inputs ?? {}) as Record<string, unknown>;
-      const a = (i.a ?? {}) as Record<string, unknown>;
-      const b = (i.b ?? {}) as Record<string, unknown>;
+      const i2 = (entry.inputs ?? {}) as Record<string, unknown>;
+      const a = (i2.a ?? {}) as Record<string, unknown>;
+      const b = (i2.b ?? {}) as Record<string, unknown>;
       const nameA = str(a.name) || "Investissement A";
       const nameB = str(b.name) || "Investissement B";
       const years = num(a.durationYears) || num(b.durationYears);
@@ -817,7 +831,8 @@ function buildComment(entry: HistoryEntry): string | null {
       const w = str(s.winner);
       const aNet = num(s.aFinalNet);
       const bNet = num(s.bFinalNet);
-      if (!diff || !w || w === "tie") {
+      if (!w) return entry.note?.trim() || null;
+      if (!diff || w === "tie") {
         return `Sur ${years || "l'horizon retenu"} an${(years || 0) > 1 ? "s" : ""}, les deux placements comparés (${nameA} et ${nameB}) aboutissent pour vous à un capital net final comparable, une fois frais et fiscalité de sortie déduits. Votre décision se jouera donc surtout sur des critères non chiffrés : liquidité du placement, votre appétence au risque, et la cohérence avec le reste de votre patrimoine.${entry.note ? ` ${entry.note.trim()}` : ""}`;
       }
       const winnerName = w === "a" ? nameA : nameB;
@@ -831,7 +846,7 @@ function buildComment(entry: HistoryEntry): string | null {
       const reco = str(s.recommended);
       const cot = num(s.recommendedAnnualCHF);
       const sav = num(s.savingsCHF);
-      if (!reco || !cot) return entry.note?.trim() || null;
+      if (!reco) return entry.note?.trim() || null;
       const recoLabel = reco === "LAMAL" ? "LAMal (Suisse)" : "CMU (France, gérée par le CNTFS via l'URSSAF)";
       const otherLabel = reco === "LAMAL" ? "CMU" : "LAMal";
       const savTxt = sav > 0 ? ` Cela représente pour vous une économie annuelle de ${formatCHF(sav)} par rapport à l'option ${otherLabel}.` : "";
@@ -842,8 +857,8 @@ function buildComment(entry: HistoryEntry): string | null {
       const sav = num(s.taxSavings);
       const total = num(s.totalTaxOnOvertime);
       const brut = num(s.overtimeCHF);
-      if (!brut) return entry.note?.trim() || null;
-      const savTxt = sav > 0 ? ` L'exonération partielle côté français sur vos heures supplémentaires vous fait économiser ${formatCHF(sav)}.` : "";
+      if (!has(s.overtimeCHF)) return entry.note?.trim() || null;
+      const savTxt = sav > 0 ? ` L'exonération partielle côté français sur vos heures supplémentaires vous fait économiser ${formatCHF(sav)}.` : " Aucune exonération n'a été appliquée dans ce scénario, le statut fiscal retenu n'y ouvrant pas droit ou le seuil d'heures minimal n'étant pas atteint.";
       return `Sur ${formatCHF(brut)} d'heures supplémentaires brutes, l'imposition combinée Suisse/France atteint ${formatCHF(total)}, pour un montant net que vous percevez effectivement de ${formatCHF(net)}.${savTxt}${entry.note ? ` ${entry.note.trim()}` : ""}`;
     }
     case "avs_ai": {
@@ -853,7 +868,7 @@ function buildComment(entry: HistoryEntry): string | null {
       const missing = num(s.missingYears);
       const isCouple = Boolean(s.isCouple);
       const combined = num(s.combinedAnnualPension);
-      if (!annual) return null;
+      if (!has(s.annualPension)) return null;
       const missingTxt =
         missing > 0
           ? ` Il vous manque actuellement ${missing} année${missing > 1 ? "s" : ""} de cotisation pour atteindre la rente complète (${formatCHF(theoretical)} par an), chaque année manquante réduisant votre rente d'environ 1/44e.`
@@ -868,7 +883,7 @@ function buildComment(entry: HistoryEntry): string | null {
       const marg = num(s.marginalRate);
       const regimeLabel = str(s.regimeLabel);
       const foreignShare = num(s.foreignShareCHF);
-      if (!total) return null;
+      if (!has(s.totalTaxCHF)) return null;
       const regimeTxt = regimeLabel ? ` selon le régime fiscal détecté pour votre situation : ${regimeLabel}` : "";
       const foreignTxt = foreignShare > 0 ? ` Une part de ${formatCHF(foreignShare)} relève d'un revenu de source étrangère, prise en compte uniquement pour déterminer votre taux d'imposition applicable (méthode d'exemption avec réserve de progressivité), sans être elle-même imposée en Suisse.` : "";
       return `Votre charge fiscale totale estimée s'élève à ${formatCHF(total)} par an${regimeTxt}, pour un revenu net disponible de ${formatCHF(net)}. Votre taux effectif ressort à ${formatPct(eff)} de votre revenu brut, tandis que votre taux marginal de ${formatPct(marg)} indique la charge fiscale sur le prochain franc que vous gagnez, un repère utile pour évaluer l'intérêt d'une déduction supplémentaire (3a, rachat LPP).${foreignTxt} Cette estimation se base sur les barèmes 2026 et votre situation déclarée ; elle doit être confirmée par votre déclaration fiscale officielle.`;
