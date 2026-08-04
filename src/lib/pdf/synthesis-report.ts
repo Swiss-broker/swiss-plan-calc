@@ -407,7 +407,15 @@ function drawSimulationPage(pdf: ReportPdf, entry: HistoryEntry, includeCharts: 
   // Section 2 · résultats clés
   const metrics = formatMetrics(entry);
   if (metrics.length) {
+    // On réserve la place du bandeau "Résultats clés" ET de la grille de
+    // tuiles qui le suit, avant de dessiner quoi que ce soit. Sans ça, le
+    // bandeau seul passe le test de place, se dessine, puis la grille
+    // constate qu'elle ne tient pas et saute seule à la page suivante,
+    // laissant le bandeau orphelin derrière elle.
+    const gridRows = Math.ceil(metrics.length / 2);
+    const gridHeight = gridRows * 28 + 2;
     pdf.spacer(2);
+    pdf.ensureSpace(15 + gridHeight);
     pdf.section("Résultats clés");
     pdf.metricsGrid(metrics);
   }
