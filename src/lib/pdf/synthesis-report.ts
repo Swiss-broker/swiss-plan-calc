@@ -136,8 +136,14 @@ export function exportSynthesisReportPdf(args: SynthesisReportArgs): void {
   drawClientProfile(pdf, client, pension, assets, company);
 
   // ---------- PAGES SIMULATIONS ----------
+  // Les simulations s'enchaînent désormais à la suite les unes des autres,
+  // sans saut de page forcé entre chacune. Le passage à la page suivante ne
+  // se déclenche plus que si le contenu déborde réellement (via ensureSpace
+  // dans calculatorTitle et les autres méthodes du builder), ce qui évite
+  // le vide en bas de page d'une simulation courte suivie d'une page
+  // entièrement neuve pour la suivante.
   for (const entry of entries) {
-    pdf.newPage();
+    pdf.spacer(6);
     const kindLabel = KIND_LABELS[entry.kind as SimulationKind] || entry.kind;
     const title = entry.title?.trim()
       ? `${kindLabel} : ${entry.title.trim()}`
@@ -324,6 +330,7 @@ function drawClientProfile(
     ["Pays de résidence", client.country_of_residence || "Suisse"],
   ]);
 
+  pdf.spacer(4);
   pdf.section("Situation fiscale");
   pdf.kvTable([
     ["Canton de domicile", cantonName(client.canton)],
@@ -333,6 +340,7 @@ function drawClientProfile(
     ["Confession", CONFESSION_LABELS[client.confession] ?? "—"],
   ]);
 
+  pdf.spacer(4);
   pdf.section("Activité professionnelle");
   pdf.kvTable([
     ["Statut professionnel", WORK_STATUS_LABELS[client.work_status] ?? "—"],
@@ -343,6 +351,7 @@ function drawClientProfile(
     ["Plan LPP", pension ? LPP_PLAN_LABELS[pension.lpp_plan] ?? "—" : "—"],
   ]);
 
+  pdf.spacer(4);
   pdf.section("Patrimoine et prévoyance actuels");
   const rows: Array<[string, string]> = [];
   if (pension) {

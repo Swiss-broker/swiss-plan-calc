@@ -254,7 +254,13 @@ export class ReportPdf {
   ensureSpace(needed: number) {
     if (this.cursorY + needed > this.pageHeight - 18) {
       this.doc.addPage();
-      this.cursorY = this.margin + 5;
+      // On redessine l'en-tête (bandeau, logo, titre) à chaque nouvelle page
+      // créée automatiquement par débordement, exactement comme le fait déjà
+      // newPage(). Sans ça, une page ajoutée automatiquement (par exemple
+      // quand deux simulations s'enchaînent sur la même page puis débordent)
+      // se retrouvait sans en-tête du tout.
+      this.drawHeader();
+      this.cursorY = this.headerH + 10;
     }
   }
 /** Titre principal d'une page de calculateur (ex. "Pilier 3a"), visuellement
@@ -286,7 +292,7 @@ export class ReportPdf {
     this.cursorY = top + barH + 8;
     return this;
   }
-  
+
   section(title: string) {
     title = sanitizePdfText(title);
     // On réserve la place du bandeau ET d'un minimum de contenu qui doit
