@@ -17,6 +17,11 @@ import { t as translate } from "@/lib/i18n";
 const authSearchSchema = z.object({
   mode: z.enum(["signin", "signup"]).optional(),
   plan: z.enum(["starter", "pro", "cabinet"]).optional(),
+  // Présent uniquement si la personne arrive via un lien d'invitation
+  // cabinet (email envoyé par cabinet-add-seat). Dans ce cas, l'étape de
+  // paiement Stripe est entièrement sautée après l'inscription : le siège
+  // a déjà été payé par le directeur qui a envoyé l'invitation.
+  invite: z.string().optional(),
 });
 
 export const Route = createFileRoute("/auth")({
@@ -59,7 +64,7 @@ function AuthPage() {
   const [mode, setMode] = useState<"signin" | "signup">(search.mode ?? "signin");
   const selectedPlan = search.plan ?? "pro";
 
-  const [otpState, setOtpState] = useState<{ email: string; plan: string } | null>(null);
+const [otpState, setOtpState] = useState<{ email: string; plan: string; inviteToken?: string } | null>(null);
   const [otpToken, setOtpToken] = useState("");
   const [otpLoading, setOtpLoading] = useState(false);
   const [otpError, setOtpError] = useState<string | null>(null);
@@ -89,6 +94,12 @@ function AuthPage() {
       return;
     }
 
+    // Invitation cabinet : le siège est déjà payé par le directeur qui a
+    // envoyé l'invitation, on saute entièrement l'étape de paiement.
+    if (otpState.inviteToken) {
+      navigate({ to: "/dashboard" });
+      return;
+    }
     const priceId = PRICE_IDS[otpState.plan];
     if (!priceId) {
       navigate({ to: "/dashboard" });
@@ -212,7 +223,7 @@ function AuthPage() {
           </div>
 
           {mode === "signup" ? (
-            <SignupForm plan={selectedPlan} onOtpRequired={setOtpState} />
+            <SignupForm plan={selectedPlan} inviteToken={search.invite} onOtpRequired={setOtpState} />
           ) : (
             <SigninForm />
           )}
@@ -240,21 +251,35 @@ function AuthPage() {
   );
 }
 
-function SignupForm({ plan, onOtpRequired }: { plan: string; onOtpRequired: (state: { email: string; plan: string }) => void }) {
+function SignupForm({
+  plan,
+  inviteToken,
+  onOtpRequired,
+}: {
+  plan: string;
+  inviteToken?: string;
+  onOtpRequired: (state: { email: string; plan: string; inviteToken?: string }) => void;
+}) {
   const t = useT();
   const [loading, setLoading] = useState(false);
   const form = useForm<SignupValues>({
     resolver: zodResolver(signupSchema),
     defaultValues: { firstName: "", lastName: "", email: "", password: "" },
   });
-
   const onSubmit = async (values: SignupValues) => {
     setLoading(true);
     const { error } = await supabase.auth.signUp({
       email: values.email,
       password: values.password,
       options: {
-        data: { first_name: values.firstName, last_name: values.lastName },
+        data: {
+          first_name: values.firstName,
+          last_name: values.lastName,
+          // Lu côté serveur par le trigger handle_new_user pour appliquer
+          // automatiquement le bon rôle/manager si c'est une invitation
+          // cabinet valide. Ignoré silencieusement sinon.
+          ...(inviteToken ? { invite_token: inviteToken } : {}),
+        },
       },
     });
     setLoading(false);
@@ -266,7 +291,7 @@ function SignupForm({ plan, onOtpRequired }: { plan: string; onOtpRequired: (sta
       }
       return;
     }
-    onOtpRequired({ email: values.email, plan });
+    onOtpRequired({ email: values.email, plan, inviteToken });
   };
 
   return (
