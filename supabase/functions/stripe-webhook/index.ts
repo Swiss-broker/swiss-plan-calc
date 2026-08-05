@@ -192,7 +192,37 @@ Deno.serve(async (req) => {
         { headers: { "Authorization": `Bearer ${stripeKey}` } }
       );
       const customer = await customerRes.json();
-      if (customer.email) await updatePlan(customer.email, "expired");
+      if (customer.email) {
+        await updatePlan(customer.email, "expired");
+
+        // Cascade : si ce compte avait lui-même invité des membres cabinet
+        // (courtiers ou directeurs) sur ce même abonnement désormais résilié,
+        // leur accès doit être coupé aussi, puisque plus personne ne paie
+        // pour eux. On ne descend qu'un seul niveau : les membres qu'EUX
+        // auraient invités à leur tour restent inchangés, puisqu'ils sont
+        // facturés sur un abonnement distinct, propre à ce sous-directeur.
+        const ownerRes = await fetch(
+          `${supabaseUrl}/rest/v1/profiles?email=eq.${encodeURIComponent(customer.email)}&select=id`,
+          { headers: { "apikey": supabaseKey, "Authorization": `Bearer ${supabaseKey}` } }
+        );
+        const owners = await ownerRes.json();
+        const ownerId = owners[0]?.id;
+        if (ownerId) {
+          await fetch(
+            `${supabaseUrl}/rest/v1/profiles?manager_id=eq.${ownerId}`,
+            {
+              method: "PATCH",
+              headers: {
+                "apikey": supabaseKey,
+                "Authorization": `Bearer ${supabaseKey}`,
+                "Content-Type": "application/json",
+                "Prefer": "return=minimal",
+              },
+              body: JSON.stringify({ plan: "expired" }),
+            }
+          );
+        }
+      }
     }
 
     if (event.type === "invoice.payment_failed") {
