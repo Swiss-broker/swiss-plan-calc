@@ -130,6 +130,7 @@ export const it: Record<string, string> = {
 
   // === Navigazione principale ===
   "nav.dashboard": "Pannello",
+  "nav.team": "Team",
   "nav.clients": "Clienti",
   "nav.companies": "Società",
   "nav.calculators": "Calcolatori",

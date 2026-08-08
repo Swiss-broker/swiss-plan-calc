@@ -130,6 +130,7 @@ export const en: Record<string, string> = {
 
   // === Main navigation ===
   "nav.dashboard": "Dashboard",
+  "nav.team": "Team",
   "nav.clients": "Clients",
   "nav.companies": "Companies",
   "nav.calculators": "Calculators",

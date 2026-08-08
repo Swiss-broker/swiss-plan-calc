@@ -131,6 +131,7 @@ export const de: Record<string, string> = {
 
   // === Navigation principale ===
   "nav.dashboard": "Übersicht",
+  "nav.team": "Team",
   "nav.clients": "Kunden",
   "nav.companies": "Unternehmen",
   "nav.calculators": "Rechner",

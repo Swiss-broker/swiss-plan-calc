@@ -7,6 +7,7 @@ import { useEffect, useState } from "react";
 import {
   LayoutDashboard,
   Users,
+  Users2,
   Calculator,
   UserCircle,
   LogOut,
@@ -67,6 +68,7 @@ function AppShell() {
 
 const NAV = [
   { to: "/dashboard", labelKey: "nav.dashboard", icon: LayoutDashboard },
+  { to: "/team", labelKey: "nav.team", icon: Users2, teamOnly: true },
   { to: "/clients", labelKey: "nav.clients", icon: Users },
   { to: "/companies", labelKey: "nav.companies", icon: Building2 },
   { to: "/calculators", labelKey: "nav.calculators", icon: Calculator },
@@ -92,9 +94,10 @@ function BrandMark() {
 function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const t = useT();
+  const { canManageTeam } = usePlan();
   return (
     <nav className="flex-1 space-y-1 px-3 py-4">
-      {NAV.map((item) => {
+      {NAV.filter((item) => !("teamOnly" in item) || canManageTeam).map((item) => {
         const active =
           pathname === item.to || (item.to !== "/dashboard" && pathname.startsWith(item.to));
         return (
