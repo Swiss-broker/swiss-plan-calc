@@ -10,7 +10,7 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.5"
+    PostgrestVersion: "14.15"
   }
   public: {
     Tables: {
@@ -173,6 +173,63 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      cabinet_invites: {
+        Row: {
+          accepted_at: string | null
+          cabinet_root_id: string
+          created_at: string
+          email: string
+          expires_at: string
+          id: string
+          invited_by: string
+          role: string
+          status: string
+          stripe_subscription_item_id: string | null
+          token: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          cabinet_root_id: string
+          created_at?: string
+          email: string
+          expires_at?: string
+          id?: string
+          invited_by: string
+          role: string
+          status?: string
+          stripe_subscription_item_id?: string | null
+          token: string
+        }
+        Update: {
+          accepted_at?: string | null
+          cabinet_root_id?: string
+          created_at?: string
+          email?: string
+          expires_at?: string
+          id?: string
+          invited_by?: string
+          role?: string
+          status?: string
+          stripe_subscription_item_id?: string | null
+          token?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cabinet_invites_cabinet_root_id_fkey"
+            columns: ["cabinet_root_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cabinet_invites_invited_by_fkey"
+            columns: ["invited_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       client_assets: {
         Row: {
@@ -742,6 +799,8 @@ export type Database = {
       profiles: {
         Row: {
           brokerage_name: string | null
+          cabinet_role: string | null
+          cabinet_root_id: string | null
           created_at: string
           default_canton: string | null
           email: string
@@ -750,6 +809,7 @@ export type Database = {
           id: string
           last_name: string | null
           logo_url: string | null
+          manager_id: string | null
           pdf_accent_color: string
           pdf_footer_note: string | null
           pdf_primary_color: string
@@ -760,6 +820,8 @@ export type Database = {
         }
         Insert: {
           brokerage_name?: string | null
+          cabinet_role?: string | null
+          cabinet_root_id?: string | null
           created_at?: string
           default_canton?: string | null
           email: string
@@ -768,6 +830,7 @@ export type Database = {
           id: string
           last_name?: string | null
           logo_url?: string | null
+          manager_id?: string | null
           pdf_accent_color?: string
           pdf_footer_note?: string | null
           pdf_primary_color?: string
@@ -778,6 +841,8 @@ export type Database = {
         }
         Update: {
           brokerage_name?: string | null
+          cabinet_role?: string | null
+          cabinet_root_id?: string | null
           created_at?: string
           default_canton?: string | null
           email?: string
@@ -786,6 +851,7 @@ export type Database = {
           id?: string
           last_name?: string | null
           logo_url?: string | null
+          manager_id?: string | null
           pdf_accent_color?: string
           pdf_footer_note?: string | null
           pdf_primary_color?: string
@@ -794,7 +860,22 @@ export type Database = {
           preferred_language?: Database["public"]["Enums"]["app_language"]
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "profiles_cabinet_root_id_fkey"
+            columns: ["cabinet_root_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "profiles_manager_id_fkey"
+            columns: ["manager_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       rdv_invoices: {
         Row: {
