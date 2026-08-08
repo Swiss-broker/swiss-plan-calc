@@ -28,6 +28,7 @@ import { useT, useLanguage } from "@/contexts/LanguageContext";
 import { formatDateShort } from "@/lib/i18n/format";
 import { t as translate } from "@/lib/i18n";
 import { KIND_LABELS } from "@/lib/history/types";
+import { usePlan } from "@/contexts/PlanContext";
 
 export const Route = createFileRoute("/_app/dashboard")({
   head: () => ({ meta: [{ title: translate("dash.head.title") }] }),
@@ -46,6 +47,7 @@ function Dashboard() {
   const t = useT();
   const { lang } = useLanguage();
   const { user } = useAuth();
+  const { cabinetRole } = usePlan();
   const brokerId = user?.id;
   const greeting = getGreetingKey();
   const GreetIcon = greeting.icon;
@@ -129,9 +131,14 @@ function Dashboard() {
               <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
                 {t(greeting.key)}, <span className="bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">{firstName}</span> {t("dash.hello.suffix")}
               </h1>
-              <p className="mt-1 text-sm text-muted-foreground">
+              <p className="mt-1 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
                 {profile?.brokerage_name ? `${profile.brokerage_name} · ` : ""}
                 {t("dash.subtitle")}
+                {(cabinetRole === "root_director" || cabinetRole === "director") && (
+                  <Badge variant="secondary" className="text-xs">
+                    {cabinetRole === "root_director" ? "Directeur cabinet" : "Directeur"}
+                  </Badge>
+                )}
               </p>
             </div>
           </div>
