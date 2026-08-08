@@ -34,7 +34,8 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { inviterId, inviterEmail, cabinetRootId, inviteeEmail, role } = await req.json();
+    const { inviterId, inviterEmail, cabinetRootId, inviteeEmail, inviteeFirstName, inviteeLastName, role } =
+      await req.json();
 
     if (!inviterId || !inviterEmail || !cabinetRootId || !inviteeEmail) {
       throw new Error("Paramètres manquants.");
@@ -79,9 +80,6 @@ Deno.serve(async (req) => {
     let seatItemId: string;
 
     if (subscription) {
-      // 3a. Un abonnement existe déjà (cas normal : directeur racine, ou
-      // directeur ayant déjà au moins un siège) : on y ajoute ce siège en
-      // plus, avec facturation immédiate du prorata.
       const itemRes = await fetch("https://api.stripe.com/v1/subscription_items", {
         method: "POST",
         headers: {
@@ -99,11 +97,6 @@ Deno.serve(async (req) => {
       if (!itemRes.ok) throw new Error(item.error?.message ?? "Erreur lors de l'ajout du siège.");
       seatItemId = item.id;
     } else {
-      // 3b. Aucun abonnement (cas d'un directeur créé via invitation, jamais
-      // passé par Stripe Checkout) : on lui crée un abonnement de toutes
-      // pièces, avec ce siège comme unique élément de départ. Facturé
-      // immédiatement, sans période d'essai (contrairement aux inscriptions
-      // classiques), puisque c'est un engagement pris par un directeur.
       const createSubRes = await fetch("https://api.stripe.com/v1/subscriptions", {
         method: "POST",
         headers: {
@@ -121,7 +114,9 @@ Deno.serve(async (req) => {
       seatItemId = subscription.items?.data?.[0]?.id ?? subscription.id;
     }
 
-    // 4. Créer l'invitation en base, avec un token unique.
+    // 3. Créer l'invitation en base, avec un token unique et le nom/prénom
+    //    de la personne, pour personnaliser l'email et l'afficher
+    //    correctement dans la liste des invitations en attente.
     const token = crypto.randomUUID();
     const invoiceInsertRes = await fetch(`${supabaseUrl}/rest/v1/cabinet_invites`, {
       method: "POST",
@@ -135,6 +130,8 @@ Deno.serve(async (req) => {
         invited_by: inviterId,
         cabinet_root_id: cabinetRootId,
         email: inviteeEmail,
+        first_name: inviteeFirstName ?? null,
+        last_name: inviteeLastName ?? null,
         role,
         token,
         stripe_subscription_item_id: seatItemId,
@@ -146,16 +143,17 @@ Deno.serve(async (req) => {
       throw new Error("Le siège a été facturé mais l'invitation n'a pas pu être enregistrée. Contactez le support.");
     }
 
-    // 5. Envoyer l'email d'invitation.
+    // 4. Envoyer l'email d'invitation, personnalisé avec le prénom si connu.
     const roleLabel = role === "director" ? "Directeur" : "Courtier";
     const signupUrl = `${siteUrl}/auth?invite=${token}`;
+    const greeting = inviteeFirstName ? `Bonjour ${inviteeFirstName},` : "Bonjour,";
     await sendBrevoEmail(
       inviteeEmail,
       "Vous êtes invité(e) à rejoindre un cabinet sur SwissBroker Pro",
       `
       <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 24px;">
         <h2 style="color: #0f766e;">Invitation SwissBroker Pro</h2>
-        <p>Bonjour,</p>
+        <p>${greeting}</p>
         <p>Vous avez été invité(e) à rejoindre un cabinet sur SwissBroker Pro, avec un accès en tant que <strong>${roleLabel}</strong>.</p>
         <p>Votre accès est déjà réglé par le cabinet, il ne vous reste qu'à créer votre compte pour commencer.</p>
         <p style="text-align:center; margin: 24px 0;">
