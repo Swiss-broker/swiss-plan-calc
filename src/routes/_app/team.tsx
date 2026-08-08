@@ -313,13 +313,11 @@ function InviteForm({
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
   const [role, setRole] = useState<"courtier" | "director">("courtier");
+  const [payer, setPayer] = useState<"cabinet" | "self">("cabinet");
   const [loading, setLoading] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
 
-  const onSubmit = async () => {
-    if (!email.trim()) {
-      toast.error("L'email est requis.");
-      return;
-    }
+  const sendInvite = async () => {
     setLoading(true);
     try {
       const { data, error } = await supabase.functions.invoke("cabinet-add-seat", {
@@ -331,8 +329,13 @@ function InviteForm({
           inviteeFirstName: firstName.trim() || undefined,
           inviteeLastName: lastName.trim() || undefined,
           role,
+          payer,
         },
       });
+      if (data?.checkoutUrl) {
+        window.location.href = data.checkoutUrl;
+        return;
+      }
       if (error || !data?.sent) {
         let msg = error?.message ?? "Erreur lors de l'envoi de l'invitation.";
         const ctx = (error as unknown as { context?: Response })?.context;
@@ -352,8 +355,44 @@ function InviteForm({
       toast.error(e instanceof Error ? e.message : "Erreur lors de l'envoi de l'invitation.");
     } finally {
       setLoading(false);
+      setConfirmOpen(false);
     }
   };
+
+  const onSubmit = () => {
+    if (!email.trim()) {
+      toast.error("L'email est requis.");
+      return;
+    }
+    if (payer === "cabinet") {
+      // Un vrai débit va se produire, on demande confirmation avant.
+      setConfirmOpen(true);
+      return;
+    }
+    // Le courtier paiera lui-même, aucun débit ici, on envoie directement.
+    sendInvite();
+  };
+
+  if (confirmOpen) {
+    return (
+      <div className="rounded-2xl border border-warning/40 bg-warning/10 p-5 shadow-card space-y-4">
+        <h3 className="text-base font-semibold">Confirmer la facturation</h3>
+        <p className="text-sm text-foreground">
+          Ce siège sera facturé <strong>290 CHF/mois</strong>, débités immédiatement sur la carte enregistrée
+          du cabinet. Confirmer l'envoi de l'invitation à <strong>{email.trim()}</strong> ?
+        </p>
+        <div className="flex gap-2">
+          <Button onClick={sendInvite} disabled={loading} className="gap-2">
+            {loading && <Loader2 className="h-4 w-4 animate-spin" />}
+            Confirmer et débiter 290 CHF
+          </Button>
+          <Button variant="outline" onClick={() => setConfirmOpen(false)} disabled={loading}>
+            Retour
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="rounded-2xl border border-primary/30 bg-primary/5 p-5 shadow-card space-y-4">
@@ -363,10 +402,6 @@ function InviteForm({
           <X className="h-4 w-4" />
         </button>
       </div>
-      <p className="text-xs text-muted-foreground">
-        290 CHF/mois seront ajoutés à votre abonnement dès l'envoi de l'invitation. L'accès de la personne
-        sera débloqué automatiquement à la création de son compte.
-      </p>
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <div className="space-y-1.5">
           <Label className="text-xs">Prénom</Label>
@@ -391,6 +426,23 @@ function InviteForm({
               <SelectItem value="director">Directeur — peut gérer sa propre équipe</SelectItem>
             </SelectContent>
           </Select>
+        </div>
+        <div className="space-y-1.5 sm:col-span-2">
+          <Label className="text-xs">Qui règle ce siège ? (290 CHF/mois)</Label>
+          <Select value={payer} onValueChange={(v) => setPayer(v as "cabinet" | "self")}>
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="cabinet">Le cabinet — accès débloqué immédiatement</SelectItem>
+              <SelectItem value="self">La personne elle-même — elle paie à son inscription</SelectItem>
+            </SelectContent>
+          </Select>
+          <p className="text-[11px] text-muted-foreground">
+            {payer === "cabinet"
+              ? "290 CHF/mois seront débités de votre carte dès l'envoi de l'invitation."
+              : "Aucun débit pour vous. La personne devra régler son propre abonnement pour créer son compte."}
+          </p>
         </div>
       </div>
       <div className="flex gap-2">
