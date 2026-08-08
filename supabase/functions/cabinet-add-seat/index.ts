@@ -50,6 +50,20 @@ Deno.serve(async (req) => {
     const siteUrl = Deno.env.get("SITE_URL") ?? "https://swiss-plan-calc.vercel.app";
     if (!stripeKey || !supabaseUrl || !supabaseKey) throw new Error("Variables manquantes");
 
+    // Comptes internes (fondatrice, associé) : accès illimité, aucune
+    // facturation ne doit se déclencher quand ils invitent quelqu'un.
+    const inviterProfileRes = await fetch(
+      `${supabaseUrl}/rest/v1/profiles?id=eq.${inviterId}&select=plan`,
+      { headers: { "apikey": supabaseKey, "Authorization": `Bearer ${supabaseKey}` } },
+    );
+    const inviterProfiles = await inviterProfileRes.json();
+    const isInternal = inviterProfiles[0]?.plan === "internal";
+
+    let seatItemId: string | null = null;
+
+    if (!isInternal) {
+      // 1. Retrouver, ou créer, le customer Stripe du directeur qui invite.
+
     // 1. Retrouver, ou créer, le customer Stripe du directeur qui invite.
     const customerRes = await fetch(
       `https://api.stripe.com/v1/customers?email=${encodeURIComponent(inviterEmail)}&limit=1`,
@@ -76,8 +90,7 @@ Deno.serve(async (req) => {
       { headers: { "Authorization": `Bearer ${stripeKey}` } },
     );
     const subData = await subRes.json();
-    let subscription = subData.data?.[0];
-    let seatItemId: string;
+    let subscription = isInternal ? null : subData.data?.[0];
 
     if (subscription) {
       const itemRes = await fetch("https://api.stripe.com/v1/subscription_items", {
@@ -112,7 +125,10 @@ Deno.serve(async (req) => {
       subscription = await createSubRes.json();
       if (!createSubRes.ok) throw new Error(subscription.error?.message ?? "Erreur création abonnement.");
       seatItemId = subscription.items?.data?.[0]?.id ?? subscription.id;
+      }
     }
+
+    // 3. Créer l'invitation en base, avec un token unique et le nom/prénom
 
     // 3. Créer l'invitation en base, avec un token unique et le nom/prénom
     //    de la personne, pour personnaliser l'email et l'afficher
