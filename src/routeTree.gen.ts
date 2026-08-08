@@ -17,6 +17,7 @@ import { Route as SharedTokenRouteImport } from './routes/shared.$token'
 import { Route as ClientUploadTokenRouteImport } from './routes/client-upload.$token'
 import { Route as AuthConfirmRouteImport } from './routes/auth/confirm'
 import { Route as AppWikiRouteImport } from './routes/_app/wiki'
+import { Route as AppTeamRouteImport } from './routes/_app/team'
 import { Route as AppHistoryRouteImport } from './routes/_app/history'
 import { Route as AppFeedbackRouteImport } from './routes/_app/feedback'
 import { Route as AppDashboardRouteImport } from './routes/_app/dashboard'
@@ -88,6 +89,11 @@ const AuthConfirmRoute = AuthConfirmRouteImport.update({
 const AppWikiRoute = AppWikiRouteImport.update({
   id: '/wiki',
   path: '/wiki',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppTeamRoute = AppTeamRouteImport.update({
+  id: '/team',
+  path: '/team',
   getParentRoute: () => AppRoute,
 } as any)
 const AppHistoryRoute = AppHistoryRouteImport.update({
@@ -276,6 +282,7 @@ export interface FileRoutesByFullPath {
   '/dashboard': typeof AppDashboardRoute
   '/feedback': typeof AppFeedbackRoute
   '/history': typeof AppHistoryRoute
+  '/team': typeof AppTeamRoute
   '/wiki': typeof AppWikiRoute
   '/auth/confirm': typeof AuthConfirmRoute
   '/client-upload/$token': typeof ClientUploadTokenRoute
@@ -316,6 +323,7 @@ export interface FileRoutesByTo {
   '/dashboard': typeof AppDashboardRoute
   '/feedback': typeof AppFeedbackRoute
   '/history': typeof AppHistoryRoute
+  '/team': typeof AppTeamRoute
   '/wiki': typeof AppWikiRoute
   '/auth/confirm': typeof AuthConfirmRoute
   '/client-upload/$token': typeof ClientUploadTokenRoute
@@ -360,6 +368,7 @@ export interface FileRoutesById {
   '/_app/dashboard': typeof AppDashboardRoute
   '/_app/feedback': typeof AppFeedbackRoute
   '/_app/history': typeof AppHistoryRoute
+  '/_app/team': typeof AppTeamRoute
   '/_app/wiki': typeof AppWikiRoute
   '/auth/confirm': typeof AuthConfirmRoute
   '/client-upload/$token': typeof ClientUploadTokenRoute
@@ -404,6 +413,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/feedback'
     | '/history'
+    | '/team'
     | '/wiki'
     | '/auth/confirm'
     | '/client-upload/$token'
@@ -444,6 +454,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/feedback'
     | '/history'
+    | '/team'
     | '/wiki'
     | '/auth/confirm'
     | '/client-upload/$token'
@@ -487,6 +498,7 @@ export interface FileRouteTypes {
     | '/_app/dashboard'
     | '/_app/feedback'
     | '/_app/history'
+    | '/_app/team'
     | '/_app/wiki'
     | '/auth/confirm'
     | '/client-upload/$token'
@@ -586,6 +598,13 @@ declare module '@tanstack/react-router' {
       path: '/wiki'
       fullPath: '/wiki'
       preLoaderRoute: typeof AppWikiRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/team': {
+      id: '/_app/team'
+      path: '/team'
+      fullPath: '/team'
+      preLoaderRoute: typeof AppTeamRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/history': {
@@ -893,6 +912,7 @@ interface AppRouteChildren {
   AppDashboardRoute: typeof AppDashboardRoute
   AppFeedbackRoute: typeof AppFeedbackRoute
   AppHistoryRoute: typeof AppHistoryRoute
+  AppTeamRoute: typeof AppTeamRoute
   AppWikiRoute: typeof AppWikiRoute
   AppClientsClientIdRoute: typeof AppClientsClientIdRoute
   AppClientsNewRoute: typeof AppClientsNewRoute
@@ -908,6 +928,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppDashboardRoute: AppDashboardRoute,
   AppFeedbackRoute: AppFeedbackRoute,
   AppHistoryRoute: AppHistoryRoute,
+  AppTeamRoute: AppTeamRoute,
   AppWikiRoute: AppWikiRoute,
   AppClientsClientIdRoute: AppClientsClientIdRoute,
   AppClientsNewRoute: AppClientsNewRoute,
