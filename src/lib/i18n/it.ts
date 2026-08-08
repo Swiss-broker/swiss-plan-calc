@@ -1190,6 +1190,7 @@ export const it: Record<string, string> = {
   "auth.head.desc": "Accedi al tuo spazio broker SwissBroker Pro.",
   "auth.back_home": "Home",
   "auth.signup.title": "Crea un account broker",
+  "auth.signup.title_cabinet": "Crea un account studio",
   "auth.signup.subtitle": "30 secondi per iniziare. Nessuna carta di credito.",
   "auth.signin.title": "Accesso",
   "auth.signin.subtitle": "Accedi ai tuoi dossier e simulazioni.",

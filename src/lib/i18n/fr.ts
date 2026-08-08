@@ -1253,6 +1253,7 @@ export const fr: Record<string, string> = {
   "auth.head.desc": "Accédez à votre espace courtier SwissBroker Pro.",
   "auth.back_home": "Accueil",
   "auth.signup.title": "Créer un compte courtier",
+  "auth.signup.title_cabinet": "Créer un compte cabinet",
   "auth.signup.subtitle": "Créez votre compte pour accéder à SwissBroker Pro.",
   "auth.signin.title": "Connexion",
   "auth.signin.subtitle": "Accédez à vos dossiers et simulations.",

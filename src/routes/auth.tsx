@@ -212,7 +212,11 @@ const [otpState, setOtpState] = useState<{ email: string; plan: string; inviteTo
               {mode === "signup" ? t("auth.signup.title") : t("auth.signin.title")}
             </h1>
             <p className="mt-1 text-sm text-muted-foreground">
-              {mode === "signup" ? t("auth.signup.subtitle") : t("auth.signin.subtitle")}
+              {mode === "signup"
+                ? selectedPlan === "cabinet"
+                  ? t("auth.signup.title_cabinet")
+                  : t("auth.signup.title")
+                : t("auth.signin.title")}
             </p>
           </div>
 

@@ -1192,6 +1192,7 @@ export const de: Record<string, string> = {
   "auth.head.desc": "Zugang zu Ihrem SwissBroker Pro Brokerbereich.",
   "auth.back_home": "Startseite",
   "auth.signup.title": "Brokerkonto erstellen",
+  "auth.signup.title_cabinet": "Kanzleikonto erstellen",
   "auth.signup.subtitle": "30 Sekunden bis zum Start. Keine Kreditkarte.",
   "auth.signin.title": "Anmeldung",
   "auth.signin.subtitle": "Zugang zu Ihren Dossiers und Simulationen.",
