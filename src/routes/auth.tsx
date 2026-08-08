@@ -94,11 +94,42 @@ const [otpState, setOtpState] = useState<{ email: string; plan: string; inviteTo
       return;
     }
 
-    // Invitation cabinet : le siège est déjà payé par le directeur qui a
-    // envoyé l'invitation, on saute entièrement l'étape de paiement.
+    // Invitation cabinet : deux cas selon qui doit payer, vérifié
+    // maintenant plutôt que supposé automatiquement.
     if (otpState.inviteToken) {
-      navigate({ to: "/dashboard" });
-      return;
+      try {
+        const { data: inviteInfo, error: inviteError } = await supabase.functions.invoke(
+          "cabinet-invite-info",
+          { body: { token: otpState.inviteToken } },
+        );
+        if (inviteError || inviteInfo?.error) {
+          throw new Error(inviteInfo?.error ?? "Invitation invalide.");
+        }
+        if (inviteInfo.payer === "cabinet") {
+          // Déjà payé par le cabinet, accès débloqué à l'inscription.
+          navigate({ to: "/dashboard" });
+          return;
+        }
+        // Le courtier paie lui-même : direction le paiement, avec le
+        // price_id du siège cabinet, pas celui de Starter/Pro.
+        const { data: stripeData, error: fnError } = await supabase.functions.invoke("stripe-checkout", {
+          body: {
+            priceId: "price_1U17fiRzqfEoHxSu8CIqtbtA",
+            brokerId: data.session.user.id,
+            brokerEmail: data.session.user.email,
+            plan: "cabinet",
+          },
+        });
+        if (fnError || !stripeData?.url) throw new Error("Erreur Stripe");
+        window.location.href = stripeData.url;
+        return;
+      } catch (e) {
+        setOtpError(
+          e instanceof Error ? e.message : "Erreur lors de la vérification de l'invitation. Contactez le support.",
+        );
+        setOtpLoading(false);
+        return;
+      }
     }
     const priceId = PRICE_IDS[otpState.plan];
     if (!priceId) {
