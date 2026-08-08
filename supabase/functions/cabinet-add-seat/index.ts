@@ -1,9 +1,11 @@
 // supabase/functions/cabinet-add-seat/index.ts
-// Ajoute un siège cabinet (290 CHF/mois) à l'abonnement Stripe du directeur
-// qui invite, envoie l'email d'invitation via Brevo si le paiement réussit.
-// Si ce directeur n'a pas encore d'abonnement Stripe (cas d'un directeur
-// créé via une invitation, qui n'est jamais passé par Stripe Checkout), on
-// lui en crée un nouveau à la volée avec ce siège comme premier élément.
+// Envoie une invitation cabinet. Deux cas selon "payer" :
+// - "cabinet" : débite immédiatement le siège sur l'abonnement du
+//   directeur qui invite (ou crée un abonnement à la volée si besoin),
+//   puis envoie l'email.
+// - "self" : aucun débit ici. L'email envoyé mène vers une inscription
+//   classique ; c'est la personne invitée qui paiera elle-même, à ce
+//   moment le rattachement au cabinet se fera (voir stripe-webhook).
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
@@ -34,14 +36,25 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { inviterId, inviterEmail, cabinetRootId, inviteeEmail, inviteeFirstName, inviteeLastName, role } =
-      await req.json();
+    const {
+      inviterId,
+      inviterEmail,
+      cabinetRootId,
+      inviteeEmail,
+      inviteeFirstName,
+      inviteeLastName,
+      role,
+      payer,
+    } = await req.json();
 
     if (!inviterId || !inviterEmail || !cabinetRootId || !inviteeEmail) {
       throw new Error("Paramètres manquants.");
     }
     if (role !== "director" && role !== "courtier") {
       throw new Error("Rôle invalide.");
+    }
+    if (payer !== "cabinet" && payer !== "self") {
+      throw new Error("Choix du payeur invalide.");
     }
 
     const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
@@ -51,7 +64,8 @@ Deno.serve(async (req) => {
     if (!stripeKey || !supabaseUrl || !supabaseKey) throw new Error("Variables manquantes");
 
     // Comptes internes (fondatrice, associé) : accès illimité, aucune
-    // facturation ne doit se déclencher quand ils invitent quelqu'un.
+    // facturation ne doit jamais se déclencher quand ils invitent
+    // quelqu'un, même s'ils choisissent "cabinet paie".
     const inviterProfileRes = await fetch(
       `${supabaseUrl}/rest/v1/profiles?id=eq.${inviterId}&select=plan`,
       { headers: { "apikey": supabaseKey, "Authorization": `Bearer ${supabaseKey}` } },
@@ -61,80 +75,73 @@ Deno.serve(async (req) => {
 
     let seatItemId: string | null = null;
 
-    if (!isInternal) {
-      // 1. Retrouver, ou créer, le customer Stripe du directeur qui invite.
+    // ── Cas "le cabinet paie" (et que ce n'est pas un compte interne) ──
+    if (payer === "cabinet" && !isInternal) {
+      const customerRes = await fetch(
+        `https://api.stripe.com/v1/customers?email=${encodeURIComponent(inviterEmail)}&limit=1`,
+        { headers: { "Authorization": `Bearer ${stripeKey}` } },
+      );
+      const customerData = await customerRes.json();
+      let customer = customerData.data?.[0];
+      if (!customer) {
+        const createCustomerRes = await fetch("https://api.stripe.com/v1/customers", {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${stripeKey}`,
+            "Content-Type": "application/x-www-form-urlencoded",
+          },
+          body: new URLSearchParams({ email: inviterEmail }).toString(),
+        });
+        customer = await createCustomerRes.json();
+        if (!createCustomerRes.ok) throw new Error(customer.error?.message ?? "Erreur création client Stripe.");
+      }
 
-    // 1. Retrouver, ou créer, le customer Stripe du directeur qui invite.
-    const customerRes = await fetch(
-      `https://api.stripe.com/v1/customers?email=${encodeURIComponent(inviterEmail)}&limit=1`,
-      { headers: { "Authorization": `Bearer ${stripeKey}` } },
-    );
-    const customerData = await customerRes.json();
-    let customer = customerData.data?.[0];
-    if (!customer) {
-      const createCustomerRes = await fetch("https://api.stripe.com/v1/customers", {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${stripeKey}`,
-          "Content-Type": "application/x-www-form-urlencoded",
-        },
-        body: new URLSearchParams({ email: inviterEmail }).toString(),
-      });
-      customer = await createCustomerRes.json();
-      if (!createCustomerRes.ok) throw new Error(customer.error?.message ?? "Erreur création client Stripe.");
-    }
+      const subRes = await fetch(
+        `https://api.stripe.com/v1/subscriptions?customer=${customer.id}&status=active&limit=1`,
+        { headers: { "Authorization": `Bearer ${stripeKey}` } },
+      );
+      const subData = await subRes.json();
+      const subscription = subData.data?.[0];
 
-    // 2. Retrouver son abonnement actif, s'il existe.
-    const subRes = await fetch(
-      `https://api.stripe.com/v1/subscriptions?customer=${customer.id}&status=active&limit=1`,
-      { headers: { "Authorization": `Bearer ${stripeKey}` } },
-    );
-    const subData = await subRes.json();
-    let subscription = isInternal ? null : subData.data?.[0];
-
-    if (subscription) {
-      const itemRes = await fetch("https://api.stripe.com/v1/subscription_items", {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${stripeKey}`,
-          "Content-Type": "application/x-www-form-urlencoded",
-        },
-        body: new URLSearchParams({
-          subscription: subscription.id,
-          price: SEAT_PRICE_ID,
-          quantity: "1",
-          proration_behavior: "always_invoice",
-        }).toString(),
-      });
-      const item = await itemRes.json();
-      if (!itemRes.ok) throw new Error(item.error?.message ?? "Erreur lors de l'ajout du siège.");
-      seatItemId = item.id;
-    } else {
-      const createSubRes = await fetch("https://api.stripe.com/v1/subscriptions", {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${stripeKey}`,
-          "Content-Type": "application/x-www-form-urlencoded",
-        },
-        body: new URLSearchParams({
-          customer: customer.id,
-          "items[0][price]": SEAT_PRICE_ID,
-          "items[0][quantity]": "1",
-        }).toString(),
-      });
-      subscription = await createSubRes.json();
-      if (!createSubRes.ok) throw new Error(subscription.error?.message ?? "Erreur création abonnement.");
-      seatItemId = subscription.items?.data?.[0]?.id ?? subscription.id;
+      if (subscription) {
+        const itemRes = await fetch("https://api.stripe.com/v1/subscription_items", {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${stripeKey}`,
+            "Content-Type": "application/x-www-form-urlencoded",
+          },
+          body: new URLSearchParams({
+            subscription: subscription.id,
+            price: SEAT_PRICE_ID,
+            quantity: "1",
+            proration_behavior: "always_invoice",
+          }).toString(),
+        });
+        const item = await itemRes.json();
+        if (!itemRes.ok) throw new Error(item.error?.message ?? "Erreur lors de l'ajout du siège.");
+        seatItemId = item.id;
+      } else {
+        const createSubRes = await fetch("https://api.stripe.com/v1/subscriptions", {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${stripeKey}`,
+            "Content-Type": "application/x-www-form-urlencoded",
+          },
+          body: new URLSearchParams({
+            customer: customer.id,
+            "items[0][price]": SEAT_PRICE_ID,
+            "items[0][quantity]": "1",
+          }).toString(),
+        });
+        const newSub = await createSubRes.json();
+        if (!createSubRes.ok) throw new Error(newSub.error?.message ?? "Erreur création abonnement.");
+        seatItemId = newSub.items?.data?.[0]?.id ?? newSub.id;
       }
     }
 
-    // 3. Créer l'invitation en base, avec un token unique et le nom/prénom
-
-    // 3. Créer l'invitation en base, avec un token unique et le nom/prénom
-    //    de la personne, pour personnaliser l'email et l'afficher
-    //    correctement dans la liste des invitations en attente.
+    // Créer l'invitation en base, avec un token unique.
     const token = crypto.randomUUID();
-    const invoiceInsertRes = await fetch(`${supabaseUrl}/rest/v1/cabinet_invites`, {
+    const insertRes = await fetch(`${supabaseUrl}/rest/v1/cabinet_invites`, {
       method: "POST",
       headers: {
         "apikey": supabaseKey,
@@ -149,20 +156,25 @@ Deno.serve(async (req) => {
         first_name: inviteeFirstName ?? null,
         last_name: inviteeLastName ?? null,
         role,
+        payer,
         token,
         stripe_subscription_item_id: seatItemId,
       }),
     });
-    const invoiceBody = await invoiceInsertRes.json();
-    if (!invoiceInsertRes.ok) {
-      console.error("Erreur insertion cabinet_invites:", invoiceInsertRes.status, JSON.stringify(invoiceBody));
-      throw new Error("Le siège a été facturé mais l'invitation n'a pas pu être enregistrée. Contactez le support.");
+    const insertBody = await insertRes.json();
+    if (!insertRes.ok) {
+      console.error("Erreur insertion cabinet_invites:", insertRes.status, JSON.stringify(insertBody));
+      throw new Error("L'invitation n'a pas pu être enregistrée.");
     }
 
-    // 4. Envoyer l'email d'invitation, personnalisé avec le prénom si connu.
+    // Envoyer l'email, avec un texte adapté selon qui doit payer.
     const roleLabel = role === "director" ? "Directeur" : "Courtier";
     const signupUrl = `${siteUrl}/auth?invite=${token}`;
     const greeting = inviteeFirstName ? `Bonjour ${inviteeFirstName},` : "Bonjour,";
+    const paymentNote =
+      payer === "cabinet"
+        ? "<p>Votre accès est déjà réglé par le cabinet, il ne vous reste qu'à créer votre compte pour commencer.</p>"
+        : "<p>Pour finaliser votre accès (290 CHF/mois), vous serez invité(e) à créer votre compte puis à régler votre abonnement.</p>";
     await sendBrevoEmail(
       inviteeEmail,
       "Vous êtes invité(e) à rejoindre un cabinet sur SwissBroker Pro",
@@ -171,7 +183,7 @@ Deno.serve(async (req) => {
         <h2 style="color: #0f766e;">Invitation SwissBroker Pro</h2>
         <p>${greeting}</p>
         <p>Vous avez été invité(e) à rejoindre un cabinet sur SwissBroker Pro, avec un accès en tant que <strong>${roleLabel}</strong>.</p>
-        <p>Votre accès est déjà réglé par le cabinet, il ne vous reste qu'à créer votre compte pour commencer.</p>
+        ${paymentNote}
         <p style="text-align:center; margin: 24px 0;">
           <a href="${signupUrl}" style="background:#0f766e; color:#fff; padding:12px 24px; border-radius:8px; text-decoration:none; font-weight:bold;">
             Créer mon compte
@@ -183,7 +195,7 @@ Deno.serve(async (req) => {
       `,
     );
 
-    return new Response(JSON.stringify({ sent: true, inviteId: invoiceBody[0]?.id }), {
+    return new Response(JSON.stringify({ sent: true, inviteId: insertBody[0]?.id }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (err) {
