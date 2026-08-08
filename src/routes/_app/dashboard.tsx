@@ -29,6 +29,8 @@ import { formatDateShort } from "@/lib/i18n/format";
 import { t as translate } from "@/lib/i18n";
 import { KIND_LABELS } from "@/lib/history/types";
 import { usePlan } from "@/contexts/PlanContext";
+import { CabinetRootGuide } from "@/components/guides/CabinetRootGuide";
+import { CabinetDirectorGuide } from "@/components/guides/CabinetDirectorGuide";
 
 export const Route = createFileRoute("/_app/dashboard")({
   head: () => ({ meta: [{ title: translate("dash.head.title") }] }),

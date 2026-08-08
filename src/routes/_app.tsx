@@ -104,6 +104,7 @@ function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
           <Link
             key={item.to}
             to={item.to}
+            data-nav={item.to}
             onClick={onNavigate}
             search={item.to === "/calculators" ? { clientId: undefined } : undefined}
             className={cn(
