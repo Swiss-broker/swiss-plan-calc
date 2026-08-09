@@ -25,8 +25,11 @@ Deno.serve(async (req) => {
     const cabinetRootId = requesters[0]?.cabinet_root_id;
     if (!cabinetRootId) throw new Error("Ce compte ne fait pas partie d'un cabinet.");
 
+    // Visible : diffusé à tout le monde (target_id vide), ciblé sur moi,
+    // ou posté par moi (pour garder mon propre historique même ciblé).
+    const orFilter = `target_id.is.null,target_id.eq.${requesterId},posted_by.eq.${requesterId}`;
     const annRes = await fetch(
-      `${supabaseUrl}/rest/v1/team_announcements?cabinet_root_id=eq.${cabinetRootId}&select=id,message,posted_by,created_at,profiles!posted_by(first_name,last_name)&order=created_at.desc&limit=10`,
+      `${supabaseUrl}/rest/v1/team_announcements?cabinet_root_id=eq.${cabinetRootId}&or=(${orFilter})&select=id,message,posted_by,target_id,created_at,profiles!posted_by(first_name,last_name)&order=created_at.desc&limit=10`,
       { headers: { "apikey": supabaseKey, "Authorization": `Bearer ${supabaseKey}` } },
     );
     const announcements = await annRes.json();
