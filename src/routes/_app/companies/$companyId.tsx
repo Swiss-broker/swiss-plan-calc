@@ -1,3 +1,4 @@
+// src/routes/_app/companies/$companyId.tsx
 import { useState } from "react";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -245,6 +246,23 @@ function CompanyDetailPage() {
           </Button>
         </div>
       </div>
+
+      {/* Alerte rattachement obligatoire : visible uniquement si aucun */}
+      {/* client n'est rattaché, condition pour que les simulations de */}
+      {/* cette société puissent rejoindre la synthèse rendez-vous payante. */}
+      {directors.length === 0 && (
+        <div className="mt-4 flex items-start gap-2 rounded-xl border border-warning/40 bg-warning/5 p-4 text-sm">
+          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-warning" />
+          <div>
+            <p className="font-semibold text-foreground">Rattachement obligatoire</p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Cette société n'est rattachée à aucun client. Rattachez un dirigeant pour que les
+              simulations de cette société, comme le comparateur rémunération, puissent être
+              ajoutées à la synthèse rendez-vous payante depuis la fiche client.
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* KPI cards */}
       <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
