@@ -144,11 +144,22 @@ Deno.serve(async (req) => {
     // création de compte : elle n'a qu'à se reconnecter avec son mot de
     // passe habituel. Son ancien plan est remplacé par l'accès cabinet.
     const existingProfileRes = await fetch(
-      `${supabaseUrl}/rest/v1/profiles?email=eq.${encodeURIComponent(inviteeEmail)}&select=id,cabinet_role`,
+     `${supabaseUrl}/rest/v1/profiles?email=eq.${encodeURIComponent(inviteeEmail)}&select=id,cabinet_role,plan`,
       { headers: { "apikey": supabaseKey, "Authorization": `Bearer ${supabaseKey}` } },
     );
     const existingProfiles = await existingProfileRes.json();
     const existingProfile = existingProfiles[0];
+    // Si la personne a déjà un abonnement individuel actif (Starter/Pro),
+    // on bloque : elle doit d'abord annuler elle-même cet abonnement
+    // depuis son profil (il restera actif jusqu'à sa date d'échéance,
+    // aucun remboursement ni coupure immédiate), puis le directeur pourra
+    // relancer l'invitation une fois cette date passée. Rien n'est modifié
+    // automatiquement sur son abonnement, elle garde le contrôle.
+    if (existingProfile && (existingProfile.plan === "starter" || existingProfile.plan === "pro")) {
+      throw new Error(
+        "Cette personne a déjà un abonnement individuel actif. Demandez-lui d'annuler son abonnement depuis son profil (il restera actif jusqu'à sa date d'échéance), puis relancez l'invitation après cette date.",
+      );
+    }
 
     if (existingProfile && payer === "cabinet") {
       if (existingProfile.cabinet_role) {
