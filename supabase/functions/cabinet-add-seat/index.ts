@@ -139,6 +139,63 @@ Deno.serve(async (req) => {
       }
     }
 
+    // Si la personne a déjà un compte (ex. Starter/Pro existant) et que
+    // le cabinet paie, on la rattache immédiatement, sans passer par une
+    // création de compte : elle n'a qu'à se reconnecter avec son mot de
+    // passe habituel. Son ancien plan est remplacé par l'accès cabinet.
+    const existingProfileRes = await fetch(
+      `${supabaseUrl}/rest/v1/profiles?email=eq.${encodeURIComponent(inviteeEmail)}&select=id,cabinet_role`,
+      { headers: { "apikey": supabaseKey, "Authorization": `Bearer ${supabaseKey}` } },
+    );
+    const existingProfiles = await existingProfileRes.json();
+    const existingProfile = existingProfiles[0];
+
+    if (existingProfile && payer === "cabinet") {
+      if (existingProfile.cabinet_role) {
+        throw new Error("Cette personne fait déjà partie d'un cabinet.");
+      }
+
+      const managerId = role === "director" ? cabinetRootId : inviterId;
+      await fetch(`${supabaseUrl}/rest/v1/profiles?id=eq.${existingProfile.id}`, {
+        method: "PATCH",
+        headers: {
+          "apikey": supabaseKey,
+          "Authorization": `Bearer ${supabaseKey}`,
+          "Content-Type": "application/json",
+          "Prefer": "return=minimal",
+        },
+        body: JSON.stringify({
+          plan: "cabinet",
+          manager_id: managerId,
+          cabinet_root_id: cabinetRootId,
+          cabinet_role: role,
+        }),
+      });
+
+      const roleLabelExisting = role === "director" ? "Directeur" : "Courtier";
+      const greetingExisting = inviteeFirstName ? `Bonjour ${inviteeFirstName},` : "Bonjour,";
+      await sendBrevoEmail(
+        inviteeEmail,
+        "Vous avez rejoint un cabinet sur SwissBroker Pro",
+        `
+        <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 24px;">
+          <h2 style="color: #0f766e;">Votre compte a été mis à jour</h2>
+          <p>${greetingExisting}</p>
+          <p>Vous avez été ajouté(e) à un cabinet sur SwissBroker Pro, avec un accès en tant que <strong>${roleLabelExisting}</strong>. Votre compte existant a été mis à niveau, vous n'avez rien à faire de plus.</p>
+          <p style="text-align:center; margin: 24px 0;">
+            <a href="${siteUrl}/auth" style="background:#0f766e; color:#fff; padding:12px 24px; border-radius:8px; text-decoration:none; font-weight:bold;">
+              Me connecter
+            </a>
+          </p>
+        </div>
+        `,
+      );
+
+      return new Response(JSON.stringify({ sent: true, attachedExisting: true }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     // Créer l'invitation en base, avec un token unique.
     const token = crypto.randomUUID();
     const insertRes = await fetch(`${supabaseUrl}/rest/v1/cabinet_invites`, {
