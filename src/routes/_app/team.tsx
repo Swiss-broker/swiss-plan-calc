@@ -20,6 +20,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { formatCHF } from "@/lib/format";
+import { GuideMode, GuideToggleButton, type GuideStep } from "@/components/calculators/GuideMode";
 
 export const Route = createFileRoute("/_app/team")({
   head: () => ({ meta: [{ title: "Équipe · SwissBroker Pro" }] }),
@@ -78,6 +79,7 @@ function TeamPage() {
   const qc = useQueryClient();
   const [inviteOpen, setInviteOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<"team" | "invites">("team");
+  const [guideOpen, setGuideOpen] = useState(false);
   
 
   const { data, isLoading, error } = useQuery<TeamDashboardData>({
@@ -113,6 +115,17 @@ function TeamPage() {
   }
 
   const { totals, teamData, pendingInvites, requester } = data;
+
+  const guideSteps: GuideStep[] = [
+    { title: "Bienvenue sur votre page Équipe", body: "Retrouvez ici toute la gestion de votre cabinet : membres, invitations, activité et communication." },
+    { target: "team-invite-btn", title: "Inviter quelqu'un", body: "Ajoutez un directeur ou un courtier à votre équipe. Choisissez qui règle le siège (290 CHF/mois) : le cabinet ou la personne elle-même." },
+    { target: "team-announcements", title: "Annonces", body: "Postez un message à toute l'équipe, ou ciblez une personne précise." },
+    { target: "team-stats", title: "Chiffres clés", body: "Nombre de membres, clients traités, chiffre d'affaires du mois et évolution en un coup d'œil." },
+    { target: "team-podium", title: "Classement du mois", body: "Les 3 membres qui ont traité le plus de clients ce mois-ci." },
+    { target: "team-chart", title: "Évolution des clients", body: "Le nombre de clients traités par toute l'équipe, mois par mois, sur les 6 derniers mois." },
+    { target: "team-heatmap", title: "Activité de l'équipe", body: "Visualisez l'activité par jour de la semaine sur les 12 dernières semaines. Filtrez par courtier avec le menu déroulant." },
+    { target: "team-tabs", title: "Mon équipe et invitations", body: "Basculez entre la liste de vos membres actifs et vos invitations en attente." },
+  ];
   const growth =
     totals.revenueLastMonth > 0
       ? ((totals.revenueThisMonth - totals.revenueLastMonth) / totals.revenueLastMonth) * 100
@@ -129,20 +142,33 @@ function TeamPage() {
               : "Vue de votre propre équipe."}
           </p>
         </div>
-        <Button onClick={() => setInviteOpen(true)} className="gap-2 shadow-elegant">
-          <UserPlus className="h-4 w-4" /> Inviter quelqu'un
-        </Button>
+        <div className="flex items-center gap-2">
+          <GuideToggleButton onClick={() => setGuideOpen(true)} />
+          <Button id="team-invite-btn" onClick={() => setInviteOpen(true)} className="gap-2 shadow-elegant">
+            <UserPlus className="h-4 w-4" /> Inviter quelqu'un
+          </Button>
+        </div>
       </div>
 
-        <TeamAnnouncements
-        requesterId={requester.id}
-        canPost={requester.cabinet_role === "root_director" || requester.cabinet_role === "director"}
-        cabinetRootId={requester.cabinet_role === "root_director" ? requester.id : requester.cabinet_root_id}
-        teamData={teamData}
+      <GuideMode
+        open={guideOpen}
+        onClose={() => setGuideOpen(false)}
+        steps={guideSteps}
+        title="Guide de la page Équipe"
+        guideId="team-page-intro"
       />
 
+        <div id="team-announcements">
+        <TeamAnnouncements
+          requesterId={requester.id}
+          canPost={requester.cabinet_role === "root_director" || requester.cabinet_role === "director"}
+          cabinetRootId={requester.cabinet_role === "root_director" ? requester.id : requester.cabinet_root_id}
+          teamData={teamData}
+        />
+      </div>
+
       {/* Cartes chiffrées */}
-      <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+      <div id="team-stats" className="grid grid-cols-2 gap-4 sm:grid-cols-4">
         <StatCard icon={Users} label="Membres" value={String(totals.memberCount)} />
         <StatCard icon={Users} label="Clients traités" value={String(totals.clientsTotal)} />
         <StatCard icon={TrendingUp} label="CA ce mois" value={formatCHF(totals.revenueThisMonth)} />
@@ -170,7 +196,7 @@ function TeamPage() {
       )}
 
       {/* Onglets Mon équipe / Invitations */}
-      <div className="flex gap-1 border-b border-border">
+      <div id="team-tabs" className="flex gap-1 border-b border-border">
         <button
           type="button"
           onClick={() => setActiveTab("team")}
@@ -197,9 +223,9 @@ function TeamPage() {
 
       {activeTab === "team" && (
         <div className="space-y-4">
-          <TeamPodium teamData={teamData} />
-          <ClientsChart data={data.monthlyHistory} />
-          <ActivityHeatmap teamData={teamData} rawData={data.heatmapRaw} />
+          <div id="team-podium"><TeamPodium teamData={teamData} /></div>
+          <div id="team-chart"><ClientsChart data={data.monthlyHistory} /></div>
+          <div id="team-heatmap"><ActivityHeatmap teamData={teamData} rawData={data.heatmapRaw} /></div>
           {requester.cabinet_role === "root_director" && <OrgChart teamData={teamData} />}
           {teamData.map((group) => (
             <DirectorGroup key={group.director.id} group={group} />
