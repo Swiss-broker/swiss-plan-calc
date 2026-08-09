@@ -103,20 +103,23 @@ Deno.serve(async (req) => {
       teamData.push({ director: { ...director, ...directorStats }, courtiers: courtiersWithStats });
     }
 
-    // 4. Historique mensuel du CA de toute l'équipe, sur les 6 derniers
-    //    mois, pour le graphique d'évolution.
+    // 4. Historique mensuel du nombre de clients créés par toute l'équipe,
+    //    sur les 6 derniers mois, pour le graphique d'évolution. On se base
+    //    sur les clients (activité commerciale réelle), pas sur le CA des
+    //    rendez-vous facturés, qui ne reflète pas le vrai travail du
+    //    courtier.
     const monthlyHistory = [];
     if (allMemberIds.length > 0) {
       const idsFilter = allMemberIds.join(",");
       for (let offset = -5; offset <= 0; offset++) {
         const start = monthStartISO(offset);
         const end = monthStartISO(offset + 1);
-        const rows = await sb(
-          supabaseUrl, supabaseKey,
-          `rdv_invoices?broker_id=in.(${idsFilter})&status=eq.paid&created_at=gte.${start}&created_at=lt.${end}&select=amount_chf`,
+        const countRes = await fetch(
+          `${supabaseUrl}/rest/v1/clients?broker_id=in.(${idsFilter})&created_at=gte.${start}&created_at=lt.${end}&select=id`,
+          { headers: { "apikey": supabaseKey, "Authorization": `Bearer ${supabaseKey}`, "Prefer": "count=exact" } },
         );
-        const total = rows.reduce((s: number, r: any) => s + (r.amount_chf ?? 0), 0) / 100;
-        monthlyHistory.push({ month: monthLabel(offset), revenue: total });
+        const count = Number(countRes.headers.get("content-range")?.split("/")[1] ?? 0);
+        monthlyHistory.push({ month: monthLabel(offset), clients: count });
       }
     }
 
