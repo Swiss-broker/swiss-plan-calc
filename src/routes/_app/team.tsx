@@ -74,6 +74,7 @@ function TeamPage() {
   const { user } = useAuth();
   const qc = useQueryClient();
   const [inviteOpen, setInviteOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<"team" | "invites">("team");
 
   const { data, isLoading, error } = useQuery<TeamDashboardData>({
     queryKey: ["team-dashboard", user?.id],
@@ -157,26 +158,53 @@ function TeamPage() {
         />
       )}
 
-      {/* Invitations en attente */}
-      {pendingInvites.length > 0 && (
-        <div className="rounded-2xl border border-border bg-card p-5 shadow-card">
-          <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
-            Invitations en attente ({pendingInvites.length})
-          </h2>
-          <div className="mt-3 space-y-2">
-            {pendingInvites.map((inv) => (
-              <PendingInviteRow key={inv.id} invite={inv} requesterId={requester.id} onCancelled={refresh} />
-            ))}
-          </div>
+      {/* Onglets Mon équipe / Invitations */}
+      <div className="flex gap-1 border-b border-border">
+        <button
+          type="button"
+          onClick={() => setActiveTab("team")}
+          className={`px-4 py-2 text-sm font-medium transition-colors ${
+            activeTab === "team"
+              ? "border-b-2 border-primary text-primary"
+              : "text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          Mon équipe
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveTab("invites")}
+          className={`px-4 py-2 text-sm font-medium transition-colors ${
+            activeTab === "invites"
+              ? "border-b-2 border-primary text-primary"
+              : "text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          Invitations{pendingInvites.length > 0 ? ` (${pendingInvites.length})` : ""}
+        </button>
+      </div>
+
+      {activeTab === "team" && (
+        <div className="space-y-4">
+          {teamData.map((group) => (
+            <DirectorGroup key={group.director.id} group={group} />
+          ))}
         </div>
       )}
 
-      {/* Liste des membres, groupée par directeur */}
-      <div className="space-y-4">
-        {teamData.map((group) => (
-          <DirectorGroup key={group.director.id} group={group} />
-        ))}
-      </div>
+      {activeTab === "invites" && (
+        <div className="rounded-2xl border border-border bg-card p-5 shadow-card">
+          {pendingInvites.length === 0 ? (
+            <p className="text-sm text-muted-foreground">Aucune invitation en attente pour le moment.</p>
+          ) : (
+            <div className="space-y-2">
+              {pendingInvites.map((inv) => (
+                <PendingInviteRow key={inv.id} invite={inv} requesterId={requester.id} onCancelled={refresh} />
+              ))}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
@@ -454,6 +482,10 @@ function InviteForm({
           Annuler
         </Button>
       </div>
+      <p className="text-[11px] text-muted-foreground">
+        Conseil : si la personne invitée ne reçoit rien après quelques minutes, demandez-lui de vérifier son
+        dossier spam / courrier indésirable.
+      </p>
     </div>
   );
 }
