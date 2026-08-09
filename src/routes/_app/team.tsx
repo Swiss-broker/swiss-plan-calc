@@ -75,6 +75,7 @@ function TeamPage() {
   const qc = useQueryClient();
   const [inviteOpen, setInviteOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<"team" | "invites">("team");
+  const [podiumMetric, setPodiumMetric] = useState<"revenue" | "clients">("revenue");
 
   const { data, isLoading, error } = useQuery<TeamDashboardData>({
     queryKey: ["team-dashboard", user?.id],
@@ -186,6 +187,7 @@ function TeamPage() {
 
       {activeTab === "team" && (
         <div className="space-y-4">
+          <TeamPodium teamData={teamData} metric={podiumMetric} onMetricChange={setPodiumMetric} />
           {teamData.map((group) => (
             <DirectorGroup key={group.director.id} group={group} />
           ))}
@@ -228,6 +230,71 @@ function StatCard({
         <Icon className="h-3.5 w-3.5" /> {label}
       </div>
       <div className={`mt-2 text-2xl font-bold tabular-nums ${toneClass}`}>{value}</div>
+    </div>
+  );
+}
+
+function TeamPodium({
+  teamData,
+  metric,
+  onMetricChange,
+}: {
+  teamData: TeamGroup[];
+  metric: "revenue" | "clients";
+  onMetricChange: (m: "revenue" | "clients") => void;
+}) {
+  const allMembers = teamData.flatMap((d) => [d.director, ...d.courtiers]);
+  const sorted = [...allMembers].sort((a, b) =>
+    metric === "revenue" ? b.revenueThisMonth - a.revenueThisMonth : b.clientsCount - a.clientsCount,
+  );
+  const top3 = sorted.slice(0, 3);
+  const medals = ["🥇", "🥈", "🥉"];
+
+  if (top3.length === 0) return null;
+
+  return (
+    <div className="rounded-2xl border border-border bg-card p-5 shadow-card">
+      <div className="flex items-center justify-between">
+        <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+          Classement du mois
+        </h2>
+        <div className="flex gap-1 rounded-lg border border-border p-0.5 text-xs">
+          <button
+            type="button"
+            onClick={() => onMetricChange("revenue")}
+            className={`rounded-md px-2 py-1 ${
+              metric === "revenue" ? "bg-primary text-primary-foreground" : "text-muted-foreground"
+            }`}
+          >
+            CA
+          </button>
+          <button
+            type="button"
+            onClick={() => onMetricChange("clients")}
+            className={`rounded-md px-2 py-1 ${
+              metric === "clients" ? "bg-primary text-primary-foreground" : "text-muted-foreground"
+            }`}
+          >
+            Clients
+          </button>
+        </div>
+      </div>
+      <div className="mt-4 space-y-2">
+        {top3.map((m, i) => (
+          <div
+            key={m.id}
+            className="flex items-center justify-between rounded-lg border border-border/60 bg-muted/20 px-3 py-2"
+          >
+            <div className="flex items-center gap-2">
+              <span className="text-lg">{medals[i]}</span>
+              <span className="text-sm font-medium">{fullName(m)}</span>
+            </div>
+            <span className="text-sm font-semibold tabular-nums">
+              {metric === "revenue" ? formatCHF(m.revenueThisMonth) : `${m.clientsCount} clients`}
+            </span>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
