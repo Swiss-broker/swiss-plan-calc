@@ -1,3 +1,4 @@
+// src/routes/_app.tsx
 import { FeedbackWidget } from "@/components/feedback/FeedbackWidget";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { AiChat } from "@/components/ai/AiChat";
@@ -25,6 +26,9 @@ import { usePlan } from "@/contexts/PlanContext";
 import { useT } from "@/contexts/LanguageContext";
 import { LanguageSwitcher } from "@/components/common/LanguageSwitcher";
 import { cn } from "@/lib/utils";
+// Logo réel du cabinet, remplace l'icône "S" et le texte générés en CSS.
+import logoIcon from "@/assets/logo-icon.png";
+import logoFull from "@/assets/logo-full.png";
 
 export const Route = createFileRoute("/_app")({
   component: AppShell,
@@ -81,12 +85,8 @@ const NAV = [
 function BrandMark() {
   return (
     <div className="flex items-center gap-2">
-      <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-primary shadow-elegant">
-        <span className="text-sm font-bold text-primary-foreground">S</span>
-      </div>
-      <div className="text-sm font-semibold tracking-tight">
-        SwissBroker <span className="text-primary">Pro</span>
-      </div>
+      <img src={logoIcon} alt="" className="h-8 w-8 rounded-lg object-contain shadow-elegant" />
+      <img src={logoFull} alt="SwissBroker Pro" className="h-5 w-auto object-contain" />
     </div>
   );
 }

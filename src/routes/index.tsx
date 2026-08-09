@@ -1,3 +1,4 @@
+// src/routes/index.tsx
 import { createFileRoute } from "@tanstack/react-router";
 import { useState, useRef, useEffect } from "react";
 import { motion, useInView, useMotionValue, useSpring } from "framer-motion";
@@ -10,6 +11,9 @@ import { useT } from "@/contexts/LanguageContext";
 import { PublicLanguageSwitcher } from "@/components/common/PublicLanguageSwitcher";
 import { t as tStatic } from "@/lib/i18n";
 import { Link, useNavigate } from "@tanstack/react-router";
+// Logo réel du cabinet, remplace l'icône "S" et le texte générés en CSS.
+import logoIcon from "@/assets/logo-icon.png";
+import logoFull from "@/assets/logo-full.png";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -57,12 +61,8 @@ function Header({ onPricingOpen }: { onPricingOpen: () => void }) {
     >
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-3 px-4 sm:px-6 lg:px-8">
         <Link to="/" className="flex min-w-0 items-center gap-2">
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-gradient-primary shadow-elegant">
-            <span className="text-lg font-bold text-primary-foreground">S</span>
-          </div>
-          <span className="truncate text-base font-semibold tracking-tight sm:text-lg">
-            SwissBroker <span className="text-primary">Pro</span>
-          </span>
+          <img src={logoIcon} alt="" className="h-9 w-9 shrink-0 rounded-lg object-contain shadow-elegant" />
+          <img src={logoFull} alt="SwissBroker Pro" className="h-6 w-auto shrink-0 object-contain" />
         </Link>
         <nav className="hidden items-center gap-8 md:flex">
           <a href="#features" className="text-sm text-muted-foreground hover:text-foreground transition-colors">{t("landing.nav.features")}</a>
