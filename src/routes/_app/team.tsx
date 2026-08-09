@@ -6,6 +6,7 @@ import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Users, UserPlus, TrendingUp, Loader2, X, Mail, Crown } from "lucide-react";
+import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -63,6 +64,7 @@ interface TeamDashboardData {
     revenueLastMonth: number;
     revenueTotal: number;
   };
+  monthlyHistory: { month: string; clients: number }[];
 }
 
 function fullName(m: { first_name: string | null; last_name: string | null; email: string }) {
@@ -188,6 +190,7 @@ function TeamPage() {
       {activeTab === "team" && (
         <div className="space-y-4">
           <TeamPodium teamData={teamData} />
+          <ClientsChart data={data.monthlyHistory} />
           {teamData.map((group) => (
             <DirectorGroup key={group.director.id} group={group} />
           ))}
@@ -233,6 +236,55 @@ function StatCard({
     </div>
   );
 }
+
+function ClientsChart({ data }: { data: { month: string; clients: number }[] }) {
+  if (data.every((d) => d.clients === 0)) return null;
+  return (
+    <div className="rounded-2xl border border-border bg-card p-5 shadow-card">
+      <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+        Évolution des clients traités sur 6 mois
+      </h2>
+      <div className="mt-4 h-64 w-full">
+        <ResponsiveContainer width="100%" height="100%">
+          <AreaChart data={data} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
+            <defs>
+              <linearGradient id="teamClientsGradient" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="var(--primary)" stopOpacity={0.35} />
+                <stop offset="100%" stopColor="var(--primary)" stopOpacity={0} />
+              </linearGradient>
+            </defs>
+            <CartesianGrid stroke="var(--border)" strokeOpacity={0.4} vertical={false} />
+            <XAxis dataKey="month" tick={{ fontSize: 12, fill: "var(--muted-foreground)" }} axisLine={false} tickLine={false} />
+            <YAxis
+              tick={{ fontSize: 12, fill: "var(--muted-foreground)" }}
+              axisLine={false}
+              tickLine={false}
+              allowDecimals={false}
+            />
+            <Tooltip
+              formatter={(v: number) => `${v} client${v > 1 ? "s" : ""}`}
+              contentStyle={{
+                background: "var(--card)",
+                border: "1px solid var(--border)",
+                borderRadius: 8,
+                fontSize: 12,
+              }}
+            />
+            <Area
+              type="monotone"
+              dataKey="clients"
+              name="Clients traités"
+              stroke="var(--primary)"
+              strokeWidth={2.5}
+              fill="url(#teamClientsGradient)"
+            />
+          </AreaChart>
+        </ResponsiveContainer>
+      </div>
+    </div>
+  );
+}
+
 
 function TeamPodium({ teamData }: { teamData: TeamGroup[] }) {
   const allMembers = teamData.flatMap((d) => [d.director, ...d.courtiers]);
