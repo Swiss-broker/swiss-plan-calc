@@ -5,7 +5,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Users, UserPlus, TrendingUp, Loader2, X, Mail, Crown } from "lucide-react";
+import { Users, UserPlus, TrendingUp, Loader2, X, Mail, Crown, MessageSquare, Send } from "lucide-react";
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -54,7 +54,7 @@ interface PendingInvite {
 }
 
 interface TeamDashboardData {
-  requester: { id: string; cabinet_role: string };
+  requester: { id: string; cabinet_role: string; cabinet_root_id: string };
   teamData: TeamGroup[];
   pendingInvites: PendingInvite[];
   totals: {
@@ -133,6 +133,13 @@ function TeamPage() {
           <UserPlus className="h-4 w-4" /> Inviter quelqu'un
         </Button>
       </div>
+
+        <TeamAnnouncements
+        requesterId={requester.id}
+        canPost={requester.cabinet_role === "root_director" || requester.cabinet_role === "director"}
+        cabinetRootId={requester.cabinet_role === "root_director" ? requester.id : requester.cabinet_root_id}
+        teamData={teamData}
+      />
 
       {/* Cartes chiffrées */}
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
@@ -373,6 +380,149 @@ function ClientsChart({ data }: { data: { month: string; clients: number }[] }) 
   );
 }
 
+interface Announcement {
+  id: string;
+  message: string;
+  posted_by: string;
+  target_id: string | null;
+  created_at: string;
+  profiles: { first_name: string | null; last_name: string | null } | null;
+}
+
+function TeamAnnouncements({
+  requesterId,
+  canPost,
+  cabinetRootId,
+  teamData,
+}: {
+  requesterId: string;
+  canPost: boolean;
+  cabinetRootId: string;
+  teamData: TeamGroup[];
+}) {
+  const [message, setMessage] = useState("");
+  const [targetId, setTargetId] = useState<string>("all");
+  const [posting, setPosting] = useState(false);
+  const [expanded, setExpanded] = useState(false);
+
+  const { data, isLoading, refetch } = useQuery<{ announcements: Announcement[] }>({
+    queryKey: ["team-announcements", requesterId],
+    queryFn: async () => {
+      const { data, error } = await supabase.functions.invoke("team-get-announcements", {
+        body: { requesterId },
+      });
+      if (error || data?.error) throw new Error(data?.error ?? "Erreur de chargement.");
+      return data;
+    },
+  });
+
+  const possibleTargets = teamData.flatMap((g) =>
+    g.director.id === requesterId ? g.courtiers : [g.director, ...g.courtiers],
+  );
+
+  const onPost = async () => {
+    if (!message.trim()) return;
+    setPosting(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("team-post-announcement", {
+        body: {
+          posterId: requesterId,
+          cabinetRootId,
+          message: message.trim(),
+          targetId: targetId === "all" ? undefined : targetId,
+        },
+      });
+      if (error || !data?.posted) throw new Error(data?.error ?? "Erreur lors de la publication.");
+      setMessage("");
+      setTargetId("all");
+      toast.success("Annonce publiée.");
+      refetch();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Erreur lors de la publication.");
+    } finally {
+      setPosting(false);
+    }
+  };
+
+  const announcements = data?.announcements ?? [];
+  const visible = expanded ? announcements : announcements.slice(0, 1);
+
+  if (isLoading) return null;
+
+  return (
+    <div className="rounded-2xl border border-primary/30 bg-primary/5 p-5 shadow-card space-y-3">
+      <div className="flex items-center gap-2">
+        <MessageSquare className="h-4 w-4 text-primary" />
+        <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+          Annonces de l'équipe
+        </h2>
+      </div>
+
+      {canPost && (
+        <div className="space-y-2">
+          <div className="flex gap-2">
+            <Input
+              value={message}
+              onChange={(e) => setMessage(e.target.value)}
+              placeholder="Écrire une annonce..."
+              maxLength={500}
+              onKeyDown={(e) => e.key === "Enter" && onPost()}
+            />
+            <Button onClick={onPost} disabled={posting || !message.trim()} size="icon">
+              {posting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+            </Button>
+          </div>
+          {possibleTargets.length > 0 && (
+            <Select value={targetId} onValueChange={setTargetId}>
+              <SelectTrigger className="h-8 w-fit text-xs">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Toute l'équipe</SelectItem>
+                {possibleTargets.map((m) => (
+                  <SelectItem key={m.id} value={m.id}>
+                    {fullName(m)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+        </div>
+      )}
+
+      {announcements.length === 0 ? (
+        <p className="text-sm text-muted-foreground">Aucune annonce pour le moment.</p>
+      ) : (
+        <div className="space-y-2">
+          {visible.map((a) => (
+            <div key={a.id} className="rounded-lg bg-card p-3 text-sm">
+              <p>{a.message}</p>
+              <p className="mt-1 text-[11px] text-muted-foreground">
+                {fullName({
+                  first_name: a.profiles?.first_name ?? null,
+                  last_name: a.profiles?.last_name ?? null,
+                  email: "",
+                })}
+                {" · "}
+                {new Date(a.created_at).toLocaleDateString("fr-CH")}
+                {a.target_id && <span className="ml-1 text-primary">(message ciblé)</span>}
+              </p>
+            </div>
+          ))}
+          {announcements.length > 1 && (
+            <button
+              type="button"
+              onClick={() => setExpanded((v) => !v)}
+              className="text-xs font-medium text-primary hover:underline"
+            >
+              {expanded ? "Voir moins" : `Voir ${announcements.length - 1} de plus`}
+            </button>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
 
 function TeamPodium({ teamData }: { teamData: TeamGroup[] }) {
   const allMembers = teamData.flatMap((d) => [d.director, ...d.courtiers]);
