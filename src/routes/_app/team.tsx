@@ -65,6 +65,7 @@ interface TeamDashboardData {
     revenueTotal: number;
   };
   monthlyHistory: { month: string; clients: number }[];
+  heatmapRaw: { broker_id: string; created_at: string }[];
 }
 
 function fullName(m: { first_name: string | null; last_name: string | null; email: string }) {
@@ -191,6 +192,7 @@ function TeamPage() {
         <div className="space-y-4">
           <TeamPodium teamData={teamData} />
           <ClientsChart data={data.monthlyHistory} />
+          <ActivityHeatmap teamData={teamData} rawData={data.heatmapRaw} />
           {teamData.map((group) => (
             <DirectorGroup key={group.director.id} group={group} />
           ))}
@@ -233,6 +235,92 @@ function StatCard({
         <Icon className="h-3.5 w-3.5" /> {label}
       </div>
       <div className={`mt-2 text-2xl font-bold tabular-nums ${toneClass}`}>{value}</div>
+    </div>
+  );
+}
+
+function ActivityHeatmap({
+  teamData,
+  rawData,
+}: {
+  teamData: TeamGroup[];
+  rawData: { broker_id: string; created_at: string }[];
+}) {
+  const allMembers = teamData.flatMap((d) => [d.director, ...d.courtiers]);
+  const [selected, setSelected] = useState<string>("all");
+
+  const filtered = selected === "all" ? rawData : rawData.filter((r) => r.broker_id === selected);
+
+  const dayNames = ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"];
+  const weeksCount = 12;
+  const ramp = ["#F1EFE8", "#E1F5EE", "#C3ECDD", "#9FE1CB", "#5DCAA5", "#1D9E75", "#0F6E56", "#04342C"];
+
+  const mondayOf = (d: Date) => {
+    const c = new Date(d);
+    const day = (c.getDay() + 6) % 7;
+    c.setDate(c.getDate() - day);
+    c.setHours(0, 0, 0, 0);
+    return c;
+  };
+  const currentMonday = mondayOf(new Date());
+  const rangeStart = new Date(currentMonday);
+  rangeStart.setDate(rangeStart.getDate() - 11 * 7);
+
+  const grid: number[][] = Array.from({ length: 7 }, () => Array(weeksCount).fill(0));
+  for (const row of filtered) {
+    const created = new Date(row.created_at);
+    const rowMonday = mondayOf(created);
+    const weekIndex = Math.round((rowMonday.getTime() - rangeStart.getTime()) / (7 * 24 * 3600 * 1000));
+    const dayIndex = (created.getDay() + 6) % 7;
+    if (weekIndex >= 0 && weekIndex < weeksCount) grid[dayIndex][weekIndex] += 1;
+  }
+
+  const total = filtered.length;
+  const maxVal = Math.max(1, ...grid.flat());
+
+  return (
+    <div className="rounded-2xl bg-muted/30 p-5">
+      <div className="flex flex-wrap items-baseline justify-between gap-3">
+        <div>
+          <p className="text-xs text-muted-foreground">Activité de l'équipe</p>
+          <p className="mt-1 text-2xl font-bold">{total} clients</p>
+        </div>
+        <select
+          value={selected}
+          onChange={(e) => setSelected(e.target.value)}
+          className="rounded-full border border-border bg-background px-3 py-1.5 text-xs"
+        >
+          <option value="all">Toute l'équipe</option>
+          {allMembers.map((m) => (
+            <option key={m.id} value={m.id}>
+              {fullName(m)}
+            </option>
+          ))}
+        </select>
+      </div>
+      <div className="mt-5 space-y-1">
+        {dayNames.map((day, dayIdx) => (
+          <div key={day} className="grid items-center gap-1" style={{ gridTemplateColumns: `36px repeat(${weeksCount}, 1fr)` }}>
+            <span className="text-[11px] text-muted-foreground">{day}</span>
+            {grid[dayIdx].map((val, weekIdx) => {
+              const level = Math.min(7, Math.round((val / maxVal) * 7));
+              return (
+                <div
+                  key={weekIdx}
+                  title={`${day}, semaine ${weekIdx + 1} : ${val} client${val > 1 ? "s" : ""}`}
+                  className="h-4 rounded transition-transform hover:scale-110"
+                  style={{ background: ramp[level] }}
+                />
+              );
+            })}
+          </div>
+        ))}
+      </div>
+      <div className="mt-3 flex items-center justify-end gap-2 text-[11px] text-muted-foreground">
+        <span>Faible</span>
+        <div className="h-1.5 w-14 rounded-full" style={{ background: "linear-gradient(90deg, #E1F5EE, #1D9E75, #04342C)" }} />
+        <span>Forte</span>
+      </div>
     </div>
   );
 }
