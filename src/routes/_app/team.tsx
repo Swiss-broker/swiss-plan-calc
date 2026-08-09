@@ -55,7 +55,7 @@ interface PendingInvite {
 }
 
 interface TeamDashboardData {
-  requester: { id: string; cabinet_role: string; cabinet_root_id: string };
+  requester: { id: string; cabinet_role: string; cabinet_root_id: string; brokerage_name: string | null };
   teamData: TeamGroup[];
   pendingInvites: PendingInvite[];
   totals: {
@@ -135,7 +135,12 @@ function TeamPage() {
     <div className="mx-auto max-w-6xl space-y-6 px-4 py-8 sm:px-6 lg:px-8">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">Mon équipe</h1>
+          <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
+            Mon équipe
+            {requester.cabinet_role === "root_director" && requester.brokerage_name && (
+              <span className="text-muted-foreground"> · {requester.brokerage_name}</span>
+            )}
+          </h1>
           <p className="mt-1 text-sm text-muted-foreground">
             {requester.cabinet_role === "root_director"
               ? "Vue d'ensemble de tout votre cabinet."

@@ -55,7 +55,7 @@ Deno.serve(async (req) => {
     // 1. Qui demande, et avec quel rôle ?
     const requesterRows = await sb(
       supabaseUrl, supabaseKey,
-      `profiles?id=eq.${requesterId}&select=id,first_name,last_name,email,cabinet_role,cabinet_root_id`,
+      `profiles?id=eq.${requesterId}&select=id,first_name,last_name,email,cabinet_role,cabinet_root_id,brokerage_name`,
     );
     const requester = requesterRows[0];
     if (!requester || !requester.cabinet_role) {
