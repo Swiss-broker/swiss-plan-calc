@@ -1,7 +1,7 @@
 // supabase/functions/team-dashboard-data/index.ts
 // Calcule toutes les données du dashboard équipe (membres, chiffres,
-// invitations en attente, historique mensuel), en respectant les règles
-// de visibilité :
+// invitations en attente, historique mensuel, heatmap d'activité), en
+// respectant les règles de visibilité :
 // - Un directeur principal voit tous les directeurs de son cabinet et,
 //   sous chacun, leurs courtiers directs.
 // - Un directeur normal ne voit que ses propres courtiers directs.
@@ -28,6 +28,15 @@ function monthLabel(offsetMonths: number): string {
   const d = new Date();
   d.setMonth(d.getMonth() + offsetMonths, 1);
   return d.toLocaleDateString("fr-CH", { month: "short", year: "2-digit" });
+}
+
+// Lundi de la semaine contenant la date donnée, heure remise à zéro.
+function mondayOf(date: Date): Date {
+  const d = new Date(date);
+  const day = (d.getDay() + 6) % 7; // 0 = lundi
+  d.setDate(d.getDate() - day);
+  d.setHours(0, 0, 0, 0);
+  return d;
 }
 
 Deno.serve(async (req) => {
@@ -104,10 +113,7 @@ Deno.serve(async (req) => {
     }
 
     // 4. Historique mensuel du nombre de clients créés par toute l'équipe,
-    //    sur les 6 derniers mois, pour le graphique d'évolution. On se base
-    //    sur les clients (activité commerciale réelle), pas sur le CA des
-    //    rendez-vous facturés, qui ne reflète pas le vrai travail du
-    //    courtier.
+    //    sur les 6 derniers mois, pour le graphique d'évolution.
     const monthlyHistory = [];
     if (allMemberIds.length > 0) {
       const idsFilter = allMemberIds.join(",");
@@ -123,7 +129,44 @@ Deno.serve(async (req) => {
       }
     }
 
-    // 5. Invitations en attente, uniquement celles envoyées par les
+    // 5. Heatmap d'activité : nombre de clients créés par l'équipe, pour
+    //    chaque jour de la semaine (lundi à dimanche) sur les 12 dernières
+    //    semaines complètes. Une seule requête large, puis on répartit les
+    //    résultats en mémoire plutôt que 84 petites requêtes séparées.
+    const heatmap: number[][] = Array.from({ length: 7 }, () => Array(12).fill(0));
+    if (allMemberIds.length > 0) {
+      const idsFilter = allMemberIds.join(",");
+      const currentWeekMonday = mondayOf(new Date());
+      const rangeStart = new Date(currentWeekMonday);
+      rangeStart.setDate(rangeStart.getDate() - 11 * 7);
+
+      const clientsInRange = await sb(
+        supabaseUrl, supabaseKey,
+        `clients?broker_id=in.(${idsFilter})&created_at=gte.${rangeStart.toISOString()}&select=created_at`,
+      );
+
+      const clientsInRange = await sb(
+        supabaseUrl, supabaseKey,
+        `clients?broker_id=in.(${idsFilter})&created_at=gte.${rangeStart.toISOString()}&select=broker_id,created_at`,
+      );
+
+      for (const row of clientsInRange as { broker_id: string; created_at: string }[]) {
+        const created = new Date(row.created_at);
+        const rowMonday = mondayOf(created);
+        const weekIndex = Math.round((rowMonday.getTime() - rangeStart.getTime()) / (7 * 24 * 3600 * 1000));
+        const dayIndex = (created.getDay() + 6) % 7; // 0 = lundi
+        if (weekIndex >= 0 && weekIndex < 12) {
+          heatmap[dayIndex][weekIndex] += 1;
+        }
+      }
+
+      // Détail brut (qui, quand), pour permettre à la page de recalculer
+      // la heatmap filtrée sur un seul membre de l'équipe, sans refaire
+      // une requête serveur à chaque changement du menu déroulant.
+      var heatmapRaw = clientsInRange;
+    }
+
+    // 6. Invitations en attente, uniquement celles envoyées par les
     //    personnes visibles.
     const visibleInviterIds = directors.map((d) => d.id);
     const pendingInvites = await sb(
@@ -131,7 +174,7 @@ Deno.serve(async (req) => {
       `cabinet_invites?invited_by=in.(${visibleInviterIds.join(",")})&status=eq.pending&select=id,email,first_name,last_name,role,invited_by,created_at`,
     );
 
-    // 6. Totaux consolidés.
+    // 7. Totaux consolidés.
     const allMembers = teamData.flatMap((d) => [d.director, ...d.courtiers]);
     const totals = {
       memberCount: allMembers.length,
@@ -148,6 +191,8 @@ Deno.serve(async (req) => {
         pendingInvites,
         totals,
         monthlyHistory,
+        heatmap,
+        heatmapRaw: typeof heatmapRaw !== "undefined" ? heatmapRaw : [],
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
