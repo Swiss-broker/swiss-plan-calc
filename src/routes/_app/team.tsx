@@ -245,7 +245,7 @@ function TeamPodium({ teamData }: { teamData: TeamGroup[] }) {
   return (
     <div className="rounded-2xl border border-border bg-card p-5 shadow-card">
       <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
-        Classement du mois — clients traités
+        Classement du mois, clients traités
       </h2>
       <div className="mt-4 space-y-2">
         {top3.map((m, i) => (
@@ -339,7 +339,7 @@ function PendingInviteRow({
         <Mail className="h-3.5 w-3.5 text-amber-700" />
         <span className="font-medium">{fullName(invite)}</span>
         <span className="text-xs text-amber-700">
-          — invité en tant que {invite.role === "director" ? "directeur" : "courtier"}
+          , invité en tant que {invite.role === "director" ? "directeur" : "courtier"}
         </span>
       </div>
       {canCancel && (
@@ -483,8 +483,8 @@ function InviteForm({
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="courtier">Courtier — accès standard</SelectItem>
-              <SelectItem value="director">Directeur — peut gérer sa propre équipe</SelectItem>
+              <SelectItem value="courtier">Courtier, accès standard</SelectItem>
+              <SelectItem value="director">Directeur, peut gérer sa propre équipe</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -495,8 +495,8 @@ function InviteForm({
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="cabinet">Le cabinet — accès débloqué immédiatement</SelectItem>
-              <SelectItem value="self">La personne elle-même — elle paie à son inscription</SelectItem>
+              <SelectItem value="cabinet">Le cabinet, accès débloqué immédiatement</SelectItem>
+              <SelectItem value="self">La personne elle-même, elle paie à son inscription</SelectItem>
             </SelectContent>
           </Select>
           <p className="text-[11px] text-muted-foreground">
