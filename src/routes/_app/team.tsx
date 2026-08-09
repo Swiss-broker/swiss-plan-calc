@@ -5,7 +5,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Users, UserPlus, TrendingUp, Loader2, X, Mail, Crown, MessageSquare, Send } from "lucide-react";
+import { Users, UserPlus, TrendingUp, Loader2, X, Mail, Crown, MessageSquare, Send, ChevronDown } from "lucide-react";
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -200,6 +200,7 @@ function TeamPage() {
           <TeamPodium teamData={teamData} />
           <ClientsChart data={data.monthlyHistory} />
           <ActivityHeatmap teamData={teamData} rawData={data.heatmapRaw} />
+          {requester.cabinet_role === "root_director" && <OrgChart teamData={teamData} />}
           {teamData.map((group) => (
             <DirectorGroup key={group.director.id} group={group} />
           ))}
@@ -550,6 +551,57 @@ function TeamPodium({ teamData }: { teamData: TeamGroup[] }) {
             <span className="text-sm font-semibold tabular-nums">{m.clientsCount} clients</span>
           </div>
         ))}
+      </div>
+    </div>
+  );
+}
+
+function OrgChart({ teamData }: { teamData: TeamGroup[] }) {
+  const [openId, setOpenId] = useState<string | null>(null);
+
+  return (
+    <div className="rounded-2xl border border-border bg-card p-5 shadow-card">
+      <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+        Organigramme
+      </h2>
+      <div className="mt-4 flex flex-wrap gap-3">
+        {teamData.map((group) => {
+          const isOpen = openId === group.director.id;
+          return (
+            <div key={group.director.id} className="flex flex-col items-center">
+              <button
+                type="button"
+                onClick={() => setOpenId(isOpen ? null : group.director.id)}
+                className={`flex items-center gap-2 rounded-xl border px-4 py-3 text-sm font-medium transition-colors ${
+                  isOpen ? "border-primary bg-primary/10" : "border-border bg-muted/30 hover:bg-muted/60"
+                }`}
+              >
+                <Crown className="h-4 w-4 text-primary" />
+                <span>{fullName(group.director)}</span>
+                <span className="rounded-full bg-primary/15 px-2 py-0.5 text-[10px] font-semibold text-primary">
+                  {group.courtiers.length}
+                </span>
+                <ChevronDown className={`h-3.5 w-3.5 transition-transform ${isOpen ? "rotate-180" : ""}`} />
+              </button>
+              {isOpen && (
+                <div className="mt-2 flex flex-wrap justify-center gap-2 rounded-xl bg-muted/20 p-3">
+                  {group.courtiers.length === 0 ? (
+                    <p className="text-xs text-muted-foreground">Aucun courtier</p>
+                  ) : (
+                    group.courtiers.map((c) => (
+                      <div
+                        key={c.id}
+                        className="rounded-lg border border-border/60 bg-card px-3 py-2 text-xs font-medium"
+                      >
+                        {fullName(c)}
+                      </div>
+                    ))
+                  )}
+                </div>
+              )}
+            </div>
+          );
+        })}
       </div>
     </div>
   );

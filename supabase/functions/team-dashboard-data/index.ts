@@ -142,11 +142,6 @@ Deno.serve(async (req) => {
 
       const clientsInRange = await sb(
         supabaseUrl, supabaseKey,
-        `clients?broker_id=in.(${idsFilter})&created_at=gte.${rangeStart.toISOString()}&select=created_at`,
-      );
-
-      const clientsInRange = await sb(
-        supabaseUrl, supabaseKey,
         `clients?broker_id=in.(${idsFilter})&created_at=gte.${rangeStart.toISOString()}&select=broker_id,created_at`,
       );
 
