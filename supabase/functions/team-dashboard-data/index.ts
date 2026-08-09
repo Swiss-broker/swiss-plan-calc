@@ -1,6 +1,7 @@
 // supabase/functions/team-dashboard-data/index.ts
 // Calcule toutes les données du dashboard équipe (membres, chiffres,
-// invitations en attente), en respectant les règles de visibilité :
+// invitations en attente, historique mensuel), en respectant les règles
+// de visibilité :
 // - Un directeur principal voit tous les directeurs de son cabinet et,
 //   sous chacun, leurs courtiers directs.
 // - Un directeur normal ne voit que ses propres courtiers directs.
@@ -21,6 +22,12 @@ function monthStartISO(offsetMonths = 0): string {
   d.setMonth(d.getMonth() + offsetMonths, 1);
   d.setHours(0, 0, 0, 0);
   return d.toISOString();
+}
+
+function monthLabel(offsetMonths: number): string {
+  const d = new Date();
+  d.setMonth(d.getMonth() + offsetMonths, 1);
+  return d.toLocaleDateString("fr-CH", { month: "short", year: "2-digit" });
 }
 
 Deno.serve(async (req) => {
@@ -46,9 +53,7 @@ Deno.serve(async (req) => {
       throw new Error("Ce compte ne fait pas partie d'un cabinet.");
     }
 
-    // 2. Déterminer la liste des "directeurs" visibles (au sens : la
-    //    personne elle-même, et si elle est directeur racine, tous les
-    //    autres directeurs de son cabinet).
+    // 2. Déterminer la liste des "directeurs" visibles.
     let directors: any[] = [requester];
     if (requester.cabinet_role === "root_director") {
       const others = await sb(
@@ -81,6 +86,7 @@ Deno.serve(async (req) => {
     }
 
     const teamData = [];
+    const allMemberIds: string[] = [];
     for (const director of directors) {
       const courtiers = await sb(
         supabaseUrl, supabaseKey,
@@ -91,20 +97,38 @@ Deno.serve(async (req) => {
       for (const c of courtiers) {
         const stats = await computeStats(c.id);
         courtiersWithStats.push({ ...c, ...stats });
+        allMemberIds.push(c.id);
       }
+      allMemberIds.push(director.id);
       teamData.push({ director: { ...director, ...directorStats }, courtiers: courtiersWithStats });
     }
 
-    // 4. Invitations en attente, uniquement celles envoyées par les
-    //    personnes visibles (le demandeur, et les directeurs sous lui
-    //    s'il est directeur racine).
+    // 4. Historique mensuel du CA de toute l'équipe, sur les 6 derniers
+    //    mois, pour le graphique d'évolution.
+    const monthlyHistory = [];
+    if (allMemberIds.length > 0) {
+      const idsFilter = allMemberIds.join(",");
+      for (let offset = -5; offset <= 0; offset++) {
+        const start = monthStartISO(offset);
+        const end = monthStartISO(offset + 1);
+        const rows = await sb(
+          supabaseUrl, supabaseKey,
+          `rdv_invoices?broker_id=in.(${idsFilter})&status=eq.paid&created_at=gte.${start}&created_at=lt.${end}&select=amount_chf`,
+        );
+        const total = rows.reduce((s: number, r: any) => s + (r.amount_chf ?? 0), 0) / 100;
+        monthlyHistory.push({ month: monthLabel(offset), revenue: total });
+      }
+    }
+
+    // 5. Invitations en attente, uniquement celles envoyées par les
+    //    personnes visibles.
     const visibleInviterIds = directors.map((d) => d.id);
     const pendingInvites = await sb(
       supabaseUrl, supabaseKey,
       `cabinet_invites?invited_by=in.(${visibleInviterIds.join(",")})&status=eq.pending&select=id,email,first_name,last_name,role,invited_by,created_at`,
     );
 
-    // 5. Totaux consolidés.
+    // 6. Totaux consolidés.
     const allMembers = teamData.flatMap((d) => [d.director, ...d.courtiers]);
     const totals = {
       memberCount: allMembers.length,
@@ -120,6 +144,7 @@ Deno.serve(async (req) => {
         teamData,
         pendingInvites,
         totals,
+        monthlyHistory,
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
