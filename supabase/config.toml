@@ -15,3 +15,5 @@ verify_jwt = false
 
 [functions.fx-rates]
 verify_jwt = false
+[functions.wiki-generate-article]
+verify_jwt = false

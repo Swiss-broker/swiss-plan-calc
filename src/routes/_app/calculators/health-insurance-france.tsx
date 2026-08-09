@@ -18,7 +18,6 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 import { CalcCard, MoneyTile, Row, HelpDot } from "@/components/calculators/CalcUI";
-import { ExportPdfButton } from "@/components/calculators/ExportPdfButton";
 import { SaveSimulationButton } from "@/components/calculators/SaveSimulationButton";
 import { ClientLinkBanner } from "@/components/calculators/ClientLinkBanner";
 import { usePrefillFromClient, useHydrateFormFromPrefill } from "@/hooks/usePrefillFromClient";
@@ -26,7 +25,6 @@ import {
   computeHealthFrance,
   type HealthFranceInput,
 } from "@/lib/health-france";
-import { exportHealthFrancePdf } from "@/lib/pdf/reports";
 import { CrossCalcImpactBanner } from "@/components/calculators/CrossCalcImpactBanner";
 
 const searchSchema = z.object({
@@ -156,23 +154,6 @@ function HealthInsuranceFranceCalc() {
       </div>
 
       <div className="space-y-4 md:col-span-2">
-        <div className="flex justify-end gap-2">
-          <SaveSimulationButton
-            kind="health_insurance_france"
-            inputs={form}
-            summary={{
-              recommended: result.recommended,
-              recommendedAnnualCHF: result.recommendedAnnualCHF,
-              cmuAnnualCHF: result.cmuAnnualCHF,
-              lamalAnnualCHF: result.lamalAnnualCHF,
-              savingsCHF: result.savingsCHF,
-              rfrEUR: result.rfrEUR,
-            }}
-            defaultTitle={`Santé frontalier · ${form.civilStatus === "married" ? "Couple" : "Solo"} · ${form.swissGrossSalaryCHF} CHF`}
-          />
-          <ExportPdfButton onClick={() => exportHealthFrancePdf({ input: form, result })} />
-        </div>
-
         <CalcCard title={`Option recommandée : ${recoLabel}`}>
           <Row>
             <MoneyTile
@@ -219,6 +200,22 @@ function HealthInsuranceFranceCalc() {
           <BreakdownSection title="CMU : cotisation maladie frontalier (URSSAF / CNTFS)" lines={result.cmuBreakdown} />
           <BreakdownSection title="LAMal : assurance maladie suisse" lines={result.lamalBreakdown} />
         </CalcCard>
+
+        <div className="flex justify-end">
+          <SaveSimulationButton
+            kind="health_insurance_france"
+            inputs={form}
+            summary={{
+              recommended: result.recommended,
+              recommendedAnnualCHF: result.recommendedAnnualCHF,
+              cmuAnnualCHF: result.cmuAnnualCHF,
+              lamalAnnualCHF: result.lamalAnnualCHF,
+              savingsCHF: result.savingsCHF,
+              rfrEUR: result.rfrEUR,
+            }}
+            defaultTitle={`Santé frontalier · ${form.civilStatus === "married" ? "Couple" : "Solo"} · ${form.swissGrossSalaryCHF} CHF`}
+          />
+        </div>
       </div>
     </div>
   );

@@ -1,10 +1,10 @@
+// src/routes/_app/history.tsx
 import { AiConversationsHistory } from "@/components/ai/AiConversationsHistory";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Bookmark,
-  FileDown,
   GitCompare,
   Loader2,
   Search,
@@ -57,8 +57,7 @@ import {
   type HistoryEntry,
   type SimulationKind,
 } from "@/lib/history/types";
-import { extractKpis, regeneratePdf } from "@/lib/history/registry";
-import { ShareSimulationButton } from "@/components/calculators/ShareSimulationButton";
+import { extractKpis } from "@/lib/history/registry";
 import { formatCHF } from "@/lib/format";
 import { formatDateShort } from "@/lib/i18n/format";
 
@@ -169,14 +168,6 @@ function HistoryPage() {
     },
     onError: (e: Error) => toast.error(e.message),
   });
-
-  const handleRegenerate = async (e: HistoryEntry) => {
-    try {
-      await regeneratePdf(e.kind, e.inputs, user?.email ?? undefined);
-    } catch (err) {
-      toast.error((err as Error).message ?? t("history.toast.regenerate_error"));
-    }
-  };
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
@@ -353,15 +344,6 @@ function HistoryPage() {
                                 {t("history.action.open")}
                               </Link>
                             </Button>
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              onClick={() => handleRegenerate(e)}
-                              title={t("history.action.regenerate_pdf")}
-                            >
-                              <FileDown className="h-4 w-4" />
-                            </Button>
-                            <ShareSimulationButton simulationId={e.id} />
                             <Button
                               size="sm"
                               variant="ghost"

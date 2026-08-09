@@ -84,7 +84,7 @@ export function PlanProvider({ children }: { children: ReactNode }) {
     canAddClient: (count) => limits.maxClients === null || count < limits.maxClients,
     canAddCompany: (count) => limits.maxCompanies === null || count < limits.maxCompanies,
     cabinetRole,
-    canManageTeam: cabinetRole === "root_director" || cabinetRole === "director",
+    canManageTeam: cabinetRole === "root_director" || cabinetRole === "director" || plan === "internal",
   };
   return <PlanContext.Provider value={value}>{children}</PlanContext.Provider>;
 }

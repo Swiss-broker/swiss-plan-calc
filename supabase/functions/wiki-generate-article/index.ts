@@ -1,0 +1,205 @@
+// supabase/functions/wiki-generate-article/index.ts
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+};
+
+const ANTHROPIC_API_URL = "https://api.anthropic.com/v1/messages";
+
+// Sources officielles suisses autorisées pour la recherche (jamais d'autres domaines)
+const ALLOWED_DOMAINS = [
+  "estv.admin.ch",
+  "bsv.admin.ch",
+  "priminfo.admin.ch",
+  "admin.ch",
+  "ge.ch",
+  "vd.ch",
+  "vs.ch",
+  "fr.ch",
+  "ne.ch",
+  "ju.ch",
+  "zg.ch",
+  "sz.ch",
+  "be.ch",
+];
+
+function extractFinalText(content: any[]): string {
+  // Le dernier bloc de type "text" contient la réponse finale (après recherche web)
+  const textBlocks = content.filter((b: any) => b.type === "text");
+  return textBlocks.length ? textBlocks[textBlocks.length - 1].text : "";
+}
+
+function parseJsonResponse(raw: string): any {
+  // Extrait uniquement le bloc JSON, même si Claude a ajouté du texte avant/après malgré la consigne
+  const cleaned = raw.replace(/```json|```/g, "").trim();
+  const firstBrace = cleaned.indexOf("{");
+  const lastBrace = cleaned.lastIndexOf("}");
+  if (firstBrace === -1 || lastBrace === -1) {
+    throw new Error(`Aucun JSON trouvé dans la réponse : ${cleaned.slice(0, 200)}`);
+  }
+  const jsonOnly = cleaned.slice(firstBrace, lastBrace + 1);
+  return JSON.parse(jsonOnly);
+}
+function stripCitationTags(text: string): string {
+  // Retire les balises <cite index="...">... ajoutées par Claude lors de la recherche web,
+  // en gardant uniquement le texte qu'elles contiennent
+  return text.replace(/<cite[^>]*>(.*?)<\/cite>/gs, "$1");
+}
+
+Deno.serve(async (req) => {
+  if (req.method === "OPTIONS") {
+    return new Response("ok", { headers: corsHeaders });
+  }
+
+  try {
+    const { topic } = await req.json();
+    if (!topic || typeof topic !== "string") {
+      throw new Error("Le sujet de l'article est requis.");
+    }
+
+    const apiKey = Deno.env.get("ANTHROPIC_API_KEY");
+    const supabaseUrl = Deno.env.get("SUPABASE_URL");
+    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    if (!apiKey || !supabaseUrl || !supabaseKey) {
+      throw new Error("Variables d'environnement manquantes");
+    }
+
+    // ── 1. Génération FR avec recherche sur sources officielles ──
+    const researchPrompt = `Tu es un rédacteur spécialisé en fiscalité et prévoyance suisse, pour un wiki destiné à des courtiers en assurance/prévoyance professionnels en Suisse romande.
+
+Sujet de l'article : "${topic}"
+
+Recherche les informations exactes et à jour sur les sources officielles suisses (AFC/estv.admin.ch, OFAS/bsv.admin.ch, priminfo.admin.ch, sites cantonaux officiels). N'invente JAMAIS un chiffre, un taux ou une règle : si une information n'est pas trouvée avec certitude, ne l'inclus pas.
+
+Une fois ta recherche terminée, réponds UNIQUEMENT avec un objet JSON (aucun texte avant ou après, pas de balises markdown), au format exact suivant :
+{
+  "title": "titre court et clair de l'article",
+  "category": "catégorie parmi : Prise en main / 1er pilier · AVS / AI / 2e pilier · LPP & rachats / 3e pilier · A & B / Frontaliers & impôt source / Fiscalité / Dirigeant de société / Synthèse & rendez-vous",
+  "tags": ["3-6 mots-clés courts"],
+  "body_markdown": "contenu de l'article en markdown, format liste à puces avec ** pour le gras, style concis et factuel comme les autres articles du wiki, 4 à 8 points maximum",
+  "sources": [{"title": "nom de la source", "url": "url exacte consultée"}]
+}`;
+
+    const researchRes = await fetch(ANTHROPIC_API_URL, {
+      method: "POST",
+      headers: {
+        "x-api-key": apiKey,
+        "anthropic-version": "2023-06-01",
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "claude-sonnet-4-5-20250929",
+        max_tokens: 4000,
+        tools: [
+          {
+            type: "web_search_20250305",
+            name: "web_search",
+            max_uses: 5,
+            allowed_domains: ALLOWED_DOMAINS,
+          },
+        ],
+        messages: [{ role: "user", content: researchPrompt }],
+      }),
+    });
+
+    const researchData = await researchRes.json();
+    if (!researchRes.ok) {
+      throw new Error(`Erreur Anthropic (recherche) : ${JSON.stringify(researchData)}`);
+    }
+
+    const frRaw = extractFinalText(researchData.content);
+    const frArticle = parseJsonResponse(frRaw);
+frArticle.body_markdown = stripCitationTags(frArticle.body_markdown);
+
+    // ── 2. Traduction DE/EN/IT à partir du FR déjà validé (pas de nouvelle recherche) ──
+    const translatePrompt = `Traduis cet article fiscal/prévoyance suisse depuis le français vers l'allemand, l'anglais et l'italien. Traduis fidèlement le sens et les chiffres, sans ajouter ni inventer d'information nouvelle.
+
+Titre FR : ${frArticle.title}
+Contenu FR (markdown) :
+${frArticle.body_markdown}
+
+Réponds UNIQUEMENT avec un objet JSON (aucun texte avant/après, pas de balises markdown) au format exact :
+{
+  "de": {"title": "...", "body_markdown": "..."},
+  "en": {"title": "...", "body_markdown": "..."},
+  "it": {"title": "...", "body_markdown": "..."}
+}`;
+
+    const translateRes = await fetch(ANTHROPIC_API_URL, {
+      method: "POST",
+      headers: {
+        "x-api-key": apiKey,
+        "anthropic-version": "2023-06-01",
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "claude-sonnet-4-5-20250929",
+        max_tokens: 4000,
+        messages: [{ role: "user", content: translatePrompt }],
+      }),
+    });
+
+    const translateData = await translateRes.json();
+    if (!translateRes.ok) {
+      throw new Error(`Erreur Anthropic (traduction) : ${JSON.stringify(translateData)}`);
+    }
+
+    const translations = parseJsonResponse(extractFinalText(translateData.content));
+
+    // ── 3. Insertion en base, statut "draft" ──
+    const slug = topic
+      .toLowerCase()
+      .normalize("NFD").replace(/[\u0300-\u036f]/g, "") // retire les accents
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "")
+      .slice(0, 60);
+
+    const articleRes = await fetch(`${supabaseUrl}/rest/v1/wiki_articles`, {
+      method: "POST",
+      headers: {
+        "apikey": supabaseKey,
+        "Authorization": `Bearer ${supabaseKey}`,
+        "Content-Type": "application/json",
+        "Prefer": "return=representation",
+      },
+      body: JSON.stringify({
+        slug: `${slug}-${Date.now().toString(36)}`, // suffixe pour garantir l'unicité
+        category: frArticle.category,
+        tags: frArticle.tags,
+        status: "draft",
+        sources: frArticle.sources ?? [],
+      }),
+    });
+    const [insertedArticle] = await articleRes.json();
+    if (!articleRes.ok || !insertedArticle) {
+      throw new Error("Erreur insertion article");
+    }
+
+    const translationsToInsert = [
+      { article_id: insertedArticle.id, language: "fr", title: frArticle.title, body_markdown: frArticle.body_markdown },
+      { article_id: insertedArticle.id, language: "de", title: translations.de.title, body_markdown: translations.de.body_markdown },
+      { article_id: insertedArticle.id, language: "en", title: translations.en.title, body_markdown: translations.en.body_markdown },
+      { article_id: insertedArticle.id, language: "it", title: translations.it.title, body_markdown: translations.it.body_markdown },
+    ];
+
+    await fetch(`${supabaseUrl}/rest/v1/wiki_article_translations`, {
+      method: "POST",
+      headers: {
+        "apikey": supabaseKey,
+        "Authorization": `Bearer ${supabaseKey}`,
+        "Content-Type": "application/json",
+        "Prefer": "return=minimal",
+      },
+      body: JSON.stringify(translationsToInsert),
+    });
+
+    return new Response(JSON.stringify({ success: true, articleId: insertedArticle.id }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  } catch (err) {
+    return new Response(JSON.stringify({ error: String(err) }), {
+      status: 500,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+});

@@ -181,7 +181,87 @@ Deno.serve(async (req) => {
       } else {
         // ── Abonnement SwissBroker Pro ──
         const plan = session.metadata?.plan ?? "pro";
-        if (email) await updatePlan(email, plan);
+        if (email) {
+          // Cas particulier : ce paiement correspond à un courtier qui
+          // rejoint le cabinet de quelqu'un d'autre (il paie son propre
+          // siège), retrouvé via son invitation en attente. Le rattachement
+          // ne se fait qu'ici, maintenant que le paiement est confirmé.
+          const pendingInviteRes = await fetch(
+            `${supabaseUrl}/rest/v1/cabinet_invites?email=eq.${encodeURIComponent(email)}&payer=eq.self&status=eq.pending&order=created_at.desc&limit=1`,
+            { headers: { "apikey": supabaseKey, "Authorization": `Bearer ${supabaseKey}` } }
+          );
+          const pendingInvites = await pendingInviteRes.json();
+          const pendingInvite = pendingInvites[0];
+
+          if (pendingInvite) {
+            const managerId =
+              pendingInvite.role === "director" ? pendingInvite.cabinet_root_id : pendingInvite.invited_by;
+
+            await fetch(`${supabaseUrl}/rest/v1/profiles?email=eq.${encodeURIComponent(email)}`, {
+              method: "PATCH",
+              headers: {
+                "apikey": supabaseKey,
+                "Authorization": `Bearer ${supabaseKey}`,
+                "Content-Type": "application/json",
+                "Prefer": "return=minimal",
+              },
+              body: JSON.stringify({
+                plan: "cabinet",
+                manager_id: managerId,
+                cabinet_root_id: pendingInvite.cabinet_root_id,
+                cabinet_role: pendingInvite.role,
+              }),
+            });
+
+            await fetch(`${supabaseUrl}/rest/v1/cabinet_invites?id=eq.${pendingInvite.id}`, {
+              method: "PATCH",
+              headers: {
+                "apikey": supabaseKey,
+                "Authorization": `Bearer ${supabaseKey}`,
+                "Content-Type": "application/json",
+                "Prefer": "return=minimal",
+              },
+              body: JSON.stringify({ status: "accepted", accepted_at: new Date().toISOString() }),
+            });
+
+            await createNotification(
+              supabaseUrl,
+              supabaseKey,
+              pendingInvite.invited_by,
+              "team_member_joined",
+              "Nouveau membre dans votre équipe",
+              `Un ${pendingInvite.role === "director" ? "directeur" : "courtier"} a rejoint votre équipe après avoir réglé son propre accès.`,
+              "/team"
+            );
+          } else {
+            // Cas normal : quelqu'un souscrit lui-même au plan Cabinet
+            // pour créer son propre cabinet (devient Directeur racine).
+            await updatePlan(email, plan);
+            if (plan === "cabinet") {
+              const profileRes = await fetch(
+                `${supabaseUrl}/rest/v1/profiles?email=eq.${encodeURIComponent(email)}&select=id,cabinet_role`,
+                { headers: { "apikey": supabaseKey, "Authorization": `Bearer ${supabaseKey}` } }
+              );
+              const profiles = await profileRes.json();
+              const profile = profiles[0];
+              if (profile && !profile.cabinet_role) {
+                await fetch(
+                  `${supabaseUrl}/rest/v1/profiles?id=eq.${profile.id}`,
+                  {
+                    method: "PATCH",
+                    headers: {
+                      "apikey": supabaseKey,
+                      "Authorization": `Bearer ${supabaseKey}`,
+                      "Content-Type": "application/json",
+                      "Prefer": "return=minimal",
+                    },
+                    body: JSON.stringify({ cabinet_role: "root_director", cabinet_root_id: profile.id }),
+                  }
+                );
+              }
+            }
+          }
+        }
       }
     }
 
