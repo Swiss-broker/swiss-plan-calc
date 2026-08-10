@@ -98,7 +98,6 @@ export const SCENARIO_PRESETS: ScenarioDef[] = [
     const lastSalary = (b.grossSalary ?? 0) + (b.bonus ?? 0);
     return { ...b, grossSalary: 0, bonus: 0, otherIncome: Math.round(lastSalary * 0.6), pillar3aContributions: 0, lppBuyback: 0 };
   }),
-  L("move_zg", "Déménagement → Zoug", "Canton fiscalement parmi les plus avantageux de Suisse.", "geo", (b) => ({ ...b, canton: "ZG", communalMultiplier: undefined, cantonalMultiplier: undefined })),
   L("move_sz", "Déménagement → Schwytz", "Faible fiscalité cantonale, proche de Zurich.", "geo", (b) => ({ ...b, canton: "SZ", communalMultiplier: undefined, cantonalMultiplier: undefined })),
   L("move_ge", "Déménagement → Genève", "Comparatif avec un canton à fiscalité élevée.", "geo", (b) => ({ ...b, canton: "GE", communalMultiplier: undefined, cantonalMultiplier: undefined })),
   L("move_vd", "Déménagement → Vaud", "Lausanne et arc lémanique.", "geo", (b) => ({ ...b, canton: "VD", communalMultiplier: undefined, cantonalMultiplier: undefined })),
