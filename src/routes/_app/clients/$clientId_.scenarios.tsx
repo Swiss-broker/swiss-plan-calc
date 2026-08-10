@@ -24,6 +24,17 @@ export const Route = createFileRoute("/_app/clients/$clientId_/scenarios")({
   component: ScenariosPage,
 });
 
+// Traduit le statut technique interne (single/married/single_with_children)
+// en libelle francais lisible, jamais la valeur brute a l'ecran.
+const STATUS_LABELS_FR: Record<string, string> = {
+  single: "Célibataire",
+  married: "Marié·e",
+  single_with_children: "Famille monoparentale",
+};
+function statusLabel(status: string): string {
+  return STATUS_LABELS_FR[status] ?? status;
+}
+
 function ScenariosPage() {
   const { clientId } = Route.useParams();
   const [selected, setSelected] = useState<ScenarioId[]>(["baseline", "max_3a", "move_zg"]);
@@ -256,7 +267,7 @@ function ScenariosPage() {
             <CardContent className="text-xs text-muted-foreground">
               <p className="leading-relaxed">{c.def.description}</p>
               <dl className="mt-3 space-y-1">
-                <Mini label="Statut" value={c.input.status} />
+                <Mini label="Statut" value={statusLabel(c.input.status)} />
                 <Mini label="Enfants" value={String(c.input.children ?? 0)} />
                 <Mini label="Salaire" value={formatCHF(c.input.grossSalary)} />
                 <Mini label="3a" value={formatCHF(c.input.pillar3aContributions ?? 0)} />
