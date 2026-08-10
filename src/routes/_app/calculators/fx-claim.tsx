@@ -1,3 +1,4 @@
+// src/routes/_app/calculators/fx-claim.tsx
 // Calculateur, Analyse réclamation fiscale liée au taux de change.
 // Compare le taux AFC (annuel) au taux marché (BNS/ECB) à la date de chaque versement.
 
@@ -37,6 +38,7 @@ import { fetchMarketRates } from "@/lib/fx/fetch.functions";
 import { useBrokerPdfHeader } from "@/hooks/useBrokerPdfHeader";
 import { exportFxClaimPdf } from "@/lib/pdf/fx-claim-report";
 import { CrossCalcImpactBanner } from "@/components/calculators/CrossCalcImpactBanner";
+import { GuideMode, GuideToggleButton, type GuideStep } from "@/components/calculators/GuideMode";
 
 const searchSchema = z.object({
   clientId: fallback(z.string().uuid().optional(), undefined),
@@ -72,6 +74,7 @@ function FxClaimCalc() {
     { ...newRow(`${2024}-12-15`), amount: 8000, label: "Salaire décembre" },
   ]);
   const [loading, setLoading] = useState(false);
+  const [guideOpen, setGuideOpen] = useState(false);
   const currentYear = new Date().getFullYear();
 
   const afcRate = useMemo(() => {
@@ -94,6 +97,33 @@ function FxClaimCalc() {
   );
 
   const result = useMemo(() => analyzeFxClaim(input), [input]);
+
+  const guideSteps: GuideStep[] = [
+    {
+      title: "Bienvenue sur le calculateur Réclamation taux de change",
+      body: "Comparez le taux de change officiel AFC (utilisé par le fisc français) au taux réel du marché, pour identifier un éventuel trop-payé d'impôt à réclamer.",
+    },
+    {
+      target: "fx-claim-params",
+      title: "Paramètres généraux",
+      body: "Choisissez l'année fiscale et la devise. Le taux AFC officiel se remplit automatiquement, mais vous pouvez le forcer manuellement si besoin.",
+    },
+    {
+      target: "fx-claim-rows",
+      title: "Versements du client",
+      body: "Ajoutez chaque versement de salaire avec sa date exacte. Le bouton \"Récupérer les taux\" va chercher automatiquement le taux réel du marché pour chaque date, via la Banque centrale européenne.",
+    },
+    {
+      target: "fx-claim-result",
+      title: "Résultat de l'analyse",
+      body: "L'écart en faveur du client et l'économie d'impôt estimée s'affichent ici, recalculés en direct à chaque modification.",
+    },
+    {
+      target: "fx-claim-export",
+      title: "Générer le courrier",
+      body: "Contrairement aux autres calculateurs, celui-ci ne se sauvegarde pas dans l'historique : il génère directement un courrier PDF de réclamation, prêt à envoyer à l'administration fiscale.",
+    },
+  ];
 
   const updateRow = (i: number, patch: Partial<FxTransaction>) =>
     setRows((rs) => rs.map((r, idx) => (idx === i ? { ...r, ...patch } : r)));
@@ -155,192 +185,208 @@ function FxClaimCalc() {
 
   return (
     <div className="grid grid-cols-1 gap-6 md:grid-cols-5">
-      <div className="md:col-span-5"><CrossCalcImpactBanner calculator="fx-claim" clientId={clientId} /></div>
+      <div className="md:col-span-5 flex items-center justify-between gap-3">
+        <div className="flex-1"><CrossCalcImpactBanner calculator="fx-claim" clientId={clientId} /></div>
+        <GuideToggleButton onClick={() => setGuideOpen(true)} />
+      </div>
+      <GuideMode
+        open={guideOpen}
+        onClose={() => setGuideOpen(false)}
+        steps={guideSteps}
+        title="Guide, Réclamation taux de change"
+        guideId="calc-fx-claim"
+      />
       <div className="md:col-span-3 space-y-4">
-        <CalcCard
-          title="Paramètres généraux"
-          description="Le fisc français applique un taux de change annuel moyen (taux AFC) pour convertir vos revenus CHF en euros. Si le taux réel du jour était plus favorable, vous avez peut-être trop déclaré."
-        >
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-            <div className="space-y-1.5">
-              <Label className="text-xs">Année fiscale</Label>
-              <Select value={String(taxYear)} onValueChange={(v) => setTaxYear(Number(v))}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {YEARS.map((y) => (
-                    <SelectItem key={y} value={String(y)}>{y}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-1.5">
-              <Label className="text-xs">Devise</Label>
-              <Select value={currency} onValueChange={(v) => setCurrency(v as Currency)}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {SUPPORTED_CURRENCIES.map((c) => (
-                    <SelectItem key={c} value={c}>{c}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-1.5">
-              <Label className="text-xs">Taux marginal d'impôt (%)</Label>
-              <Input
-                type="number"
-                step="0.1"
-                value={marginalRate}
-                onChange={(e) => setMarginalRate(Number(e.target.value) || 0)}
-              />
-            </div>
-            <div className="space-y-1.5 sm:col-span-2">
-              <Label className="text-xs">
-                Taux AFC retenu{" "}
-                {AFC_ANNUAL_RATES[taxYear]?.[currency] != null ? (
-                  <span className="text-success">
-                   , officiel {taxYear} : {(AFC_ANNUAL_RATES[taxYear]![currency] ?? 0).toFixed(4)} CHF/{currency} = {(1 / (AFC_ANNUAL_RATES[taxYear]![currency] ?? 1)).toFixed(4)} {currency}/CHF
-                  </span>
-                ) : (
-                  <span className="text-warning">
-                   , taux AFC non publié pour {currency} en {taxYear}, saisir manuellement
-                  </span>
-                )}
-              </Label>
-              <Input
-                placeholder="Laisser vide pour utiliser le taux officiel AFC"
-                value={afcOverride}
-                onChange={(e) => setAfcOverride(e.target.value)}
-              />
-            </div>
-            <div className="space-y-1.5 flex items-end">
-              <div className="space-y-1">
-                <p className="text-xs text-muted-foreground">Taux journalier réel</p>
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="w-full"
-                  onClick={fillMarketRates}
-                  disabled={loading}
-                  title="Récupère automatiquement le taux de change réel du jour de chaque versement via la Banque Centrale Européenne"
-                >
-                  <RefreshCw className={`h-4 w-4 mr-2 ${loading ? "animate-spin" : ""}`} />
-                  {loading ? "Récupération..." : "Récupérer les taux"}
-                </Button>
+        <div data-guide="fx-claim-params">
+          <CalcCard
+            title="Paramètres généraux"
+            description="Le fisc français applique un taux de change annuel moyen (taux AFC) pour convertir vos revenus CHF en euros. Si le taux réel du jour était plus favorable, vous avez peut-être trop déclaré."
+          >
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+              <div className="space-y-1.5">
+                <Label className="text-xs">Année fiscale</Label>
+                <Select value={String(taxYear)} onValueChange={(v) => setTaxYear(Number(v))}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {YEARS.map((y) => (
+                      <SelectItem key={y} value={String(y)}>{y}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs">Devise</Label>
+                <Select value={currency} onValueChange={(v) => setCurrency(v as Currency)}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {SUPPORTED_CURRENCIES.map((c) => (
+                      <SelectItem key={c} value={c}>{c}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs">Taux marginal d'impôt (%)</Label>
+                <Input
+                  type="number"
+                  step="0.1"
+                  value={marginalRate}
+                  onChange={(e) => setMarginalRate(Number(e.target.value) || 0)}
+                />
+              </div>
+              <div className="space-y-1.5 sm:col-span-2">
+                <Label className="text-xs">
+                  Taux AFC retenu{" "}
+                  {AFC_ANNUAL_RATES[taxYear]?.[currency] != null ? (
+                    <span className="text-success">
+                     , officiel {taxYear} : {(AFC_ANNUAL_RATES[taxYear]![currency] ?? 0).toFixed(4)} CHF/{currency} = {(1 / (AFC_ANNUAL_RATES[taxYear]![currency] ?? 1)).toFixed(4)} {currency}/CHF
+                    </span>
+                  ) : (
+                    <span className="text-warning">
+                     , taux AFC non publié pour {currency} en {taxYear}, saisir manuellement
+                    </span>
+                  )}
+                </Label>
+                <Input
+                  placeholder="Laisser vide pour utiliser le taux officiel AFC"
+                  value={afcOverride}
+                  onChange={(e) => setAfcOverride(e.target.value)}
+                />
+              </div>
+              <div className="space-y-1.5 flex items-end">
+                <div className="space-y-1">
+                  <p className="text-xs text-muted-foreground">Taux journalier réel</p>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="w-full"
+                    onClick={fillMarketRates}
+                    disabled={loading}
+                    title="Récupère automatiquement le taux de change réel du jour de chaque versement via la Banque Centrale Européenne"
+                  >
+                    <RefreshCw className={`h-4 w-4 mr-2 ${loading ? "animate-spin" : ""}`} />
+                    {loading ? "Récupération..." : "Récupérer les taux"}
+                  </Button>
+                </div>
               </div>
             </div>
-          </div>
-        </CalcCard>
+          </CalcCard>
+        </div>
 
-        <CalcCard
-          title="Versements"
-          description="Saisissez vos versements en CHF (salaire suisse). Le calculateur compare le taux fiscal officiel au taux réel du jour de versement pour estimer un éventuel trop-payé d'impôt en France."
-        >
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-[130px]">Date</TableHead>
-                  <TableHead>Libellé</TableHead>
-                  <TableHead className="w-[120px]">Montant CHF</TableHead>
-                  <TableHead className="w-[110px]">Taux BNS/ECB</TableHead>
-                  <TableHead className="w-[120px] text-right">Écart en euros</TableHead>
-                  <TableHead className="w-[40px]"></TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {rows.map((r, i) => {
-                  const deltaChf = r.amount * (afcRate - r.marketRate);
-                  const deltaEur = r.marketRate > 0 ? deltaChf / r.marketRate : 0;
-                  return (
-                    <TableRow key={i}>
-                      <TableCell>
-                        <Input
-                          type="date"
-                          value={r.date}
-                          onChange={(e) => updateRow(i, { date: e.target.value })}
-                        />
-                      </TableCell>
-                      <TableCell>
-                        <Input
-                          value={r.label || ""}
-                          onChange={(e) => updateRow(i, { label: e.target.value })}
-                        />
-                      </TableCell>
-                      <TableCell>
-                        <Input
-                          type="number"
-                          step="0.01"
-                          value={r.amount || ""}
-                          onChange={(e) => updateRow(i, { amount: Number(e.target.value) || 0 })}
-                        />
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-1">
+        <div data-guide="fx-claim-rows">
+          <CalcCard
+            title="Versements"
+            description="Saisissez vos versements en CHF (salaire suisse). Le calculateur compare le taux fiscal officiel au taux réel du jour de versement pour estimer un éventuel trop-payé d'impôt en France."
+          >
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-[130px]">Date</TableHead>
+                    <TableHead>Libellé</TableHead>
+                    <TableHead className="w-[120px]">Montant CHF</TableHead>
+                    <TableHead className="w-[110px]">Taux BNS/ECB</TableHead>
+                    <TableHead className="w-[120px] text-right">Écart en euros</TableHead>
+                    <TableHead className="w-[40px]"></TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {rows.map((r, i) => {
+                    const deltaChf = r.amount * (afcRate - r.marketRate);
+                    const deltaEur = r.marketRate > 0 ? deltaChf / r.marketRate : 0;
+                    return (
+                      <TableRow key={i}>
+                        <TableCell>
                           <Input
-                            type="text"
-                            value={r.marketRate ? r.marketRate.toFixed(4) : ""}
-                            onChange={(e) => updateRow(i, { marketRate: parseFloat(e.target.value.replace(",", ".")) || 0 })}
-                            placeholder="Auto"
-                            className={r.marketRate ? "border-success/50 bg-success/5" : ""}
+                            type="date"
+                            value={r.date}
+                            onChange={(e) => updateRow(i, { date: e.target.value })}
                           />
-                        </div>
-                      </TableCell>
-                      <TableCell className={`text-right tabular-nums ${deltaEur > 0 ? "text-success" : deltaEur < 0 ? "text-warning" : ""}`}>
-                        {deltaEur !== 0 ? deltaEur.toLocaleString("fr-CH", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " €" : "—"}
-                      </TableCell>
-                      <TableCell>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => removeRow(i)}
-                          aria-label="Supprimer"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
-          </div>
-          <div className="mt-3 flex justify-between">
-            <Button type="button" variant="outline" size="sm" onClick={addRow}>
-              <Plus className="h-4 w-4 mr-2" />
-              Ajouter un versement
-            </Button>
-            <Button type="button" onClick={onExport}>
-              <Download className="h-4 w-4 mr-2" />
-              Générer le courrier PDF
-            </Button>
-          </div>
-        </CalcCard>
+                        </TableCell>
+                        <TableCell>
+                          <Input
+                            value={r.label || ""}
+                            onChange={(e) => updateRow(i, { label: e.target.value })}
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <Input
+                            type="number"
+                            step="0.01"
+                            value={r.amount || ""}
+                            onChange={(e) => updateRow(i, { amount: Number(e.target.value) || 0 })}
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-1">
+                            <Input
+                              type="text"
+                              value={r.marketRate ? r.marketRate.toFixed(4) : ""}
+                              onChange={(e) => updateRow(i, { marketRate: parseFloat(e.target.value.replace(",", ".")) || 0 })}
+                              placeholder="Auto"
+                              className={r.marketRate ? "border-success/50 bg-success/5" : ""}
+                            />
+                          </div>
+                        </TableCell>
+                        <TableCell className={`text-right tabular-nums ${deltaEur > 0 ? "text-success" : deltaEur < 0 ? "text-warning" : ""}`}>
+                          {deltaEur !== 0 ? deltaEur.toLocaleString("fr-CH", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " €" : "—"}
+                        </TableCell>
+                        <TableCell>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => removeRow(i)}
+                            aria-label="Supprimer"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </div>
+            <div className="mt-3 flex justify-between">
+              <Button type="button" variant="outline" size="sm" onClick={addRow}>
+                <Plus className="h-4 w-4 mr-2" />
+                Ajouter un versement
+              </Button>
+              <Button type="button" onClick={onExport} data-guide="fx-claim-export">
+                <Download className="h-4 w-4 mr-2" />
+                Générer le courrier PDF
+              </Button>
+            </div>
+          </CalcCard>
+        </div>
       </div>
 
       <div className="md:col-span-2 space-y-4">
-        <CalcCard title="Résultat de l'analyse">
-          <div className="grid grid-cols-2 gap-3">
-            <MoneyTile label="CHF retenu (AFC)" value={result.totalChfAfc} tone="warning" />
-            <MoneyTile label="CHF réel (marché)" value={result.totalChfMarket} tone="primary" />
-            <MoneyTile
-              label="Écart en faveur du client"
-              value={result.totalDeltaChf}
-              tone={surplus ? "success" : "default"}
-              big
-            />
-            <MoneyTile
-              label="Économie d'impôt estimée"
-              value={result.estimatedTaxRefund}
-              tone={surplus ? "success" : "default"}
-              big
-            />
-            <PctTile label="Écart relatif AFC vs marché" value={result.deltaRelativePct} />
-            <StatTile
-              label="Taux marché pondéré"
-              value={`${result.weightedMarketRate.toFixed(4)} CHF/${currency}`}
-            />
-          </div>
-        </CalcCard>
+        <div data-guide="fx-claim-result">
+          <CalcCard title="Résultat de l'analyse">
+            <div className="grid grid-cols-2 gap-3">
+              <MoneyTile label="CHF retenu (AFC)" value={result.totalChfAfc} tone="warning" />
+              <MoneyTile label="CHF réel (marché)" value={result.totalChfMarket} tone="primary" />
+              <MoneyTile
+                label="Écart en faveur du client"
+                value={result.totalDeltaChf}
+                tone={surplus ? "success" : "default"}
+                big
+              />
+              <MoneyTile
+                label="Économie d'impôt estimée"
+                value={result.estimatedTaxRefund}
+                tone={surplus ? "success" : "default"}
+                big
+              />
+              <PctTile label="Écart relatif AFC vs marché" value={result.deltaRelativePct} />
+              <StatTile
+                label="Taux marché pondéré"
+                value={`${result.weightedMarketRate.toFixed(4)} CHF/${currency}`}
+              />
+            </div>
+          </CalcCard>
+        </div>
 
         <CalcCard title="Notes" description="Sources et fondement juridique">
           <ul className="text-xs text-muted-foreground space-y-2 leading-relaxed">
