@@ -297,6 +297,7 @@ function SignupForm({
 }) {
   const t = useT();
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const form = useForm<SignupValues>({
     resolver: zodResolver(signupSchema),
     defaultValues: { firstName: "", lastName: "", email: "", password: "" },
@@ -353,7 +354,23 @@ function SignupForm({
       </div>
       <div className="space-y-1.5">
         <Label htmlFor="password">{t("auth.field.password")}</Label>
-        <Input id="password" type="password" autoComplete="new-password" {...form.register("password")} />
+        <div className="relative">
+          <Input
+            id="password"
+            type={showPassword ? "text" : "password"}
+            autoComplete="new-password"
+            className="pr-10"
+            {...form.register("password")}
+          />
+          <button
+            type="button"
+            onClick={() => setShowPassword((v) => !v)}
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+            tabIndex={-1}
+          >
+            {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+          </button>
+        </div>
         {form.formState.errors.password && (
           <p className="text-xs text-destructive">{t(form.formState.errors.password.message ?? "")}</p>
         )}
@@ -369,6 +386,7 @@ function SignupForm({
 function SigninForm() {
   const t = useT();
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const [resetLoading, setResetLoading] = useState(false);
   const [resetSent, setResetSent] = useState(false);
   const navigate = useNavigate();
@@ -376,7 +394,7 @@ function SigninForm() {
     resolver: zodResolver(signinSchema),
     defaultValues: { email: "", password: "" },
   });
-  const [showPassword, setShowPassword] = useState(false);
+
 
   const onSubmit = async (values: SigninValues) => {
     setLoading(true);
