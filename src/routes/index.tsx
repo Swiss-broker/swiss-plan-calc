@@ -319,7 +319,7 @@ function PlanButton({ plan, highlight }: { plan: string; highlight: boolean }) {
       className={`flex w-full items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition-all ${
         highlight ? "bg-primary text-primary-foreground shadow-elegant hover:bg-primary/90" : "border border-border bg-background hover:border-primary hover:bg-primary/5 hover:text-primary"
       }`}>
-      {plan === "pro" ? "Démarrer mon essai gratuit" : `Commencer avec ${plan.charAt(0).toUpperCase() + plan.slice(1)}`}
+      Démarrer mon essai gratuit
     </button>
   );
 }
