@@ -317,7 +317,7 @@ function PlanButton({ plan, highlight }: { plan: string; highlight: boolean }) {
     <button type="button"
       onClick={() => navigate({ to: "/auth", search: { mode: "signup", plan: plan as "starter" | "pro" | "cabinet" } })}
       className={`flex w-full items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition-all ${
-        highlight ? "bg-primary text-primary-foreground shadow-elegant hover:bg-primary/90" : "border border-border bg-background hover:bg-muted"
+        highlight ? "bg-primary text-primary-foreground shadow-elegant hover:bg-primary/90" : "border border-border bg-background hover:border-primary hover:bg-primary/5 hover:text-primary"
       }`}>
       {plan === "pro" ? "Démarrer mon essai gratuit" : `Commencer avec ${plan.charAt(0).toUpperCase() + plan.slice(1)}`}
     </button>
@@ -357,7 +357,7 @@ function PricingModal({ onClose }: { onClose: () => void }) {
         <div className="grid grid-cols-1 gap-4 p-6 md:grid-cols-3">
           {plans.map((plan, i) => (
             <motion.div key={plan.name} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }}
-              className={`relative rounded-2xl border-2 bg-card p-6 transition-all ${plan.highlight ? "border-primary shadow-[0_8px_30px_rgb(0,0,0,0.12)] scale-[1.02]" : "border-border hover:border-primary/40 hover:shadow-lg"}`}>
+              className={`relative rounded-2xl border-2 bg-card p-6 transition-all ${plan.highlight ? "border-primary shadow-[0_8px_30px_rgb(0,0,0,0.12)] scale-[1.02]" : "border-border hover:border-primary hover:shadow-[0_8px_30px_rgb(0,0,0,0.10)] hover:scale-[1.01]"}`}>
               {plan.highlight && (
                 <div className="absolute -top-3 left-1/2 -translate-x-1/2">
                   <span className="inline-flex items-center gap-1 rounded-full bg-primary px-3 py-1 text-[11px] font-semibold text-primary-foreground shadow-elegant"><Zap className="h-3 w-3" /> Recommandé</span>
