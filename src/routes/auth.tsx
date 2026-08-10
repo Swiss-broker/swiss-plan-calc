@@ -251,12 +251,6 @@ const [otpState, setOtpState] = useState<{ email: string; plan: string; inviteTo
             </h1>
           </div>
 
-          <div className="my-6 flex items-center gap-3">
-            <div className="h-px flex-1 bg-border" />
-            <span className="text-xs uppercase tracking-wider text-muted-foreground">{t("auth.divider.or")}</span>
-            <div className="h-px flex-1 bg-border" />
-          </div>
-
           {mode === "signup" ? (
             <SignupForm plan={selectedPlan} inviteToken={search.invite} onOtpRequired={setOtpState} />
           ) : (
