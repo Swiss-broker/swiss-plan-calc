@@ -55,6 +55,11 @@ const PRICE_IDS: Record<string, string> = {
   pro: import.meta.env.VITE_STRIPE_PRO_MONTHLY ?? "",
   cabinet: import.meta.env.VITE_STRIPE_CABINET_MONTHLY ?? "",
 };
+const PLAN_LABELS: Record<string, string> = {
+  starter: "Starter",
+  pro: "Pro",
+  cabinet: "Cabinet",
+};
 
 function AuthPage() {
   const t = useT();
