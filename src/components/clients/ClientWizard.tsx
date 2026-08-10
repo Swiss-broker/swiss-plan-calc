@@ -511,12 +511,30 @@ export function ClientWizard({ initial, mode, clientId }: ClientWizardProps) {
   };
   const prev = () => step > 1 && setStep(step - 1);
 
-  // Sauvegarde l'étape en cours, sans quitter le wizard. Le courtier peut
-  // ensuite continuer à modifier d'autres étapes, ou utiliser "Retour à la
-  // fiche" (en haut) pour sortir volontairement quand il a terminé.
+  // Sauvegarde l'étape en cours, sans quitter le wizard. Utilisé uniquement
+  // en mode "edit" (fiche déjà existante) : le courtier peut modifier
+  // n'importe quelle étape et l'enregistrer immédiatement, sans devoir
+  // traverser tout le formulaire.
   const saveStep = () => {
     if (!validateStep(step)) return;
     save.mutate();
+  };
+
+  // Mode "create" uniquement : appelé sur la derniere étape seulement. Crée
+  // la fiche client d'un coup (identité + famille + activité + fiscal +
+  // patrimoine), puis redirige directement vers la fiche fraîchement créée.
+  // Avant la derniere étape, rien n'est envoyé à la base : le formulaire
+  // reste uniquement en mémoire locale, pour un vrai parcours "suivant,
+  // suivant, suivant" sans sauvegardes intermédiaires.
+  const finishCreate = async () => {
+    if (!validateStep(step)) return;
+    try {
+      const savedId = await save.mutateAsync();
+      toast.success("Client créé.");
+      navigate({ to: "/clients/$clientId", params: { clientId: savedId } });
+    } catch {
+      // L'erreur est déjà affichée par onError de la mutation.
+    }
   };
 
   const progress = useMemo(() => (step / STEP_COUNT) * 100, [step]);
@@ -531,6 +549,8 @@ export function ClientWizard({ initial, mode, clientId }: ClientWizardProps) {
   // création après la première sauvegarde), on propose "Retour à la fiche"
   // à la place, jamais les deux en même temps.
   const canReturnToProfile = !!currentClientId.current;
+
+  const isLastStep = step === STEP_COUNT;
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
@@ -603,19 +623,44 @@ export function ClientWizard({ initial, mode, clientId }: ClientWizardProps) {
           <ChevronLeft className="h-4 w-4" /> {t("common.previous")}
         </Button>
         <div className="flex items-center gap-2">
-          {step < STEP_COUNT && (
+          {/* Mode edition : Suivant + Enregistrer disponibles a chaque etape,
+              une fiche existante doit pouvoir etre sauvegardee a tout moment. */}
+          {mode === "edit" && (
+            <>
+              {step < STEP_COUNT && (
+                <Button variant="outline" onClick={next}>
+                  {t("common.next")} <ChevronRight className="h-4 w-4" />
+                </Button>
+              )}
+              <Button onClick={saveStep} disabled={save.isPending} className="shadow-elegant">
+                {save.isPending ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Save className="h-4 w-4" />
+                )}
+                Sauvegarder cette étape
+              </Button>
+            </>
+          )}
+
+          {/* Mode creation : uniquement Suivant tant qu'on n'est pas a la
+              derniere etape, rien n'est envoye a la base avant. Sur la
+              derniere etape, un seul bouton, qui cree la fiche d'un coup. */}
+          {mode === "create" && !isLastStep && (
             <Button variant="outline" onClick={next}>
               {t("common.next")} <ChevronRight className="h-4 w-4" />
             </Button>
           )}
-          <Button onClick={saveStep} disabled={save.isPending} className="shadow-elegant">
-            {save.isPending ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <Save className="h-4 w-4" />
-            )}
-            Sauvegarder cette étape
-          </Button>
+          {mode === "create" && isLastStep && (
+            <Button onClick={finishCreate} disabled={save.isPending} className="shadow-elegant">
+              {save.isPending ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Save className="h-4 w-4" />
+              )}
+              Créer le client
+            </Button>
+          )}
         </div>
       </div>
     </div>
