@@ -42,12 +42,18 @@ function DefaultErrorComponent({ error, reset }: { error: Error; reset: () => vo
           >
             Réessayer
           </button>
-          <a
-            href="/"
+          <button
+            onClick={() => {
+              // Navigation interne au routeur, plutot qu'une vraie balise <a>,
+              // pour eviter un rechargement complet de la page qui peut casser
+              // la session en cours (c'est ce qui provoquait la deconnexion).
+              reset();
+              router.navigate({ to: "/dashboard" });
+            }}
             className="inline-flex items-center justify-center rounded-md border border-input bg-background px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-accent"
           >
             Retour à l'accueil
-          </a>
+          </button>
         </div>
       </div>
     </div>
