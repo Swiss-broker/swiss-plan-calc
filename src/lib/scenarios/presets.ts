@@ -20,6 +20,11 @@ export type ScenarioId =
   | "move_sz"
   | "move_ge"
   | "move_vd"
+  | "move_vs"
+  | "move_be"
+  | "move_fr"
+  | "move_ju"
+  | "move_ne"
   | "raise_10"
   | "part_time_80";
 
@@ -101,6 +106,11 @@ export const SCENARIO_PRESETS: ScenarioDef[] = [
   L("move_sz", "Déménagement → Schwytz", "Faible fiscalité cantonale, proche de Zurich.", "geo", (b) => ({ ...b, canton: "SZ", communalMultiplier: undefined, cantonalMultiplier: undefined })),
   L("move_ge", "Déménagement → Genève", "Comparatif avec un canton à fiscalité élevée.", "geo", (b) => ({ ...b, canton: "GE", communalMultiplier: undefined, cantonalMultiplier: undefined })),
   L("move_vd", "Déménagement → Vaud", "Lausanne et arc lémanique.", "geo", (b) => ({ ...b, canton: "VD", communalMultiplier: undefined, cantonalMultiplier: undefined })),
+  L("move_vs", "Déménagement → Valais", "Canton alpin, fiscalité modérée.", "geo", (b) => ({ ...b, canton: "VS", communalMultiplier: undefined, cantonalMultiplier: undefined })),
+  L("move_be", "Déménagement → Berne", "Capitale fédérale, fiscalité dans la moyenne suisse.", "geo", (b) => ({ ...b, canton: "BE", communalMultiplier: undefined, cantonalMultiplier: undefined })),
+  L("move_fr", "Déménagement → Fribourg", "Canton bilingue, entre Berne et Vaud.", "geo", (b) => ({ ...b, canton: "FR", communalMultiplier: undefined, cantonalMultiplier: undefined })),
+  L("move_ju", "Déménagement → Jura", "Plus jeune canton suisse, fiscalité modérée.", "geo", (b) => ({ ...b, canton: "JU", communalMultiplier: undefined, cantonalMultiplier: undefined })),
+  L("move_ne", "Déménagement → Neuchâtel", "Arc jurassien, proche de la frontière française.", "geo", (b) => ({ ...b, canton: "NE", communalMultiplier: undefined, cantonalMultiplier: undefined })),
   L("raise_10", "Augmentation salaire +10 %", "Impact sur progressivité et taux marginal.", "carriere", (b) => ({
     ...b, grossSalary: Math.round((b.grossSalary ?? 0) * 1.1), bonus: Math.round((b.bonus ?? 0) * 1.1),
   })),
