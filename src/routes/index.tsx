@@ -331,7 +331,7 @@ function PricingModal({ onClose }: { onClose: () => void }) {
     { name: "Pro", price: "790", priceMonthEquiv: "711", priceYear: "8'532", desc: "Pour le courtier actif en croissance", highlight: true,
       features: ["20 dossiers clients", "4 sociétés", "Tous les calculateurs", "Export PDF illimité", "Assistant IA illimité", "Support prioritaire"] },
     { name: "Cabinet", price: "1'290", priceMonthEquiv: "1'161", priceYear: "13'932", desc: "Pour les cabinets multi-collaborateurs", highlight: false,
-      features: ["Clients illimités", "Sociétés illimitées", "Tous les calculateurs", "Export PDF illimité", "Assistant IA illimité", "+290 CHF par utilisateur supplémentaire", "Support dédié"] },
+      features: ["Clients illimités", "Sociétés illimitées", "Tous les calculateurs", "Export PDF illimité", "Assistant IA illimité", "Tableau de bord d'équipe en temps réel", "+290 CHF par utilisateur supplémentaire", "Support dédié"] }, 
   ];
   const [yearly, setYearly] = useState(false);
   return (
