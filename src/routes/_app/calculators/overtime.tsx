@@ -1,3 +1,4 @@
+// src/routes/_app/calculators/overtime.tsx
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { z } from "zod";
@@ -31,6 +32,7 @@ import {
 } from "@/lib/overtime-fr";
 import { usePrefillFromClient, useHydrateFormFromPrefill } from "@/hooks/usePrefillFromClient";
 import { CrossCalcImpactBanner } from "@/components/calculators/CrossCalcImpactBanner";
+import { GuideMode, GuideToggleButton, type GuideStep } from "@/components/calculators/GuideMode";
 
 const searchSchema = z.object({
   clientId: fallback(z.string().uuid().optional(), undefined),
@@ -70,86 +72,128 @@ function OvertimeCalc() {
 
   const result = useMemo(() => computeOvertime(form), [form]);
   const [detailOpen, setDetailOpen] = useState(true);
+  const [guideOpen, setGuideOpen] = useState(false);
+
+  const guideSteps: GuideStep[] = [
+    {
+      title: "Bienvenue sur le calculateur Heures supplémentaires",
+      body: "Estimez l'exonération fiscale française sur les heures supplémentaires d'un frontalier, selon l'accord 1983.",
+    },
+    {
+      target: "overtime-tax-status",
+      title: "Statut fiscal du client",
+      body: "L'exonération française ne s'applique qu'au régime frontalier 1983. Pour les autres statuts, le gain sera automatiquement de 0.",
+    },
+    {
+      target: "overtime-work-data",
+      title: "Heures et salaire",
+      body: "Renseignez les heures hebdomadaires et le salaire net imposable. Le taux de change CHF/EUR est pré-rempli mais modifiable.",
+    },
+    {
+      target: "overtime-savings",
+      title: "Économie fiscale",
+      body: "Le montant exonéré et l'économie d'impôt qui en résulte, en euros et en francs.",
+    },
+    {
+      target: "overtime-save",
+      title: "Sauvegarder la simulation",
+      body: "Pensez à sauvegarder, sinon cette simulation n'apparaîtra pas dans la synthèse du rendez-vous.",
+    },
+  ];
 
   return (
     <div className="grid grid-cols-1 gap-6 md:grid-cols-5">
-      <div className="md:col-span-5"><CrossCalcImpactBanner calculator="overtime" clientId={clientId} /></div>
+      <div className="md:col-span-5 flex items-center justify-between gap-3">
+        <div className="flex-1"><CrossCalcImpactBanner calculator="overtime" clientId={clientId} /></div>
+        <GuideToggleButton onClick={() => setGuideOpen(true)} />
+      </div>
+      <GuideMode
+        open={guideOpen}
+        onClose={() => setGuideOpen(false)}
+        steps={guideSteps}
+        title="Guide, Heures supplémentaires"
+        guideId="calc-overtime"
+      />
       {client && (
         <div className="md:col-span-5">
           <ClientLinkBanner client={client} />
         </div>
       )}
       <div className="md:col-span-3 space-y-4">
-        <CalcCard
-          title="Profil du frontalier"
-          description="Régime fiscal et canton de travail."
-        >
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <Field label="Statut fiscal">
-              <Select
-                value={form.taxStatus}
-                onValueChange={(v) => set("taxStatus", v as OvertimeTaxStatus)}
-              >
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="cross_border_fr_1983">Frontalier 1983 (FR)</SelectItem>
-                  <SelectItem value="cross_border_ge">Frontalier Genève</SelectItem>
-                  <SelectItem value="source_taxed">Imposé à la source</SelectItem>
-                  <SelectItem value="tou">TOU / Quasi-résident</SelectItem>
-                </SelectContent>
-              </Select>
-            </Field>
-            <Field label="Canton de travail">
-              <Select value={form.workCanton} onValueChange={(v) => set("workCanton", v)}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {CANTONS.map((c) => (
-                    <SelectItem key={c.code} value={c.code}>
-                      {c.code} · {CANTON_BY_CODE[c.code]?.name ?? c.code}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </Field>
-          </div>
-        </CalcCard>
+        <div data-guide="overtime-tax-status">
+          <CalcCard
+            title="Profil du frontalier"
+            description="Régime fiscal et canton de travail."
+          >
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <Field label="Statut fiscal">
+                <Select
+                  value={form.taxStatus}
+                  onValueChange={(v) => set("taxStatus", v as OvertimeTaxStatus)}
+                >
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="cross_border_fr_1983">Frontalier 1983 (FR)</SelectItem>
+                    <SelectItem value="cross_border_ge">Frontalier Genève</SelectItem>
+                    <SelectItem value="source_taxed">Imposé à la source</SelectItem>
+                    <SelectItem value="tou">TOU / Quasi-résident</SelectItem>
+                  </SelectContent>
+                </Select>
+              </Field>
+              <Field label="Canton de travail">
+                <Select value={form.workCanton} onValueChange={(v) => set("workCanton", v)}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {CANTONS.map((c) => (
+                      <SelectItem key={c.code} value={c.code}>
+                        {c.code} · {CANTON_BY_CODE[c.code]?.name ?? c.code}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </Field>
+            </div>
+          </CalcCard>
+        </div>
 
-        <CalcCard
-          title="Données de travail"
-          description="Heures et salaire net imposable annuel."
-        >
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <NumField
-              label="Heures hebdomadaires"
-              value={form.weeklyHours}
-              onChange={(v) => set("weeklyHours", v)}
-              step={0.5}
-            />
-            <Field label="Devise du salaire">
-              <Select
-                value={form.salaryCurrency}
-                onValueChange={(v) => set("salaryCurrency", v as SalaryCurrency)}
-              >
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="EUR">EUR</SelectItem>
-                  <SelectItem value="CHF">CHF</SelectItem>
-                </SelectContent>
-              </Select>
-            </Field>
-            <NumField
-              label={`Salaire net annuel imposable (${form.salaryCurrency})`}
-              value={form.annualNetSalary}
-              onChange={(v) => set("annualNetSalary", v)}
-            />
-            <NumField
-              label="Taux CHF → EUR"
-              value={form.chfToEurRate}
-              onChange={(v) => set("chfToEurRate", v)}
-              step={0.01}
-            />
-          </div>
-        </CalcCard>
+        <div data-guide="overtime-work-data">
+          <CalcCard
+            title="Données de travail"
+            description="Heures et salaire net imposable annuel."
+          >
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <NumField
+                label="Heures hebdomadaires"
+                value={form.weeklyHours}
+                onChange={(v) => set("weeklyHours", v)}
+                step={0.5}
+              />
+              <Field label="Devise du salaire">
+                <Select
+                  value={form.salaryCurrency}
+                  onValueChange={(v) => set("salaryCurrency", v as SalaryCurrency)}
+                >
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="EUR">EUR</SelectItem>
+                    <SelectItem value="CHF">CHF</SelectItem>
+                  </SelectContent>
+                </Select>
+              </Field>
+              <NumField
+                label={`Salaire net annuel imposable (${form.salaryCurrency})`}
+                value={form.annualNetSalary}
+                onChange={(v) => set("annualNetSalary", v)}
+              />
+              <NumField
+                label="Taux CHF → EUR"
+                value={form.chfToEurRate}
+                onChange={(v) => set("chfToEurRate", v)}
+                step={0.01}
+              />
+            </div>
+          </CalcCard>
+        </div>
 
         <CalcCard title="Données fiscales personnelles">
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -244,33 +288,35 @@ function OvertimeCalc() {
           </div>
         </CalcCard>
 
-        <CalcCard title="3 · Économie fiscale">
-          <Row>
-            <MoneyTile
-              label="Économie annuelle (CHF)"
-              value={result.taxSavingsCHF}
-              tone="success"
-              big
-              tip="Montant économisé sur l'impôt sur le revenu français grâce à l'exonération des heures supplémentaires. Applicable uniquement pour les frontaliers accord 1983."
-            />
-            <MoneyTile
-              label="Économie annuelle (EUR)"
-              value={result.taxSavingsEUR}
-              tone="primary"
-              hint={`Taux marginal IR FR ${result.marginalRatePct}%`}
-              tip="Même économie convertie en euros. Calculée en appliquant votre taux marginal IR France au salaire exonéré retenu."
-            />
-          </Row>
-          {!result.hasFrenchExemption && (
-            <div className="mt-3 rounded-md border border-warning/30 bg-warning/5 p-3 text-xs text-warning-foreground">
-              Statut hors régime frontalier 1983 : l'exonération française heures sup ne
-              s'applique pas. L'économie réelle pour ce client est 0.
+        <div data-guide="overtime-savings">
+          <CalcCard title="3 · Économie fiscale">
+            <Row>
+              <MoneyTile
+                label="Économie annuelle (CHF)"
+                value={result.taxSavingsCHF}
+                tone="success"
+                big
+                tip="Montant économisé sur l'impôt sur le revenu français grâce à l'exonération des heures supplémentaires. Applicable uniquement pour les frontaliers accord 1983."
+              />
+              <MoneyTile
+                label="Économie annuelle (EUR)"
+                value={result.taxSavingsEUR}
+                tone="primary"
+                hint={`Taux marginal IR FR ${result.marginalRatePct}%`}
+                tip="Même économie convertie en euros. Calculée en appliquant votre taux marginal IR France au salaire exonéré retenu."
+              />
+            </Row>
+            {!result.hasFrenchExemption && (
+              <div className="mt-3 rounded-md border border-warning/30 bg-warning/5 p-3 text-xs text-warning-foreground">
+                Statut hors régime frontalier 1983 : l'exonération française heures sup ne
+                s'applique pas. L'économie réelle pour ce client est 0.
+              </div>
+            )}
+            <div className="mt-3 text-xs text-muted-foreground">
+              Côté Suisse : aucune incidence (l'impôt suisse reste dû sur le salaire complet).
             </div>
-          )}
-          <div className="mt-3 text-xs text-muted-foreground">
-            Côté Suisse : aucune incidence (l'impôt suisse reste dû sur le salaire complet).
-          </div>
-        </CalcCard>
+          </CalcCard>
+        </div>
 
         <Collapsible open={detailOpen} onOpenChange={setDetailOpen}>
           <CalcCard title="Détail du calcul">
@@ -326,7 +372,7 @@ function OvertimeCalc() {
           </span>
         </div>
 
-        <div className="flex justify-end">
+        <div className="flex justify-end" data-guide="overtime-save">
           <SaveSimulationButton
             kind="overtime"
             inputs={form}

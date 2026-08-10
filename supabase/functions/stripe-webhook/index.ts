@@ -4,6 +4,44 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, stripe-signature",
 };
 
+// Verifie que la requete vient bien de Stripe, en recalculant la signature
+// attendue a partir du corps brut et du secret partage, puis en comparant
+// au contenu de l'en-tete Stripe-Signature. Sans ca, n'importe qui pourrait
+// appeler cet endpoint avec un faux evenement "paiement reussi".
+async function verifyStripeSignature(
+  payload: string,
+  sigHeader: string,
+  secret: string
+): Promise<boolean> {
+  const parts = sigHeader.split(",").reduce(
+    (acc, part) => {
+      const [key, value] = part.split("=");
+      if (key === "t") acc.timestamp = value;
+      if (key === "v1") acc.signatures.push(value);
+      return acc;
+    },
+    { timestamp: "", signatures: [] as string[] }
+  );
+
+  if (!parts.timestamp || parts.signatures.length === 0) return false;
+
+  const signedPayload = `${parts.timestamp}.${payload}`;
+  const encoder = new TextEncoder();
+  const key = await crypto.subtle.importKey(
+    "raw",
+    encoder.encode(secret),
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign"]
+  );
+  const signatureBuffer = await crypto.subtle.sign("HMAC", key, encoder.encode(signedPayload));
+  const expectedSignature = Array.from(new Uint8Array(signatureBuffer))
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
+
+  return parts.signatures.includes(expectedSignature);
+}
+
 // supabase/functions/stripe-webhook/index.ts
 // Remplace uniquement la fonction sendBrevoEmail par cette version avec logs
 async function sendBrevoEmail(to: string, subject: string, htmlContent: string) {
@@ -60,11 +98,33 @@ Deno.serve(async (req) => {
     const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
     const supabaseUrl = Deno.env.get("SUPABASE_URL");
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-    if (!stripeKey || !supabaseUrl || !supabaseKey) {
+    const webhookSecret = Deno.env.get("STRIPE_WEBHOOK_SECRET");
+    if (!stripeKey || !supabaseUrl || !supabaseKey || !webhookSecret) {
       throw new Error("Variables d'environnement manquantes");
     }
 
+    // Le corps brut doit etre lu AVANT d'etre parse en JSON, la signature
+    // porte sur le texte exact recu, pas sur une reserialisation.
     const body = await req.text();
+    const signature = req.headers.get("stripe-signature");
+
+    if (!signature) {
+      console.error("Requete rejetee : en-tete stripe-signature absent");
+      return new Response(JSON.stringify({ error: "Signature manquante" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const isValid = await verifyStripeSignature(body, signature, webhookSecret);
+    if (!isValid) {
+      console.error("Requete rejetee : signature invalide, evenement non authentique");
+      return new Response(JSON.stringify({ error: "Signature invalide" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const event = JSON.parse(body);
 
     const updatePlan = async (email: string, plan: string) => {
@@ -90,7 +150,7 @@ Deno.serve(async (req) => {
       const clientId = session.metadata?.client_id;
 
       // ── Paiement RDV courtier (Payment Link) ──
-      if (brokerId) {
+      if (session.mode === "payment") {
         const amountTotal = session.amount_total ?? 0;
         const amountChf = amountTotal / 100;
         const commission = Math.round(amountTotal * 0.10) / 100;
