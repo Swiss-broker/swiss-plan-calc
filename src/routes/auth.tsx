@@ -240,15 +240,10 @@ const [otpState, setOtpState] = useState<{ email: string; plan: string; inviteTo
               <span className="text-xl font-bold text-primary-foreground">S</span>
             </div>
             <h1 className="text-2xl font-bold tracking-tight">
-              {mode === "signup" ? t("auth.signup.title") : t("auth.signin.title")}
-            </h1>
-            <p className="mt-1 text-sm text-muted-foreground">
               {mode === "signup"
-                ? selectedPlan === "cabinet"
-                  ? t("auth.signup.title_cabinet")
-                  : t("auth.signup.title")
+                ? `Créer un compte ${PLAN_LABELS[selectedPlan] ?? "courtier"}`
                 : t("auth.signin.title")}
-            </p>
+            </h1>
           </div>
 
           <div className="my-6 flex items-center gap-3">
