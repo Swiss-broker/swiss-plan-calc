@@ -107,7 +107,14 @@ function LppCalc() {
     widowPeriod: "year" as "year" | "month",
   });
   useHydrateFormFromPrefill(simId ? null : prefill, setForm);
-  const [insuredSalaryManual, setInsuredSalaryManual] = useState(false);
+  // Si la fiche client contient un salaire assuré explicitement saisi (donc
+  // différent de 0), on le considère comme une valeur manuelle du courtier
+  // dès le départ, pour que le calcul automatique ci-dessous ne l'écrase
+  // jamais silencieusement. Le badge affichera "Manuel" pour que ce soit
+  // visible à l'écran.
+  const [insuredSalaryManual, setInsuredSalaryManual] = useState(
+    () => Boolean(prefill?.insuredSalary && prefill.insuredSalary > 0),
+  );
 
   // Rechargement d'un brouillon sauvegardé : ne s'applique qu'une fois par
   // simId, pour ne pas écraser les modifications faites après le chargement.
