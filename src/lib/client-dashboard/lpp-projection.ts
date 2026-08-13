@@ -180,10 +180,17 @@ export function projectClientLPP(b: ClientBundle): ClientLppProjection | null {
       currentAge: age,
       retirementAge: RETIREMENT_AGE_DEFAULT,
       currentBalance: currentCapital,
+      // Si aucun salaire assuré explicite n'est saisi dans la fiche, on
+      // applique la même règle légale que le calculateur LPP (art. 8 LPP,
+      // brut moins déduction de coordination, plafonné), au lieu d'utiliser
+      // le brut tel quel qui surestimait le capital projeté.
       insuredSalary:
         insuredSalary > 0
           ? insuredSalary
-          : Math.max(0, Number(b.client.gross_annual_salary ?? 0)),
+          : computeLppInsuredSalary(
+              Math.max(0, Number(b.client.gross_annual_salary ?? 0)),
+              LPP_2026.maxInsuredSalary,
+            ),
       conversionRate,
       expectedReturnRate: assumptions.expectedReturnRate,
       feeRate: assumptions.feeRate,
