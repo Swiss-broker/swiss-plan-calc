@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { zodValidator, fallback } from "@tanstack/zod-adapter";
 import { z } from "zod";
 import { Sparkles, Info, ArrowRight } from "lucide-react";
@@ -33,6 +33,7 @@ import { CANTONS } from "@/lib/swiss/cantons";
 import { formatCHF } from "@/lib/format";
 import { useT } from "@/contexts/LanguageContext";
 import { usePrefillFromClient, useHydrateFormFromPrefill } from "@/hooks/usePrefillFromClient";
+import { useLoadSavedSimulation } from "@/hooks/useLoadSavedSimulation";
 
 import { computeTaxGlobal } from "@/lib/tax-global/engine";
 
@@ -47,6 +48,7 @@ type FxCurrency = "CHF" | Currency;
 
 const searchSchema = z.object({
   clientId: fallback(z.string().uuid().optional(), undefined),
+  simId: fallback(z.string().uuid().optional(), undefined),
 });
 
 export const Route = createFileRoute("/_app/calculators/tax-global")({
@@ -57,16 +59,27 @@ export const Route = createFileRoute("/_app/calculators/tax-global")({
 
 function TaxGlobalCalc() {
   const t = useT();
-  const { clientId } = Route.useSearch();
+  const { clientId, simId } = Route.useSearch();
   const { client, prefill } = usePrefillFromClient(clientId, "tax-global");
+  const { inputs: savedInputs, isLoading: loadingSaved } = useLoadSavedSimulation(simId);
 
   const [form, setForm] = useState<TaxGlobalInput>(() => createDefaultInput());
   useHydrateFormFromPrefill(
-    prefill as Partial<Record<string, unknown>> | null,
+    simId ? null : (prefill as Partial<Record<string, unknown>> | null),
     setForm as unknown as (
       updater: (prev: Record<string, unknown>) => Record<string, unknown>,
     ) => void,
   );
+
+  // Rechargement d'un brouillon sauvegardé : ne s'applique qu'une fois par
+  // simId, pour ne pas écraser les modifications faites après le chargement.
+  const loadedSimRef = useRef<string | undefined>(undefined);
+  useEffect(() => {
+    if (!simId || !savedInputs) return;
+    if (loadedSimRef.current === simId) return;
+    setForm((prev) => ({ ...prev, ...savedInputs } as TaxGlobalInput));
+    loadedSimRef.current = simId;
+  }, [simId, savedInputs]);
 
   const set = <K extends keyof TaxGlobalInput>(k: K, v: TaxGlobalInput[K]) =>
     setForm((f) => ({ ...f, [k]: v }));
@@ -819,8 +832,7 @@ function TaxGlobalCalc() {
                   tip="Taux moyen du barème IS appliqué, le marginal réel dépend du barème détaillé du canton de travail."
                 />
               </Row>
-              // APRÈS
-              {result.touEligibility && (
+              {result.touEligibility && form.canton === "GE" && (
                 <div className={`mt-3 rounded-md border p-3 text-sm ${!result.touEligibility.eligibleForTOU && result.touEligibility.swissShare < 90 ? "border-destructive/40 bg-destructive/5" : "border-border"}`}>
                   {!result.touEligibility.eligibleForTOU && result.touEligibility.swissShare < 90 && (
                     <p className="mb-2 font-semibold text-destructive text-xs">
@@ -845,6 +857,11 @@ function TaxGlobalCalc() {
                       {result.touComparison.recommendationText}
                     </p>
                   )}
+                </div>
+              )}
+              {result.touEligibility && form.canton !== "GE" && (
+                <div className="mt-3 rounded-md border border-border bg-muted/30 p-3 text-xs text-muted-foreground">
+                  Le statut de quasi-résident (TOU) n'est modélisé que pour Genève dans cette version. Pour le canton {form.canton}, vérifiez l'éligibilité directement auprès de l'administration fiscale cantonale.
                 </div>
               )}
             </CalcCard>
