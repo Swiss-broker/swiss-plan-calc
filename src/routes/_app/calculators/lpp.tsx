@@ -32,7 +32,7 @@ import {
 import { getSelectableCantons } from "@/lib/swiss/cantons";
 import { projectLPP, simulateBuybackPlan, computeLppInsuredSalary, estimateRetroactiveLppBalance } from "@/lib/lpp";
 import { LPP_2026 } from "@/lib/lpp/parameters-2026";
-import { CalcCard, MoneyTile, Row } from "@/components/calculators/CalcUI";
+import { CalcCard, MoneyTile, Row, HelpDot } from "@/components/calculators/CalcUI";
 import { formatCHF } from "@/lib/format";
 const fmtCHF = formatCHF;
 import type { IncomeTaxInput } from "@/lib/tax/income";
@@ -278,9 +278,12 @@ function LppCalc() {
           <div className="flex items-start gap-3 rounded-lg border border-primary/30 bg-primary/5 p-3 text-sm">
             <Info className="mt-0.5 h-4 w-4 flex-shrink-0 text-primary" />
             <div className="flex-1 text-foreground">
-              <p className="font-medium">Simulation non sauvegardée</p>
+              <div className="flex items-center gap-1.5">
+                <p className="font-medium">Écart avec le dossier client</p>
+                <HelpDot tip="Les paramètres actuellement saisis dans ce calculateur (âge, rendement, rachat, etc.) donnent un résultat différent de ce qui est enregistré dans le dossier de ce client. Cela arrive dès que vous modifiez une valeur pour tester un scénario. Cliquez sur le bouton pour remplacer la valeur du dossier par ce nouveau résultat, ou continuez simplement à tester sans rien changer au dossier." />
+              </div>
               <p className="mt-0.5 text-xs text-muted-foreground">
-                Valeur ici : <span className="font-semibold tabular-nums text-foreground">{fmtCHF(projection.projectedBalance)}</span> · Fiche client : <span className="font-semibold tabular-nums text-foreground">{fmtCHF(ficheLppCapital)}</span>. Cliquez « Appliquer à la fiche » pour synchroniser.
+                Résultat de cette simulation : <span className="font-semibold tabular-nums text-foreground">{fmtCHF(projection.projectedBalance)}</span> · Valeur enregistrée dans le dossier : <span className="font-semibold tabular-nums text-foreground">{fmtCHF(ficheLppCapital)}</span>.
               </p>
             </div>
             <Button
@@ -310,7 +313,8 @@ function LppCalc() {
                 window.location.reload();
               }}
             >
-              Appliquer à la fiche
+          
+              Mettre à jour le dossier client
             </Button>
           </div>
         )}
@@ -1007,9 +1011,17 @@ function InsuredSalaryPanel({
                   variant="ghost"
                   size="sm"
                   className="h-6 px-2 text-[10px]"
-                  onClick={onRecalcAuto}
+                  onClick={() => {
+                    if (
+                      window.confirm(
+                        `Cela remplacera le salaire assuré saisi (${fmtCHF(insuredSalary)}) par le calcul automatique. Continuer ?`,
+                      )
+                    ) {
+                      onRecalcAuto();
+                    }
+                  }}
                 >
-                  <RotateCcw className="h-3 w-3 mr-1" /> {t("calc.lpp.recalc_auto")}
+                  <RotateCcw className="h-3 w-3 mr-1" /> Ignorer ma saisie et recalculer
                 </Button>
               )}
             </div>
