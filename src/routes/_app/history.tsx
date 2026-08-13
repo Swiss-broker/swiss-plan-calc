@@ -338,8 +338,15 @@ function HistoryPage() {
                               title={t("history.action.open_tooltip")}
                               asChild
                             >
+                              {/* Correction : on transmet désormais le clientId de la
+                                  sauvegarde dans l'URL, pour que le calculateur s'ouvre
+                                  dans le contexte du bon client (bandeau actif +
+                                  préremplissage depuis le dossier) au lieu de s'ouvrir
+                                  hors contexte. Le rechargement exact des valeurs
+                                  sauvegardées (inputs) sera branché à l'étape 2. */}
                               <Link
                                 to={KIND_ROUTES[e.kind] as "/calculators/income-tax"}
+                                search={e.client_id ? { clientId: e.client_id } : undefined}
                               >
                                 {t("history.action.open")}
                               </Link>
