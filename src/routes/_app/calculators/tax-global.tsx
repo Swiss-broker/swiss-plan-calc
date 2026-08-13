@@ -853,8 +853,9 @@ function TaxGlobalCalc() {
                     <HelpDot tip="Quasi-résident = ≥ 90 % du revenu mondial gagné en CH. Seuil requis pour demander la TOU (Taxation Ordinaire Ultérieure), qui permet d'appliquer toutes les déductions effectives (3a, rachat LPP, intérêts hypothécaires, etc.) en remplacement de la retenue source." />
                   </div>
                   {result.touComparison && (
-                    <p className="mt-2 text-xs text-muted-foreground">
-                      {result.touComparison.recommendationText}
+                    <p className="mt-2 flex items-start gap-1.5 text-xs text-muted-foreground">
+                      <span>{result.touComparison.recommendationText}</span>
+                      <HelpDot tip="Comparaison entre rester en imposition à la source (IS, barème sur le salaire brut, sans déductions) et demander la Taxation Ordinaire Ultérieure (TOU, barème résident avec toutes les déductions saisies ci-dessus : 3a, rachat LPP, intérêts hypothécaires, etc.). Le message indique l'option la moins coûteuse pour le client selon les déductions actuellement renseignées. Si les déductions augmentent, la TOU peut devenir plus avantageuse." />
                     </p>
                   )}
                 </div>
