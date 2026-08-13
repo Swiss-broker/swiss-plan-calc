@@ -859,11 +859,7 @@ function TaxGlobalCalc() {
                   )}
                 </div>
               )}
-              {result.touEligibility && form.canton !== "GE" && (
-                <div className="mt-3 rounded-md border border-border bg-muted/30 p-3 text-xs text-muted-foreground">
-                  Le statut de quasi-résident (TOU) n'est modélisé que pour Genève dans cette version. Pour le canton {form.canton}, vérifiez l'éligibilité directement auprès de l'administration fiscale cantonale.
-                </div>
-              )}
+              
             </CalcCard>
           )}
 
