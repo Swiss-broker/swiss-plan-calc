@@ -143,7 +143,7 @@ function Pillar3aCalc() {
   canton: form.canton, 
   status: form.status, 
   grossSalary: form.grossSalary,
-  pillar3aContributions: form.contribution,
+  pillar3aContributions: 0,
 },
       }),
     [max, form.canton, form.status, form.grossSalary],
