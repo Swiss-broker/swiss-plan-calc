@@ -142,7 +142,9 @@ function LppCalc() {
     }
   }, [form.grossSalary, form.insuredSalaryCap, insuredSalaryManual, form.insuredSalary]);
 
+  const [lastManualInsuredSalary, setLastManualInsuredSalary] = useState<number | null>(null);
   const recalcAuto = () => {
+    setLastManualInsuredSalary(form.insuredSalary);
     setInsuredSalaryManual(false);
     setForm((f) => ({
       ...f,
@@ -326,6 +328,7 @@ function LppCalc() {
               insuredSalary={form.insuredSalary}
               insuredSalaryCap={form.insuredSalaryCap}
               isManual={insuredSalaryManual}
+              lastManualValue={lastManualInsuredSalary}
               onGrossChange={(v) => set("grossSalary", v)}
               onCapChange={(v) => set("insuredSalaryCap", v)}
               onInsuredChange={(v) => {
@@ -887,6 +890,7 @@ function InsuredSalaryPanel({
   insuredSalary,
   insuredSalaryCap,
   isManual,
+  lastManualValue,
   onGrossChange,
   onCapChange,
   onInsuredChange,
@@ -896,6 +900,7 @@ function InsuredSalaryPanel({
   insuredSalary: number;
   insuredSalaryCap: number;
   isManual: boolean;
+  lastManualValue: number | null;
   onGrossChange: (v: number) => void;
   onCapChange: (v: number) => void;
   onInsuredChange: (v: number) => void;
@@ -952,23 +957,15 @@ function InsuredSalaryPanel({
           <div className="rounded-lg border border-border/60 bg-card p-2.5">
             <div className="flex items-center gap-1 text-[10px] uppercase text-muted-foreground">
               {t("calc.lpp.const.coord_2026")}
-              <UiTooltip>
-                <TooltipTrigger asChild><Info className="h-3 w-3" /></TooltipTrigger>
-                <TooltipContent>{t("calc.lpp.const.coord_tip")}</TooltipContent>
-              </UiTooltip>
+              <HelpDot tip="Montant fixe déduit chaque année du salaire brut avant de calculer le salaire assuré (fixé par la loi pour 2026, identique pour tous les clients)." />
             </div>
             <div className="mt-0.5 font-semibold tabular-nums">{fmtCHF(COORD)}</div>
           </div>
 
           <div className="rounded-lg border border-border/60 bg-card p-2.5">
             <div className="flex items-center gap-1 text-[10px] uppercase text-muted-foreground">
-              {t("calc.lpp.const.cap")}
-              <UiTooltip>
-                <TooltipTrigger asChild><Info className="h-3 w-3" /></TooltipTrigger>
-                <TooltipContent className="max-w-xs">
-                  {t("calc.lpp.const.cap_tip")}
-                </TooltipContent>
-              </UiTooltip>
+              Plafond légal LPP 2026
+              <HelpDot tip="Salaire maximum que la loi autorise à assurer en LPP, valable pour tous les clients en Suisse en 2026. Ce n'est PAS le salaire assuré réel du client : c'est juste le plafond au-delà duquel le calcul automatique ne peut pas aller. Le vrai salaire assuré du client (visible sur son certificat de prévoyance) peut être différent, notamment s'il a un plan surobligatoire chez son employeur." />
             </div>
             <BaseNumField
               value={String(insuredSalaryCap)}
@@ -980,10 +977,7 @@ function InsuredSalaryPanel({
           <div className="rounded-lg border border-border/60 bg-card p-2.5">
             <div className="flex items-center gap-1 text-[10px] uppercase text-muted-foreground">
               {t("calc.lpp.const.min_coord")}
-              <UiTooltip>
-                <TooltipTrigger asChild><Info className="h-3 w-3" /></TooltipTrigger>
-                <TooltipContent>{t("calc.lpp.const.min_coord_tip")}</TooltipContent>
-              </UiTooltip>
+              <HelpDot tip="Montant minimum garanti de salaire assuré, même pour un salaire brut modeste (fixé par la loi pour 2026)." />
             </div>
             <div className="mt-0.5 font-semibold tabular-nums">{fmtCHF(MIN_COORD)}</div>
           </div>
@@ -998,8 +992,8 @@ function InsuredSalaryPanel({
               <span
                 className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase ${
                   isManual
-                    ? "bg-warning/15 text-warning-foreground border border-warning/30"
-                    : "bg-primary/15 text-primary border border-primary/30"
+                    ? "bg-amber-500 text-white border border-amber-600"
+                    : "bg-primary text-primary-foreground border border-primary"
                 }`}
               >
                 {isManual ? <Pencil className="h-3 w-3" /> : <Calculator className="h-3 w-3" />}
@@ -1014,7 +1008,7 @@ function InsuredSalaryPanel({
                   onClick={() => {
                     if (
                       window.confirm(
-                        `Cela remplacera le salaire assuré saisi (${fmtCHF(insuredSalary)}) par le calcul automatique. Continuer ?`,
+                        `Cela remplacera le salaire assuré saisi (${fmtCHF(insuredSalary)}) par le calcul automatique (${fmtCHF(Math.max(MIN_COORD, Math.min(grossSalary, insuredSalaryCap) - COORD))}). Vous pourrez annuler juste après si besoin. Continuer ?`,
                       )
                     ) {
                       onRecalcAuto();
@@ -1022,6 +1016,17 @@ function InsuredSalaryPanel({
                   }}
                 >
                   <RotateCcw className="h-3 w-3 mr-1" /> Ignorer ma saisie et recalculer
+                </Button>
+              )}
+              {!isManual && lastManualValue !== null && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="h-6 px-2 text-[10px]"
+                  onClick={() => onInsuredChange(lastManualValue)}
+                >
+                  <RotateCcw className="h-3 w-3 mr-1" /> Annuler, remettre {fmtCHF(lastManualValue)}
                 </Button>
               )}
             </div>
