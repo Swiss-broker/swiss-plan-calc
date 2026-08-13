@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { ClientPrefillBadge } from "@/components/calculators/ClientPrefillBadge";
-import { useMemo, useState, useEffect } from "react";import {
+import { useMemo, useRef, useState, useEffect } from "react";import {
   Select,
   SelectContent,
   SelectItem,
@@ -25,6 +25,7 @@ import { useBrokerPdfHeader } from "@/hooks/useBrokerPdfHeader";
 import { zodValidator, fallback } from "@tanstack/zod-adapter";
 import { z } from "zod";
 import { usePrefillFromClient, useHydrateFormFromPrefill } from "@/hooks/usePrefillFromClient";
+import { useLoadSavedSimulation } from "@/hooks/useLoadSavedSimulation";
 import { ClientLinkBanner } from "@/components/calculators/ClientLinkBanner";
 import { GuideMode, GuideToggleButton, type GuideStep } from "@/components/calculators/GuideMode";
 import { WikiTip } from "@/components/calculators/WikiTip";
@@ -35,6 +36,7 @@ import { CrossCalcImpactBanner } from "@/components/calculators/CrossCalcImpactB
 
 const searchSchema = z.object({
   clientId: fallback(z.string().uuid().optional(), undefined),
+  simId: fallback(z.string().uuid().optional(), undefined),
 });
 
 export const Route = createFileRoute("/_app/calculators/pillar3a")({
@@ -45,8 +47,9 @@ export const Route = createFileRoute("/_app/calculators/pillar3a")({
 
 function Pillar3aCalc() {
   const t = useT();
-  const { clientId } = Route.useSearch();
+  const { clientId, simId } = Route.useSearch();
   const { client, prefill } = usePrefillFromClient(clientId, "pillar3a");
+  const { inputs: savedInputs, isLoading: loadingSaved } = useLoadSavedSimulation(simId);
   const [form, setForm] = useState({
     hasLPP: true,
     netSelfEmploymentIncome: 0,
@@ -64,7 +67,17 @@ function Pillar3aCalc() {
     pillar3bYears: 25,
     pillar3bReturn: 2.0,
   });
-  useHydrateFormFromPrefill(prefill, setForm);
+  useHydrateFormFromPrefill(simId ? null : prefill, setForm);
+
+  // Rechargement d'un brouillon sauvegardé : ne s'applique qu'une fois par
+  // simId, pour ne pas écraser les modifications faites après le chargement.
+  const loadedSimRef = useRef<string | undefined>(undefined);
+  useEffect(() => {
+    if (!simId || !savedInputs) return;
+    if (loadedSimRef.current === simId) return;
+    setForm((prev) => ({ ...prev, ...savedInputs }));
+    loadedSimRef.current = simId;
+  }, [simId, savedInputs]);
 
   const set = <K extends keyof typeof form>(k: K, v: (typeof form)[K]) =>
     setForm((f) => ({ ...f, [k]: v }));
@@ -287,6 +300,16 @@ useEffect(() => {
       <div className="flex justify-end"><GuideToggleButton onClick={() => setGuideOpen(true)} /></div>
 
       {client && <ClientLinkBanner client={client} />}
+      {simId && loadingSaved && (
+        <div className="rounded-lg border border-primary/30 bg-primary/5 p-3 text-sm text-muted-foreground">
+          Chargement de la sauvegarde…
+        </div>
+      )}
+      {simId && !loadingSaved && savedInputs && (
+        <div className="rounded-lg border border-primary/30 bg-primary/5 p-3 text-sm">
+          Vous consultez une simulation sauvegardée. Toute modification créera une nouvelle sauvegarde distincte si vous cliquez sur « Sauvegarder ».
+        </div>
+      )}
       <FiscalSnapshotBanner clientId={clientId} />
 
       <div className="rounded-xl border border-primary/30 bg-primary/5 p-4 text-sm">
@@ -358,6 +381,38 @@ useEffect(() => {
             <p className="mt-2 text-xs text-muted-foreground">
               {t("calc.p3a.marginal_rate", { rate: savings.marginalRate.toFixed(1) })}
             </p>
+            {/* Projection cumulée : économie fiscale répétée chaque année si la
+                cotisation actuelle (ou optimale) est maintenue jusqu'à la
+                retraite. Hypothèse simplificatrice : cotisation et taux
+                marginal constants sur la période (non actualisé). */}
+            {form.yearsToRetirement > 0 ? (
+              <div className="mt-4 rounded-lg border border-success/30 bg-success/5 p-3">
+                <p className="text-xs font-semibold uppercase tracking-wider text-success">
+                  Économie fiscale cumulée jusqu'à la retraite ({form.yearsToRetirement} ans)
+                </p>
+                <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2">
+                  <div className="rounded-md border border-border/60 bg-card p-2">
+                    <div className="text-[10px] uppercase text-muted-foreground">Au versement actuel</div>
+                    <div className="mt-0.5 text-lg font-bold tabular-nums text-foreground">
+                      {(savings.taxSavings * form.yearsToRetirement).toLocaleString("fr-CH")} CHF
+                    </div>
+                  </div>
+                  <div className="rounded-md border border-success/40 bg-success/10 p-2">
+                    <div className="text-[10px] uppercase text-muted-foreground">Au plafond légal ({max.toLocaleString("fr-CH")} CHF/an)</div>
+                    <div className="mt-0.5 text-lg font-bold tabular-nums text-success">
+                      {(optimizedSavings.taxSavings * form.yearsToRetirement).toLocaleString("fr-CH")} CHF
+                    </div>
+                  </div>
+                </div>
+                <p className="mt-2 text-[10px] text-muted-foreground">
+                  Hypothèse : cotisation et taux marginal constants chaque année. Non actualisé, ne tient pas compte d'une éventuelle évolution du plafond légal ou du revenu.
+                </p>
+              </div>
+            ) : (
+              <p className="mt-3 text-[11px] text-warning">
+                Renseignez le nombre d'années jusqu'à la retraite (champ ci-dessous) pour voir la projection cumulée.
+              </p>
+            )}
           </CalcCard>
         </div>
       </div>
