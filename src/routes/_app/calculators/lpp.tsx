@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   LineChart,
   Line as RLine,
@@ -42,6 +42,7 @@ import { useBrokerPdfHeader } from "@/hooks/useBrokerPdfHeader";
 import { zodValidator, fallback } from "@tanstack/zod-adapter";
 import { z } from "zod";
 import { usePrefillFromClient, useHydrateFormFromPrefill } from "@/hooks/usePrefillFromClient";
+import { useLoadSavedSimulation } from "@/hooks/useLoadSavedSimulation";
 import { ClientLinkBanner } from "@/components/calculators/ClientLinkBanner";
 import { FiscalSnapshotBanner } from "@/components/calculators/FiscalSnapshotBanner";
 import { GuideMode, GuideToggleButton, type GuideStep } from "@/components/calculators/GuideMode";
@@ -54,6 +55,7 @@ import { ClientPrefillBadge } from "@/components/calculators/ClientPrefillBadge"
 
 const searchSchema = z.object({
   clientId: fallback(z.string().uuid().optional(), undefined),
+  simId: fallback(z.string().uuid().optional(), undefined),
 });
 
 export const Route = createFileRoute("/_app/calculators/lpp")({
@@ -64,8 +66,9 @@ export const Route = createFileRoute("/_app/calculators/lpp")({
 
 function LppCalc() {
   const t = useT();
-  const { clientId } = Route.useSearch();
+  const { clientId, simId } = Route.useSearch();
   const { client, bundle, prefill } = usePrefillFromClient(clientId, "lpp");
+  const { inputs: savedInputs, isLoading: loadingSaved } = useLoadSavedSimulation(simId);
   const dashboard = useClientDashboard(bundle);
   const ficheLppCapital = dashboard?.lpp?.projectedCapitalAt65 ?? 0;
   const [form, setForm] = useState({
@@ -103,8 +106,18 @@ function LppCalc() {
     widowAmount: 0,
     widowPeriod: "year" as "year" | "month",
   });
-  useHydrateFormFromPrefill(prefill, setForm);
+  useHydrateFormFromPrefill(simId ? null : prefill, setForm);
   const [insuredSalaryManual, setInsuredSalaryManual] = useState(false);
+
+  // Rechargement d'un brouillon sauvegardé : ne s'applique qu'une fois par
+  // simId, pour ne pas écraser les modifications faites après le chargement.
+  const loadedSimRef = useRef<string | undefined>(undefined);
+  useEffect(() => {
+    if (!simId || !savedInputs) return;
+    if (loadedSimRef.current === simId) return;
+    setForm((prev) => ({ ...prev, ...savedInputs }));
+    loadedSimRef.current = simId;
+  }, [simId, savedInputs]);
 
   const set = <K extends keyof typeof form>(k: K, v: (typeof form)[K]) =>
     setForm((f) => ({ ...f, [k]: v }));
@@ -237,6 +250,16 @@ function LppCalc() {
       <div className="flex justify-end"><GuideToggleButton onClick={() => setGuideOpen(true)} /></div>
 
       {client && <ClientLinkBanner client={client} />}
+      {simId && loadingSaved && (
+        <div className="rounded-lg border border-primary/30 bg-primary/5 p-3 text-sm text-muted-foreground">
+          Chargement de la sauvegarde…
+        </div>
+      )}
+      {simId && !loadingSaved && savedInputs && (
+        <div className="rounded-lg border border-primary/30 bg-primary/5 p-3 text-sm">
+          Vous consultez une simulation sauvegardée. Toute modification créera une nouvelle sauvegarde distincte si vous cliquez sur « Sauvegarder ».
+        </div>
+      )}
       <FiscalSnapshotBanner clientId={clientId} />
       {clientId && ficheLppCapital > 0 &&
         Math.abs(projection.projectedBalance - ficheLppCapital) > 1 && (
