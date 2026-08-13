@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { z } from "zod";
 import { zodValidator, fallback } from "@tanstack/zod-adapter";
 import {
@@ -24,6 +24,7 @@ import {
   usePrefillFromClient,
   useHydrateFormFromPrefill,
 } from "@/hooks/usePrefillFromClient";
+import { useLoadSavedSimulation } from "@/hooks/useLoadSavedSimulation";
 import { ClientLinkBanner } from "@/components/calculators/ClientLinkBanner";
 import { GuideMode, GuideToggleButton, type GuideStep } from "@/components/calculators/GuideMode";
 import { WikiTip } from "@/components/calculators/WikiTip";
@@ -36,6 +37,8 @@ import { CrossCalcImpactBanner } from "@/components/calculators/CrossCalcImpactB
 
 const searchSchema = z.object({
   clientId: fallback(z.string().uuid().optional(), undefined),
+  // Nouveau : identifie une sauvegarde précise à recharger dans le formulaire.
+  simId: fallback(z.string().uuid().optional(), undefined),
 });
 
 export const Route = createFileRoute("/_app/calculators/avs-ai")({
@@ -56,8 +59,9 @@ export const Route = createFileRoute("/_app/calculators/avs-ai")({
 function AvsAiCalc() {
   const t = useT();
   const currentYear = new Date().getFullYear();
-  const { clientId } = Route.useSearch();
+  const { clientId, simId } = Route.useSearch();
   const { client, bundle, prefill } = usePrefillFromClient(clientId, "avs-ai");
+  const { inputs: savedInputs, isLoading: loadingSaved } = useLoadSavedSimulation(simId);
 
   // Persistance localStorage en mode standalone (sans clientId) · l'utilisateur
   // ne perd plus ses saisies quand il quitte/revient au calculateur.
@@ -81,7 +85,9 @@ function AvsAiCalc() {
       spouseRetirementYear: 2046,
       spouseAverageAnnualIncome: 70_000,
     };
-    if (clientId || typeof window === "undefined") return base;
+    // Si on charge une sauvegarde précise, on ignore le localStorage standalone :
+    // la sauvegarde fait foi.
+    if (clientId || simId || typeof window === "undefined") return base;
     try {
       const raw = window.localStorage.getItem(STORAGE_KEY);
       if (raw) return { ...base, ...JSON.parse(raw) };
@@ -92,20 +98,34 @@ function AvsAiCalc() {
   })();
   const [form, setForm] = useState<typeof initialForm>(initialForm);
 
-  // Sauvegarde auto en mode standalone
+  // Sauvegarde auto en mode standalone (désactivée si on visualise un brouillon)
   useEffect(() => {
-    if (clientId || typeof window === "undefined") return;
+    if (clientId || simId || typeof window === "undefined") return;
     try {
       window.localStorage.setItem(STORAGE_KEY, JSON.stringify(form));
     } catch {
       /* ignore */
     }
-  }, [form, clientId]);
+  }, [form, clientId, simId]);
 
   const set = <K extends keyof typeof initialForm>(k: K, v: (typeof initialForm)[K]) =>
     setForm((f: typeof initialForm) => ({ ...f, [k]: v }));
 
-  useHydrateFormFromPrefill(prefill, setForm);
+  // Préremplissage depuis la fiche client vivante : désactivé si on est en
+  // train de recharger un brouillon précis (simId), pour ne pas écraser les
+  // valeurs du brouillon avec les données actuelles du client.
+  useHydrateFormFromPrefill(simId ? null : prefill, setForm);
+
+  // Rechargement d'un brouillon sauvegardé : ne s'applique qu'une fois par
+  // simId (ref pour éviter d'écraser les modifications de l'utilisateur
+  // après le chargement initial).
+  const loadedSimRef = useRef<string | undefined>(undefined);
+  useEffect(() => {
+    if (!simId || !savedInputs) return;
+    if (loadedSimRef.current === simId) return;
+    setForm((prev: typeof initialForm) => ({ ...prev, ...savedInputs }));
+    loadedSimRef.current = simId;
+  }, [simId, savedInputs]);
 
   const refAge = getReferenceAge(form.birthYear, form.gender);
   const refAgeSpouse = getReferenceAge(form.spouseBirthYear, form.spouseGender);
@@ -142,8 +162,6 @@ function AvsAiCalc() {
   const ageAtRetirement = form.retirementYear - form.birthYear;
 
   // ── AI (Assurance Invalidité) ──────────────────────────────────────────
-  // Bonifications calculées sur l'âge ACTUEL des enfants (situation réelle au
-  // moment de l'évaluation d'invalidité), pas projection future à 16 ans.
   const childrenElapsedYears = useMemo(() => {
     const kids = parseChildren(bundle?.client.children);
     if (kids.length === 0) return null;
@@ -156,7 +174,6 @@ function AvsAiCalc() {
     return total;
   }, [bundle]);
 
-  // Overrides éditables (utile en mode standalone). Si client lié → préremplit.
   const [aiEduYears, setAiEduYears] = useState<number>(0);
   const [aiAssistYears, setAiAssistYears] = useState<number>(0);
   useEffect(() => {
@@ -174,8 +191,6 @@ function AvsAiCalc() {
           birthYear: form.birthYear,
           gender: form.gender,
           contributionStartYear: form.contributionStartYear,
-          // Pour l'AI, la rente est figée sur la situation présente : on tronque
-          // la carrière à l'année courante.
           retirementYear: currentYear,
           averageAnnualIncome: form.averageAnnualIncome,
           departureYear: null,
@@ -211,6 +226,16 @@ function AvsAiCalc() {
         guideId="calc-avs-ai"
       />
       {client && <ClientLinkBanner client={client} />}
+      {simId && loadingSaved && (
+        <div className="rounded-lg border border-primary/30 bg-primary/5 p-3 text-sm text-muted-foreground">
+          Chargement de la sauvegarde…
+        </div>
+      )}
+      {simId && !loadingSaved && savedInputs && (
+        <div className="rounded-lg border border-primary/30 bg-primary/5 p-3 text-sm">
+          Vous consultez une simulation sauvegardée. Toute modification créera une nouvelle sauvegarde distincte si vous cliquez sur « Sauvegarder ».
+        </div>
+      )}
       <div className="flex justify-end gap-2">
         <GuideToggleButton onClick={() => setGuideOpen(true)} />
       </div>
@@ -659,4 +684,3 @@ function SurvivorCard({
     </CalcCard>
   );
 }
-

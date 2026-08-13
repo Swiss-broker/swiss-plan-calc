@@ -346,7 +346,10 @@ function HistoryPage() {
                                   sauvegardées (inputs) sera branché à l'étape 2. */}
                               <Link
                                 to={KIND_ROUTES[e.kind] as "/calculators/income-tax"}
-                                search={e.client_id ? { clientId: e.client_id } : undefined}
+                                search={{
+  ...(e.client_id ? { clientId: e.client_id } : {}),
+  simId: e.id,
+}}
                               >
                                 {t("history.action.open")}
                               </Link>

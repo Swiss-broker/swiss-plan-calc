@@ -540,10 +540,10 @@ function SimItem({ entry, onDelete }: { entry: HistoryEntry; onDelete: () => voi
       </div>
       <div className="flex shrink-0 gap-1">
         <Button asChild size="sm" variant="ghost" title={t("history.action.open_tooltip")}>
-          <Link to={route}>
-            <ExternalLink className="h-4 w-4" />
-          </Link>
-        </Button>
+  <Link to={route} search={{ clientId: entry.client_id ?? undefined, simId: entry.id }}>
+    <ExternalLink className="h-4 w-4" />
+  </Link>
+</Button>
         <Button
           size="sm"
           variant="ghost"
