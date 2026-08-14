@@ -19,7 +19,14 @@ export const LPP_2026 = {
   minAnnualSalary: 22_680,
   /** Taux d'intérêt minimal LPP (%) */
   minInterestRate: 1.25,
-  /** Taux de conversion légal LPP à 65 ans (%) */
+  /** Taux de conversion utilisé pour les PROJECTIONS long terme (%).
+   *  Choix métier volontaire, PAS le taux légal actuel : le vrai taux
+   *  légal minimum LPP 2026 pour la partie obligatoire est de 6.8%
+   *  (confirmé après le rejet de la réforme LPP en votation populaire
+   *  de septembre 2024). On projette prudemment à 6.0% pour anticiper
+   *  la tendance à la baisse de ce taux sur le long terme (vieillissement
+   *  démographique, taux d'intérêt bas). Ne pas "corriger" à 6.8 sans
+   *  en discuter avec Karlyta : c'est un choix assumé, pas un bug. */
   conversionRate: 6.0,
   /** Bonifications de vieillesse (% du salaire coordonné) */
   ageCredits: {
