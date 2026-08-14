@@ -9,7 +9,7 @@ import {
   type CCComputeResult,
 } from "./cantons";
 import { LPP_2026 } from "@/lib/lpp/parameters-2026";
-import { lppCreditRate } from "@/lib/lpp";
+import { lppCreditRate, computeLppInsuredSalary } from "@/lib/lpp";
 
 export interface IncomeTaxInput {
   /** Code canton */
@@ -182,8 +182,11 @@ export function estimateSocialContributions(
       : plan === "cadres"
         ? LPP_2026.maxInsuredSalary * 4
         : LPP_2026.maxInsuredSalary;
-  const cappedSalary = Math.min(grossSalary, planCap);
-  const coordinated = Math.max(0, cappedSalary - LPP_2026.coordinationDeduction);
+  // Réutilise la fonction officielle (source unique de vérité pour le salaire
+  // coordonné, corrigée le [date] pour appliquer le seuil d'entrée LPP et le
+  // plancher légal de 3'780 CHF), au lieu d'une formule dupliquée qui
+  // oubliait ces deux règles.
+  const coordinated = computeLppInsuredSalary(grossSalary, planCap);
   const creditRate = lppCreditRate(age) || 0.10;
   const lppEmployerEmployee = coordinated * creditRate;
   const lpp = lppEmployerEmployee * 0.5;
