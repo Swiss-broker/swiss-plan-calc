@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   BarChart,
   Bar,
@@ -53,6 +53,7 @@ const REFERENCE_CODES: ReadonlySet<string> = new Set([ZG_CODE, SZ_CODE]);
 import { zodValidator, fallback } from "@tanstack/zod-adapter";
 import { z } from "zod";
 import { usePrefillFromClient } from "@/hooks/usePrefillFromClient";
+import { useLoadSavedSimulation } from "@/hooks/useLoadSavedSimulation";
 import { ClientLinkBanner } from "@/components/calculators/ClientLinkBanner";
 import { GuideMode, GuideToggleButton, type GuideStep } from "@/components/calculators/GuideMode";
 import { WikiTip } from "@/components/calculators/WikiTip";
@@ -60,6 +61,7 @@ import { CrossCalcImpactBanner } from "@/components/calculators/CrossCalcImpactB
 
 const searchSchema = z.object({
   clientId: fallback(z.string().uuid().optional(), undefined),
+  simId: fallback(z.string().uuid().optional(), undefined),
 });
 
 export const Route = createFileRoute("/_app/calculators/canton-compare")({
@@ -110,8 +112,9 @@ function placeOfTaxation(regime: Regime): { flag: string; label: string } {
 
 function CantonCompareCalc() {
   const t = useT();
-  const { clientId } = Route.useSearch();
+  const { clientId, simId } = Route.useSearch();
   const { client } = usePrefillFromClient(clientId, "canton-compare");
+  const { inputs: savedInputs, isLoading: loadingSaved } = useLoadSavedSimulation(simId);
   const selectable = getSelectableCantons();
   const comparable = getComparableCantons();
 
@@ -146,7 +149,7 @@ function CantonCompareCalc() {
   // employé par le Fiscal Global → cohérence garantie.
   const [hydrated, setHydrated] = useState(false);
   useEffect(() => {
-    if (!hydrated && bundle?.client) {
+    if (!hydrated && bundle?.client && !simId) {
       const prefill = toTaxGlobalInput(bundle);
       setBase((prev) => {
         const next: TaxGlobalInput = { ...prev };
@@ -166,10 +169,26 @@ function CantonCompareCalc() {
 
   const [referenceCanton, setReferenceCanton] = useState<SelectableCantonCode>("VD");
   useEffect(() => {
-    if (hydrated && base.canton) {
+    if (hydrated && base.canton && !simId) {
       setReferenceCanton(base.canton as SelectableCantonCode);
     }
-  }, [hydrated, base.canton]);
+  }, [hydrated, base.canton, simId]);
+
+  // Rechargement d'un brouillon sauvegardé : ne s'applique qu'une fois par
+  // simId. Le brouillon contient à la fois les champs de `base` et
+  // `referenceCanton` (sauvegardés ensemble par le bouton Sauvegarder).
+  const loadedSimRef = useRef<string | undefined>(undefined);
+  useEffect(() => {
+    if (!simId || !savedInputs) return;
+    if (loadedSimRef.current === simId) return;
+    const { referenceCanton: savedRefCanton, ...savedBase } = savedInputs as Record<string, unknown> & {
+      referenceCanton?: SelectableCantonCode;
+    };
+    setBase((prev) => ({ ...prev, ...savedBase }) as TaxGlobalInput);
+    if (savedRefCanton) setReferenceCanton(savedRefCanton);
+    setHydrated(true);
+    loadedSimRef.current = simId;
+  }, [simId, savedInputs]);
 
   const [mode, setMode] = useState<CompareMode>("annual");
 
@@ -306,6 +325,16 @@ function CantonCompareCalc() {
       <div className="flex justify-end"><GuideToggleButton onClick={() => setGuideOpen(true)} /></div>
 
       {client && <ClientLinkBanner client={client} />}
+      {simId && loadingSaved && (
+        <div className="rounded-lg border border-primary/30 bg-primary/5 p-3 text-sm text-muted-foreground">
+          Chargement de la sauvegarde…
+        </div>
+      )}
+      {simId && !loadingSaved && savedInputs && (
+        <div className="rounded-lg border border-primary/30 bg-primary/5 p-3 text-sm">
+          Vous consultez une simulation sauvegardée. Toute modification créera une nouvelle sauvegarde distincte si vous cliquez sur « Sauvegarder ».
+        </div>
+      )}
 
       <div className="rounded-lg border border-primary/30 bg-primary/5 p-3 text-xs">
         <div className="flex items-start gap-2">
