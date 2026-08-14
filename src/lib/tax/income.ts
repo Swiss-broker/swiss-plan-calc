@@ -152,7 +152,10 @@ export const CHILDCARE_MAX_FEDERAL_2026 = 25_500;
 // Cotisations sociales 2026 (parts salarié)
 export const AVS_AI_APG_RATE = 0.053; // AVS 5.3% (AI/APG inclus dans le taux global salarié)
 export const AC_RATE = 0.011; // 1.1% jusqu'au plafond AC
-export const AC_COMPLEMENTARY_RATE = 0.005; // 0.5% au-delà du plafond
+/** Cotisation de solidarité au-delà du plafond AC : supprimée (confirmé
+ *  kmu.admin.ch, source SECO officielle). Gardée à 0 pour ne pas casser
+ *  la formule ci-dessous si jamais réintroduite un jour par le législateur. */
+export const AC_COMPLEMENTARY_RATE = 0;
 export const AC_CEILING_2026 = 148_200; // Plafond AC 2026
 
 /**
