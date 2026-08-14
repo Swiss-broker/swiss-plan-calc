@@ -10,14 +10,26 @@ export const LPP_MIN_ANNUAL_SALARY_2026 = 22_680;
 export const LPP_CONVERSION_RATE_2026 = 6.0; // taux retenu (taux légal minimal = 6.8%)
 export const LPP_INTEREST_MIN_2026 = 1.25; // taux minimal LPP 2026
 
+/** Plancher légal du salaire coordonné LPP 2026 (art. 8 al. 2 LPP), garanti
+ *  pour tout salarié soumis à la LPP (donc dès qu'il dépasse le seuil
+ *  d'entrée), même si brut − déduction de coordination donne un résultat
+ *  plus bas. */
+export const LPP_MIN_COORDINATED_SALARY_2026 = 3_780;
+
 export function computeLppInsuredSalary(
   grossSalary: number,
   insuredSalaryCap = LPP_MAX_INSURED_SALARY_2026,
 ): number {
+  // Sous le seuil d'entrée, la personne n'est pas soumise à la LPP
+  // obligatoire : salaire assuré = 0, le plancher légal ne s'applique pas.
+  if (grossSalary < LPP_MIN_ANNUAL_SALARY_2026) return 0;
+
   // Salaire coordonné = min(salaire brut ; plafond assuré) − déduction de coordination.
   // La déduction s'applique APRÈS le plafonnement au salaire assuré maximal.
   const cappedSalary = Math.min(grossSalary, insuredSalaryCap);
-  return Math.round(Math.max(0, cappedSalary - LPP_COORDINATION_DEDUCTION_2026));
+  const raw = cappedSalary - LPP_COORDINATION_DEDUCTION_2026;
+  // Plancher légal : jamais moins que 3'780 CHF pour un salarié assujetti.
+  return Math.round(Math.max(LPP_MIN_COORDINATED_SALARY_2026, raw));
 }
 
 /** Bonifications de vieillesse LPP · barème légal */
@@ -115,7 +127,15 @@ export function projectLPP(input: LPPProjectionInput): LPPProjectionResult {
 
   for (let i = 0; i < yearsToRetire; i++) {
     const age = input.currentAge + i;
-    const coordinated = Math.max(0, Math.min(salary, insuredCap) - LPP_COORDINATION_DEDUCTION_2026);
+    // Salaire coordonné avec plancher légal (3'780 CHF), sauf si le salarié
+    // est sous le seuil d'entrée LPP (pas de LPP du tout dans ce cas).
+    const coordinated =
+      salary < LPP_MIN_ANNUAL_SALARY_2026
+        ? 0
+        : Math.max(
+            LPP_MIN_COORDINATED_SALARY_2026,
+            Math.min(salary, insuredCap) - LPP_COORDINATION_DEDUCTION_2026,
+          );
     const creditRate = lppCreditRate(age) + extraCredit;
     const credit = coordinated * creditRate;
     const grossInterest = balance * grossReturn;

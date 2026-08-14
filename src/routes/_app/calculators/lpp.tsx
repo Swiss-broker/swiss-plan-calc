@@ -1036,8 +1036,9 @@ function InsuredSalaryPanel({
             onChange={(v) => onInsuredChange(Number(v) || 0)}
             suffix="CHF"
           />
-          <p className="mt-1.5 text-[11px] text-muted-foreground">
-            {t("calc.lpp.insured_salary_help")}
+          <p className="mt-1.5 flex items-start gap-1.5 text-[11px] text-muted-foreground">
+            <span>{t("calc.lpp.insured_salary_help")}</span>
+            <HelpDot tip="Le salaire coordonné LPP ne peut jamais être inférieur à CHF 3'780 (art. 8 al. 2 LPP), tant que le salarié dépasse le seuil d'entrée LPP (CHF 22'680 en 2026). Ce plancher garantit une couverture minimale même pour les salaires modestes." />
           </p>
           <p className="mt-1 text-[11px] tabular-nums text-foreground/80">{recap}</p>
         </div>
