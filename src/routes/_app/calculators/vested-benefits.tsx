@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Select,
   SelectContent,
@@ -34,6 +34,7 @@ import { SaveSimulationButton } from "@/components/calculators/SaveSimulationBut
 import { zodValidator, fallback } from "@tanstack/zod-adapter";
 import { z } from "zod";
 import { usePrefillFromClient, useHydrateFormFromPrefill } from "@/hooks/usePrefillFromClient";
+import { useLoadSavedSimulation } from "@/hooks/useLoadSavedSimulation";
 import { ClientLinkBanner } from "@/components/calculators/ClientLinkBanner";
 import { ClientPrefillBadge } from "@/components/calculators/ClientPrefillBadge";
 import { GuideMode, GuideToggleButton, type GuideStep } from "@/components/calculators/GuideMode";
@@ -43,6 +44,7 @@ import { CrossCalcImpactBanner } from "@/components/calculators/CrossCalcImpactB
 
 const searchSchema = z.object({
   clientId: fallback(z.string().uuid().optional(), undefined),
+  simId: fallback(z.string().uuid().optional(), undefined),
 });
 
 export const Route = createFileRoute("/_app/calculators/vested-benefits")({
@@ -59,14 +61,26 @@ const STRATEGY_ICONS: Record<VestedStrategy, React.ElementType> = {
 
 function VestedBenefitsCalc() {
   const t = useT();
-  const { clientId } = Route.useSearch();
+  const { clientId, simId } = Route.useSearch();
   const { client, prefill } = usePrefillFromClient(clientId, "vested-benefits");
+  const { inputs: savedInputs, isLoading: loadingSaved } = useLoadSavedSimulation(simId);
   const [form, setForm] = useState({
     initialBalance: 150_000,
     yearsToRetirement: 20,
     withdrawalCanton: "VD",
   });
-  useHydrateFormFromPrefill(prefill, setForm);
+  useHydrateFormFromPrefill(simId ? null : prefill, setForm);
+
+  // Rechargement d'un brouillon sauvegardé : ne s'applique qu'une fois par
+  // simId, pour ne pas écraser les modifications faites après le chargement.
+  const loadedSimRef = useRef<string | undefined>(undefined);
+  useEffect(() => {
+    if (!simId || !savedInputs) return;
+    if (loadedSimRef.current === simId) return;
+    setForm((prev) => ({ ...prev, ...savedInputs }));
+    loadedSimRef.current = simId;
+  }, [simId, savedInputs]);
+
   const set = <K extends keyof typeof form>(k: K, v: (typeof form)[K]) =>
     setForm((f) => ({ ...f, [k]: v }));
 
@@ -120,6 +134,16 @@ function VestedBenefitsCalc() {
       <CrossCalcImpactBanner calculator="vested-benefits" clientId={clientId} />
       <GuideMode open={guideOpen} onClose={() => setGuideOpen(false)} steps={guideSteps} title={t("calc.vested.guide_title")} guideId="calc-vested-benefits" />
       <div className="flex justify-end"><GuideToggleButton onClick={() => setGuideOpen(true)} /></div>
+      {simId && loadingSaved && (
+        <div className="rounded-lg border border-primary/30 bg-primary/5 p-3 text-sm text-muted-foreground">
+          Chargement de la sauvegarde…
+        </div>
+      )}
+      {simId && !loadingSaved && savedInputs && (
+        <div className="rounded-lg border border-primary/30 bg-primary/5 p-3 text-sm">
+          Vous consultez une simulation sauvegardée. Toute modification créera une nouvelle sauvegarde distincte si vous cliquez sur « Sauvegarder ».
+        </div>
+      )}
 
       {/* Bloc recherche officielle d'avoirs LPP/libre passage oubliés */}
       <div className="rounded-xl border border-primary/30 bg-primary/5 p-4">
@@ -188,28 +212,6 @@ function VestedBenefitsCalc() {
       </div>
 
       <div className="space-y-4 md:col-span-3">
-        <div className="flex justify-end gap-2">
-          <SaveSimulationButton
-            kind="vested_benefits"
-            inputs={form}
-            summary={{
-              recommendedStrategy: recommended,
-              recommendedFinalBalance:
-                projections.find((p) => p.strategy.id === recommended)?.finalBalance ?? 0,
-              securityFinalBalance:
-                projections.find((p) => p.strategy.id === "security")?.finalBalance ?? 0,
-              balancedFinalBalance:
-                projections.find((p) => p.strategy.id === "balanced")?.finalBalance ?? 0,
-              dynamicFinalBalance:
-                projections.find((p) => p.strategy.id === "dynamic")?.finalBalance ?? 0,
-              gainVsSecurity:
-                (projections.find((p) => p.strategy.id === recommended)?.finalBalance ?? 0) -
-                (projections.find((p) => p.strategy.id === "security")?.finalBalance ?? 0),
-              yearsToRetirement: form.yearsToRetirement,
-            }}
-            defaultTitle={`Libre passage · ${form.initialBalance} CHF / ${form.yearsToRetirement} ans`}
-          />
-        </div>
         <CalcCard title={t("calc.vested.projection_card")}>
           <div className="h-72 chart-rise">
             <ResponsiveContainer width="100%" height="100%">
@@ -292,6 +294,29 @@ function VestedBenefitsCalc() {
           </div>
         </Row>
       </CalcCard>
+
+      <div className="flex flex-wrap justify-end gap-2">
+        <SaveSimulationButton
+          kind="vested_benefits"
+          inputs={form}
+          summary={{
+            recommendedStrategy: recommended,
+            recommendedFinalBalance:
+              projections.find((p) => p.strategy.id === recommended)?.finalBalance ?? 0,
+            securityFinalBalance:
+              projections.find((p) => p.strategy.id === "security")?.finalBalance ?? 0,
+            balancedFinalBalance:
+              projections.find((p) => p.strategy.id === "balanced")?.finalBalance ?? 0,
+            dynamicFinalBalance:
+              projections.find((p) => p.strategy.id === "dynamic")?.finalBalance ?? 0,
+            gainVsSecurity:
+              (projections.find((p) => p.strategy.id === recommended)?.finalBalance ?? 0) -
+              (projections.find((p) => p.strategy.id === "security")?.finalBalance ?? 0),
+            yearsToRetirement: form.yearsToRetirement,
+          }}
+          defaultTitle={`Libre passage · ${form.initialBalance} CHF / ${form.yearsToRetirement} ans`}
+        />
+      </div>
     </div>
   );
 }
