@@ -39,7 +39,9 @@ import { useBrokerPdfHeader } from "@/hooks/useBrokerPdfHeader";
 import { exportFxClaimPdf } from "@/lib/pdf/fx-claim-report";
 import { CrossCalcImpactBanner } from "@/components/calculators/CrossCalcImpactBanner";
 import { GuideMode, GuideToggleButton, type GuideStep } from "@/components/calculators/GuideMode";
-import { usePrefillFromClient } from "@/hooks/usePrefillFromClient";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import type { Client } from "@/lib/clients/types";
 import { ClientLinkBanner } from "@/components/calculators/ClientLinkBanner";
 
 const searchSchema = z.object({
@@ -64,7 +66,20 @@ function newRow(date: string): FxTransaction {
 
 function FxClaimCalc() {
   const { clientId } = Route.useSearch();
-  const { client } = usePrefillFromClient(clientId, "fx-claim" as never);
+  const { data: client } = useQuery({
+    queryKey: ["fx-claim-client", clientId],
+    enabled: Boolean(clientId),
+    queryFn: async () => {
+      if (!clientId) return null;
+      const { data, error } = await supabase
+        .from("clients")
+        .select("*")
+        .eq("id", clientId)
+        .single();
+      if (error) throw error;
+      return data as Client;
+    },
+  });
   const header = useBrokerPdfHeader();
   const [taxYear, setTaxYear] = useState<number>(2024);
   const [currency, setCurrency] = useState<Currency>("EUR");
