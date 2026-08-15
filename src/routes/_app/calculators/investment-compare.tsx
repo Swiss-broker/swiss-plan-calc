@@ -3,6 +3,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { z } from "zod";
 import { zodValidator, fallback } from "@tanstack/zod-adapter";
 import { usePrefillFromClient } from "@/hooks/usePrefillFromClient";
+import { useLoadSavedSimulation } from "@/hooks/useLoadSavedSimulation";
 import { ClientLinkBanner } from "@/components/calculators/ClientLinkBanner";
 import {
   LineChart,
@@ -44,6 +45,7 @@ import { CrossCalcImpactBanner } from "@/components/calculators/CrossCalcImpactB
 
 const searchSchema = z.object({
   clientId: fallback(z.string().uuid().optional(), undefined),
+  simId: fallback(z.string().uuid().optional(), undefined),
 });
 
 export const Route = createFileRoute("/_app/calculators/investment-compare")({
@@ -80,15 +82,29 @@ const DEFAULT_B: InvestmentInput = {
 
 function InvestmentCompareCalc() {
   const t = useT();
-  const { clientId } = Route.useSearch();
+  const { clientId, simId } = Route.useSearch();
   const { client, prefill } = usePrefillFromClient(clientId, "investment-compare");
+  const { inputs: savedInputs, isLoading: loadingSaved } = useLoadSavedSimulation(simId);
   const [a, setA] = useState<InvestmentInput>({ ...DEFAULT_A, name: t("calc.invcompare.default_a") });
   const [b, setB] = useState<InvestmentInput>({ ...DEFAULT_B, name: t("calc.invcompare.default_b") });
   const [guideOpen, setGuideOpen] = useState(false);
 
+  // Rechargement d'un brouillon sauvegardé : restaure les deux hypothèses
+  // (a et b) ensemble, ne s'applique qu'une fois par simId.
+  const loadedSimRef = useRef<string | undefined>(undefined);
+  useEffect(() => {
+    if (!simId || !savedInputs) return;
+    if (loadedSimRef.current === simId) return;
+    const saved = savedInputs as { a?: InvestmentInput; b?: InvestmentInput };
+    if (saved.a) setA(saved.a);
+    if (saved.b) setB(saved.b);
+    loadedSimRef.current = simId;
+  }, [simId, savedInputs]);
+
   // Hydratation unique de l'hypothèse A à partir de la fiche client.
   const hydratedRef = useRef(false);
   useEffect(() => {
+    if (simId) return; // brouillon chargé : ne pas écraser avec la fiche vivante
     if (!prefill || hydratedRef.current) return;
     setA((prev) => ({
       ...prev,
@@ -146,6 +162,16 @@ function InvestmentCompareCalc() {
     <div className="space-y-6">
       <CrossCalcImpactBanner calculator="investment-compare" clientId={clientId} />
       {client && <ClientLinkBanner client={client} />}
+      {simId && loadingSaved && (
+        <div className="rounded-lg border border-primary/30 bg-primary/5 p-3 text-sm text-muted-foreground">
+          Chargement de la sauvegarde…
+        </div>
+      )}
+      {simId && !loadingSaved && savedInputs && (
+        <div className="rounded-lg border border-primary/30 bg-primary/5 p-3 text-sm">
+          Vous consultez une simulation sauvegardée. Toute modification créera une nouvelle sauvegarde distincte si vous cliquez sur « Sauvegarder ».
+        </div>
+      )}
       <GuideMode
         open={guideOpen}
         onClose={() => setGuideOpen(false)}
