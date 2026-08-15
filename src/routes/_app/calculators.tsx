@@ -42,6 +42,17 @@ const TABS = [
   { to: "/calculators/retirement", labelKey: "calc.tab.retirement", icon: TrendingUp, exact: false as boolean },
 ] as const;
 
+const MORE_TABS = [
+  { to: "/calculators/vested-benefits", labelKey: "calc.tab.vested_benefits", icon: Landmark, exact: false as boolean },
+  { to: "/calculators/director-compensation", labelKey: "calc.tab.director", icon: TrendingUp, exact: false as boolean },
+  { to: "/calculators/health-insurance-france", labelKey: "calc.tab.health_fr", icon: Coins, exact: false as boolean },
+  { to: "/calculators/overtime", labelKey: "calc.tab.overtime", icon: Coins, exact: false as boolean },
+  { to: "/calculators/investment-compare", labelKey: "calc.tab.investment_compare", icon: TrendingUp, exact: false as boolean },
+  { to: "/calculators/fx-claim", labelKey: "calc.tab.fx_claim", icon: Coins, exact: false as boolean },
+] as const;
+
+const ALL_TABS = [...TABS, ...MORE_TABS] as const;
+
 function CalculatorsLayout() {
   const t = useT();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
@@ -49,8 +60,9 @@ function CalculatorsLayout() {
   const { clientId } = Route.useSearch();
   const tabSearch = clientId ? { clientId } : undefined;
   const currentTab =
-    [...TABS].reverse().find((tab) => (tab.exact ? pathname === tab.to : pathname.startsWith(tab.to)))?.to ??
+    [...ALL_TABS].reverse().find((tab) => (tab.exact ? pathname === tab.to : pathname.startsWith(tab.to)))?.to ??
     "/calculators";
+  const isMoreActive = MORE_TABS.some((tab) => pathname.startsWith(tab.to));
   const inClientContext = Boolean(clientId);
   return (
     <div
@@ -74,12 +86,12 @@ function CalculatorsLayout() {
 
       {/* Mobile: select fallback for quick switching */}
       <div className="mb-4 sm:hidden">
-        <Select value={currentTab} onValueChange={(v) => navigate({ to: v as (typeof TABS)[number]["to"], search: tabSearch })}>
+        <Select value={currentTab} onValueChange={(v) => navigate({ to: v as (typeof ALL_TABS)[number]["to"], search: tabSearch })}>
           <SelectTrigger>
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            {TABS.map((tab) => (
+            {ALL_TABS.map((tab) => (
               <SelectItem key={tab.to} value={tab.to}>
                 {t(tab.labelKey)}
               </SelectItem>
