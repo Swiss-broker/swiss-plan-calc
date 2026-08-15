@@ -185,9 +185,15 @@ export function computeTaxGlobal(g: TaxGlobalInput): TaxGlobalResult {
 
   // ─────────────────────── SOURCE / QUASI-RÉSIDENT ───────────────────────
   if (det.regime === "source_taxed" || det.regime === "tou") {
-    const status = toTaxStatus(g.civilStatus, g.children);
     const couple = isCoupleStatus(g.civilStatus);
-    const scale = inferSourceScale(status, couple && g.spouseEmployed);
+    // Barème IS déterminé par l'employeur SANS tenir compte des enfants :
+    // c'est le barème par défaut appliqué en cours d'année (A0/B0/C0),
+    // jamais H automatiquement même si le client a des enfants. La prise
+    // en compte des enfants ne se fait qu'après une démarche de
+    // rectification (DRIS) l'année suivante (directives officielles
+    // AFC/ge.ch), jamais automatiquement dans le barème par défaut.
+    const statusForScale = toTaxStatus(g.civilStatus, 0);
+    const scale = inferSourceScale(statusForScale, couple && g.spouseEmployed);
     const source = computeSourceTax({
       monthlyGross: Math.round((g.grossSalary + g.bonus) / 12),
       spouseMonthlyGross:
