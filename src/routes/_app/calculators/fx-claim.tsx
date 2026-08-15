@@ -39,6 +39,8 @@ import { useBrokerPdfHeader } from "@/hooks/useBrokerPdfHeader";
 import { exportFxClaimPdf } from "@/lib/pdf/fx-claim-report";
 import { CrossCalcImpactBanner } from "@/components/calculators/CrossCalcImpactBanner";
 import { GuideMode, GuideToggleButton, type GuideStep } from "@/components/calculators/GuideMode";
+import { usePrefillFromClient } from "@/hooks/usePrefillFromClient";
+import { ClientLinkBanner } from "@/components/calculators/ClientLinkBanner";
 
 const searchSchema = z.object({
   clientId: fallback(z.string().uuid().optional(), undefined),
@@ -62,6 +64,7 @@ function newRow(date: string): FxTransaction {
 
 function FxClaimCalc() {
   const { clientId } = Route.useSearch();
+  const { client } = usePrefillFromClient(clientId, "fx-claim" as never);
   const header = useBrokerPdfHeader();
   const [taxYear, setTaxYear] = useState<number>(2024);
   const [currency, setCurrency] = useState<Currency>("EUR");
@@ -196,6 +199,11 @@ function FxClaimCalc() {
         title="Guide, Réclamation taux de change"
         guideId="calc-fx-claim"
       />
+      {client && (
+        <div className="md:col-span-5">
+          <ClientLinkBanner client={client} />
+        </div>
+      )}
       <div className="md:col-span-3 space-y-4">
         <div data-guide="fx-claim-params">
           <CalcCard
