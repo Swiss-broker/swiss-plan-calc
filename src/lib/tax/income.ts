@@ -307,7 +307,7 @@ export function computeIncomeTax(input: IncomeTaxInput): IncomeTaxBreakdown {
   // IFD
   const ifdGross = computeIFD(taxableIncomeIFD, input.status);
   // Déduction par enfant IFD (rabais d'impôt)
-  const ifdChildRebate = (input.children ?? 0) * 259; // CHF par enfant 2026 (rabais sur impôt)
+  const ifdChildRebate = (input.children ?? 0) * 263; // CHF par enfant 2026 (rabais sur impôt, confirmé AFC)
   const ifd = Math.max(0, ifdGross - ifdChildRebate);
 
   const cc = computeCantonalCommunal({
