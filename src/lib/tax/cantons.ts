@@ -551,6 +551,7 @@ export function computeCantonalCommunal(opts: CCComputeOptions): CCComputeResult
 
   let cantonal = simple * cantonalMult;
   let communal: number;
+  let vsCommunalMarriedReduction = 0;
   if (opts.canton === "VS") {
     // Valais : le communal (Art. 178, "impôt personnel") n'est PAS un
     // pourcentage du cantonal, c'est un second barème progressif
@@ -561,6 +562,7 @@ export function computeCantonalCommunal(opts: CCComputeOptions): CCComputeResult
     if (isMarried || isSingleParent) {
       const communalReduction = Math.min(4_500, Math.max(600, communalBase * 0.35));
       communalBase = Math.max(0, communalBase - communalReduction);
+      vsCommunalMarriedReduction = communalReduction * calibration * communalMult;
     }
     communal = communalBase * calibration * communalMult;
   } else {
@@ -568,7 +570,7 @@ export function computeCantonalCommunal(opts: CCComputeOptions): CCComputeResult
   }
   const vsNotes: string[] = [];
   if (vsMarriedReduction > 0) {
-    vsNotes.push(`Réduction couple marié, -35% (entre 600 et 4'500 CHF chacun) sur l'impôt cantonal ET sur l'impôt communal : -${Math.round(vsMarriedReduction)} CHF sur le cantonal`);
+    vsNotes.push(`Réduction couple marié, -35% (entre 600 et 4'500 CHF chacun) : -${Math.round(vsMarriedReduction)} CHF sur le cantonal et -${Math.round(vsCommunalMarriedReduction)} CHF sur le communal`);
   }
   if (opts.canton === "VS" && (opts.children ?? 0) > 0) {
     // Art. 31a LF : rabais direct sur l'impôt cantonal, jusqu'à 300 CHF par
