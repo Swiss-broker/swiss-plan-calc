@@ -1,6 +1,6 @@
 // src/routes/_app/calculators/health-insurance-france.tsx
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { z } from "zod";
 import { zodValidator, fallback } from "@tanstack/zod-adapter";
 import { Shield, Info, ChevronDown } from "lucide-react";
@@ -22,6 +22,7 @@ import { CalcCard, MoneyTile, Row, HelpDot } from "@/components/calculators/Calc
 import { SaveSimulationButton } from "@/components/calculators/SaveSimulationButton";
 import { ClientLinkBanner } from "@/components/calculators/ClientLinkBanner";
 import { usePrefillFromClient, useHydrateFormFromPrefill } from "@/hooks/usePrefillFromClient";
+import { useLoadSavedSimulation } from "@/hooks/useLoadSavedSimulation";
 import {
   computeHealthFrance,
   type HealthFranceInput,
@@ -31,6 +32,7 @@ import { GuideMode, GuideToggleButton, type GuideStep } from "@/components/calcu
 
 const searchSchema = z.object({
   clientId: fallback(z.string().uuid().optional(), undefined),
+  simId: fallback(z.string().uuid().optional(), undefined),
 });
 
 export const Route = createFileRoute("/_app/calculators/health-insurance-france")({
@@ -40,8 +42,9 @@ export const Route = createFileRoute("/_app/calculators/health-insurance-france"
 });
 
 function HealthInsuranceFranceCalc() {
-  const { clientId } = Route.useSearch();
+  const { clientId, simId } = Route.useSearch();
   const { client, prefill } = usePrefillFromClient(clientId, "health-insurance-france");
+  const { inputs: savedInputs, isLoading: loadingSaved } = useLoadSavedSimulation(simId);
   const [form, setForm] = useState<HealthFranceInput>({
     swissGrossSalaryCHF: 95_000,
     civilStatus: "single",
@@ -51,7 +54,18 @@ function HealthInsuranceFranceCalc() {
     lamalAdultMonthlyCHF: 200,
     lamalChildMonthlyCHF: 49.4,
   });
-  useHydrateFormFromPrefill(prefill, setForm);
+  useHydrateFormFromPrefill(simId ? null : prefill, setForm);
+
+  // Rechargement d'un brouillon sauvegardé : ne s'applique qu'une fois par
+  // simId, pour ne pas écraser les modifications faites après le chargement.
+  const loadedSimRef = useRef<string | undefined>(undefined);
+  useEffect(() => {
+    if (!simId || !savedInputs) return;
+    if (loadedSimRef.current === simId) return;
+    setForm((prev) => ({ ...prev, ...savedInputs } as HealthFranceInput));
+    loadedSimRef.current = simId;
+  }, [simId, savedInputs]);
+
   const set = <K extends keyof HealthFranceInput>(k: K, v: HealthFranceInput[K]) =>
     setForm((f) => ({ ...f, [k]: v }));
 
@@ -103,6 +117,16 @@ function HealthInsuranceFranceCalc() {
       {client && (
         <div className="md:col-span-5">
           <ClientLinkBanner client={client} />
+        </div>
+      )}
+      {simId && loadingSaved && (
+        <div className="md:col-span-5 rounded-lg border border-primary/30 bg-primary/5 p-3 text-sm text-muted-foreground">
+          Chargement de la sauvegarde…
+        </div>
+      )}
+      {simId && !loadingSaved && savedInputs && (
+        <div className="md:col-span-5 rounded-lg border border-primary/30 bg-primary/5 p-3 text-sm">
+          Vous consultez une simulation sauvegardée. Toute modification créera une nouvelle sauvegarde distincte si vous cliquez sur « Sauvegarder ».
         </div>
       )}
       <div className="md:col-span-3 space-y-4">
@@ -303,7 +327,6 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
   );
 }
 
-// APRÈS
 function NumField({
   label,
   value,
