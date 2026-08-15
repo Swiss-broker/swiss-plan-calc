@@ -35,7 +35,35 @@ export interface CantonTaxScale {
 // =====================================================================
 //   Barèmes cantonaux (progressifs par paliers)
 // =====================================================================
-
+// Barème officiel de l'impôt sur la fortune valaisan (Art. 60 LF), distinct
+// du barème générique wealthScaleStandard utilisé par les autres cantons.
+// Source primaire : Feuille cantonale Valais, AFC.
+const VS_WEALTH_SCALE: BracketStep[] = [
+  { from: 0, base: 0, rate: 1.0 },
+  { from: 11_000, base: 10, rate: 1.2 },
+  { from: 21_000, base: 24, rate: 1.3 },
+  { from: 31_000, base: 39, rate: 1.5 },
+  { from: 51_000, base: 75, rate: 1.7 },
+  { from: 101_000, base: 170, rate: 1.9 },
+  { from: 201_000, base: 380, rate: 2.0 },
+  { from: 301_000, base: 600, rate: 2.1 },
+  { from: 401_000, base: 840, rate: 2.2 },
+  { from: 501_000, base: 1_100, rate: 2.26 },
+  { from: 601_000, base: 1_356, rate: 2.32 },
+  { from: 701_000, base: 1_624, rate: 2.38 },
+  { from: 801_000, base: 1_904, rate: 2.44 },
+  { from: 901_000, base: 2_196, rate: 2.5 },
+  { from: 1_001_000, base: 2_500, rate: 2.55 },
+  { from: 1_101_000, base: 2_805, rate: 2.6 },
+  { from: 1_201_000, base: 3_120, rate: 2.65 },
+  { from: 1_301_000, base: 3_445, rate: 2.7 },
+  { from: 1_401_000, base: 3_780, rate: 2.75 },
+  { from: 1_501_000, base: 4_125, rate: 2.8 },
+  { from: 1_601_000, base: 4_480, rate: 2.85 },
+  { from: 1_701_000, base: 4_845, rate: 2.9 },
+  { from: 1_801_000, base: 5_220, rate: 2.95 },
+  { from: 1_901_000, base: 5_605, rate: 3.0 },
+];
 const VD_SINGLE: BracketStep[] = [
   { from: 0, base: 0, rate: 0 },
   { from: 17_700, base: 0, rate: 1 },
@@ -242,9 +270,9 @@ export const CANTON_SCALES: Record<string, CantonTaxScale> = {
     churchRateProtestant: 0.03,
     childDeduction: 7_510,
     marriedDeduction: 0,
-    wealthScale: wealthScaleStandard,
-    wealthExemptionSingle: 30_000,
-    wealthExemptionMarried: 60_000,
+    wealthScale: VS_WEALTH_SCALE,
+    wealthExemptionSingle: 45_000,
+    wealthExemptionMarried: 90_000,
     capital: "Sion",
     calibrationFactor: 1.3432,
     calibrationFactorMarried: 1.4117,
@@ -457,11 +485,21 @@ export function computeCantonalCommunal(opts: CCComputeOptions): CCComputeResult
     bracketScale = scale.single;
     simple = 2 * applySimpleScale(adjusted / divisor, bracketScale);
     marginalReference = adjusted / divisor;
+  } else if ((isMarried || isSingleParent) && opts.canton === "VS") {
+    // Valais (Art. 32 al. 3 let. a LF) : pas de barème marié séparé, on
+    // applique le barème unique puis on réduit l'impôt de 35%, plafonné
+    // entre 600 et 4'500 CHF (montants légaux de base, non indexés 2026).
+    bracketScale = scale.single;
+    const base = applySimpleScale(adjusted, bracketScale);
+    const reduction = Math.min(4_500, Math.max(600, base * 0.35));
+    simple = Math.max(0, base - reduction);
+    marginalReference = adjusted;
   } else {
     bracketScale = isMarried || isSingleParent ? scale.married : scale.single;
     simple = applySimpleScale(adjusted, bracketScale);
     marginalReference = adjusted;
   }
+  
 
   // Sélection du bon facteur de calibration selon le profil
   let calibration: number;
@@ -477,8 +515,14 @@ export function computeCantonalCommunal(opts: CCComputeOptions): CCComputeResult
   const cantonalMult = opts.cantonalMultiplier ?? scale.cantonalMultiplier;
   const communalMult = opts.communalMultiplier ?? scale.communalMultiplierCapital;
 
-  const cantonal = simple * cantonalMult;
+  let cantonal = simple * cantonalMult;
   const communal = simple * communalMult;
+  if (opts.canton === "VS" && (opts.children ?? 0) > 0) {
+    // Art. 31a LF : rabais direct sur l'impôt cantonal, jusqu'à 300 CHF par
+    // enfant, distinct de la déduction du revenu (Art. 31 al. 1 let. b).
+    const rebate = Math.min(cantonal, (opts.children ?? 0) * 300);
+    cantonal = Math.max(0, cantonal - rebate);
+  };
   let church = 0;
   if (opts.confession === "catholic" && scale.churchRateCatholic) {
     church = simple * scale.churchRateCatholic;
