@@ -22,6 +22,7 @@ import { zodValidator, fallback } from "@tanstack/zod-adapter";
 import { z } from "zod";
 import { useClientDashboard } from "@/hooks/use-client-dashboard";
 import { usePrefillFromClient, useHydrateFormFromPrefill } from "@/hooks/usePrefillFromClient";
+import { useLoadSavedSimulation } from "@/hooks/useLoadSavedSimulation";
 import { ClientLinkBanner } from "@/components/calculators/ClientLinkBanner";
 import { ClientPrefillBadge } from "@/components/calculators/ClientPrefillBadge";
 import { GuideMode, GuideToggleButton, type GuideStep } from "@/components/calculators/GuideMode";
@@ -31,6 +32,7 @@ import { CrossCalcImpactBanner } from "@/components/calculators/CrossCalcImpactB
 
 const searchSchema = z.object({
   clientId: fallback(z.string().uuid().optional(), undefined),
+  simId: fallback(z.string().uuid().optional(), undefined),
 });
 
 export const Route = createFileRoute("/_app/calculators/retirement")({
@@ -41,8 +43,9 @@ export const Route = createFileRoute("/_app/calculators/retirement")({
 
 function RetirementCalc() {
   const t = useT();
-  const { clientId } = Route.useSearch();
+  const { clientId, simId } = Route.useSearch();
   const { client, bundle, prefill } = usePrefillFromClient(clientId, "retirement");
+  const { inputs: savedInputs, isLoading: loadingSaved } = useLoadSavedSimulation(simId);
   const dashboard = useClientDashboard(bundle ?? null);
 const projectedCapital = dashboard?.lpp?.projectedCapitalAt65;
   const [form, setForm] = useState({
@@ -54,22 +57,34 @@ const projectedCapital = dashboard?.lpp?.projectedCapitalAt65;
     selfReturnRate: 2.5,
     rentMarginalRate: 25,
   });
-  useHydrateFormFromPrefill(prefill, setForm);
+  useHydrateFormFromPrefill(simId ? null : prefill, setForm);
   useEffect(() => {
+  if (simId) return; // brouillon chargé : ne pas écraser avec la fiche vivante
   if (projectedCapital && projectedCapital > 0) {
     setForm((f) => ({ ...f, capital: projectedCapital }));
   }
-}, [projectedCapital]);
+}, [projectedCapital, simId]);
 
   // Pré-remplir le taux marginal depuis la dernière simulation fiscale du client
   const { data: snapshot } = useClientFiscalSnapshot(clientId);
   const marginalAutofilled = useRef(false);
   useEffect(() => {
+    if (simId) return; // brouillon chargé : ne pas écraser avec la fiche vivante
     if (snapshot && !marginalAutofilled.current) {
       setForm((f) => ({ ...f, rentMarginalRate: Math.round(snapshot.marginalRateEstimate * 10) / 10 }));
       marginalAutofilled.current = true;
     }
-  }, [snapshot]);
+  }, [snapshot, simId]);
+
+  // Rechargement d'un brouillon sauvegardé : ne s'applique qu'une fois par
+  // simId, pour ne pas écraser les modifications faites après le chargement.
+  const loadedSimRef = useRef<string | undefined>(undefined);
+  useEffect(() => {
+    if (!simId || !savedInputs) return;
+    if (loadedSimRef.current === simId) return;
+    setForm((prev) => ({ ...prev, ...savedInputs }));
+    loadedSimRef.current = simId;
+  }, [simId, savedInputs]);
 
   const set = <K extends keyof typeof form>(k: K, v: (typeof form)[K]) =>
     setForm((f) => ({ ...f, [k]: v }));
@@ -116,6 +131,16 @@ const projectedCapital = dashboard?.lpp?.projectedCapitalAt65;
       <div className="flex justify-end"><GuideToggleButton onClick={() => setGuideOpen(true)} /></div>
 
       {client && <ClientLinkBanner client={client} />}
+      {simId && loadingSaved && (
+        <div className="rounded-lg border border-primary/30 bg-primary/5 p-3 text-sm text-muted-foreground">
+          Chargement de la sauvegarde…
+        </div>
+      )}
+      {simId && !loadingSaved && savedInputs && (
+        <div className="rounded-lg border border-primary/30 bg-primary/5 p-3 text-sm">
+          Vous consultez une simulation sauvegardée. Toute modification créera une nouvelle sauvegarde distincte si vous cliquez sur « Sauvegarder ».
+        </div>
+      )}
 
       {/* Bloc d'intro toujours visible, pas de survol necessaire */}
       <div className="rounded-2xl border border-primary/30 bg-primary/5 p-4">
