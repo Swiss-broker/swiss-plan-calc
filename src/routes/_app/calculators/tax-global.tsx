@@ -801,8 +801,13 @@ function TaxGlobalCalc() {
                 <MoneyTile
                   label={t("calc.global.tile.cantonal")}
                   value={result.income.cantonal + result.income.communal}
-                  tip={`Impôt cantonal + communal. Barème du canton ${form.canton} × coefficient cantonal × multiplicateur communal (chef-lieu par défaut tant que la commune réelle n'est pas résolue).`}
+                  tip={`Impôt cantonal + communal. Barème du canton ${form.canton} × coefficient cantonal × multiplicateur communal (chef-lieu par défaut tant que la commune réelle n'est pas résolue).${result.income.cantonSpecificNote ? " " + result.income.cantonSpecificNote : ""}`}
                 />
+                {result.income.cantonSpecificNote && (
+                  <div className="col-span-2 rounded-md border border-primary/20 bg-primary/5 p-2 text-xs text-muted-foreground">
+                    {result.income.cantonSpecificNote}
+                  </div>
+                )}
                 <MoneyTile
                   label={t("calc.global.tile.wealth")}
                   value={result.income.wealthTax}

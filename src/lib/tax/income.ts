@@ -104,6 +104,8 @@ export interface IncomeTaxBreakdown {
   communal: number;
   church: number;
   wealthTax: number;
+  /** Détail des réductions cantonales spécifiques (ex. VS), affiché au courtier. */
+  cantonSpecificNote?: string;
   totalIncomeTax: number;
   totalTax: number;
   /** Taux d'imposition effectif total */
@@ -361,6 +363,7 @@ export function computeIncomeTax(input: IncomeTaxInput): IncomeTaxBreakdown {
     communal: cc.communal,
     church: cc.church,
     wealthTax,
+    cantonSpecificNote: cc.cantonSpecificNote,
     totalIncomeTax: Math.round(totalIncomeTax * 100) / 100,
     totalTax: Math.round(totalTax * 100) / 100,
     effectiveRate: Math.round(effectiveRate * 100) / 100,

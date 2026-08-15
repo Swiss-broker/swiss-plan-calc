@@ -446,6 +446,9 @@ export interface CCComputeResult {
   total: number;
   marginalRate: number;
   scale: CantonTaxScale;
+  /** Détail des réductions spécifiques appliquées (ex. VS : -35% couple
+   *  marié, rabais enfant Art. 31a), pour affichage transparent au courtier. */
+  cantonSpecificNote?: string;
 }
 
 export function computeCantonalCommunal(opts: CCComputeOptions): CCComputeResult {
@@ -469,6 +472,7 @@ export function computeCantonalCommunal(opts: CCComputeOptions): CCComputeResult
   let simple: number;
   let bracketScale: BracketStep[];
   let marginalReference: number;
+  let vsMarriedReduction = 0;
 
   if ((isMarried || isSingleParent) && splittingMode === "split_0.52") {
     // NE : splitting à 52% — taux basé sur 52% du revenu, appliqué au revenu entier
@@ -494,6 +498,7 @@ export function computeCantonalCommunal(opts: CCComputeOptions): CCComputeResult
     const reduction = Math.min(4_500, Math.max(600, base * 0.35));
     simple = Math.max(0, base - reduction);
     marginalReference = adjusted;
+    vsMarriedReduction = reduction;
   } else {
     bracketScale = isMarried || isSingleParent ? scale.married : scale.single;
     simple = applySimpleScale(adjusted, bracketScale);
@@ -517,12 +522,17 @@ export function computeCantonalCommunal(opts: CCComputeOptions): CCComputeResult
 
   let cantonal = simple * cantonalMult;
   const communal = simple * communalMult;
+  const vsNotes: string[] = [];
+  if (vsMarriedReduction > 0) {
+    vsNotes.push(`Réduction couple marié Art. 32 (-35%, plafonnée 600–4'500 CHF) : -${Math.round(vsMarriedReduction)} CHF`);
+  }
   if (opts.canton === "VS" && (opts.children ?? 0) > 0) {
     // Art. 31a LF : rabais direct sur l'impôt cantonal, jusqu'à 300 CHF par
     // enfant, distinct de la déduction du revenu (Art. 31 al. 1 let. b).
     const rebate = Math.min(cantonal, (opts.children ?? 0) * 300);
     cantonal = Math.max(0, cantonal - rebate);
-  };
+    vsNotes.push(`Rabais Art. 31a (${opts.children} enfant${(opts.children ?? 0) > 1 ? "s" : ""}) : -${Math.round(rebate)} CHF`);
+  }
   let church = 0;
   if (opts.confession === "catholic" && scale.churchRateCatholic) {
     church = simple * scale.churchRateCatholic;
@@ -544,6 +554,7 @@ export function computeCantonalCommunal(opts: CCComputeOptions): CCComputeResult
     total: Math.round((cantonal + communal + church) * 100) / 100,
     marginalRate,
     scale,
+    cantonSpecificNote: vsNotes.length > 0 ? vsNotes.join(" · ") : undefined,
   };
 }
 
