@@ -64,6 +64,35 @@ const VS_WEALTH_SCALE: BracketStep[] = [
   { from: 1_801_000, base: 5_220, rate: 2.95 },
   { from: 1_901_000, base: 5_605, rate: 3.0 },
 ];
+
+// Barème officiel de l'impôt personnel COMMUNAL valaisan (Art. 178 LF),
+// distinct et différent du barème cantonal (Art. 32). Source primaire :
+// Feuille cantonale Valais, AFC.
+const VS_COMMUNAL_SINGLE: BracketStep[] = [
+  { from: 0, base: 0, rate: 2.0 },
+  { from: 5_100, base: 100, rate: 2.7 },
+  { from: 10_100, base: 270, rate: 3.6 },
+  { from: 15_100, base: 540, rate: 4.4 },
+  { from: 20_100, base: 880, rate: 5.8 },
+  { from: 30_100, base: 1_740, rate: 6.8 },
+  { from: 40_100, base: 2_720, rate: 7.5 },
+  { from: 50_100, base: 3_750, rate: 8.0 },
+  { from: 60_100, base: 4_800, rate: 8.4 },
+  { from: 70_100, base: 5_880, rate: 8.8 },
+  { from: 80_100, base: 7_040, rate: 9.0 },
+  { from: 90_100, base: 8_100, rate: 9.1 },
+  { from: 100_100, base: 9_100, rate: 9.2 },
+  { from: 110_100, base: 10_120, rate: 9.3 },
+  { from: 120_100, base: 11_160, rate: 9.4 },
+  { from: 130_100, base: 12_220, rate: 9.5 },
+  { from: 140_100, base: 13_300, rate: 9.6 },
+  { from: 150_100, base: 14_400, rate: 9.7 },
+  { from: 160_100, base: 15_520, rate: 9.8 },
+  { from: 170_100, base: 16_660, rate: 9.9 },
+  { from: 180_100, base: 17_820, rate: 9.95 },
+  { from: 190_100, base: 18_905, rate: 10.0 },
+];
+
 const VD_SINGLE: BracketStep[] = [
   { from: 0, base: 0, rate: 0 },
   { from: 17_700, base: 0, rate: 1 },
@@ -517,21 +546,36 @@ export function computeCantonalCommunal(opts: CCComputeOptions): CCComputeResult
   }
   simple = simple * calibration;
 
-  const cantonalMult = opts.cantonalMultiplier ?? scale.cantonalMultiplier;
+ const cantonalMult = opts.cantonalMultiplier ?? scale.cantonalMultiplier;
   const communalMult = opts.communalMultiplier ?? scale.communalMultiplierCapital;
 
   let cantonal = simple * cantonalMult;
-  const communal = simple * communalMult;
+  let communal: number;
+  if (opts.canton === "VS") {
+    // Valais : le communal (Art. 178, "impôt personnel") n'est PAS un
+    // pourcentage du cantonal, c'est un second barème progressif
+    // indépendant, avec sa propre réduction -35% pour les couples mariés,
+    // multiplié ensuite par le coefficient de la commune (1.0 à 1.5,
+    // chef-lieu Sion pris par défaut via communalMultiplierCapital).
+    let communalBase = applySimpleScale(adjusted, VS_COMMUNAL_SINGLE);
+    if (isMarried || isSingleParent) {
+      const communalReduction = Math.min(4_500, Math.max(600, communalBase * 0.35));
+      communalBase = Math.max(0, communalBase - communalReduction);
+    }
+    communal = communalBase * calibration * communalMult;
+  } else {
+    communal = simple * communalMult;
+  }
   const vsNotes: string[] = [];
   if (vsMarriedReduction > 0) {
-    vsNotes.push(`Réduction couple marié Art. 32 (-35%, plafonnée 600 à 4'500 CHF) : ${Math.round(vsMarriedReduction)} CHF`);
+    vsNotes.push(`Réduction couple marié, -35% (entre 600 et 4'500 CHF chacun) sur l'impôt cantonal ET sur l'impôt communal : -${Math.round(vsMarriedReduction)} CHF sur le cantonal`);
   }
   if (opts.canton === "VS" && (opts.children ?? 0) > 0) {
     // Art. 31a LF : rabais direct sur l'impôt cantonal, jusqu'à 300 CHF par
     // enfant, distinct de la déduction du revenu (Art. 31 al. 1 let. b).
     const rebate = Math.min(cantonal, (opts.children ?? 0) * 300);
     cantonal = Math.max(0, cantonal - rebate);
-    vsNotes.push(`Rabais Art. 31a (${opts.children} enfant${(opts.children ?? 0) > 1 ? "s" : ""}) : ${Math.round(rebate)} CHF`);
+    vsNotes.push(`Rabais enfants (${opts.children} enfant${(opts.children ?? 0) > 1 ? "s" : ""} à 300 CHF max chacun) : -${Math.round(rebate)} CHF sur le cantonal uniquement`);
   }
   let church = 0;
   if (opts.confession === "catholic" && scale.churchRateCatholic) {
