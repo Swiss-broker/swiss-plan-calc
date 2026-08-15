@@ -100,9 +100,9 @@ function CalculatorsLayout() {
         </Select>
       </div>
 
-      {/* Tablet+: horizontal scrollable tab bar */}
-      <div className="-mx-4 mb-6 hidden overflow-x-auto px-4 sm:mx-0 sm:block sm:px-0">
-        <nav className="flex min-w-max gap-1 rounded-xl border border-border bg-card/50 p-1">
+      {/* Tablet+: wrapping tab bar (jamais d'élément caché hors champ) */}
+      <div className="mb-6 hidden sm:block">
+        <nav className="flex flex-wrap items-center gap-1 rounded-xl border border-border bg-card/50 p-1">
           {TABS.map((tab) => {
             const active = tab.exact ? pathname === tab.to : pathname.startsWith(tab.to);
             return (
@@ -122,6 +122,31 @@ function CalculatorsLayout() {
               </Link>
             );
           })}
+          <Select
+            value={isMoreActive ? currentTab : ""}
+            onValueChange={(v) => navigate({ to: v as (typeof MORE_TABS)[number]["to"], search: tabSearch })}
+          >
+            <SelectTrigger
+              className={cn(
+                "h-auto w-auto gap-1.5 whitespace-nowrap rounded-lg border-0 px-3 py-2 text-sm font-medium",
+                isMoreActive
+                  ? "bg-primary text-primary-foreground shadow-elegant"
+                  : "text-muted-foreground hover:bg-muted hover:text-foreground",
+              )}
+            >
+              <span>{t("calc.tab.more")}</span>
+            </SelectTrigger>
+            <SelectContent>
+              {MORE_TABS.map((tab) => (
+                <SelectItem key={tab.to} value={tab.to}>
+                  <span className="flex items-center gap-2">
+                    <tab.icon className="h-4 w-4" />
+                    {t(tab.labelKey)}
+                  </span>
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </nav>
       </div>
       <Outlet />
