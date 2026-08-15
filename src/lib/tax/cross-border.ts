@@ -4,7 +4,7 @@
 // === SCOPE V1, Suisse romande ===
 //
 // Régimes couverts :
-//   - "fr_accord_45" : VD, VS, NE, JU, FR
+//   - "fr_accord_45" : VD, VS, NE, JU (accord franco-suisse 1983, 4.5 %)
 //   - "fr_geneva"    : GE (IS genevoise classique + rétrocession 3.5 %)
 //   - "fr_fribourg"  : FR (IS cantonale Fribourg, hors accord 1983)
 //
