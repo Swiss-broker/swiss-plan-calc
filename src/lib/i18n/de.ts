@@ -453,6 +453,13 @@ export const de: Record<string, string> = {
   "calc.tab.source_tax": "Quellensteuer",
   "calc.tab.canton_compare": "Kantonsvergleich",
   "calc.tab.retirement": "Rente vs. Kapital",
+  "calc.tab.vested_benefits": "Freizügigkeit",
+  "calc.tab.director": "Vergleich Geschäftsführer",
+  "calc.tab.health_fr": "CMU / KVG",
+  "calc.tab.overtime": "Überstunden",
+  "calc.tab.investment_compare": "Anlagevergleich",
+  "calc.tab.fx_claim": "Wechselkurs",
+  "calc.tab.more": "Mehr ▾",
 
   // === Simulationsverlauf ===
   "history.title": "Simulationsverlauf",

@@ -451,6 +451,13 @@ export const en: Record<string, string> = {
   "calc.tab.source_tax": "Withholding tax",
   "calc.tab.canton_compare": "Cantonal comparator",
   "calc.tab.retirement": "Pension vs lump-sum",
+  "calc.tab.vested_benefits": "Vested benefits",
+  "calc.tab.director": "Director compensation",
+  "calc.tab.health_fr": "CMU / Health insurance",
+  "calc.tab.overtime": "Overtime",
+  "calc.tab.investment_compare": "Investment comparison",
+  "calc.tab.fx_claim": "Exchange rate",
+  "calc.tab.more": "More ▾",
 
   // === Simulation history ===
   "history.title": "Simulation history",

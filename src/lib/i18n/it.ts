@@ -451,6 +451,13 @@ export const it: Record<string, string> = {
   "calc.tab.source_tax": "Imposta alla fonte",
   "calc.tab.canton_compare": "Comparatore cantonale",
   "calc.tab.retirement": "Rendita o capitale",
+  "calc.tab.vested_benefits": "Libero passaggio",
+  "calc.tab.director": "Confronto amministratore",
+  "calc.tab.health_fr": "CMU / LAMal",
+  "calc.tab.overtime": "Straordinari",
+  "calc.tab.investment_compare": "Confronto investimenti",
+  "calc.tab.fx_claim": "Tasso di cambio",
+  "calc.tab.more": "Altro ▾",
 
   // === Cronologia delle simulazioni ===
   "history.title": "Cronologia delle simulazioni",
