@@ -102,7 +102,7 @@ function frenchMarginalRate(taxableEur: number, status: "single" | "married", ch
 // Barèmes IS Genève 2026 — taux effectifs officiels tar26GE
 // [revenu_annuel_CHF, taux_%] — interpolation linéaire
 // =====================================================================
-const GE_IS_RATES_2026: Record<string, [number, number][]> = {
+export const GE_IS_RATES_2026: Record<string, [number, number][]> = {
   // Source : Barèmes IS GE 2026 officiels (tar26GE) — lecture directe PDF
   // Points : [revenu_annuel_CHF, taux_%]
 
@@ -274,7 +274,7 @@ function friburgSourceTax(
   return Math.round((grossAnnual * rate) / 100);
 }
 
-function interpolateGERate(annualGross: number, scaleKey: string): number {
+export function interpolateGERate(annualGross: number, scaleKey: string): number {
   const pts = GE_IS_RATES_2026[scaleKey] ?? GE_IS_RATES_2026["A0"];
   if (annualGross <= pts[0][0]) return 0;
   if (annualGross >= pts[pts.length - 1][0]) return pts[pts.length - 1][1];

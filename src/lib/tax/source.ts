@@ -13,6 +13,7 @@
 // (C0 = 0 enfant, C1, C2, C3+) avec un comportement progressif/dégressif.
 
 import type { FilingStatus } from "./ifd";
+import { interpolateGERate } from "./cross-border";
 
 export type SourceScale = "A" | "B" | "C" | "H";
 
@@ -133,13 +134,28 @@ export function computeSourceTax(opts: SourceTaxOptions): SourceTaxResult {
   // Pour le barème C : taux déterminé sur le revenu COMBINÉ du ménage
   const determinationBase = isC ? monthly + spouse : monthly;
 
-  const baseRateAtGE = baseRateGE(determinationBase, opts.scale);
-  const cantonCoef = CANTON_SOURCE_COEF[opts.canton] ?? 0.95;
-
-  const reduction = childReduction(opts.scale, opts.children ?? 0, baseRateAtGE);
   const churchAddition = opts.church ? 0.6 : 0;
+  let rate: number;
 
-  let rate = Math.max(0, baseRateAtGE * cantonCoef - reduction + churchAddition);
+  if (opts.canton === "GE") {
+    // Genève : utilise les vraies tables officielles tar26GE (mêmes tables
+    // que le module frontalier cross-border.ts) au lieu d'une courbe
+    // approximative.
+    // Barème toujours "0 enfant" (A0/B0/C0/H0) : c'est le barème appliqué
+    // par défaut par l'employeur. La prise en compte des enfants ne se fait
+    // qu'après une démarche de rectification (DRIS) l'année suivante, avant
+    // le 31 mars, jamais automatiquement (directives officielles AFC/ge.ch).
+    const scaleKey = `${opts.scale}0`;
+    const determinationAnnual = determinationBase * 12;
+    const baseRate = interpolateGERate(determinationAnnual, scaleKey);
+    rate = Math.max(0, baseRate + churchAddition);
+  } else {
+    const baseRateAtGE = baseRateGE(determinationBase, opts.scale);
+    const cantonCoef = CANTON_SOURCE_COEF[opts.canton] ?? 0.95;
+    const reduction = childReduction(opts.scale, opts.children ?? 0, baseRateAtGE);
+    rate = Math.max(0, baseRateAtGE * cantonCoef - reduction + churchAddition);
+  }
+
   let crossBorderNote: string | undefined;
 
   if (opts.isCrossBorderFR) {
