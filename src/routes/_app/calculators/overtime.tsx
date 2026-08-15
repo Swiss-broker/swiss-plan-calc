@@ -1,6 +1,6 @@
 // src/routes/_app/calculators/overtime.tsx
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { z } from "zod";
 import { zodValidator, fallback } from "@tanstack/zod-adapter";
 import { ChevronDown, Clock, Info, FileText } from "lucide-react";
@@ -31,11 +31,13 @@ import {
   type SalaryCurrency,
 } from "@/lib/overtime-fr";
 import { usePrefillFromClient, useHydrateFormFromPrefill } from "@/hooks/usePrefillFromClient";
+import { useLoadSavedSimulation } from "@/hooks/useLoadSavedSimulation";
 import { CrossCalcImpactBanner } from "@/components/calculators/CrossCalcImpactBanner";
 import { GuideMode, GuideToggleButton, type GuideStep } from "@/components/calculators/GuideMode";
 
 const searchSchema = z.object({
   clientId: fallback(z.string().uuid().optional(), undefined),
+  simId: fallback(z.string().uuid().optional(), undefined),
 });
 
 export const Route = createFileRoute("/_app/calculators/overtime")({
@@ -51,8 +53,9 @@ const fmtCHF = (n: number) =>
 const fmtH = (n: number) => `${Math.round(n).toLocaleString("fr-CH")} h`;
 
 function OvertimeCalc() {
-  const { clientId } = Route.useSearch();
+  const { clientId, simId } = Route.useSearch();
   const { client, prefill } = usePrefillFromClient(clientId, "overtime");
+  const { inputs: savedInputs, isLoading: loadingSaved } = useLoadSavedSimulation(simId);
   const [form, setForm] = useState<OvertimeInput>({
     taxStatus: "cross_border_fr_1983",
     workCanton: "VD",
@@ -66,7 +69,18 @@ function OvertimeCalc() {
     spouseEmployed: false,
     spouseAnnualSalaryCHF: 0,
   });
-  useHydrateFormFromPrefill(prefill, setForm);
+  useHydrateFormFromPrefill(simId ? null : prefill, setForm);
+
+  // Rechargement d'un brouillon sauvegardé : ne s'applique qu'une fois par
+  // simId, pour ne pas écraser les modifications faites après le chargement.
+  const loadedSimRef = useRef<string | undefined>(undefined);
+  useEffect(() => {
+    if (!simId || !savedInputs) return;
+    if (loadedSimRef.current === simId) return;
+    setForm((prev) => ({ ...prev, ...savedInputs } as OvertimeInput));
+    loadedSimRef.current = simId;
+  }, [simId, savedInputs]);
+
   const set = <K extends keyof OvertimeInput>(k: K, v: OvertimeInput[K]) =>
     setForm((f) => ({ ...f, [k]: v }));
 
@@ -117,6 +131,16 @@ function OvertimeCalc() {
       {client && (
         <div className="md:col-span-5">
           <ClientLinkBanner client={client} />
+        </div>
+      )}
+      {simId && loadingSaved && (
+        <div className="md:col-span-5 rounded-lg border border-primary/30 bg-primary/5 p-3 text-sm text-muted-foreground">
+          Chargement de la sauvegarde…
+        </div>
+      )}
+      {simId && !loadingSaved && savedInputs && (
+        <div className="md:col-span-5 rounded-lg border border-primary/30 bg-primary/5 p-3 text-sm">
+          Vous consultez une simulation sauvegardée. Toute modification créera une nouvelle sauvegarde distincte si vous cliquez sur « Sauvegarder ».
         </div>
       )}
       <div className="md:col-span-3 space-y-4">
