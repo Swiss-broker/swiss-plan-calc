@@ -524,14 +524,14 @@ export function computeCantonalCommunal(opts: CCComputeOptions): CCComputeResult
   const communal = simple * communalMult;
   const vsNotes: string[] = [];
   if (vsMarriedReduction > 0) {
-    vsNotes.push(`Réduction couple marié Art. 32 (-35%, plafonnée 600–4'500 CHF) : -${Math.round(vsMarriedReduction)} CHF`);
+    vsNotes.push(`Réduction couple marié Art. 32 (-35%, plafonnée 600 à 4'500 CHF) : ${Math.round(vsMarriedReduction)} CHF`);
   }
   if (opts.canton === "VS" && (opts.children ?? 0) > 0) {
     // Art. 31a LF : rabais direct sur l'impôt cantonal, jusqu'à 300 CHF par
     // enfant, distinct de la déduction du revenu (Art. 31 al. 1 let. b).
     const rebate = Math.min(cantonal, (opts.children ?? 0) * 300);
     cantonal = Math.max(0, cantonal - rebate);
-    vsNotes.push(`Rabais Art. 31a (${opts.children} enfant${(opts.children ?? 0) > 1 ? "s" : ""}) : -${Math.round(rebate)} CHF`);
+    vsNotes.push(`Rabais Art. 31a (${opts.children} enfant${(opts.children ?? 0) > 1 ? "s" : ""}) : ${Math.round(rebate)} CHF`);
   }
   let church = 0;
   if (opts.confession === "catholic" && scale.churchRateCatholic) {
