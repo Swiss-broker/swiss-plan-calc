@@ -1,6 +1,6 @@
 // Phase 4.2 · Comparateur dividende / salaire / bénéfices (UI dirigeant).
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { z } from "zod";
 import { zodValidator, fallback } from "@tanstack/zod-adapter";
@@ -87,10 +87,12 @@ import type { Company } from "@/lib/companies/types";
 import type { FilingStatus } from "@/lib/tax/ifd";
 import { DirectorLppBuybackCard } from "@/components/calculators/DirectorLppBuybackCard";
 import { CrossCalcImpactBanner } from "@/components/calculators/CrossCalcImpactBanner";
+import { useLoadSavedSimulation } from "@/hooks/useLoadSavedSimulation";
 
 const searchSchema = z.object({
   clientId: fallback(z.string().uuid().optional(), undefined),
   companyId: fallback(z.string().uuid().optional(), undefined),
+  simId: fallback(z.string().uuid().optional(), undefined),
 });
 
 export const Route = createFileRoute("/_app/calculators/director-compensation")({
@@ -116,7 +118,8 @@ const FILING_OPTIONS: { value: FilingStatus; labelKey: string }[] = [
 function DirectorCompensationCalc() {
   const t = useT();
   const brokerHeader = useBrokerPdfHeader();
-  const { clientId, companyId } = Route.useSearch();
+  const { clientId, companyId, simId } = Route.useSearch();
+  const { inputs: savedInputs, isLoading: loadingSaved } = useLoadSavedSimulation(simId);
 
   // Charge optionnellement le client + la société depuis l'URL.
   const linkQuery = useQuery({
@@ -165,6 +168,7 @@ function DirectorCompensationCalc() {
   const [hydrated, setHydrated] = useState(false);
   useEffect(() => {
     if (hydrated) return;
+    if (simId) return; // brouillon chargé : ne pas écraser avec la fiche vivante
     if (!linkedClient && !linkedCompany) return;
     setInputs((prev) => ({
       ...prev,
@@ -207,6 +211,23 @@ function DirectorCompensationCalc() {
     retainedPct: 10,
     label: t("calc.dir.custom.label"),
   });
+
+  // Rechargement d'un brouillon sauvegardé : restaure les 3 états ensemble
+  // (inputs, situation actuelle, stratégie personnalisée), ne s'applique
+  // qu'une fois par simId.
+  const loadedSimRef = useRef<string | undefined>(undefined);
+  useEffect(() => {
+    if (!simId || !savedInputs) return;
+    if (loadedSimRef.current === simId) return;
+    const saved = savedInputs as Record<string, unknown>;
+    const { hasCurrent: savedHasCurrent, current: savedCurrent, custom: savedCustom, ...savedDirectorInputs } = saved;
+    setInputs((prev) => ({ ...prev, ...savedDirectorInputs }) as DirectorInputs);
+    if (typeof savedHasCurrent === "boolean") setHasCurrent(savedHasCurrent);
+    if (savedCurrent) setCurrent(savedCurrent as AbsoluteAllocation);
+    if (savedCustom) setCustom(savedCustom as CompensationStrategy);
+    setHydrated(true);
+    loadedSimRef.current = simId;
+  }, [simId, savedInputs]);
 
   const setField = <K extends keyof DirectorInputs>(k: K, v: DirectorInputs[K]) =>
     setInputs((p) => ({ ...p, [k]: v }));
@@ -252,6 +273,16 @@ function DirectorCompensationCalc() {
         <div className="flex justify-end gap-2">
           <GuideToggleButton onClick={() => setGuideOpen(true)} />
         </div>
+        {simId && loadingSaved && (
+          <div className="rounded-lg border border-primary/30 bg-primary/5 p-3 text-sm text-muted-foreground">
+            Chargement de la sauvegarde…
+          </div>
+        )}
+        {simId && !loadingSaved && savedInputs && (
+          <div className="rounded-lg border border-primary/30 bg-primary/5 p-3 text-sm">
+            Vous consultez une simulation sauvegardée. Toute modification créera une nouvelle sauvegarde distincte si vous cliquez sur « Sauvegarder ».
+          </div>
+        )}
 
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-5">
           {/* Inputs */}
