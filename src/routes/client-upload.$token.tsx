@@ -12,6 +12,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 import {
   DOCUMENT_CATEGORIES,
   ALLOWED_MIME_TYPES,
@@ -47,6 +48,23 @@ const ERROR_MESSAGES: Record<string, string> = {
   UPLOAD_FAILED: "Échec de l'envoi. Réessayez.",
 };
 
+// Le SDK Supabase expose l'erreur HTTP d'une Edge Function via
+// `error.context`, un objet Response dont le corps JSON contient le code
+// d'erreur métier (ex. {"error": "LINK_EXPIRED"}). Même pattern déjà
+// utilisé ailleurs dans l'app (ex. src/routes/_app/team.tsx).
+export async function extractErrorCode(error: unknown): Promise<string | null> {
+  const ctx = (error as { context?: Response })?.context;
+  if (ctx && typeof ctx.json === "function") {
+    try {
+      const body = await ctx.json();
+      if (body?.error) return String(body.error);
+    } catch {
+      // corps non exploitable, on retombe sur le message générique
+    }
+  }
+  return null;
+}
+
 function ClientUploadPage() {
   const { token } = Route.useParams();
   const [info, setInfo] = useState<LinkInfo | null>(null);
@@ -57,14 +75,27 @@ function ClientUploadPage() {
   const [sent, setSent] = useState<{ name: string; category: string }[]>([]);
 
   useEffect(() => {
-    void fetch(`/api/public/client-upload/${token}`)
-      .then(async (r) => {
-        const body = await r.json();
-        if (!r.ok) setLoadError(ERROR_MESSAGES[body?.error] || "Lien invalide.");
-        else setInfo(body);
+    let cancelled = false;
+    void supabase.functions
+      .invoke("client-upload", { body: { token } })
+      .then(async ({ data, error }) => {
+        if (cancelled) return;
+        if (error || data?.error) {
+          const code = data?.error ?? (await extractErrorCode(error)) ?? "INVALID_TOKEN";
+          setLoadError(ERROR_MESSAGES[code] || "Lien invalide.");
+          return;
+        }
+        setInfo(data as LinkInfo);
       })
-      .catch(() => setLoadError("Impossible de joindre le serveur."))
-      .finally(() => setLoading(false));
+      .catch(() => {
+        if (!cancelled) setLoadError("Impossible de joindre le serveur.");
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [token]);
 
   const handleFiles = async (files: FileList | null) => {
@@ -77,18 +108,16 @@ function ClientUploadPage() {
         continue;
       }
       const form = new FormData();
+      form.append("token", token);
       form.append("file", file);
       form.append("category", category);
       try {
-        const r = await fetch(`/api/public/client-upload/${token}`, {
-          method: "POST",
-          body: form,
-        });
-        const body = await r.json();
-        if (!r.ok) {
-          toast.error(`${file.name} : ${ERROR_MESSAGES[body?.error] || "échec"}`);
-          if (body?.error === "LINK_QUOTA_REACHED" || body?.error === "LINK_EXPIRED" || body?.error === "LINK_REVOKED") {
-            setLoadError(ERROR_MESSAGES[body.error]);
+        const { data, error } = await supabase.functions.invoke("client-upload", { body: form });
+        if (error || data?.error) {
+          const code = data?.error ?? (await extractErrorCode(error)) ?? "UPLOAD_FAILED";
+          toast.error(`${file.name} : ${ERROR_MESSAGES[code] || "échec"}`);
+          if (code === "LINK_QUOTA_REACHED" || code === "LINK_EXPIRED" || code === "LINK_REVOKED") {
+            setLoadError(ERROR_MESSAGES[code]);
             break;
           }
         } else {
@@ -102,9 +131,9 @@ function ClientUploadPage() {
     if (successCount > 0) {
       toast.success(`${successCount} fichier(s) envoyé(s) avec succès.`);
       // refresh quota
-      void fetch(`/api/public/client-upload/${token}`)
-        .then((r) => r.ok && r.json())
-        .then((body) => body && setInfo(body))
+      void supabase.functions
+        .invoke("client-upload", { body: { token } })
+        .then(({ data }) => data && !data.error && setInfo(data as LinkInfo))
         .catch(() => undefined);
     }
     setUploading(false);
@@ -144,12 +173,10 @@ function ClientUploadPage() {
       <div className="mx-auto max-w-2xl space-y-6">
         <Card>
           <CardHeader>
-            <CardTitle>
-              Bonjour {info.clientFirstName || ""} 👋
-            </CardTitle>
+            <CardTitle>Bonjour {info.clientFirstName || ""} 👋</CardTitle>
             <CardDescription>
-              Déposez ici les documents demandés par <strong>{info.brokerDisplay}</strong>.
-              Vos fichiers arrivent directement dans votre dossier, en toute confidentialité.
+              Déposez ici les documents demandés par <strong>{info.brokerDisplay}</strong>. Vos
+              fichiers arrivent directement dans votre dossier, en toute confidentialité.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-1 text-xs text-muted-foreground">
@@ -234,12 +261,7 @@ function ClientUploadPage() {
                   </li>
                 ))}
               </ul>
-              <Button
-                variant="outline"
-                size="sm"
-                className="mt-4"
-                onClick={() => setSent([])}
-              >
+              <Button variant="outline" size="sm" className="mt-4" onClick={() => setSent([])}>
                 Effacer la liste
               </Button>
             </CardContent>
