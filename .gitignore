@@ -20,6 +20,10 @@ dist-ssr
 .wrangler/
 .dev.vars
 
+# Supabase CLI local state (regenerated per machine by `supabase link`/`supabase start`)
+supabase/.temp/
+supabase/.branches/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
@@ -34,3 +38,4 @@ dist-ssr
 *.icloud
 .vercel
 .env*
+!.env.example
