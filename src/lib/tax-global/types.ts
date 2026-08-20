@@ -40,6 +40,11 @@ export interface TaxGlobalInput {
   childrenAges?: Array<number | null>;
   confession: "none" | "catholic" | "protestant" | "other";
   age?: number;
+  /** Plan LPP appliqué (fiche client) : obligatoire, cadres (sur-obligatoire), 1e. */
+  lppPlan?: "mandatory" | "cadres" | "1e";
+  /** Salaire assuré LPP exact (certificat de prévoyance, fiche client) —
+   *  remplace l'estimation par formule quand fourni. */
+  lppInsuredSalary?: number;
 
   // === Revenus ===
   grossSalary: number;

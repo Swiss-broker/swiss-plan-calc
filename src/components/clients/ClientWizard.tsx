@@ -1301,7 +1301,7 @@ function StepPatrimoine({
                 suffix="CHF"
               />
             </Field>
-            <Field label={t("wizard.lpp.insured")}>
+            <Field label={t("wizard.lpp.insured")} hint={t("wizard.lpp.insured.hint")}>
               <NumField
                 value={form.lpp_insured_salary}
                 onChange={(v) => update("lpp_insured_salary", v)}
@@ -1317,17 +1317,22 @@ function StepPatrimoine({
     placeholder="0"
   />
 </Field>
-            <Field label={t("wizard.lpp.plan")}>
+            <Field label={t("wizard.lpp.plan")} hint={t("wizard.lpp.plan.hint")}>
               <Select value={form.lpp_plan} onValueChange={(v) => update("lpp_plan", v as LppPlan)}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {Object.entries(LPP_PLAN_LABELS).map(([k, v]) => (
-                    <SelectItem key={k} value={k}>
-                      {v}
-                    </SelectItem>
-                  ))}
+                  {/* "executive" (ancien "Plan cadres / 1e", ambigu) n'est plus proposé
+                      pour un nouveau choix — sauf si déjà sélectionné sur cette fiche,
+                      pour ne pas le faire disparaître silencieusement de la liste. */}
+                  {(["mandatory", "extra_mandatory", "plan_1e", "mixed"] as LppPlan[])
+                    .concat(form.lpp_plan === "executive" ? (["executive"] as LppPlan[]) : [])
+                    .map((k) => (
+                      <SelectItem key={k} value={k}>
+                        {LPP_PLAN_LABELS[k]}
+                      </SelectItem>
+                    ))}
                 </SelectContent>
               </Select>
             </Field>

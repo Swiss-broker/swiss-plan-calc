@@ -298,9 +298,10 @@ export const en: Record<string, string> = {
 
   // === Enums : lpp_plan ===
   "enum.lpp_plan.mandatory": "Mandatory BVG",
-  "enum.lpp_plan.extra_mandatory": "Supplementary",
-  "enum.lpp_plan.executive": "Executive plan / 1e",
-  "enum.lpp_plan.mixed": "Mixed",
+  "enum.lpp_plan.extra_mandatory": "Supplementary (executive plan)",
+  "enum.lpp_plan.executive": "Executive/1e (legacy, please reclassify)",
+  "enum.lpp_plan.mixed": "Mixed (mandatory + supplementary)",
+  "enum.lpp_plan.plan_1e": "1e plan",
 
   // === Enums : legal_form ===
   "enum.legal_form.sarl": "LLC (Sàrl)",
@@ -1408,9 +1409,11 @@ export const en: Record<string, string> = {
   "wizard.lpp.title_retired": "Pillar 2 (BVG) · remaining capital",
   "wizard.lpp.balance": "Current Pillar 2 balance",
   "wizard.lpp.insured": "BVG insured salary",
+  "wizard.lpp.insured.hint": "Auto-filled estimate from gross salary — use the exact figure from the pension certificate when available, to make calculations more reliable without re-entering it in every calculator.",
   "wizard.lpp.buyback": "BVG buyback capacity",
   "wizard.lpp.buyback.hint": "Maximum stated by the pension fund",
   "wizard.lpp.plan": "BVG plan",
+  "wizard.lpp.plan.hint": "Mandatory: legal cap CHF 90,720. Supplementary (executive): up to ~CHF 362,880. 1e plan: for salaries above ~CHF 132,300, employee-chosen investments, up to CHF 860,000. If unsure, choose Mandatory.",
   "wizard.lpp.balance_remaining": "Pillar 2 capital not withdrawn",
   "wizard.lpp.no_aff": "Status {label}: no compulsory BVG affiliation.",
   "wizard.lpp.self_optional": " The client may voluntarily join a pension institution.",

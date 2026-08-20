@@ -33,6 +33,10 @@ export interface IncomeTaxInput {
   lppPlan?: "mandatory" | "cadres" | "1e";
   /** Idem côté conjoint */
   spouseLppPlan?: "mandatory" | "cadres" | "1e";
+  /** Salaire assuré LPP exact (certificat de prévoyance, fiche client) — si
+   *  fourni, remplace l'estimation par formule pour fiabiliser la
+   *  déduction de cotisation LPP. Voir estimateSocialContributions. */
+  lppInsuredSalary?: number;
   /** Confession du conjoint (impacte la part paroissiale couple) */
   spouseConfession?: "none" | "catholic" | "protestant" | "other";
 
@@ -174,6 +178,13 @@ export function estimateSocialContributions(
   grossSalary: number,
   age: number = 40,
   plan: "mandatory" | "cadres" | "1e" = "mandatory",
+  /** Salaire assuré exact (certificat de prévoyance), en CHF. Si fourni,
+   *  remplace le salaire coordonné calculé par formule — sert à fiabiliser
+   *  le calcul quand le courtier dispose de la vraie valeur de la fiche
+   *  client plutôt que d'une estimation depuis le salaire brut. Plafonné au
+   *  plafond légal du plan (une valeur au-delà serait incohérente avec le
+   *  plan sélectionné). */
+  insuredSalaryOverride?: number,
 ): { avs: number; ac: number; lpp: number } {
   const avs = grossSalary * AVS_AI_APG_RATE;
   const acBase = Math.min(grossSalary, AC_CEILING_2026) * AC_RATE;
@@ -195,7 +206,10 @@ export function estimateSocialContributions(
   // coordonné, corrigée le [date] pour appliquer le seuil d'entrée LPP et le
   // plancher légal de 3'780 CHF), au lieu d'une formule dupliquée qui
   // oubliait ces deux règles.
-  const coordinated = computeLppInsuredSalary(grossSalary, planCap);
+  const coordinated =
+    insuredSalaryOverride && insuredSalaryOverride > 0
+      ? Math.min(insuredSalaryOverride, planCap)
+      : computeLppInsuredSalary(grossSalary, planCap);
   const creditRate = lppCreditRate(age) || 0.10;
   const lppEmployerEmployee = coordinated * creditRate;
   const lpp = lppEmployerEmployee * 0.5;
@@ -218,7 +232,12 @@ export function computeIncomeTax(input: IncomeTaxInput): IncomeTaxBreakdown {
   const grossIncome = grossSalary + spouseSalary + bonus + otherIncome + rental + imputed;
 
   // Cotisations sociales obligatoires part salarié (déductibles à 100%)
-  const social = estimateSocialContributions(grossSalary, input.age, input.lppPlan);
+  const social = estimateSocialContributions(
+    grossSalary,
+    input.age,
+    input.lppPlan,
+    input.lppInsuredSalary,
+  );
   const spouseSocial = isMarried
     ? estimateSocialContributions(spouseSalary, input.spouseAge, input.spouseLppPlan)
     : { avs: 0, ac: 0, lpp: 0 };

@@ -321,9 +321,10 @@ export const fr: Record<string, string> = {
 
   // === Enums : lpp_plan ===
   "enum.lpp_plan.mandatory": "LPP obligatoire",
-  "enum.lpp_plan.extra_mandatory": "Sur-obligatoire",
-  "enum.lpp_plan.executive": "Plan cadres / 1e",
-  "enum.lpp_plan.mixed": "Mixte",
+  "enum.lpp_plan.extra_mandatory": "Sur-obligatoire (plan cadres)",
+  "enum.lpp_plan.executive": "Cadres / 1e (ancien, à reclasser)",
+  "enum.lpp_plan.mixed": "Mixte (obligatoire + sur-obligatoire)",
+  "enum.lpp_plan.plan_1e": "Plan 1e",
 
   // === Enums : legal_form (sociétés) · clés alignées sur l'enum DB ===
   "enum.legal_form.sarl": "Sàrl",
@@ -1471,6 +1472,7 @@ export const fr: Record<string, string> = {
   "wizard.lpp.title_retired": "2e pilier (LPP) · capital restant",
   "wizard.lpp.balance": "Avoir LPP actuel",
   "wizard.lpp.insured": "Salaire assuré LPP",
+  "wizard.lpp.insured.hint": "Préremplissage automatique (estimation depuis le salaire brut) — reprenez le montant exact du certificat de prévoyance si disponible, pour fiabiliser les calculs sans le ressaisir dans chaque calculateur.",
   "wizard.lpp.buyback": "Capacité de rachat LPP",
   "wizard.lpp.buyback.hint": "Maximum mentionné par la caisse",
   "wizard.field.activity_sector": "Secteur d'activité / Métier",
@@ -1478,6 +1480,7 @@ export const fr: Record<string, string> = {
   "wizard.field.spouse_salary_mode": "Mode salaire conjoint",
   "wizard.field.spouse_work_location": "Lieu de travail du conjoint",
   "wizard.lpp.plan": "Plan LPP",
+  "wizard.lpp.plan.hint": "Obligatoire : plafond légal 90'720 CHF. Sur-obligatoire (cadres) : jusqu'à ~362'880 CHF. Plan 1e : réservé aux salaires dès ~132'300 CHF, placements au choix de l'employé, jusqu'à 860'000 CHF. En cas de doute, choisissez Obligatoire.",
   "wizard.lpp.balance_remaining": "Capital LPP non retiré",
   "wizard.lpp.no_aff": "Statut {label} : pas d'affiliation LPP obligatoire.",
   "wizard.lpp.self_optional": " Le client peut s'affilier facultativement à une institution de prévoyance.",

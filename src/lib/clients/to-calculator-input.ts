@@ -71,6 +71,34 @@ export function mapConfession(c: Client): IncomeTaxInput["confession"] {
   }
 }
 
+/**
+ * Convertit le plan LPP de la fiche client (enum DB, 5 valeurs) vers le
+ * vocabulaire à 3 niveaux du moteur fiscal (mandatory/cadres/1e), qui
+ * détermine le plafond de salaire assuré pour la déduction de cotisation.
+ * - mandatory        → mandatory (plafond 90'720)
+ * - extra_mandatory  → cadres (sur-obligatoire, plafond ~362'880)
+ * - plan_1e          → 1e (plafond 860'000)
+ * - executive        → cadres (ancienne valeur ambiguë "Plan cadres / 1e",
+ *   retirée du formulaire fiche client mais encore possible sur d'anciennes
+ *   fiches ; choix conservateur — le plafond le plus bas des deux régimes
+ *   qu'elle mélangeait — plutôt que de présumer le 1e, plus avantageux).
+ * - mixed            → cadres (mélange obligatoire + sur-obligatoire, pas
+ *   de correspondance directe ; même choix conservateur que ci-dessus).
+ * - non renseigné    → mandatory (comportement historique par défaut).
+ */
+export function mapLppPlan(plan: ClientPension["lpp_plan"] | null | undefined): "mandatory" | "cadres" | "1e" {
+  switch (plan) {
+    case "plan_1e":
+      return "1e";
+    case "extra_mandatory":
+    case "executive":
+    case "mixed":
+      return "cadres";
+    default:
+      return "mandatory";
+  }
+}
+
 export function computeFortune(a: ClientAssets | null): number {
   if (!a) return 0;
   return (
@@ -125,6 +153,11 @@ export function toIncomeTaxInput(b: ClientBundle) {
     netWealth: computeFortune(b.assets),
     lppBuybackCapacity: numOrUndef(b.pension?.lpp_max_buyback),
     pillar3aBalance: 0,
+    // Fiabilise la déduction de cotisation LPP avec les vraies valeurs de la
+    // fiche client plutôt qu'une estimation par formule (plan supposé
+    // "obligatoire" par défaut).
+    lppPlan: mapLppPlan(b.pension?.lpp_plan),
+    lppInsuredSalary: numOrUndef(b.pension?.lpp_insured_salary),
   };
 }
 
@@ -533,6 +566,11 @@ export function toTaxGlobalInput(b: ClientBundle) {
     mortgageInterest: numOrUndef(b.client.mortgage_interest_france) || numOrUndef(b.assets?.mortgage_interest),
     realEstateMaintenance: numOrUndef(b.assets?.real_estate_maintenance),
     taxYear: currentYear,
+    // Fiabilise la déduction de cotisation LPP avec les vraies valeurs de la
+    // fiche client plutôt qu'une estimation par formule (plan supposé
+    // "obligatoire" par défaut).
+    lppPlan: mapLppPlan(b.pension?.lpp_plan),
+    lppInsuredSalary: numOrUndef(b.pension?.lpp_insured_salary),
   };
 }
 

@@ -59,6 +59,8 @@ export function toIncomeTaxInput(g: TaxGlobalInput): IncomeTaxInput {
     children: g.children,
     childrenAges: g.childrenAges,
     age: g.age,
+    lppPlan: g.lppPlan,
+    lppInsuredSalary: g.lppInsuredSalary,
     grossSalary: g.grossSalary + g.bonus,
     spouseGrossSalary: isCoupleStatus(g.civilStatus) ? g.spouseGrossSalary : 0,
     otherIncome: g.otherIncome,

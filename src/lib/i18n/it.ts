@@ -298,9 +298,10 @@ export const it: Record<string, string> = {
 
   // === Enums : lpp_plan ===
   "enum.lpp_plan.mandatory": "LPP obbligatoria",
-  "enum.lpp_plan.extra_mandatory": "Sovraobbligatoria",
-  "enum.lpp_plan.executive": "Piano dei quadri / 1e",
-  "enum.lpp_plan.mixed": "Misto",
+  "enum.lpp_plan.extra_mandatory": "Sovraobbligatoria (piano quadri)",
+  "enum.lpp_plan.executive": "Quadri/1e (obsoleto, da riclassificare)",
+  "enum.lpp_plan.mixed": "Misto (obbligatoria + sovraobbligatoria)",
+  "enum.lpp_plan.plan_1e": "Piano 1e",
 
   // === Enums : legal_form ===
   "enum.legal_form.sarl": "Sagl",
@@ -1408,9 +1409,11 @@ export const it: Record<string, string> = {
   "wizard.lpp.title_retired": "2° pilastro (LPP) · capitale residuo",
   "wizard.lpp.balance": "Avere LPP attuale",
   "wizard.lpp.insured": "Stipendio assicurato LPP",
+  "wizard.lpp.insured.hint": "Valore precompilato automaticamente stimato dal salario lordo — se disponibile, riportare l'importo esatto indicato sul certificato di previdenza, per calcoli più affidabili senza doverlo reinserire in ogni calcolatore.",
   "wizard.lpp.buyback": "Capacità di riscatto LPP",
   "wizard.lpp.buyback.hint": "Massimo indicato dalla cassa",
   "wizard.lpp.plan": "Piano LPP",
+  "wizard.lpp.plan.hint": "Obbligatoria: tetto legale CHF 90'720. Sovraobbligatoria (quadri): fino a ~CHF 362'880. Piano 1e: riservato a salari da ~CHF 132'300, investimenti a scelta del dipendente, fino a CHF 860'000. In caso di dubbio, scegliere Obbligatoria.",
   "wizard.lpp.balance_remaining": "Capitale LPP non ritirato",
   "wizard.lpp.no_aff": "Stato {label}: nessuna affiliazione LPP obbligatoria.",
   "wizard.lpp.self_optional": " Il cliente può affiliarsi facoltativamente a un istituto di previdenza.",

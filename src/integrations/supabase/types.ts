@@ -1384,7 +1384,7 @@ export type Database = {
         | "resolved"
         | "dismissed"
       gender: "male" | "female" | "other"
-      lpp_plan_type: "mandatory" | "extra_mandatory" | "executive" | "mixed"
+      lpp_plan_type: "mandatory" | "extra_mandatory" | "executive" | "mixed" | "plan_1e"
       permit_type: "none" | "B" | "C" | "L" | "Ci" | "F" | "G" | "swiss"
       scenario_kind:
         | "baseline"
@@ -1599,7 +1599,7 @@ export const Constants = {
       feedback_category: ["bug", "suggestion", "calculation", "ux", "other"],
       feedback_status: ["new", "in_review", "planned", "resolved", "dismissed"],
       gender: ["male", "female", "other"],
-      lpp_plan_type: ["mandatory", "extra_mandatory", "executive", "mixed"],
+      lpp_plan_type: ["mandatory", "extra_mandatory", "executive", "mixed", "plan_1e"],
       permit_type: ["none", "B", "C", "L", "Ci", "F", "G", "swiss"],
       scenario_kind: [
         "baseline",

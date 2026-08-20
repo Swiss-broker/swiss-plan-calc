@@ -85,9 +85,15 @@ export const WORK_STATUS_LABELS = makeI18nLabels<WorkStatus>("work_status", {
 
 export const LPP_PLAN_LABELS = makeI18nLabels<LppPlan>("lpp_plan", {
   mandatory: "LPP obligatoire",
-  extra_mandatory: "Sur-obligatoire",
-  executive: "Plan cadres / 1e",
-  mixed: "Mixte",
+  extra_mandatory: "Sur-obligatoire (plan cadres)",
+  // Ancienne valeur ambiguë ("Plan cadres / 1e" mélangeait deux régimes
+  // fiscalement différents), retirée du formulaire fiche client (voir
+  // ClientWizard.tsx) mais gardée dans l'enum pour la complétude du
+  // typage — aucune fiche client ne l'utilise (vérifié en base au moment
+  // de l'ajout de "plan_1e").
+  executive: "Cadres / 1e (ancien, à reclasser)",
+  mixed: "Mixte (obligatoire + sur-obligatoire)",
+  plan_1e: "Plan 1e",
 });
 
 export const SOURCE_TAX_SCALES = ["A", "B", "C", "H", "L", "M", "N", "P", "Q", "R", "S", "T"] as const;

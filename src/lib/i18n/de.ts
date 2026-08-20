@@ -300,9 +300,10 @@ export const de: Record<string, string> = {
 
   // === Enums : lpp_plan ===
   "enum.lpp_plan.mandatory": "BVG obligatorisch",
-  "enum.lpp_plan.extra_mandatory": "Überobligatorisch",
-  "enum.lpp_plan.executive": "Kaderplan / 1e",
-  "enum.lpp_plan.mixed": "Gemischt",
+  "enum.lpp_plan.extra_mandatory": "Überobligatorisch (Kaderplan)",
+  "enum.lpp_plan.executive": "Kader/1e (veraltet, bitte neu zuordnen)",
+  "enum.lpp_plan.mixed": "Gemischt (obligatorisch + überobligatorisch)",
+  "enum.lpp_plan.plan_1e": "1e-Plan",
 
   // === Enums : legal_form (sociétés) · clés alignées sur l'enum DB ===
   "enum.legal_form.sarl": "GmbH",
@@ -1410,9 +1411,11 @@ export const de: Record<string, string> = {
   "wizard.lpp.title_retired": "2. Säule (BVG) · verbleibendes Kapital",
   "wizard.lpp.balance": "Aktuelles BVG-Guthaben",
   "wizard.lpp.insured": "Versicherter BVG-Lohn",
+  "wizard.lpp.insured.hint": "Automatisch geschätzt aus dem Bruttolohn — bei Verfügbarkeit den genauen Betrag aus dem Vorsorgeausweis übernehmen, um die Berechnungen zuverlässiger zu machen, ohne ihn in jedem Rechner erneut einzugeben.",
   "wizard.lpp.buyback": "BVG-Einkaufspotenzial",
   "wizard.lpp.buyback.hint": "Maximum gemäss Pensionskasse",
   "wizard.lpp.plan": "BVG-Plan",
+  "wizard.lpp.plan.hint": "Obligatorisch: gesetzliche Grenze CHF 90'720. Überobligatorisch (Kader): bis ca. CHF 362'880. 1e-Plan: ab einem Lohn von ca. CHF 132'300, Anlagewahl durch die versicherte Person, bis CHF 860'000. Im Zweifel Obligatorisch wählen.",
   "wizard.lpp.balance_remaining": "Nicht bezogenes BVG-Kapital",
   "wizard.lpp.no_aff": "Status {label}: keine BVG-Pflicht.",
   "wizard.lpp.self_optional": " Der Kunde kann sich freiwillig einer Vorsorgeeinrichtung anschliessen.",
