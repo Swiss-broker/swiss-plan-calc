@@ -18,7 +18,7 @@ export interface Canton {
   name: string;
   /** Sélectionnable comme canton de domicile/travail (v1 = 6 romands). */
   selectable: boolean;
-  /** Affichable dans le comparateur cantonal (v1 = 6 romands + ZG). */
+  /** Affichable dans le comparateur cantonal (v1 = 6 romands + ZG + SZ + BE). */
   comparable: boolean;
 }
 
