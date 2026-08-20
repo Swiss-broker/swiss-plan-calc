@@ -234,6 +234,29 @@ const FR_INCOME_CLASSES: AverageRateClass[] = [
 ];
 const FR_TOP_RATE_PERCENT = 13.5; // dès 207'100 CHF, taux plafond fixe
 
+// Déduction pour enfant valaisanne (Art. 31 al. 1 let. b LF, montants
+// indexés 2026) — DÉPEND DE L'ÂGE de chaque enfant, contrairement au modèle
+// générique "childDeduction" à montant plat utilisé par les autres cantons :
+//   [0] jusqu'à 6 ans : 7'860 CHF · [1] de 6 à 16 ans : 8'940 CHF ·
+//   [2] dès 16 ans : 11'930 CHF
+// + un supplément par enfant à partir du 3e enfant (peu importe son âge),
+// voir VS_CHILD_DEDUCTION_SUPPLEMENT_FROM_3RD. Utilisé par le cas spécial
+// "VS" dans computeCantonalCommunal (pas par le childDeduction générique de
+// CANTON_SCALES.VS, qui ne sert que de repli quand l'âge d'un enfant est
+// inconnu — voir vsChildDeductionForAge ci-dessous).
+const VS_CHILD_DEDUCTION_TIERS = [7_860, 8_940, 11_930] as const;
+const VS_CHILD_DEDUCTION_SUPPLEMENT_FROM_3RD = 1_240;
+
+/** Déduction (CHF) pour UN enfant valaisan selon son âge (Art. 31 al. 1 let. b
+ *  LF). Âge inconnu → palier le plus bas (hypothèse prudente : sous-estimer
+ *  la déduction plutôt que la surestimer quand la donnée manque). */
+function vsChildDeductionForAge(age: number | null | undefined): number {
+  if (age == null) return VS_CHILD_DEDUCTION_TIERS[0];
+  if (age < 6) return VS_CHILD_DEDUCTION_TIERS[0];
+  if (age < 16) return VS_CHILD_DEDUCTION_TIERS[1];
+  return VS_CHILD_DEDUCTION_TIERS[2];
+}
+
 // Art. 32 al. 1 LF, barème cantonal détaillé 2026 (non indexé, valeurs déjà
 // définitives — le VS n'a pas de multiple annuel, ce barème est directement
 // applicable comme pour l'IFD). Source primaire : Feuille cantonale Valais,
@@ -560,7 +583,12 @@ export const CANTON_SCALES: Record<string, CantonTaxScale> = {
     communalMultiplierCapital: 1.1,
     churchRateCatholic: 0.03,
     churchRateProtestant: 0.03,
-    childDeduction: 7_510,
+    // Non utilisé par le moteur pour VS : la vraie déduction (Art. 31 al. 1
+    // let. b LF) dépend de l'âge de chaque enfant, recalculée dans le cas
+    // spécial "VS" via vsChildDeductionForAge/VS_CHILD_DEDUCTION_TIERS.
+    // Gardé au palier le plus bas (7'860 CHF, indexé 2026) uniquement pour
+    // satisfaire le typage CantonTaxScale.
+    childDeduction: 7_860,
     marriedDeduction: 0,
     wealthScale: VS_WEALTH_SCALE,
     wealthExemptionSingle: 45_000,
@@ -792,6 +820,11 @@ export interface CCComputeOptions {
   /** Fortune nette du contribuable, CHF. Utilisée uniquement par SZ
    *  (Entlastungsabzug, §35 al. 1a StG) — 0 par défaut si omise. */
   netWealth?: number;
+  /** Âge de chaque enfant. Utilisée uniquement par VS (déduction pour
+   *  enfant dépendante de l'âge, Art. 31 al. 1 let. b LF) — un enfant sans
+   *  âge connu (index absent du tableau) retombe sur le palier le plus bas.
+   *  Ignorée par les autres cantons. */
+  childrenAges?: Array<number | null>;
 }
 
 export interface CCComputeResult {
@@ -832,6 +865,7 @@ export function computeCantonalCommunal(opts: CCComputeOptions): CCComputeResult
   let simpleMarginalRatePercentOverride: number | null = null;
   let szAdjustedForCommunal = 0;
   let szEntlastungsabzug = 0;
+  let vsAdjustedIncome = 0;
 
   if (opts.canton === "FR") {
     // FR (Art. 37 al. 1 et 3 LICD) : barème à taux moyen, pas marginal —
@@ -881,12 +915,27 @@ export function computeCantonalCommunal(opts: CCComputeOptions): CCComputeResult
     // réduit de 35% pour les couples mariés/familles monoparentales
     // (Art. 32 al. 3 let. a LF), plafonné entre 600 et 4'500 CHF (montants
     // légaux de base, non indexés 2026).
-    const ratePercent = averageRatePercent(adjusted, VS_CANTONAL_CLASSES, VS_CANTONAL_TOP_RATE_PERCENT);
-    const base = (adjusted * ratePercent) / 100;
+    //
+    // Déduction pour enfant (Art. 31 al. 1 let. b LF) : DÉPEND DE L'ÂGE de
+    // chaque enfant (voir vsChildDeductionForAge/VS_CHILD_DEDUCTION_TIERS),
+    // pas un montant plat comme le childDeduction générique — on ignore donc
+    // ici la déduction déjà soustraite dans `adjusted` (calculée avec
+    // scale.childDeduction) et on recalcule depuis opts.taxableIncome.
+    const childrenCount = opts.children ?? 0;
+    const ages = opts.childrenAges ?? [];
+    let vsChildDeduction = 0;
+    for (let i = 0; i < childrenCount; i++) {
+      vsChildDeduction += vsChildDeductionForAge(ages[i]);
+      if (i >= 2) vsChildDeduction += VS_CHILD_DEDUCTION_SUPPLEMENT_FROM_3RD;
+    }
+    vsAdjustedIncome = Math.max(0, opts.taxableIncome - vsChildDeduction);
+
+    const ratePercent = averageRatePercent(vsAdjustedIncome, VS_CANTONAL_CLASSES, VS_CANTONAL_TOP_RATE_PERCENT);
+    const base = (vsAdjustedIncome * ratePercent) / 100;
     bracketScale = scale.single;
-    marginalReference = adjusted;
+    marginalReference = vsAdjustedIncome;
     simpleMarginalRatePercentOverride = marginalRatePercentFromClasses(
-      adjusted,
+      vsAdjustedIncome,
       VS_CANTONAL_CLASSES,
       VS_CANTONAL_TOP_RATE_PERCENT,
     );
@@ -995,8 +1044,8 @@ export function computeCantonalCommunal(opts: CCComputeOptions): CCComputeResult
     // réduction -35% pour les couples mariés, multiplié ensuite par le
     // coefficient de la commune (1.0 à 1.5, chef-lieu Sion pris par défaut
     // via communalMultiplierCapital).
-    const communalRatePercent = averageRatePercent(adjusted, VS_COMMUNAL_CLASSES, VS_COMMUNAL_TOP_RATE_PERCENT);
-    let communalBase = (adjusted * communalRatePercent) / 100;
+    const communalRatePercent = averageRatePercent(vsAdjustedIncome, VS_COMMUNAL_CLASSES, VS_COMMUNAL_TOP_RATE_PERCENT);
+    let communalBase = (vsAdjustedIncome * communalRatePercent) / 100;
     if (isMarried || isSingleParent) {
       const communalReduction = Math.min(4_500, Math.max(600, communalBase * 0.35));
       communalBase = Math.max(0, communalBase - communalReduction);

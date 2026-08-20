@@ -114,7 +114,7 @@ export function usePrefillFromClient<K extends CalculatorKind>(
  * calculateur (même après l'hydratation initiale). Les autres champs
  * (salaire, hypothèses, what-if) ne sont JAMAIS écrasés après hydratation.
  */
-const IDENTITY_FIELDS = ["status", "canton", "children", "confession"] as const;
+const IDENTITY_FIELDS = ["status", "canton", "children", "childrenAges", "confession"] as const;
 
 /**
  * Helper : hydrate UNE SEULE FOIS un useState form avec les valeurs prefill,

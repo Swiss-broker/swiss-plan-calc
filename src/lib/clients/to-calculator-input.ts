@@ -111,6 +111,9 @@ export function toIncomeTaxInput(b: ClientBundle) {
     status: mapStatus(b.client, children.some(ch => ch.in_household)),
     confession: mapConfession(b.client),
     children: children.length,
+    // Utilisée uniquement par VS (déduction pour enfant dépendante de
+    // l'âge, Art. 31 al. 1 let. b LF) — ignorée par les autres cantons.
+    childrenAges: children.map(ch => ageFromDob(ch.date_of_birth)),
     grossSalary: numOrUndef(b.client.gross_annual_salary),
     spouseGrossSalary: numOrUndef(b.client.spouse_gross_annual_salary),
     bonus: numOrUndef(b.client.bonus),
@@ -280,6 +283,9 @@ export function toCantonCompareInput(b: ClientBundle) {
     referenceCanton: b.client.canton ?? undefined,
     status: mapStatus(b.client, parseChildren(b.client.children).some(ch => ch.in_household)),
     children: parseChildren(b.client.children).length,
+    // Utilisée uniquement par VS (déduction pour enfant dépendante de
+    // l'âge, Art. 31 al. 1 let. b LF) — ignorée par les autres cantons.
+    childrenAges: parseChildren(b.client.children).map(ch => ageFromDob(ch.date_of_birth)),
     grossSalary: getTotalGrossIncomeOrUndef(b.client),
     spouseGrossSalary: numOrUndef(b.client.spouse_gross_annual_salary),
     netWealth: computeFortune(b.assets) || undefined,
@@ -507,6 +513,9 @@ export function toTaxGlobalInput(b: ClientBundle) {
     civilStatus,
     spouseEmployed: spouseSalary > 0,
     children: children.length,
+    // Utilisée uniquement par VS (déduction pour enfant dépendante de
+    // l'âge, Art. 31 al. 1 let. b LF) — ignorée par les autres cantons.
+    childrenAges: children.map(ch => ageFromDob(ch.date_of_birth)),
     confession,
     age: ageFromDob(b.client.date_of_birth) ?? undefined,
     grossSalary: numOrUndef(b.client.gross_annual_salary),

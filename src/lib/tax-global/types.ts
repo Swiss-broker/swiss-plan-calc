@@ -35,6 +35,9 @@ export interface TaxGlobalInput {
   civilStatus: GlobalCivilStatus;
   spouseEmployed: boolean;
   children: number;
+  /** Âge de chaque enfant. Utilisée uniquement par VS (déduction pour
+   *  enfant dépendante de l'âge, Art. 31 al. 1 let. b LF). */
+  childrenAges?: Array<number | null>;
   confession: "none" | "catholic" | "protestant" | "other";
   age?: number;
 

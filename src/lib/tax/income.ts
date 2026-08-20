@@ -21,6 +21,10 @@ export interface IncomeTaxInput {
   status: FilingStatus;
   confession?: "none" | "catholic" | "protestant" | "other";
   children?: number;
+  /** Âge de chaque enfant. Utilisée uniquement par VS (déduction pour
+   *  enfant dépendante de l'âge, Art. 31 al. 1 let. b LF) — ignorée par les
+   *  autres cantons. */
+  childrenAges?: Array<number | null>;
   /** Âge du contribuable (utilisé pour calculer la part salarié LPP). Défaut 40. */
   age?: number;
   /** Âge du conjoint (pour part salarié LPP conjoint). */
@@ -321,6 +325,7 @@ export function computeIncomeTax(input: IncomeTaxInput): IncomeTaxBreakdown {
     cantonalMultiplier: input.cantonalMultiplier,
     communalMultiplier: input.communalMultiplier,
     netWealth: input.netWealth ?? 0,
+    childrenAges: input.childrenAges,
   });
 
   const wealthTax = computeWealthTax({
