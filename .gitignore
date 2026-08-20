@@ -16,10 +16,6 @@ dist-ssr
 .nitro
 *.local
 
-# Wrangler / Cloudflare
-.wrangler/
-.dev.vars
-
 # Supabase CLI local state (regenerated per machine by `supabase link`/`supabase start`)
 supabase/.temp/
 supabase/.branches/

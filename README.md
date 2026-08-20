@@ -10,7 +10,7 @@ Voir [`docs/SCOPE.md`](docs/SCOPE.md) pour le périmètre détaillé et la proc�
 
 ## Stack technique
 
-- **Framework** : TanStack Start v1 (React 19 + Vite 7) sur Cloudflare Workers
+- **Framework** : React 19 + Vite 7 (SPA), déployé sur Vercel
 - **Backend** : Lovable Cloud (Supabase managé)
 - **Auth** : Supabase Auth (email + Google OAuth)
 - **UI** : Tailwind CSS v4 + shadcn/ui + Recharts
@@ -30,8 +30,7 @@ src/
 │   ├── i18n/                   ← traductions FR + helpers de format CHF
 │   └── format.ts
 ├── routes/
-│   ├── _app/calculators/       ← calculateurs (income-tax, source-tax, lpp, 3a, ...)
-│   └── api/                    ← server routes (webhooks, public APIs)
+│   └── _app/calculators/       ← calculateurs (income-tax, source-tax, lpp, 3a, ...)
 ├── components/
 │   ├── calculators/            ← UI réutilisable des calculateurs
 │   └── ui/                     ← shadcn primitives
@@ -56,6 +55,3 @@ Suivre la checklist dans [`docs/SCOPE.md`](docs/SCOPE.md) (étapes a → f).
 - Cohérence flags ↔ types figés vérifiée au boot (`src/lib/swiss/cantons.ts`).
 - Le comparateur cantonal ignore silencieusement (warn console) tout canton `comparable` sans barème chargé, plutôt que crasher.
 - Tous les sélecteurs UI passent par `getSelectableCantons()`.
-
-
-// Test migration Fri Jun 19 11:53:52 CEST 2026
