@@ -93,30 +93,42 @@ const VS_COMMUNAL_SINGLE: BracketStep[] = [
   { from: 190_100, base: 18_905, rate: 10.0 },
 ];
 
-const VD_SINGLE: BracketStep[] = [
-  { from: 0, base: 0, rate: 0 },
-  { from: 17_700, base: 0, rate: 1 },
-  { from: 26_700, base: 90, rate: 2 },
-  { from: 36_500, base: 286, rate: 3 },
-  { from: 47_300, base: 610, rate: 4 },
-  { from: 57_400, base: 1_014, rate: 5 },
-  { from: 80_200, base: 2_154, rate: 6 },
-  { from: 119_500, base: 4_512, rate: 7 },
-  { from: 169_400, base: 8_005, rate: 7.5 },
-  { from: 270_300, base: 15_572, rate: 8 },
+// Barème officiel unique vaudois (Art. 47 al. 1 LI, 2026, montants indexés).
+// VD n'a PAS de barème marié séparé : la loi utilise un quotient familial
+// (Art. 43 LI, "parts" 1 / 1.8 / 1.3 + 0.5 par enfant) appliqué à CE MÊME
+// barème — voir le cas spécial "VD" dans computeCantonalCommunal.
+// Source primaire : Feuille cantonale Vaud, AFC, état février 2026.
+const VD_SCALE: BracketStep[] = [
+  { from: 0, base: 0, rate: 1 },
+  { from: 1_600, base: 16, rate: 2 },
+  { from: 3_400, base: 52, rate: 3 },
+  { from: 5_100, base: 103, rate: 4 },
+  { from: 8_300, base: 231, rate: 5 },
+  { from: 11_900, base: 411, rate: 6 },
+  { from: 15_100, base: 603, rate: 7 },
+  { from: 23_600, base: 1_198, rate: 8 },
+  { from: 40_500, base: 2_550, rate: 9 },
+  { from: 57_200, base: 4_053, rate: 10 },
+  { from: 74_400, base: 5_773, rate: 11 },
+  { from: 91_200, base: 7_621, rate: 12 },
+  { from: 108_100, base: 9_649, rate: 12.5 },
+  { from: 135_000, base: 13_011.5, rate: 13 },
+  { from: 162_000, base: 16_521.5, rate: 13.5 },
+  { from: 192_500, base: 20_639, rate: 14 },
+  { from: 223_000, base: 24_909, rate: 14.5 },
+  { from: 256_000, base: 29_694, rate: 15 },
+  { from: 291_700, base: 35_049, rate: 15.5 },
 ];
 
-const VD_MARRIED: BracketStep[] = [
-  { from: 0, base: 0, rate: 0 },
-  { from: 35_400, base: 0, rate: 1 },
-  { from: 53_400, base: 180, rate: 2 },
-  { from: 73_000, base: 572, rate: 3 },
-  { from: 94_600, base: 1_220, rate: 4 },
-  { from: 114_800, base: 2_028, rate: 5 },
-  { from: 160_400, base: 4_308, rate: 6 },
-  { from: 239_000, base: 9_024, rate: 7 },
-  { from: 338_800, base: 16_010, rate: 7.5 },
-  { from: 540_600, base: 31_145, rate: 8 },
+// Barème officiel de l'impôt sur la fortune vaudois (Art. 59 LI, 2026,
+// montants indexés, taux convertis de ‰ en % pour applySimpleScale).
+const VD_WEALTH_SCALE: BracketStep[] = [
+  { from: 0, base: 0, rate: 0.024 },
+  { from: 60_000, base: 14.4, rate: 0.097 },
+  { from: 95_000, base: 48.35, rate: 0.169 },
+  { from: 177_000, base: 186.93, rate: 0.242 },
+  { from: 355_000, base: 617.69, rate: 0.315 },
+  { from: 711_000, base: 1_739.09, rate: 0.339 },
 ];
 
 const GE_SINGLE: BracketStep[] = [
@@ -179,33 +191,79 @@ const VS_MARRIED: BracketStep[] = [
   { from: 439_000, base: 42_244, rate: 14 },
 ];
 
-const FR_SINGLE: BracketStep[] = [
-  { from: 0, base: 0, rate: 0 },
-  { from: 5_900, base: 0, rate: 0.5 },
-  { from: 11_800, base: 30, rate: 1 },
-  { from: 17_700, base: 89, rate: 2 },
-  { from: 23_700, base: 209, rate: 3 },
-  { from: 35_500, base: 563, rate: 4 },
-  { from: 47_400, base: 1_039, rate: 5 },
-  { from: 59_200, base: 1_629, rate: 6 },
-  { from: 82_900, base: 3_051, rate: 7 },
-  { from: 118_400, base: 5_536, rate: 8 },
-  { from: 177_500, base: 10_264, rate: 9 },
-  { from: 295_900, base: 20_920, rate: 10 },
-];
+// FR n'utilise PAS un barème additif/marginal comme les autres cantons :
+// l'Art. 37 al. 1 LICD prévoit un barème "à taux moyens" — le taux (interpolé
+// linéairement entre les bornes de chaque classe de revenu) s'applique à la
+// TOTALITÉ du revenu, pas seulement à l'excédent. Ces deux tableaux ne sont
+// donc pas des BracketStep[] utilisables par applySimpleScale : voir
+// FR_INCOME_CLASSES / frAverageRatePercent et le cas spécial "FR" dans
+// computeCantonalCommunal. single/married ci-dessous restent vides
+// (non utilisés) uniquement pour satisfaire le typage CantonTaxScale.
+interface FrRateClass {
+  incomeFrom: number;
+  incomeTo: number;
+  rateFromPercent: number;
+  rateToPercent: number;
+}
 
-const FR_MARRIED: BracketStep[] = [
-  { from: 0, base: 0, rate: 0 },
-  { from: 11_800, base: 0, rate: 0.5 },
-  { from: 23_700, base: 60, rate: 1 },
-  { from: 35_500, base: 178, rate: 2 },
-  { from: 47_400, base: 416, rate: 3 },
-  { from: 71_100, base: 1_127, rate: 4 },
-  { from: 94_700, base: 2_071, rate: 5 },
-  { from: 118_400, base: 3_256, rate: 6 },
-  { from: 165_800, base: 6_100, rate: 7 },
-  { from: 236_900, base: 11_077, rate: 8 },
-  { from: 354_900, base: 20_517, rate: 9 },
+// Art. 37 al. 1 LICD, barème détaillé 2026. Source primaire : Feuille
+// cantonale Fribourg, AFC, état février 2026.
+const FR_INCOME_CLASSES: FrRateClass[] = [
+  { incomeFrom: 5_200, incomeTo: 17_499, rateFromPercent: 1.0000, rateToPercent: 4.1598 },
+  { incomeFrom: 17_500, incomeTo: 31_399, rateFromPercent: 4.1745, rateToPercent: 6.2031 },
+  { incomeFrom: 31_400, incomeTo: 48_299, rateFromPercent: 6.2139, rateToPercent: 8.0283 },
+  { incomeFrom: 48_300, incomeTo: 63_799, rateFromPercent: 8.0352, rateToPercent: 9.0978 },
+  { incomeFrom: 63_800, incomeTo: 77_599, rateFromPercent: 9.1042, rateToPercent: 9.981 },
+  { incomeFrom: 77_600, incomeTo: 102_099, rateFromPercent: 9.9846, rateToPercent: 10.8630 },
+  { incomeFrom: 102_100, incomeTo: 128_699, rateFromPercent: 10.8662, rateToPercent: 11.7142 },
+  { incomeFrom: 128_700, incomeTo: 155_999, rateFromPercent: 11.7172, rateToPercent: 12.5332 },
+  { incomeFrom: 156_000, incomeTo: 180_999, rateFromPercent: 12.5355, rateToPercent: 13.1082 },
+  { incomeFrom: 181_000, incomeTo: 207_099, rateFromPercent: 13.1097, rateToPercent: 13.4997 },
+];
+const FR_TOP_RATE_PERCENT = 13.5; // dès 207'100 CHF, taux plafond fixe
+
+/** Taux moyen (%) applicable à la totalité du revenu, par interpolation linéaire dans la classe. */
+function frAverageRatePercent(income: number): number {
+  if (income < FR_INCOME_CLASSES[0].incomeFrom) return 0;
+  const last = FR_INCOME_CLASSES[FR_INCOME_CLASSES.length - 1];
+  if (income > last.incomeTo) return FR_TOP_RATE_PERCENT;
+  for (const c of FR_INCOME_CLASSES) {
+    if (income >= c.incomeFrom && income <= c.incomeTo) {
+      const frac = (income - c.incomeFrom) / (c.incomeTo - c.incomeFrom);
+      return c.rateFromPercent + frac * (c.rateToPercent - c.rateFromPercent);
+    }
+  }
+  return FR_TOP_RATE_PERCENT;
+}
+
+/** Taux marginal local (%) = d(income * taux(income) / 100) / d(income), pour l'affichage. */
+function frMarginalRatePercent(income: number): number {
+  if (income < FR_INCOME_CLASSES[0].incomeFrom) return 0;
+  const last = FR_INCOME_CLASSES[FR_INCOME_CLASSES.length - 1];
+  if (income > last.incomeTo) return FR_TOP_RATE_PERCENT;
+  for (const c of FR_INCOME_CLASSES) {
+    if (income >= c.incomeFrom && income <= c.incomeTo) {
+      const slope = (c.rateToPercent - c.rateFromPercent) / (c.incomeTo - c.incomeFrom);
+      const rateAtIncome = frAverageRatePercent(income);
+      return rateAtIncome + income * slope;
+    }
+  }
+  return FR_TOP_RATE_PERCENT;
+}
+
+// Barème officiel de l'impôt sur la fortune fribourgeois (Art. 62 al. 1a
+// LICD) : particularité, le taux DIMINUE dans la dernière tranche
+// (2,9‰ au-delà de 1'200'000, contre 3,7‰ pour la tranche précédente) —
+// c'est voulu par le législateur fribourgeois, pas une erreur de saisie.
+const FR_WEALTH_SCALE: BracketStep[] = [
+  { from: 0, base: 0, rate: 0.05 },
+  { from: 50_000, base: 25, rate: 0.11 },
+  { from: 100_000, base: 80, rate: 0.18 },
+  { from: 200_000, base: 260, rate: 0.25 },
+  { from: 400_000, base: 760, rate: 0.31 },
+  { from: 700_000, base: 1_690, rate: 0.35 },
+  { from: 1_000_000, base: 2_740, rate: 0.37 },
+  { from: 1_200_000, base: 3_480, rate: 0.29 },
 ];
 
 const BE_SINGLE: BracketStep[] = [
@@ -356,22 +414,28 @@ const wealthScaleStandard: BracketStep[] = [
 
 export const CANTON_SCALES: Record<string, CantonTaxScale> = {
   VD: {
-    single: VD_SINGLE,
-    married: VD_MARRIED,
+    // Barème officiel unique (Art. 47 LI) ; le quotient familial (Art. 43
+    // LI, parts 1 / 1.8 / 1.3 + 0.5/enfant) est appliqué directement dans
+    // computeCantonalCommunal (cas spécial "VD"), pas de calibrationFactor :
+    // le vrai barème remplace l'ancienne approximation générique.
+    single: VD_SCALE,
+    married: VD_SCALE,
+    // Quotité cantonale et coefficient communal Lausanne 2026, confirmés
+    // par l'AFC ("Taux et coefficients d'impôts", état 01/2026).
     cantonalMultiplier: 1.55,
     communalMultiplierCapital: 0.785,
-    churchRateProtestant: 0.05,
-    churchRateCatholic: 0.045,
+    // VD : les Eglises n'ont aucune souveraineté fiscale, leurs frais de
+    // culte sont financés par l'Etat/les communes (Art. 13 LREEDP) — pas
+    // d'impôt ecclésiastique sur les personnes physiques, contrairement à
+    // ce que le code indiquait précédemment.
     childDeduction: 3_200,
     marriedDeduction: 1_300,
-    wealthScale: wealthScaleStandard,
-    wealthExemptionSingle: 56_000,
-    wealthExemptionMarried: 112_000,
+    wealthScale: VD_WEALTH_SCALE,
+    // Fortune non imposable (Art. 58 LI, 2026, indexé), doublée pour les
+    // couples mariés.
+    wealthExemptionSingle: 60_000,
+    wealthExemptionMarried: 120_000,
     capital: "Lausanne",
-    calibrationFactor: 2.8653,
-    calibrationFactorMarried: 3.4733,
-    calibrationFactorSingleParent: 2.2383,
-    splittingMode: "married_scale",
   },
   VS: {
     single: VS_SINGLE,
@@ -392,22 +456,37 @@ export const CANTON_SCALES: Record<string, CantonTaxScale> = {
     splittingMode: "married_scale",
   },
   FR: {
-    single: FR_SINGLE,
-    married: FR_MARRIED,
+    // FR utilise un barème à taux moyen (Art. 37 LICD), pas un barème
+    // additif : single/married ci-dessous ne sont jamais lus par le moteur
+    // (cas spécial "FR" dans computeCantonalCommunal, voir
+    // frAverageRatePercent / FR_INCOME_CLASSES), remplis uniquement pour
+    // satisfaire le typage CantonTaxScale.
+    single: [{ from: 0, base: 0, rate: 0 }],
+    married: [{ from: 0, base: 0, rate: 0 }],
+    // Quotité cantonale du revenu (96%, Art. 1 al. 1 LCA2026) — la fortune
+    // a une quotité différente (100%, Art. 1 al. 2 LCA2026), gérée par un
+    // cas spécial "FR" dans computeWealthTax. Coefficient communal
+    // chef-lieu Fribourg (80%, identique revenu/fortune) confirmé par
+    // l'AFC ("Taux et coefficients d'impôts", état 01/2026).
     cantonalMultiplier: 0.96,
     communalMultiplierCapital: 0.80,
-    churchRateCatholic: 0.10,
-    churchRateProtestant: 0.10,
-    childDeduction: 9_500,
+    // Impôt ecclésiastique chef-lieu Fribourg 2026 (même source AFC) :
+    // catholique romain 9%, réformé 7% (le code précédent avait 10%/10%).
+    churchRateCatholic: 0.09,
+    churchRateProtestant: 0.07,
+    // Déduction sociale par enfant, Art. 36 al. 1 let. a LICD (montant de
+    // base ; le palier à 9'600 dès le 3e enfant n'est pas modélisé, comme
+    // pour les autres cantons de ce fichier).
+    childDeduction: 8_600,
     marriedDeduction: 0,
-    wealthScale: wealthScaleStandard,
-    wealthExemptionSingle: 50_000,
-    wealthExemptionMarried: 100_000,
+    wealthScale: FR_WEALTH_SCALE,
+    // Déduction sociale fortune Art. 61 LI : simplifiée au montant de base
+    // (55'000 / 105'000) — la vraie loi la réduit dégressivement au-delà de
+    // 75'000/125'000 de fortune nette, non modélisé ici (limitation connue,
+    // similaire à l'omission du palier "3e enfant" ci-dessus).
+    wealthExemptionSingle: 55_000,
+    wealthExemptionMarried: 105_000,
     capital: "Fribourg",
-    calibrationFactor: 2.8029,
-    calibrationFactorMarried: 3.0943,
-    calibrationFactorSingleParent: 1.8954,
-    splittingMode: "married_scale",
   },
   NE: {
     // Barème officiel unique (ne.ch, "Barèmes sur le revenu", période
@@ -605,8 +684,33 @@ export function computeCantonalCommunal(opts: CCComputeOptions): CCComputeResult
   let bracketScale: BracketStep[];
   let marginalReference: number;
   let vsMarriedReduction = 0;
+  let frMarginalRatePercentOverride: number | null = null;
 
-  if ((isMarried || isSingleParent) && splittingMode === "split_0.52") {
+  if (opts.canton === "FR") {
+    // FR (Art. 37 al. 1 et 3 LICD) : barème à taux moyen, pas marginal —
+    // le taux trouvé s'applique à la TOTALITÉ du revenu ajusté. Pour les
+    // couples mariés/familles monoparentales, le taux est celui trouvé à
+    // 50% du revenu, mais appliqué au revenu entier (pas de "splitting"
+    // au sens des autres cantons).
+    const rateBasisIncome = isMarried || isSingleParent ? adjusted / 2 : adjusted;
+    const ratePercent = frAverageRatePercent(rateBasisIncome);
+    simple = (adjusted * ratePercent) / 100;
+    bracketScale = scale.single;
+    marginalReference = adjusted;
+    frMarginalRatePercentOverride = frMarginalRatePercent(rateBasisIncome);
+  } else if (opts.canton === "VD") {
+    // VD (Art. 43 LI) : quotient familial, pas de barème marié séparé —
+    // le revenu est divisé par le nombre de "parts" (1 seul / 1.8 marié /
+    // 1.3 monoparental, + 0.5 par enfant à charge dans les deux derniers
+    // cas), l'impôt est calculé sur ce quotient puis multiplié par le même
+    // nombre de parts. Le plafonnement de l'avantage par enfant à haut
+    // revenu (Art. 43 al. 3 LI) n'est pas modélisé ici.
+    const children = opts.children ?? 0;
+    const parts = isMarried ? 1.8 + 0.5 * children : isSingleParent ? 1.3 + 0.5 * children : 1;
+    bracketScale = scale.single;
+    simple = applySimpleScale(adjusted / parts, bracketScale) * parts;
+    marginalReference = adjusted / parts;
+  } else if ((isMarried || isSingleParent) && splittingMode === "split_0.52") {
     // NE : splitting à 52% — taux basé sur 52% du revenu, appliqué au revenu entier
     bracketScale = scale.single;
     simple = applySimpleScale(adjusted * 0.52, bracketScale) / 0.52;
@@ -653,6 +757,13 @@ export function computeCantonalCommunal(opts: CCComputeOptions): CCComputeResult
   const communalMult = opts.communalMultiplier ?? scale.communalMultiplierCapital;
 
   let cantonal = simple * cantonalMult;
+  if (opts.canton === "VD") {
+    // Art. 4 LRIPP : réduction de 5% de l'impôt CANTONAL de base sur le
+    // revenu pour l'année fiscale 2026 — ne touche pas le communal (fixé
+    // indépendamment par chaque commune) ni la fortune (LRIPP ne vise que
+    // l'impôt sur le revenu).
+    cantonal = cantonal * 0.95;
+  }
   let communal: number;
   let vsCommunalMarriedReduction = 0;
   if (opts.canton === "VS") {
@@ -694,7 +805,8 @@ export function computeCantonalCommunal(opts: CCComputeOptions): CCComputeResult
     if (marginalReference >= b.from) marginalBracket = b;
     else break;
   }
-  const marginalRate = marginalBracket.rate * calibration * (cantonalMult + communalMult);
+  const simpleMarginalRatePercent = frMarginalRatePercentOverride ?? marginalBracket.rate;
+  const marginalRate = simpleMarginalRatePercent * calibration * (cantonalMult + communalMult);
 
   return {
     cantonal: Math.round(cantonal * 100) / 100,
@@ -735,7 +847,13 @@ export function computeWealthTax(opts: WealthComputeOptions): number {
     simple = applySimpleScale(taxable, scale.wealthScale);
   }
 
-  const cantonalMult = opts.cantonalMultiplier ?? scale.cantonalMultiplier;
+  let cantonalMult = opts.cantonalMultiplier ?? scale.cantonalMultiplier;
+  if (opts.canton === "FR" && opts.cantonalMultiplier === undefined) {
+    // FR : quotité cantonale de la fortune = 100% (Art. 1 al. 2 LCA2026),
+    // différente de celle du revenu (96%, Art. 1 al. 1 LCA2026) stockée
+    // dans scale.cantonalMultiplier.
+    cantonalMult = 1.0;
+  }
   const communalMult = opts.communalMultiplier ?? scale.communalMultiplierCapital;
   return Math.round(simple * (cantonalMult + communalMult) * 100) / 100;
 }
