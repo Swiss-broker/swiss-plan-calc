@@ -31,6 +31,8 @@ import { computeTaxGlobal } from "@/lib/tax-global/engine";
 import { createDefaultInput } from "@/lib/tax-global/profile";
 import type { TaxGlobalInput, Regime } from "@/lib/tax-global/types";
 import { CalcCard } from "@/components/calculators/CalcUI";
+import { ClientWealthCheck } from "@/components/calculators/ClientPrefillBadge";
+import { computeFortune } from "@/lib/clients/to-calculator-input";
 import { SplitCompareLayout, type SplitRow } from "@/components/calculators/SplitCompareLayout";
 import { formatCHF } from "@/lib/format";
 import { SaveSimulationButton } from "@/components/calculators/SaveSimulationButton";
@@ -137,6 +139,11 @@ function CantonCompareCalc() {
     },
   });
   const dashboard = useClientDashboard(bundle ?? null);
+  // Fortune nette telle que déclarée sur la fiche (client_assets), pour le
+  // contrôle de cohérence sur le champ "Fortune nette" ci-dessous. undefined
+  // tant que le bundle n'a pas fini de charger (évite un faux "conforme" à 0
+  // affiché brièvement pendant le chargement).
+  const clientNetWealth = bundle ? computeFortune(bundle.assets) : undefined;
 
   // ── État du formulaire : on s'aligne sur le moteur Fiscal Global pour
   //    garantir des chiffres identiques entre les deux écrans.
@@ -506,7 +513,14 @@ function CantonCompareCalc() {
           </div>
 
           <NumField label="3e pilier A annuel (CHF)" value={base.pillar3aContributions} onChange={(v) => set("pillar3aContributions", v)} />
-          <NumField label="Fortune nette (CHF)" value={base.netWealth} onChange={(v) => set("netWealth", v)} wikiId="fortune" wikiTip={t("calc.canton_compare.tip.wealth")} />
+          <div className="space-y-1">
+            <NumField label="Fortune nette (CHF)" value={base.netWealth} onChange={(v) => set("netWealth", v)} wikiId="fortune" wikiTip={t("calc.canton_compare.tip.wealth")} />
+            <ClientWealthCheck
+              value={base.netWealth}
+              clientValue={clientNetWealth}
+              clientName={client ? `${client.first_name} ${client.last_name}` : undefined}
+            />
+          </div>
 
           <div className="space-y-1.5">
             <Label className="text-xs font-medium text-muted-foreground">Canton de référence</Label>

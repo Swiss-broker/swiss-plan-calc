@@ -6,7 +6,7 @@ import { Sparkles, Info, ArrowRight } from "lucide-react";
 
 import { CalcCard, MoneyTile, PctTile, Row, InfoLabel, HelpDot } from "@/components/calculators/CalcUI";
 import { ClientLinkBanner } from "@/components/calculators/ClientLinkBanner";
-import { ClientPrefillBadge } from "@/components/calculators/ClientPrefillBadge";
+import { ClientPrefillBadge, ClientWealthCheck } from "@/components/calculators/ClientPrefillBadge";
 import { NumField as BaseNumField } from "@/components/ui/num-field";
 import { Label } from "@/components/ui/label";
 import {
@@ -541,12 +541,19 @@ function TaxGlobalCalc() {
                   <AccordionTrigger>{t("calc.global.section.wealth")}</AccordionTrigger>
                   <AccordionContent>
                     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2" data-guide="global-net-wealth">
-                      <NumField
-                        label={t("calc.global.field.net_wealth")}
-                        value={form.netWealth}
-                        onChange={(v) => set("netWealth", v)}
-                        suffix="CHF"
-                      />
+                      <div className="space-y-1">
+                        <NumField
+                          label={t("calc.global.field.net_wealth")}
+                          value={form.netWealth}
+                          onChange={(v) => set("netWealth", v)}
+                          suffix="CHF"
+                        />
+                        <ClientWealthCheck
+                          value={form.netWealth}
+                          clientValue={prefill?.netWealth}
+                          clientName={client ? `${client.first_name} ${client.last_name}` : undefined}
+                        />
+                      </div>
                     </div>
                   </AccordionContent>
                 </AccordionItem>
