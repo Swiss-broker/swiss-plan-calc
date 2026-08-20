@@ -269,6 +269,50 @@ const JU_WEALTH_SCALE: BracketStep[] = [
   { from: 1_685_000, base: 16_094, rate: 1.20 },
 ];
 
+// Barème officiel neuchâtelois du revenu, en vigueur depuis le 1er janvier
+// 2024 (valable pour les périodes fiscales 2024 à 2026). Barème unique
+// (pas de tarif marié séparé) : le splitting à 52% (art. 40bter LCdir)
+// s'applique au moment du calcul, voir computeCantonalCommunal.
+// Source primaire : ne.ch, "Barèmes sur le revenu".
+const NE_SCALE: BracketStep[] = [
+  { from: 0, base: 0, rate: 0 },
+  { from: 7_700, base: 0, rate: 1.98 },
+  { from: 10_300, base: 51, rate: 3.96 },
+  { from: 15_500, base: 257, rate: 7.92 },
+  { from: 20_600, base: 661, rate: 11.484 },
+  { from: 30_900, base: 1_844, rate: 11.781 },
+  { from: 41_200, base: 3_058, rate: 12.177 },
+  { from: 51_500, base: 4_312, rate: 12.672 },
+  { from: 61_800, base: 5_617, rate: 13.167 },
+  { from: 72_100, base: 6_973, rate: 13.662 },
+  { from: 82_400, base: 8_380, rate: 14.058 },
+  { from: 92_700, base: 9_828, rate: 14.355 },
+  { from: 103_000, base: 11_307, rate: 14.652 },
+  { from: 113_300, base: 12_816, rate: 14.949 },
+  { from: 123_600, base: 14_356, rate: 15.246 },
+  { from: 133_900, base: 15_926, rate: 15.345 },
+  { from: 144_200, base: 17_507, rate: 15.444 },
+  { from: 154_500, base: 19_097, rate: 15.543 },
+  { from: 164_800, base: 20_698, rate: 15.741 },
+  { from: 175_100, base: 22_320, rate: 15.939 },
+  { from: 185_400, base: 23_961, rate: 16.038 },
+  { from: 195_700, base: 25_613, rate: 16.038 },
+  { from: 206_000, base: 27_285, rate: 13.365 },
+  { from: 309_000, base: 41_031, rate: 13.6125 },
+  { from: 412_000, base: 55_052, rate: 13.86 },
+];
+
+// Barème officiel neuchâtelois de la fortune, même source/même période de
+// validité. Rates convertis de ‰ en % (÷10) pour le format BracketStep
+// commun à ce fichier (applySimpleScale divise par 100, pas 1000).
+const NE_WEALTH_SCALE: BracketStep[] = [
+  { from: 0, base: 0, rate: 0 },
+  { from: 50_000, base: 0, rate: 0.30 },
+  { from: 200_000, base: 450, rate: 0.40 },
+  { from: 350_000, base: 1_050, rate: 0.50 },
+  { from: 500_000, base: 1_800, rate: 0.36 },
+];
+
 function genericProgressive(profile: "low" | "mid" | "high"): BracketStep[] {
   const factor = profile === "low" ? 0.6 : profile === "mid" ? 1 : 1.25;
   return [
@@ -366,22 +410,34 @@ export const CANTON_SCALES: Record<string, CantonTaxScale> = {
     splittingMode: "married_scale",
   },
   NE: {
-    single: genericProgressive("high"),
-    married: genericMarried("high"),
+    // Barème officiel unique (ne.ch, "Barèmes sur le revenu", période
+    // fiscale 2024-2026) — pas de calibrationFactor : le vrai barème
+    // remplace l'ancienne approximation générique qu'il compensait.
+    // `married` n'est jamais lu par le moteur pour ce canton (splitting
+    // à 0.52 basé sur `single`, voir computeCantonalCommunal), il est
+    // rempli pour satisfaire le typage.
+    single: NE_SCALE,
+    married: NE_SCALE,
+    // Quotité cantonale et coefficient communal Neuchâtel 2026, confirmés
+    // par ne.ch, "Coefficients communaux et cantonal" (124% / 65%).
     cantonalMultiplier: 1.24,
     communalMultiplierCapital: 0.65,
     churchRateCatholic: 0.15,
     churchRateProtestant: 0.15,
     childDeduction: 6_500,
     marriedDeduction: 3_600,
-    wealthScale: wealthScaleStandard,
-    wealthExemptionSingle: 50_000,
-    wealthExemptionMarried: 100_000,
+    wealthScale: NE_WEALTH_SCALE,
+    // Pas de déduction sociale distincte sur la fortune documentée pour NE
+    // (contrairement à JU, art. 47 LI) : la franchise 0-50'000 CHF est déjà
+    // intégrée dans NE_WEALTH_SCALE lui-même. Une exemption supplémentaire
+    // ici ferait doublon.
+    wealthExemptionSingle: 0,
+    wealthExemptionMarried: 0,
     capital: "Neuchâtel",
-    calibrationFactor: 2.6303,
-    calibrationFactorMarried: 2.9682,
-    calibrationFactorSingleParent: 3.8518,
-    // NE: splitting à 52% pour couples ET monoparents (art. 40bter LCdir)
+    // NE: splitting à 52% pour couples ET monoparents (art. 40bter LCdir),
+    // applicable au revenu ET à la fortune (ne.ch, note sous le barème
+    // fortune : "le splitting correspond au 52% du revenu et de la
+    // fortune imposables pris en considération dans le calcul du taux").
     splittingMode: "split_0.52",
   },
   GE: {
@@ -662,22 +718,23 @@ export interface WealthComputeOptions {
 export function computeWealthTax(opts: WealthComputeOptions): number {
   const scale = CANTON_SCALES[opts.canton];
   if (!scale) return 0;
-  const exemption =
-    opts.status === "married" || opts.status === "single_with_children"
-      ? scale.wealthExemptionMarried
-      : scale.wealthExemptionSingle;
+  const isMarried = opts.status === "married" || opts.status === "single_with_children";
+  const exemption = isMarried ? scale.wealthExemptionMarried : scale.wealthExemptionSingle;
   const taxable = Math.max(0, opts.netWealth - exemption);
   if (taxable === 0) return 0;
   // JU (Art. 48 al. 2 LI) : franchise totale, pas un simple abattement —
   // sous 58'000 CHF de fortune imposable, l'impôt est nul.
   if (opts.canton === "JU" && taxable < 58_000) return 0;
-  let bracket = scale.wealthScale[0];
-  for (const b of scale.wealthScale) {
-    if (taxable >= b.from) bracket = b;
-    else break;
+
+  let simple: number;
+  if (isMarried && scale.splittingMode === "split_0.52") {
+    // NE (art. 40bter LCdir) : le splitting à 52% s'applique au revenu ET
+    // à la fortune — même mécanique que computeCantonalCommunal.
+    simple = applySimpleScale(taxable * 0.52, scale.wealthScale) / 0.52;
+  } else {
+    simple = applySimpleScale(taxable, scale.wealthScale);
   }
-  const excess = taxable - bracket.from;
-  const simple = bracket.base + (excess * bracket.rate) / 100;
+
   const cantonalMult = opts.cantonalMultiplier ?? scale.cantonalMultiplier;
   const communalMult = opts.communalMultiplier ?? scale.communalMultiplierCapital;
   return Math.round(simple * (cantonalMult + communalMult) * 100) / 100;
