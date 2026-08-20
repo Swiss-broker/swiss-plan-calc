@@ -35,8 +35,8 @@ export interface CantonTaxScale {
 // =====================================================================
 //   Barèmes cantonaux (progressifs par paliers)
 // =====================================================================
-// Barème officiel de l'impôt sur la fortune valaisan (Art. 60 LF), distinct
-// du barème générique wealthScaleStandard utilisé par les autres cantons.
+// Barème officiel de l'impôt sur la fortune valaisan (Art. 60 LF), propre au
+// canton (voir VS_CANTONAL_CLASSES / VS_COMMUNAL_CLASSES pour le revenu).
 // Source primaire : Feuille cantonale Valais, AFC.
 const VS_WEALTH_SCALE: BracketStep[] = [
   { from: 0, base: 0, rate: 1.0 },
@@ -413,45 +413,115 @@ const NE_WEALTH_SCALE: BracketStep[] = [
   { from: 500_000, base: 1_800, rate: 0.36 },
 ];
 
-function genericProgressive(profile: "low" | "mid" | "high"): BracketStep[] {
-  const factor = profile === "low" ? 0.6 : profile === "mid" ? 1 : 1.25;
-  return [
-    { from: 0, base: 0, rate: 0 },
-    { from: 10_000, base: 0, rate: 1 * factor },
-    { from: 20_000, base: 100 * factor, rate: 2 * factor },
-    { from: 35_000, base: 400 * factor, rate: 3.5 * factor },
-    { from: 55_000, base: 1_100 * factor, rate: 5 * factor },
-    { from: 80_000, base: 2_350 * factor, rate: 6.5 * factor },
-    { from: 120_000, base: 4_950 * factor, rate: 8 * factor },
-    { from: 180_000, base: 9_750 * factor, rate: 9 * factor },
-    { from: 280_000, base: 18_750 * factor, rate: 10 * factor },
-    { from: 500_000, base: 40_750 * factor, rate: 11 * factor },
-  ];
-}
+// Barème officiel unique schwytzois (§36 al. 1 StG, montants indexés 2026),
+// utilisé pour Bezirke/Gemeinden/Kirchgemeinden (§3 al. 2 StG). SZ n'a pas de
+// barème marié séparé : le splitting à diviseur 1.9 (§36 al. 2 StG, couples
+// mariés UNIQUEMENT — pas les familles monoparentales) et l'abattement
+// personnel (§35 al. 1 StG, non intégré au barème contrairement à JU/BE) sont
+// gérés par le cas spécial "SZ" dans computeCantonalCommunal. Le dernier
+// palier ("au-delà de 258'800, l'impôt simple est de 3.65% du revenu entier")
+// est mathématiquement équivalent à une continuation marginale à 3.65% (pas
+// de rupture), vérifié par recoupement avec le montant cumulé publié.
+// Source primaire : Feuille cantonale Schwyz, AFC, état février 2026.
+const SZ_BASE_CLASSES: BracketStep[] = [
+  { from: 0, base: 0, rate: 0.25 },
+  { from: 1_500, base: 3.75, rate: 0.50 },
+  { from: 2_800, base: 10.25, rate: 0.75 },
+  { from: 3_900, base: 18.5, rate: 1.00 },
+  { from: 4_900, base: 28.5, rate: 1.25 },
+  { from: 5_900, base: 41, rate: 1.50 },
+  { from: 7_000, base: 57.5, rate: 1.75 },
+  { from: 8_300, base: 80.25, rate: 2.00 },
+  { from: 10_100, base: 116.25, rate: 2.25 },
+  { from: 12_500, base: 170.25, rate: 2.50 },
+  { from: 16_100, base: 260.25, rate: 2.75 },
+  { from: 22_000, base: 422.5, rate: 3.00 },
+  { from: 30_200, base: 668.5, rate: 3.25 },
+  { from: 40_700, base: 1_009.75, rate: 3.50 },
+  { from: 52_300, base: 1_415.75, rate: 3.65 },
+  { from: 61_600, base: 1_755.20, rate: 3.90 },
+  { from: 258_800, base: 9_446.00, rate: 3.65 },
+];
 
-function genericMarried(profile: "low" | "mid" | "high"): BracketStep[] {
-  const factor = profile === "low" ? 0.55 : profile === "mid" ? 0.9 : 1.1;
-  return [
-    { from: 0, base: 0, rate: 0 },
-    { from: 20_000, base: 0, rate: 1 * factor },
-    { from: 40_000, base: 200 * factor, rate: 2 * factor },
-    { from: 65_000, base: 700 * factor, rate: 3.5 * factor },
-    { from: 95_000, base: 1_750 * factor, rate: 5 * factor },
-    { from: 140_000, base: 4_000 * factor, rate: 6.5 * factor },
-    { from: 200_000, base: 7_900 * factor, rate: 8 * factor },
-    { from: 300_000, base: 15_900 * factor, rate: 9 * factor },
-    { from: 450_000, base: 29_400 * factor, rate: 10 * factor },
-    { from: 800_000, base: 64_400 * factor, rate: 11 * factor },
-  ];
-}
+// §36a StG : "§36 s'applique aussi à l'impôt cantonal, avec un palier
+// supplémentaire de 7% pour les 174'700 CHF suivants" — barème identique à
+// SZ_BASE_CLASSES jusqu'à 258'800 CHF, puis remplace la continuation à 3.65%
+// par 7% (jusqu'à 433'500), puis 5% au-delà (continuation exacte, vérifiée).
+// Réservé à la Kantonssteuer, PAS aux Bezirke/Gemeinden/Kirchgemeinden — voir
+// cas spécial "SZ" dans computeCantonalCommunal.
+const SZ_KANTON_CLASSES: BracketStep[] = [
+  ...SZ_BASE_CLASSES.slice(0, -1),
+  { from: 258_800, base: 9_446.00, rate: 7.00 },
+  { from: 433_500, base: 21_675.00, rate: 5.00 },
+];
 
-const wealthScaleStandard: BracketStep[] = [
-  { from: 0, base: 0, rate: 0 },
-  { from: 100_000, base: 0, rate: 0.15 },
-  { from: 300_000, base: 300, rate: 0.25 },
-  { from: 600_000, base: 1_050, rate: 0.35 },
-  { from: 1_000_000, base: 2_450, rate: 0.45 },
-  { from: 2_000_000, base: 6_950, rate: 0.6 },
+// §48 al. 1 StG : taux unique 0.6‰ (rate converti en ÷10 pour ce fichier,
+// applySimpleScale divise par 100 pas 1000), pas de progressivité.
+const SZ_WEALTH_SCALE: BracketStep[] = [{ from: 0, base: 0, rate: 0.06 }];
+
+// Barème officiel zougois "Grundtarif" (célibataires, § 35 al. 1 StG,
+// montants indexés 2025). Contrairement à JU/BE, le barème taxe dès le
+// premier franc — l'abattement personnel (§33 al. 1 ch. 1 StG) est un vrai
+// abattement avant barème, géré par le cas spécial "ZG" dans
+// computeCantonalCommunal. Dernier palier (Bst. o, "au-delà de 149'900 CHF,
+// l'impôt simple est de 8% du revenu ENTIER") : contrairement à SZ, ceci
+// N'EST PAS équivalent à une continuation marginale (vérifié par recoupement
+// avec les valeurs indexées ET non-indexées : écart constant ~1'666 CHF) —
+// c'est une véritable clause de taux plat voulue par le législateur zougois.
+// Modélisée ici en donnant à ce dernier palier un "base" fictif
+// (seuil × taux), ce qui reproduit exactement impôt = revenu × 8% pour tout
+// revenu au-delà du seuil, sans rupture de continuité à d'autres seuils.
+// Source primaire : Feuille cantonale Zoug, AFC, état février 2026.
+const ZG_SINGLE: BracketStep[] = [
+  { from: 0, base: 0, rate: 0.5 },
+  { from: 1_100, base: 5.5, rate: 1.0 },
+  { from: 3_300, base: 27.5, rate: 2.0 },
+  { from: 6_100, base: 83.5, rate: 3.0 },
+  { from: 10_100, base: 203.5, rate: 3.25 },
+  { from: 15_300, base: 372.5, rate: 3.5 },
+  { from: 21_100, base: 575.5, rate: 4.0 },
+  { from: 26_900, base: 807.5, rate: 4.5 },
+  { from: 34_900, base: 1_167.5, rate: 5.5 },
+  { from: 46_400, base: 1_800, rate: 5.5 },
+  { from: 59_700, base: 2_531.5, rate: 6.5 },
+  { from: 74_700, base: 3_506.5, rate: 8.0 },
+  { from: 94_800, base: 5_114.5, rate: 10.0 },
+  { from: 120_100, base: 7_644.5, rate: 9.0 },
+  { from: 149_900, base: 11_992, rate: 8.0 },
+];
+
+// "Mehrpersonentarif" (couples mariés ET familles monoparentales, § 35 al. 2
+// StG) : chaque seuil et chaque montant cumulé est exactement le double du
+// Grundtarif (splitting à diviseur 2 publié directement comme barème séparé
+// plutôt que calculé), taux identiques. Vérifié terme à terme sur les 15
+// paliers. Source : idem ci-dessus.
+const ZG_MARRIED: BracketStep[] = [
+  { from: 0, base: 0, rate: 0.5 },
+  { from: 2_200, base: 11, rate: 1.0 },
+  { from: 6_600, base: 55, rate: 2.0 },
+  { from: 12_200, base: 167, rate: 3.0 },
+  { from: 20_200, base: 407, rate: 3.25 },
+  { from: 30_600, base: 745, rate: 3.5 },
+  { from: 42_200, base: 1_151, rate: 4.0 },
+  { from: 53_800, base: 1_615, rate: 4.5 },
+  { from: 69_800, base: 2_335, rate: 5.5 },
+  { from: 92_800, base: 3_600, rate: 5.5 },
+  { from: 119_400, base: 5_063, rate: 6.5 },
+  { from: 149_400, base: 7_013, rate: 8.0 },
+  { from: 189_600, base: 10_229, rate: 10.0 },
+  { from: 240_200, base: 15_289, rate: 9.0 },
+  { from: 299_800, base: 23_984, rate: 8.0 },
+];
+
+// Barème officiel de l'impôt sur la fortune zougois (§44 al. 2 StG, montants
+// indexés 2025) — purement marginal/additif, pas de clause de taux plat (le
+// dernier palier utilise "pour les parts de fortune au-delà de X", pas "pour
+// la fortune entière").
+const ZG_WEALTH_SCALE: BracketStep[] = [
+  { from: 0, base: 0, rate: 0.0425 },
+  { from: 254_000, base: 107.95, rate: 0.085 },
+  { from: 508_000, base: 323.85, rate: 0.1275 },
+  { from: 762_000, base: 647.7, rate: 0.17 },
 ];
 
 export const CANTON_SCALES: Record<string, CantonTaxScale> = {
@@ -621,36 +691,57 @@ export const CANTON_SCALES: Record<string, CantonTaxScale> = {
     splittingMode: "married_scale",
   },
   ZG: {
-    single: genericProgressive("low"),
-    married: genericMarried("low"),
+    // Barèmes officiels distincts Grundtarif/Mehrpersonentarif (§35 al. 1
+    // et 2 StG, montants indexés 2025) — pas de calibrationFactor : les
+    // vrais barèmes remplacent l'ancienne approximation générique.
+    // L'abattement personnel (12'000 / 24'000 CHF) est appliqué dans le cas
+    // spécial "ZG" de computeCantonalCommunal, pas via marriedDeduction.
+    single: ZG_SINGLE,
+    married: ZG_MARRIED,
+    // Quotité cantonale légale (82%, §2 al. 2 StG) — confirmée directement
+    // par la Feuille cantonale AFC elle-même (correspond à l'ancienne
+    // valeur du code, gardée). Coefficient communal chef-lieu Zoug,
+    // confirmé par l'AFC ("Taux et coefficients d'impôts", état 01/2026).
     cantonalMultiplier: 0.82,
     communalMultiplierCapital: 0.5211,
     childDeduction: 12_000,
-    marriedDeduction: 13_700,
-    wealthScale: wealthScaleStandard,
-    wealthExemptionSingle: 100_000,
-    wealthExemptionMarried: 200_000,
+    marriedDeduction: 0,
+    wealthScale: ZG_WEALTH_SCALE,
+    // Montants francs (§44 al. 1 StG, indexés 2025) ; le supplément de
+    // 102'000 CHF par enfant (ch. 3) n'est pas modélisé, comme pour les
+    // autres cantons de ce fichier.
+    wealthExemptionSingle: 204_000,
+    wealthExemptionMarried: 408_000,
     capital: "Zoug",
-    calibrationFactor: 3.6976,
-    calibrationFactorMarried: 5.2348,
-    calibrationFactorSingleParent: 7.1613,
-    splittingMode: "married_scale",
   },
   SZ: {
-    single: genericProgressive("low"),
-    married: genericMarried("low"),
+    // Barème unique (§36 al. 1 StG, montants indexés 2026) — pas de barème
+    // marié séparé : le splitting à diviseur 1.9 (§36 al. 2 StG, couples
+    // mariés uniquement) et l'abattement personnel (§35 al. 1 StG) sont
+    // gérés par le cas spécial "SZ" dans computeCantonalCommunal. `married`
+    // n'est jamais lu par le moteur pour ce canton, rempli pour satisfaire
+    // le typage. Pas de calibrationFactor : le vrai barème remplace
+    // l'ancienne approximation générique.
+    single: SZ_BASE_CLASSES,
+    married: SZ_BASE_CLASSES,
+    // La loi SZ n'applique pas un simple pourcentage du même barème pour le
+    // canton et les communes : §36a ajoute un palier de 7%/5% réservé à la
+    // Kantonssteuer (SZ_KANTON_CLASSES), tandis que Bezirke/Gemeinden/
+    // Kirchgemeinden utilisent le barème de base seul (SZ_BASE_CLASSES) —
+    // voir cas spécial "SZ". Les valeurs ci-dessous sont les quotités %
+    // (Steuerfuss) appliquées à chacun de ces deux barèmes déjà distincts.
     cantonalMultiplier: 1.15,
     communalMultiplierCapital: 1.75,
-    childDeduction: 9_000,
-    marriedDeduction: 5_400,
-    wealthScale: wealthScaleStandard,
-    wealthExemptionSingle: 100_000,
-    wealthExemptionMarried: 200_000,
+    childDeduction: 10_000,
+    marriedDeduction: 0,
+    wealthScale: SZ_WEALTH_SCALE,
+    // Déduction sociale fortune §47 al. 1 StG (montants déjà définitifs,
+    // pas indexés séparément dans la Feuille cantonale) ; le supplément de
+    // 30'000 CHF par enfant (let. c) n'est pas modélisé, comme pour les
+    // autres cantons de ce fichier.
+    wealthExemptionSingle: 125_000,
+    wealthExemptionMarried: 250_000,
     capital: "Schwyz",
-    calibrationFactor: 1.9874,
-    calibrationFactorMarried: 2.6492,
-    calibrationFactorSingleParent: 2.2379,
-    splittingMode: "married_scale",
   },
   BE: {
     single: BE_SINGLE,
@@ -735,6 +826,7 @@ export function computeCantonalCommunal(opts: CCComputeOptions): CCComputeResult
   let marginalReference: number;
   let vsMarriedReduction = 0;
   let simpleMarginalRatePercentOverride: number | null = null;
+  let szAdjustedForCommunal = 0;
 
   if (opts.canton === "FR") {
     // FR (Art. 37 al. 1 et 3 LICD) : barème à taux moyen, pas marginal —
@@ -800,6 +892,40 @@ export function computeCantonalCommunal(opts: CCComputeOptions): CCComputeResult
     } else {
       simple = base;
     }
+  } else if (opts.canton === "SZ") {
+    // SZ (§35 al. 1 StG) : abattement personnel avant barème — 4'200 CHF
+    // célibataires (let. b), 8'400 CHF couples mariés en ménage commun
+    // (let. a), 4'200 + 7'800 = 12'000 CHF familles monoparentales (let. b
+    // + let. e). Le splitting à diviseur 1.9 (§36 al. 2 StG) ne s'applique
+    // QU'aux couples mariés — pas aux familles monoparentales, qui restent
+    // sur le barème simple. Barème Kantonssteuer (§36a, palier
+    // supplémentaire à 7%/5%) distinct du barème Bezirke/Gemeinden/
+    // Kirchgemeinden (§36 seul, SZ_BASE_CLASSES) — voir cas spécial "SZ"
+    // dans le calcul du communal plus bas. Non modélisé : l'Entlastungsabzug
+    // (§35 al. 1a StG, jusqu'à 30% du revenu net) qui dépend de la fortune
+    // nette, non disponible ici (uniquement dans computeWealthTax) —
+    // omission qui surestime l'impôt pour les profils revenu faible/moyen.
+    const personalDeduction = isMarried ? 8_400 : isSingleParent ? 12_000 : 4_200;
+    szAdjustedForCommunal = Math.max(0, adjusted - personalDeduction);
+    bracketScale = SZ_KANTON_CLASSES;
+    if (isMarried) {
+      simple = applySimpleScale(szAdjustedForCommunal / 1.9, bracketScale) * 1.9;
+      marginalReference = szAdjustedForCommunal / 1.9;
+    } else {
+      simple = applySimpleScale(szAdjustedForCommunal, bracketScale);
+      marginalReference = szAdjustedForCommunal;
+    }
+  } else if (opts.canton === "ZG") {
+    // ZG (§33 al. 1 ch. 1 StG) : abattement personnel avant barème (le
+    // barème lui-même taxe dès le premier franc, contrairement à JU/BE qui
+    // l'intègrent comme palier à taux 0) — 12'000 CHF célibataires (let. b),
+    // 24'000 CHF couples mariés ET familles monoparentales (let. a, même
+    // seuil, même Mehrpersonentarif — §35 al. 2 StG).
+    const personalDeduction = isMarried || isSingleParent ? 24_000 : 12_000;
+    const zgAdjusted = Math.max(0, adjusted - personalDeduction);
+    bracketScale = isMarried || isSingleParent ? scale.married : scale.single;
+    simple = applySimpleScale(zgAdjusted, bracketScale);
+    marginalReference = zgAdjusted;
   } else if ((isMarried || isSingleParent) && splittingMode === "split_0.52") {
     // NE : splitting à 52% — taux basé sur 52% du revenu, appliqué au revenu entier
     bracketScale = scale.single;
@@ -859,6 +985,14 @@ export function computeCantonalCommunal(opts: CCComputeOptions): CCComputeResult
       vsCommunalMarriedReduction = communalReduction * calibration * communalMult;
     }
     communal = communalBase * calibration * communalMult;
+  } else if (opts.canton === "SZ") {
+    // Bezirke/Gemeinden/Kirchgemeinden utilisent le barème de base seul
+    // (§36 StG, SZ_BASE_CLASSES), sans le palier supplémentaire de §36a
+    // réservé à la Kantonssteuer — voir cas spécial "SZ" plus haut.
+    const communalSimple = isMarried
+      ? applySimpleScale(szAdjustedForCommunal / 1.9, SZ_BASE_CLASSES) * 1.9
+      : applySimpleScale(szAdjustedForCommunal, SZ_BASE_CLASSES);
+    communal = communalSimple * communalMult;
   } else {
     communal = simple * communalMult;
   }
