@@ -789,6 +789,9 @@ export interface CCComputeOptions {
   confession?: "none" | "catholic" | "protestant" | "other";
   communalMultiplier?: number;
   cantonalMultiplier?: number;
+  /** Fortune nette du contribuable, CHF. Utilisée uniquement par SZ
+   *  (Entlastungsabzug, §35 al. 1a StG) — 0 par défaut si omise. */
+  netWealth?: number;
 }
 
 export interface CCComputeResult {
@@ -799,7 +802,8 @@ export interface CCComputeResult {
   marginalRate: number;
   scale: CantonTaxScale;
   /** Détail des réductions spécifiques appliquées (ex. VS : -35% couple
-   *  marié, rabais enfant Art. 31a), pour affichage transparent au courtier. */
+   *  marié, rabais enfant Art. 31a ; SZ : Entlastungsabzug §35 al. 1a),
+   *  pour affichage transparent au courtier. */
   cantonSpecificNote?: string;
 }
 
@@ -827,6 +831,7 @@ export function computeCantonalCommunal(opts: CCComputeOptions): CCComputeResult
   let vsMarriedReduction = 0;
   let simpleMarginalRatePercentOverride: number | null = null;
   let szAdjustedForCommunal = 0;
+  let szEntlastungsabzug = 0;
 
   if (opts.canton === "FR") {
     // FR (Art. 37 al. 1 et 3 LICD) : barème à taux moyen, pas marginal —
@@ -901,12 +906,25 @@ export function computeCantonalCommunal(opts: CCComputeOptions): CCComputeResult
     // sur le barème simple. Barème Kantonssteuer (§36a, palier
     // supplémentaire à 7%/5%) distinct du barème Bezirke/Gemeinden/
     // Kirchgemeinden (§36 seul, SZ_BASE_CLASSES) — voir cas spécial "SZ"
-    // dans le calcul du communal plus bas. Non modélisé : l'Entlastungsabzug
-    // (§35 al. 1a StG, jusqu'à 30% du revenu net) qui dépend de la fortune
-    // nette, non disponible ici (uniquement dans computeWealthTax) —
-    // omission qui surestime l'impôt pour les profils revenu faible/moyen.
+    // dans le calcul du communal plus bas.
+    //
+    // Entlastungsabzug (§35 al. 1a StG) : 30% d'une base calculée sur le
+    // revenu net AVANT abattements sociaux (opts.taxableIncome, le
+    // "Reineinkommen" — pas `adjusted`, qui est déjà net des abattements) :
+    //   base = (70'000 marié / 35'000 autres) - Reineinkommen
+    //          + 25'000 par enfant (Abs. 1a let. c)
+    //          - 10% de la fortune nette (Abs. 1a let. d)
+    // Plafonnée à 0 (ne peut pas devenir un supplément d'impôt). Comme pour
+    // les autres abattements sociaux, c'est un montant PAR MÉNAGE (pas par
+    // conjoint), cohérent avec le seuil marié = 2× le seuil célibataire.
     const personalDeduction = isMarried ? 8_400 : isSingleParent ? 12_000 : 4_200;
-    szAdjustedForCommunal = Math.max(0, adjusted - personalDeduction);
+    const reliefBase =
+      (isMarried ? 70_000 : 35_000) -
+      opts.taxableIncome +
+      (opts.children ?? 0) * 25_000 -
+      0.10 * (opts.netWealth ?? 0);
+    szEntlastungsabzug = 0.30 * Math.max(0, reliefBase);
+    szAdjustedForCommunal = Math.max(0, adjusted - personalDeduction - szEntlastungsabzug);
     bracketScale = SZ_KANTON_CLASSES;
     if (isMarried) {
       simple = applySimpleScale(szAdjustedForCommunal / 1.9, bracketScale) * 1.9;
@@ -996,16 +1014,21 @@ export function computeCantonalCommunal(opts: CCComputeOptions): CCComputeResult
   } else {
     communal = simple * communalMult;
   }
-  const vsNotes: string[] = [];
+  const notes: string[] = [];
   if (vsMarriedReduction > 0) {
-    vsNotes.push(`Réduction couple marié, -35% (entre 600 et 4'500 CHF chacun) : -${Math.round(vsMarriedReduction)} CHF sur le cantonal et -${Math.round(vsCommunalMarriedReduction)} CHF sur le communal`);
+    notes.push(`Réduction couple marié, -35% (entre 600 et 4'500 CHF chacun) : -${Math.round(vsMarriedReduction)} CHF sur le cantonal et -${Math.round(vsCommunalMarriedReduction)} CHF sur le communal`);
   }
   if (opts.canton === "VS" && (opts.children ?? 0) > 0) {
     // Art. 31a LF : rabais direct sur l'impôt cantonal, jusqu'à 300 CHF par
     // enfant, distinct de la déduction du revenu (Art. 31 al. 1 let. b).
     const rebate = Math.min(cantonal, (opts.children ?? 0) * 300);
     cantonal = Math.max(0, cantonal - rebate);
-    vsNotes.push(`Rabais enfants (${opts.children} enfant${(opts.children ?? 0) > 1 ? "s" : ""} à 300 CHF max chacun) : -${Math.round(rebate)} CHF sur le cantonal uniquement`);
+    notes.push(`Rabais enfants (${opts.children} enfant${(opts.children ?? 0) > 1 ? "s" : ""} à 300 CHF max chacun) : -${Math.round(rebate)} CHF sur le cantonal uniquement`);
+  }
+  if (opts.canton === "SZ" && szEntlastungsabzug > 0) {
+    notes.push(
+      `Entlastungsabzug (§35 al. 1a StG) : -${Math.round(szEntlastungsabzug)} CHF de revenu déterminant, en plus de l'abattement personnel`,
+    );
   }
   let church = 0;
   if (opts.confession === "catholic" && scale.churchRateCatholic) {
@@ -1029,7 +1052,7 @@ export function computeCantonalCommunal(opts: CCComputeOptions): CCComputeResult
     total: Math.round((cantonal + communal + church) * 100) / 100,
     marginalRate,
     scale,
-    cantonSpecificNote: vsNotes.length > 0 ? vsNotes.join(" · ") : undefined,
+    cantonSpecificNote: notes.length > 0 ? notes.join(" · ") : undefined,
   };
 }
 

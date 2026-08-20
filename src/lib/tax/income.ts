@@ -320,6 +320,7 @@ export function computeIncomeTax(input: IncomeTaxInput): IncomeTaxBreakdown {
     confession: input.confession,
     cantonalMultiplier: input.cantonalMultiplier,
     communalMultiplier: input.communalMultiplier,
+    netWealth: input.netWealth ?? 0,
   });
 
   const wealthTax = computeWealthTax({
