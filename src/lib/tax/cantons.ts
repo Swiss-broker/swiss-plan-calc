@@ -230,6 +230,45 @@ const BE_MARRIED: BracketStep[] = [
   { from: 400_000, base: 16_288, rate: 5.2 },
 ];
 
+// Barème officiel de l'impôt sur le revenu jurassien, couples mariés et
+// familles monoparentales (Art. 35 al. 1 LI), taux unitaires 2026.
+// Source primaire : Feuille cantonale Jura, AFC, état février 2026.
+const JU_MARRIED: BracketStep[] = [
+  { from: 0, base: 0, rate: 0 },
+  { from: 12_600, base: 0, rate: 0.880 },
+  { from: 18_800, base: 54.56, rate: 2.269 },
+  { from: 28_100, base: 265.58, rate: 3.242 },
+  { from: 48_400, base: 923.74, rate: 4.122 },
+  { from: 90_600, base: 2_663.23, rate: 4.771 },
+  { from: 203_100, base: 8_030.00, rate: 5.697 },
+  { from: 437_600, base: 21_390.97, rate: 5.789 },
+];
+
+// Barème officiel de l'impôt sur le revenu jurassien, autres contribuables
+// (Art. 35 al. 2 LI), taux unitaires 2026. Source : idem ci-dessus.
+const JU_SINGLE: BracketStep[] = [
+  { from: 0, base: 0, rate: 0 },
+  { from: 6_900, base: 0, rate: 1.667 },
+  { from: 14_700, base: 130.03, rate: 3.149 },
+  { from: 28_700, base: 570.89, rate: 4.029 },
+  { from: 50_500, base: 1_449.21, rate: 4.909 },
+  { from: 92_700, base: 3_520.81, rate: 5.558 },
+  { from: 205_200, base: 9_773.56, rate: 5.789 },
+];
+
+// Barème officiel de l'impôt sur la fortune jurassien (Art. 48 al. 1 LI),
+// taux unitaire 2026. Source : idem ci-dessus. Particularité (Art. 48 al. 2) :
+// franchise totale (impôt nul) si la fortune imposable est < 58'000 CHF —
+// gérée à part dans computeWealthTax, pas via wealthExemptionSingle/Married
+// qui représente la déduction sociale (Art. 47 LI).
+const JU_WEALTH_SCALE: BracketStep[] = [
+  { from: 0, base: 0, rate: 0.50 },
+  { from: 112_000, base: 560, rate: 0.75 },
+  { from: 449_000, base: 3_087.5, rate: 0.95 },
+  { from: 842_000, base: 6_821, rate: 1.10 },
+  { from: 1_685_000, base: 16_094, rate: 1.20 },
+];
+
 function genericProgressive(profile: "low" | "mid" | "high"): BracketStep[] {
   const factor = profile === "low" ? 0.6 : profile === "mid" ? 1 : 1.25;
   return [
@@ -371,21 +410,29 @@ export const CANTON_SCALES: Record<string, CantonTaxScale> = {
     splittingMode: "split_1.9",
   },
   JU: {
-    single: genericProgressive("high"),
-    married: genericMarried("high"),
+    // Barèmes officiels Art. 35 LI (Feuille cantonale AFC, état 02/2026) —
+    // deux tarifs légaux distincts (pas de splitting à calculer), donc pas
+    // de calibrationFactor : le barème réel remplace l'ancienne
+    // approximation générique qu'il compensait.
+    single: JU_SINGLE,
+    married: JU_MARRIED,
+    // Quotité cantonale et coefficient communal Delémont 2026, confirmés
+    // par le document AFC "Taux et coefficients d'impôts" (état 01/2026).
     cantonalMultiplier: 2.85,
     communalMultiplierCapital: 1.90,
-    churchRateCatholic: 0.07,
-    churchRateProtestant: 0.07,
-    childDeduction: 5_300,
-    marriedDeduction: 3_500,
-    wealthScale: wealthScaleStandard,
-    wealthExemptionSingle: 60_000,
-    wealthExemptionMarried: 120_000,
+    // Impôt ecclésiastique chef-lieu Delémont 2026 (même source AFC).
+    churchRateCatholic: 0.064,
+    churchRateProtestant: 0.081,
+    // Déductions sociales Art. 34 al. 1 let. d et i LI, valeurs 2026.
+    childDeduction: 5_700,
+    marriedDeduction: 3_700,
+    wealthScale: JU_WEALTH_SCALE,
+    // Déduction sociale fortune Art. 47 let. a et b LI, valeurs 2026 (la
+    // franchise totale sous 58'000 CHF de l'Art. 48 al. 2 LI est gérée à
+    // part dans computeWealthTax).
+    wealthExemptionSingle: 28_500,
+    wealthExemptionMarried: 57_000,
     capital: "Delémont",
-    calibrationFactor: 1.0045,
-    calibrationFactorMarried: 1.2909,
-    calibrationFactorSingleParent: 0.7323,
     splittingMode: "married_scale",
   },
   ZG: {
@@ -621,6 +668,9 @@ export function computeWealthTax(opts: WealthComputeOptions): number {
       : scale.wealthExemptionSingle;
   const taxable = Math.max(0, opts.netWealth - exemption);
   if (taxable === 0) return 0;
+  // JU (Art. 48 al. 2 LI) : franchise totale, pas un simple abattement —
+  // sous 58'000 CHF de fortune imposable, l'impôt est nul.
+  if (opts.canton === "JU" && taxable < 58_000) return 0;
   let bracket = scale.wealthScale[0];
   for (const b of scale.wealthScale) {
     if (taxable >= b.from) bracket = b;
