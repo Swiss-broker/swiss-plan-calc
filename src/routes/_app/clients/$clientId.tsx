@@ -68,7 +68,7 @@ import { ClientCompanyCard } from "@/components/clients/ClientCompanyCard";
 import { DeleteConfirmDialog } from "@/components/common/DeleteConfirmDialog";
 import { ArchiveConfirmDialog } from "@/components/common/ArchiveConfirmDialog";
 import { LEGAL_FORM_LABELS, type Company } from "@/lib/companies/types";
-import { AlertTriangle, Building2, ClipboardList, MessageSquare } from "lucide-react";
+import { AlertTriangle, Building2, ClipboardList, MessageSquare, Sparkles } from "lucide-react";
 import { AiAnalysis } from "@/components/ai/AiAnalysis";
 import { AiConversationsTab } from "@/components/ai/AiConversationsTab";
 import { SessionSummaryTab } from "@/components/clients/SessionSummaryTab";
@@ -384,10 +384,11 @@ function ClientDetailPage() {
             <ClipboardList className="h-3.5 w-3.5" />
             Synthèse RDV
           </TabsTrigger>
-          <TabsTrigger value="optimizations">
+          <TabsTrigger value="optimizations" className="gap-1">
+            <Sparkles className="h-3.5 w-3.5" />
             Optimisations
             {optimizations.length > 0 && (
-              <Badge variant="secondary" className="ml-2 h-5 px-1.5 text-[10px]">
+              <Badge variant="default" className="ml-1 h-5 px-1.5 text-[10px]">
                 {optimizations.length}
               </Badge>
             )}
