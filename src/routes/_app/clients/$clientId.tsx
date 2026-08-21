@@ -54,6 +54,7 @@ import {
 } from "@/lib/swiss/enums";
 import { ageFromDob, parseChildren, type Client, type ClientPension, type ClientAssets, type ClientNote } from "@/lib/clients/types";
 import { formatCHF, formatPct } from "@/lib/format";
+import { sumAllLppBuybacksDone } from "@/lib/clients/to-calculator-input";
 import { OptimizationsPanel } from "@/components/optimizer/OptimizationsPanel";
 import { ClientCalculatorBar } from "@/components/clients/ClientCalculatorBar";
 import { useClientDashboard } from "@/hooks/use-client-dashboard";
@@ -508,10 +509,36 @@ function ClientDetailPage() {
                 label="Salaire assuré"
                 value={formatCHF(Number(pension?.lpp_insured_salary ?? 0))}
               />
-              <Row
-                label="Capacité de rachat"
-                value={formatCHF(Number(pension?.lpp_max_buyback ?? 0))}
-              />
+              {(() => {
+                const maxBuyback = Number(pension?.lpp_max_buyback ?? 0);
+                const done = sumAllLppBuybacksDone(pension ?? null);
+                const remaining = maxBuyback > 0 ? Math.max(0, maxBuyback - done) : 0;
+                const buybacksDone = Array.isArray(pension?.lpp_buybacks_done)
+                  ? (pension.lpp_buybacks_done as unknown as { year?: number; amount?: number }[])
+                  : [];
+                return (
+                  <>
+                    <Row
+                      label="Capacité de rachat restante"
+                      value={maxBuyback > 0 ? formatCHF(remaining) : "—"}
+                      bold={done > 0}
+                    />
+                    {done > 0 && (
+                      <Row label="Dont déjà effectué" value={formatCHF(done)} />
+                    )}
+                    {buybacksDone.length > 0 && (
+                      <Row
+                        label="Historique des rachats"
+                        value={buybacksDone
+                          .filter((b) => Number(b?.amount) > 0)
+                          .sort((a, b) => Number(a?.year) - Number(b?.year))
+                          .map((b) => `${b.year} : ${formatCHF(Number(b.amount))}`)
+                          .join(" · ")}
+                      />
+                    )}
+                  </>
+                );
+              })()}
             </Card>
             <Card title="3e pilier (3a)">
               <Row

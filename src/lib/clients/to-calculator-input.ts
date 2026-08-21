@@ -259,15 +259,25 @@ export function toLppInput(b: ClientBundle) {
     spouseGrossSalary: numOrUndef(b.client.spouse_gross_annual_salary),
     insuredSalary: numOrUndef(b.pension?.lpp_insured_salary),
     currentBalance: numOrUndef(b.pension?.lpp_current_balance),
+    // Capacité RESTANTE, pas le plafond brut : lpp_max_buyback est saisi une
+    // fois par le courtier (depuis le certificat de prévoyance) et ne se
+    // décrémente jamais tout seul — sans cette soustraction, un rachat déjà
+    // effectué et enregistré dans lpp_buybacks_done resterait invisible ici
+    // et le courtier risquerait de proposer un nouveau rachat dépassant le
+    // plafond légal réel.
     buybackCapacity:
       (() => {
         const stored = numOrUndef(b.pension?.lpp_max_buyback);
-        if (stored && stored > 0) return stored;
-        return estimateBuybackCapacity({
-          currentAge: ageFromDob(b.client.date_of_birth),
-          insuredSalary: numOrUndef(b.pension?.lpp_insured_salary),
-          currentBalance: numOrUndef(b.pension?.lpp_current_balance),
-        });
+        const alreadyDone = sumAllLppBuybacksDone(b.pension);
+        const base =
+          stored && stored > 0
+            ? stored
+            : estimateBuybackCapacity({
+                currentAge: ageFromDob(b.client.date_of_birth),
+                insuredSalary: numOrUndef(b.pension?.lpp_insured_salary),
+                currentBalance: numOrUndef(b.pension?.lpp_current_balance),
+              });
+        return base != null ? Math.max(0, base - alreadyDone) : base;
       })(),
     conversionRate: a?.conversionRate ?? numOrUndef(b.pension?.lpp_conversion_rate),
     expectedReturnRate: a?.expectedReturnRate,
@@ -533,11 +543,16 @@ export function toTaxGlobalInput(b: ClientBundle) {
   const imputedRent = owns && rentalValue > 0 ? rentalValue : 0;
   const rentalIncome = owns && rentalValue > 0 ? 0 : rentalValue;
 
-  // Rachat LPP année courante : rachats déjà effectués + rachats planifiés (déductibles).
+  // Rachat LPP année courante, pour la déduction fiscale : le montant déjà
+  // payé (lpp_buybacks_done) prime sur le montant simplement planifié
+  // (lpp_planned_buybacks) pour la même année — ce ne sont pas deux rachats
+  // distincts à additionner (un "planifié" devient "déjà effectué" une fois
+  // payé), sinon double-comptage si la même année figure dans les deux listes.
   const currentYear = new Date().getFullYear();
-  const lppBuyback =
-    sumLppBuybacksForYear(b.pension, currentYear) +
-    sumLppPlannedForYear(b.pension, currentYear);
+  const lppBuyback = Math.max(
+    sumLppBuybacksForYear(b.pension, currentYear),
+    sumLppPlannedForYear(b.pension, currentYear),
+  );
 
   return {
     canton: b.client.canton ?? undefined,
@@ -585,6 +600,18 @@ function sumLppBuybacksForYear(
   return arr
     .filter((b) => Number(b?.year) === year)
     .reduce((s, b) => s + Number(b?.amount ?? 0), 0);
+}
+
+/** Somme de tous les rachats LPP déjà effectués (lpp_buybacks_done), toutes
+ *  années confondues — sert à calculer la capacité de rachat RESTANTE
+ *  (lpp_max_buyback est un plafond figé saisi une fois par le courtier ; il
+ *  ne se décrémente jamais tout seul quand un rachat est enregistré). */
+export function sumAllLppBuybacksDone(pension: ClientPension | null): number {
+  if (!pension?.lpp_buybacks_done) return 0;
+  const arr = Array.isArray(pension.lpp_buybacks_done)
+    ? (pension.lpp_buybacks_done as Array<{ year?: number; amount?: number }>)
+    : [];
+  return arr.reduce((s, b) => s + Number(b?.amount ?? 0), 0);
 }
 
 function sumLppPlannedForYear(

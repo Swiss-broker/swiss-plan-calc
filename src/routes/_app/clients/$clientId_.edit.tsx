@@ -67,6 +67,9 @@ function EditClientPage() {
               lpp_insured_salary: Number(data.pension.lpp_insured_salary),
               lpp_max_buyback: Number(data.pension.lpp_max_buyback),
               lpp_plan: data.pension.lpp_plan,
+              lpp_buybacks_done: Array.isArray(data.pension.lpp_buybacks_done)
+                ? (data.pension.lpp_buybacks_done as unknown as { year: number; amount: number }[])
+                : [],
               pillar_3a_annual_contribution: Number(data.pension.pillar_3a_annual_contribution),
               pillar_3a_accounts: Array.isArray(data.pension.pillar_3a_accounts)
                 ? (data.pension.pillar_3a_accounts as unknown as { institution: string; balance: number }[])

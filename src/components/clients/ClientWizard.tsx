@@ -78,6 +78,11 @@ export interface PensionAccount {
   balance: number;
 }
 
+export interface LppBuyback {
+  year: number;
+  amount: number;
+}
+
 export interface WizardInitialData {
   client?: Client;
   pension?: {
@@ -85,6 +90,7 @@ export interface WizardInitialData {
     lpp_insured_salary: number;
     lpp_max_buyback: number;
     lpp_plan: LppPlan;
+    lpp_buybacks_done?: LppBuyback[];
     pillar_3a_annual_contribution: number;
     pillar_3a_accounts?: PensionAccount[];
     vested_benefits_accounts?: PensionAccount[];
@@ -144,6 +150,7 @@ interface FormState {
   lpp_insured_salary: string;
   lpp_max_buyback: string;
   lpp_plan: LppPlan;
+  lpp_buybacks_done: LppBuyback[];
   pillar_3a_annual_contribution: string;
   pillar_3a_accounts: PensionAccount[];
   pillar_3a_opening_date: string;
@@ -199,6 +206,7 @@ function initialForm(initial?: WizardInitialData): FormState {
     lpp_insured_salary: p?.lpp_insured_salary?.toString() ?? "",
     lpp_max_buyback: p?.lpp_max_buyback?.toString() ?? "",
     lpp_plan: p?.lpp_plan ?? "mandatory",
+    lpp_buybacks_done: parseLppBuybacksSafe(p?.lpp_buybacks_done),
     pillar_3a_annual_contribution: p?.pillar_3a_annual_contribution?.toString() ?? "",
     pillar_3a_accounts: parsePensionAccountsSafe(p?.pillar_3a_accounts),
     pillar_3a_opening_date: (p as Record<string, unknown>)?.pillar_3a_opening_date as string ?? "",
@@ -225,6 +233,16 @@ function parsePensionAccountsSafe(value: unknown): PensionAccount[] {
     .map((c) => ({
       institution: typeof c.institution === "string" ? c.institution : "",
       balance: Number(c.balance ?? 0) || 0,
+    }));
+}
+
+function parseLppBuybacksSafe(value: unknown): LppBuyback[] {
+  if (!Array.isArray(value)) return [];
+  return value
+    .filter((c): c is Record<string, unknown> => typeof c === "object" && c !== null)
+    .map((c) => ({
+      year: Number(c.year ?? 0) || new Date().getFullYear(),
+      amount: Number(c.amount ?? 0) || 0,
     }));
 }
 
@@ -414,6 +432,9 @@ export function ClientWizard({ initial, mode, clientId }: ClientWizardProps) {
         lpp_insured_salary: num(form.lpp_insured_salary) ?? 0,
         lpp_max_buyback: num(form.lpp_max_buyback) ?? 0,
         lpp_plan: form.lpp_plan,
+        lpp_buybacks_done: form.lpp_buybacks_done.filter(
+          (b) => b.amount > 0,
+        ) as unknown as import("@/integrations/supabase/types").Json,
         pillar_3a_annual_contribution: num(form.pillar_3a_annual_contribution) ?? 0,
         pillar_3a_opening_date: (form.pillar_3a_opening_date || null) as never,
         pillar_3a_accounts: form.pillar_3a_accounts.filter(
@@ -1337,6 +1358,11 @@ function StepPatrimoine({
               </Select>
             </Field>
           </div>
+          <LppBuybackHistoryEditor
+            value={form.lpp_buybacks_done}
+            onChange={(v) => update("lpp_buybacks_done", v)}
+            capacity={num(form.lpp_max_buyback) ?? 0}
+          />
         </div>
       ) : !rules.isRetired ? (
         <div className="rounded-lg border border-dashed border-muted-foreground/30 bg-muted/20 p-3 text-xs text-muted-foreground">
@@ -1502,6 +1528,83 @@ function PensionAccountsEditor({
       )}
       <Button type="button" variant="outline" size="sm" onClick={add}>
         <Plus className="h-3.5 w-3.5" /> {t("wizard.accounts.add")}
+      </Button>
+    </div>
+  );
+}
+
+/** Historique des rachats LPP DÉJÀ EFFECTUÉS (payés), année par année —
+ *  distinct du rachat "planifié" saisi côté calculateur LPP (qui reflète un
+ *  scénario en cours, pas un fait accompli). Sert à calculer la capacité de
+ *  rachat RESTANTE (lpp_max_buyback − somme de cet historique), affichée ici
+ *  et réutilisée par le calculateur LPP et le comparateur/fiscal global —
+ *  voir sumAllLppBuybacksDone dans to-calculator-input.ts. */
+function LppBuybackHistoryEditor({
+  value,
+  onChange,
+  capacity,
+}: {
+  value: LppBuyback[];
+  onChange: (v: LppBuyback[]) => void;
+  capacity: number;
+}) {
+  const t = useT();
+  const currentYear = new Date().getFullYear();
+  const total = value.reduce((s, b) => s + (Number(b.amount) || 0), 0);
+  const remaining = capacity > 0 ? capacity - total : null;
+  const add = () => onChange([...value, { year: currentYear, amount: 0 }]);
+  const remove = (i: number) => onChange(value.filter((_, idx) => idx !== i));
+  const patch = (i: number, p: Partial<LppBuyback>) =>
+    onChange(value.map((b, idx) => (idx === i ? { ...b, ...p } : b)));
+
+  return (
+    <div className="mt-4 space-y-2">
+      <div className="text-xs font-medium text-muted-foreground">{t("wizard.lpp.buybacks_done.label")}</div>
+      <p className="text-xs text-muted-foreground">{t("wizard.lpp.buybacks_done.hint")}</p>
+      {value.length === 0 ? (
+        <p className="text-xs italic text-muted-foreground">{t("wizard.lpp.buybacks_done.empty")}</p>
+      ) : (
+        <div className="space-y-2">
+          {value.map((b, i) => (
+            <div key={i} className="flex items-end gap-2">
+              <div className="w-24">
+                <Label className="text-[11px] text-muted-foreground">{t("wizard.lpp.buybacks_done.year")}</Label>
+                <input
+                  type="number"
+                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                  value={b.year || ""}
+                  onChange={(e) => patch(i, { year: Number(e.target.value) || currentYear })}
+                />
+              </div>
+              <div className="flex-1">
+                <Label className="text-[11px] text-muted-foreground">{t("wizard.lpp.buybacks_done.amount")}</Label>
+                <NumField
+                  value={String(b.amount || "")}
+                  onChange={(v) => patch(i, { amount: Number(v) || 0 })}
+                  suffix="CHF"
+                />
+              </div>
+              <Button type="button" variant="ghost" size="icon" onClick={() => remove(i)}>
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+          ))}
+          <div className="text-right text-xs text-muted-foreground">
+            {t("wizard.lpp.buybacks_done.total")} <span className="font-medium text-foreground">{formatCHF(total)}</span>
+            {remaining != null && (
+              <>
+                {" · "}
+                {t("wizard.lpp.buybacks_done.remaining")}{" "}
+                <span className={remaining <= 0 ? "font-medium text-destructive" : "font-medium text-foreground"}>
+                  {formatCHF(remaining)}
+                </span>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+      <Button type="button" variant="outline" size="sm" onClick={add}>
+        <Plus className="h-3.5 w-3.5" /> {t("wizard.lpp.buybacks_done.add")}
       </Button>
     </div>
   );
