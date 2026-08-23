@@ -134,14 +134,14 @@ function hex(h: string | undefined, fb: [number, number, number]): [number, numb
 // fonds pastel (callouts, cellules mises en évidence) et les bandeaux
 // foncés directement depuis la couleur du courtier (primaryColor/accentColor),
 // au lieu de teintes fixes qui ne juraient qu'avec le bleu par défaut.
-function tint(c: [number, number, number], amount: number): [number, number, number] {
+export function tint(c: [number, number, number], amount: number): [number, number, number] {
   return [
     Math.round(c[0] + (255 - c[0]) * amount),
     Math.round(c[1] + (255 - c[1]) * amount),
     Math.round(c[2] + (255 - c[2]) * amount),
   ];
 }
-function shade(c: [number, number, number], amount: number): [number, number, number] {
+export function shade(c: [number, number, number], amount: number): [number, number, number] {
   return [
     Math.round(c[0] * (1 - amount)),
     Math.round(c[1] * (1 - amount)),

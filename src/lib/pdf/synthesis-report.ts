@@ -1,6 +1,6 @@
 // Générateur PDF "Dossier de synthèse" multi-pages pour un client.
 // V1 : 100 % en français. Le multilingue PDF sera traité dans une phase ultérieure.
-import { ReportPdf, makeFilename, type PdfHeaderInfo } from "./builder";
+import { ReportPdf, makeFilename, tint, shade, type PdfHeaderInfo } from "./builder";
 import { formatCHF, formatPct } from "@/lib/format";
 import { CANTONS } from "@/lib/swiss/cantons";
 import {
@@ -14,8 +14,9 @@ import {
 import { LEGAL_FORM_LABELS, type Company } from "@/lib/companies/types";
 import { ageFromDob, parseChildren, type Client, type ClientPension, type ClientAssets } from "@/lib/clients/types";
 import { extractGain, type ExtractedGain } from "@/lib/simulations/extract-gain";
-import type { HistoryEntry, SimulationKind } from "@/lib/history/types";
+import type { HistoryEntry, HistoryKpi, SimulationKind } from "@/lib/history/types";
 import { KIND_LABELS } from "@/lib/history/types";
+import { extractKpis } from "@/lib/history/registry";
 
 const cantonName = (code?: string | null) =>
   (code && CANTONS.find((c) => c.code === code)?.name) || code || "—";
@@ -130,21 +131,62 @@ export function exportSynthesisReportPdf(args: SynthesisReportArgs): void {
   const tocPage = pdf.doc.getCurrentPageInfo().pageNumber;
   const toc: Array<{ title: string; page: number }> = [];
 
+  // ---------- VUE D'ENSEMBLE ----------
+  // Les chiffres clés d'abord, avant le détail sujet par sujet : le client
+  // repart avec l'essentiel même s'il ne relit jamais les pages suivantes.
+  pdf.newPage();
+  toc.push({ title: "Vue d'ensemble", page: pdf.doc.getCurrentPageInfo().pageNumber });
+  drawOverviewPage(pdf, pension, assets, entries);
+
   // ---------- PROFIL CLIENT ----------
   pdf.newPage();
   toc.push({ title: "Profil client", page: pdf.doc.getCurrentPageInfo().pageNumber });
   drawClientProfile(pdf, client, pension, assets, company);
 
   // ---------- PAGES SIMULATIONS ----------
-  // Les simulations s'enchaînent désormais à la suite les unes des autres,
-  // sans saut de page forcé entre chacune. Le passage à la page suivante ne
-  // se déclenche plus que si le contenu déborde réellement (via ensureSpace
-  // dans calculatorTitle et les autres méthodes du builder), ce qui évite
-  // le vide en bas de page d'une simulation courte suivie d'une page
-  // entièrement neuve pour la suivante.
+  // Les simulations s'enchaînent à la suite les unes des autres, sans saut
+  // de page forcé entre chacune (le passage à la page suivante ne se
+  // déclenche que si le contenu déborde réellement, via ensureSpace).
+  //
+  // Détection des paires "situation actuelle / situation projetée" : pour
+  // chaque calculateur présent, si une sauvegarde est marquée comme
+  // référence (is_baseline, choisie par le courtier sur la fiche client) ET
+  // qu'une sauvegarde plus récente du même calculateur est aussi incluse
+  // dans ce dossier, les deux se dessinent ensemble comme un duo comparatif
+  // plutôt que comme deux pages de simulation indépendantes.
+  const byKind = new Map<SimulationKind, HistoryEntry[]>();
+  for (const e of entries) {
+    const k = e.kind as SimulationKind;
+    if (!byKind.has(k)) byKind.set(k, []);
+    byKind.get(k)!.push(e);
+  }
+  const spreadPairs = new Map<SimulationKind, { baseline: HistoryEntry; projected: HistoryEntry }>();
+  for (const [kind, list] of byKind) {
+    const baseline = list.find((e) => e.is_baseline);
+    if (!baseline) continue;
+    const candidates = list
+      .filter((e) => e.id !== baseline.id)
+      .sort((a, b) => b.created_at.localeCompare(a.created_at));
+    const projected = candidates[0];
+    if (!projected) continue;
+    spreadPairs.set(kind, { baseline, projected });
+  }
+
+  const drawnPairKinds = new Set<SimulationKind>();
   for (const entry of entries) {
+    const kind = entry.kind as SimulationKind;
+    const pair = spreadPairs.get(kind);
+    if (pair) {
+      if (drawnPairKinds.has(kind)) continue; // l'autre moitié de la paire a déjà tout dessiné
+      drawnPairKinds.add(kind);
+      pdf.spacer(6);
+      const kindLabel = KIND_LABELS[kind] || kind;
+      toc.push({ title: `${kindLabel} : actuelle / projetée`, page: pdf.doc.getCurrentPageInfo().pageNumber });
+      drawComparisonSpread(pdf, kind, pair.baseline, pair.projected, options.includeCharts);
+      continue;
+    }
     pdf.spacer(6);
-    const kindLabel = KIND_LABELS[entry.kind as SimulationKind] || entry.kind;
+    const kindLabel = KIND_LABELS[kind] || kind;
     const title = entry.title?.trim()
       ? `${kindLabel} : ${entry.title.trim()}`
       : kindLabel;
@@ -155,7 +197,7 @@ export function exportSynthesisReportPdf(args: SynthesisReportArgs): void {
   // ---------- AVANT/APRÈS ----------
   pdf.newPage();
   toc.push({ title: "Comparatif avant / après", page: pdf.doc.getCurrentPageInfo().pageNumber });
-  drawComparisonPage(pdf, entries, pension, assets);
+  drawComparisonPage(pdf, entries, pension, assets, spreadPairs);
 
   // ---------- CONCLUSION ----------
   pdf.newPage();
@@ -235,13 +277,20 @@ function drawCoverPage(
 ) {
   const { doc, pageWidth, pageHeight, margin, primary, ink, muted } = pdf;
 
+  // Repère avant le titre : identifie immédiatement la nature du document.
+  pdf.cursorY = 58;
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(10);
+  doc.setTextColor(...primary);
+  doc.text("DOSSIER DE SYNTHÈSE", pageWidth / 2, pdf.cursorY, { align: "center" });
+  pdf.cursorY += 10;
+
   // Grand titre central
-  pdf.cursorY = 70;
   doc.setFont("helvetica", "bold");
   doc.setFontSize(26);
-  doc.setTextColor(...primary);
+  doc.setTextColor(...ink);
   const titleLines = doc.splitTextToSize(
-    "Dossier de synthèse prévoyance & fiscalité",
+    "Votre situation et vos options",
     pageWidth - margin * 2,
   ) as string[];
   doc.text(titleLines, pageWidth / 2, pdf.cursorY, { align: "center" });
@@ -249,8 +298,8 @@ function drawCoverPage(
 
   doc.setFont("helvetica", "normal");
   doc.setFontSize(14);
-  doc.setTextColor(...ink);
-  doc.text(`Préparé pour ${fullName}`, pageWidth / 2, pdf.cursorY, { align: "center" });
+  doc.setTextColor(...muted);
+  doc.text(fullName, pageWidth / 2, pdf.cursorY, { align: "center" });
   pdf.cursorY += 18;
 
   // Bloc informations
@@ -269,7 +318,7 @@ function drawCoverPage(
     ],
   ];
   const blockH = lines.length * 9 + 12;
-  doc.setFillColor(249, 250, 251);
+  doc.setFillColor(...tint(primary, 0.95));
   doc.setDrawColor(...primary);
   doc.setLineWidth(0.4);
   doc.roundedRect(blockX, blockY, blockW, blockH, 2, 2, "FD");
@@ -298,13 +347,83 @@ function drawCoverPage(
     pdf.cursorY += noteLines.length * 5 + 4;
   }
 
-  // Mention bas de page
+  // Mention bas de page — corrige une incohérence : le document est remis
+  // au client, "usage interne" n'avait pas de sens ici.
   doc.setFont("helvetica", "italic");
   doc.setFontSize(9);
   doc.setTextColor(...muted);
-  doc.text("Document confidentiel · Usage interne", pageWidth / 2, pageHeight - 25, {
+  doc.text(`Document confidentiel, préparé exclusivement pour ${fullName}.`, pageWidth / 2, pageHeight - 25, {
     align: "center",
   });
+}
+
+// ============================================================================
+// VUE D'ENSEMBLE
+// ============================================================================
+function drawOverviewPage(
+  pdf: ReportPdf,
+  pension: ClientPension | null,
+  assets: ClientAssets | null,
+  entries: HistoryEntry[],
+) {
+  pdf.section("Votre situation en un coup d'oeil");
+  pdf.paragraph(
+    "Ce dossier détaille, sujet par sujet, votre situation actuelle et l'impact des pistes évoquées aujourd'hui. Voici d'abord l'essentiel.",
+  );
+
+  const tiles: Array<{ label: string; value: number | string; tone?: "primary" | "success" | "warning" | "accent" }> = [];
+
+  if (assets) {
+    const totalAssets =
+      Number(assets.bank_accounts) +
+      Number(assets.securities) +
+      Number(assets.real_estate_value) +
+      Number(assets.vehicles) +
+      Number(assets.other_assets);
+    const totalDebts = Number(assets.mortgage_debt) + Number(assets.other_debts);
+    tiles.push({ label: "Patrimoine net", value: totalAssets - totalDebts });
+  }
+  if (pension && has(pension.lpp_current_balance)) {
+    tiles.push({ label: "Capital LPP actuel", value: num(pension.lpp_current_balance) });
+  }
+
+  // Chiffre fiscal "tête de dossier" : priorité au calcul le plus complet
+  // (fiscalité globale), sinon on retombe sur un calcul d'impôt simple.
+  const taxGlobal = entries.find((e) => e.kind === "tax_global");
+  const incomeTax = entries.find((e) => e.kind === "income_tax");
+  if (taxGlobal && has(taxGlobal.summary?.totalTaxCHF)) {
+    tiles.push({ label: "Charge fiscale totale", value: num(taxGlobal.summary?.totalTaxCHF), tone: "warning" });
+    if (has(taxGlobal.summary?.netAnnualCHF)) {
+      tiles.push({ label: "Revenu net annuel", value: num(taxGlobal.summary?.netAnnualCHF), tone: "success" });
+    }
+  } else if (incomeTax && has(incomeTax.summary?.totalTax)) {
+    tiles.push({ label: "Impôt total", value: num(incomeTax.summary?.totalTax), tone: "warning" });
+  }
+
+  // Même horizon (10 ans) et même calcul que le bloc "Gain total identifié"
+  // de la page comparatif avant/après : ce chiffre est un teaser, il ne
+  // doit jamais diverger de celui détaillé plus loin dans le même dossier.
+  const totals = computeTotals(entries);
+  const totalGain = totals.oneTime + totals.annual * 10;
+  if (totalGain > 0) {
+    tiles.push({ label: "Gain identifié (sur 10 ans)", value: totalGain, tone: "accent" });
+  }
+
+  if (tiles.length > 0) {
+    pdf.spacer(2);
+    pdf.metricsGrid(tiles);
+  } else {
+    pdf.paragraph(
+      "Les chiffres clés apparaîtront ici une fois le patrimoine et les simulations renseignés.",
+      { italic: true, muted: true },
+    );
+  }
+
+  pdf.spacer(4);
+  pdf.paragraph(
+    "Le détail de chaque sujet, avec votre situation actuelle puis projetée le cas échéant, commence page suivante.",
+    { muted: true, italic: true },
+  );
 }
 
 // ============================================================================
@@ -431,6 +550,94 @@ function drawSimulationPage(pdf: ReportPdf, entry: HistoryEntry, includeCharts: 
     pdf.spacer(2);
     pdf.section("Analyse");
     pdf.paragraph(comment);
+  }
+}
+
+// ============================================================================
+// DUO "SITUATION ACTUELLE / SITUATION PROJETÉE"
+// Remplace drawSimulationPage pour un calculateur dont une sauvegarde a été
+// marquée comme référence (is_baseline) par le courtier : les deux
+// sauvegardes s'affichent l'une après l'autre, avec les écarts chiffrés
+// entre les deux, plutôt que comme deux pages de simulation indépendantes.
+// ============================================================================
+function formatKpiValue(v: number | string, unit?: "CHF" | "%" | null): string {
+  if (typeof v === "string") return v;
+  if (unit === "CHF") return formatCHF(v);
+  if (unit === "%") return `${v.toFixed(2)} %`;
+  return v.toLocaleString("fr-CH");
+}
+
+function kpiDelta(base: HistoryKpi, cur: HistoryKpi): string {
+  if (typeof base.value !== "number" || typeof cur.value !== "number") return "";
+  const d = cur.value - base.value;
+  if (d === 0) return "";
+  const sign = d > 0 ? "+" : "";
+  if (base.unit === "CHF") return ` (${sign}${formatCHF(d)})`;
+  if (base.unit === "%") return ` (${sign}${d.toFixed(2)} pts)`;
+  return ` (${sign}${d})`;
+}
+
+function drawComparisonSpread(
+  pdf: ReportPdf,
+  kind: SimulationKind,
+  baseline: HistoryEntry,
+  projected: HistoryEntry,
+  includeCharts: boolean,
+) {
+  const kindLabel = KIND_LABELS[kind] || kind;
+  pdf.calculatorTitle(kindLabel, "Situation actuelle et projetée");
+  pdf.spacer(1);
+  pdf.paragraph(explainKind(kind));
+
+  const baseKpis = extractKpis(kind, baseline.summary ?? {});
+  const projKpis = extractKpis(kind, projected.summary ?? {});
+
+  // ---- Situation actuelle ----
+  pdf.spacer(3);
+  pdf.situationBanner();
+  if (baseKpis.length) {
+    pdf.kvTable(baseKpis.map((k) => [k.label, formatKpiValue(k.value, k.unit)] as [string, string]));
+  }
+  const baseComment = buildComment(baseline);
+  if (baseComment) pdf.paragraph(baseComment, { muted: true });
+  pdf.paragraph(`Basé sur la sauvegarde du ${dateFR(baseline.created_at)}.`, { italic: true, muted: true });
+
+  // ---- Situation projetée ----
+  pdf.spacer(4);
+  pdf.projectionBanner();
+  if (projKpis.length) {
+    pdf.kvTable(
+      projKpis.map((k, i) => {
+        const delta = baseKpis[i] ? kpiDelta(baseKpis[i], k) : "";
+        return [k.label, `${formatKpiValue(k.value, k.unit)}${delta}`] as [string, string];
+      }),
+    );
+  }
+
+  const gain = extractGain(projected);
+  if (gain.type !== "none") {
+    const amountTxt = gain.type === "annual" ? `${formatCHF(gain.amount)} par an` : formatCHF(gain.amount);
+    pdf.callout(`Ce que vous gagnez : ${amountTxt}.${gain.details ? ` ${gain.details}` : ""}`, "accent");
+  }
+  const projComment = buildComment(projected);
+  if (projComment) pdf.paragraph(projComment);
+  pdf.paragraph(
+    `Basé sur la sauvegarde du ${dateFR(projected.created_at)}, comparée automatiquement à votre situation actuelle.`,
+    { italic: true, muted: true },
+  );
+
+  if (includeCharts) {
+    const firstChf = baseKpis.find((k) => k.unit === "CHF" && typeof k.value === "number");
+    const projValue = firstChf ? projKpis.find((k) => k.label === firstChf.label) : undefined;
+    if (firstChf && projValue && typeof firstChf.value === "number" && typeof projValue.value === "number") {
+      pdf.spacer(2);
+      pdf.section("Comparaison visuelle");
+      drawBarPair(
+        pdf,
+        { label: "Situation actuelle", value: firstChf.value },
+        { label: "Situation projetée", value: projValue.value },
+      );
+    }
   }
 }
 
@@ -971,6 +1178,7 @@ function drawComparisonPage(
   entries: HistoryEntry[],
   pension: ClientPension | null,
   _assets: ClientAssets | null,
+  spreadPairs: Map<SimulationKind, { baseline: HistoryEntry; projected: HistoryEntry }>,
 ) {
   pdf.section("Synthèse globale · Situation avant et après optimisation");
   pdf.paragraph(
@@ -980,10 +1188,17 @@ function drawComparisonPage(
 
   const rows: Array<[string, string, string, string]> = [];
 
-  // Capital LPP
-  const lpp = entries.find((e) => e.kind === "lpp");
+  // Capital LPP — utilise la paire actuelle/projetée explicite si le
+  // courtier en a marqué une (voir spreadPairs), pour ne jamais afficher un
+  // écart différent de celui déjà détaillé sur la page de comparaison du
+  // calculateur. À défaut, retombe sur l'ancien calcul (solde LPP actuel de
+  // la fiche client vs la première simulation LPP incluse).
+  const lppPair = spreadPairs.get("lpp");
+  const lpp = lppPair?.projected ?? entries.find((e) => e.kind === "lpp");
   if (lpp) {
-    const before = num(pension?.lpp_current_balance);
+    const before = lppPair
+      ? num(lppPair.baseline.summary?.projectedBalance)
+      : num(pension?.lpp_current_balance);
     const after = num(lpp.summary?.projectedBalance);
     rows.push([
       "Capital LPP projeté à la retraite",
