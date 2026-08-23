@@ -77,14 +77,15 @@ function AccountPage() {
       .then(({ data }) => {
         if (data?.onboarding_complete) setConnectComplete(true);
       });
-    // Détecter le retour du flux Stripe Connect
+    // Détecter le retour du flux Stripe Connect. La vérification se fait
+    // côté serveur (contre l'état réel du compte chez Stripe), jamais en
+    // faisant confiance au simple fait que l'utilisateur soit revenu sur
+    // cette page avec ce paramètre dans l'URL.
     const params = new URLSearchParams(window.location.search);
     if (params.get("connect") === "success") {
-      supabase
-        .from("broker_connect_accounts")
-        .update({ onboarding_complete: true })
-        .eq("broker_id", user.id)
-        .then(() => setConnectComplete(true));
+      supabase.functions.invoke("stripe-connect-status").then(({ data }) => {
+        if (data?.onboarding_complete) setConnectComplete(true);
+      });
     }
   }, [user]);
 
