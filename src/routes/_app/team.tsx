@@ -5,7 +5,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Users, UserPlus, TrendingUp, Loader2, X, Mail, Crown, MessageSquare, Send, ChevronDown } from "lucide-react";
+import { Users, UserPlus, TrendingUp, Loader2, X, Mail, Crown, MessageSquare, Send, ChevronDown, UserMinus } from "lucide-react";
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -86,9 +86,7 @@ function TeamPage() {
     queryKey: ["team-dashboard", user?.id],
     enabled: !!user?.id,
     queryFn: async () => {
-      const { data, error } = await supabase.functions.invoke("team-dashboard-data", {
-        body: { requesterId: user!.id },
-      });
+      const { data, error } = await supabase.functions.invoke("team-dashboard-data");
       if (error || data?.error) throw new Error(data?.error ?? "Erreur de chargement.");
       return data as TeamDashboardData;
     },
@@ -190,8 +188,6 @@ function TeamPage() {
           cabinetRootId={
             requester.cabinet_role === "root_director" ? requester.id : (data.teamData[0]?.director.id ?? requester.id)
           }
-          inviterId={requester.id}
-          inviterEmail={user?.email ?? ""}
           onClose={() => setInviteOpen(false)}
           onSuccess={() => {
             setInviteOpen(false);
@@ -233,7 +229,14 @@ function TeamPage() {
           <div id="team-heatmap"><ActivityHeatmap teamData={teamData} rawData={data.heatmapRaw} /></div>
           {requester.cabinet_role === "root_director" && <OrgChart teamData={teamData} />}
           {teamData.map((group) => (
-            <DirectorGroup key={group.director.id} group={group} />
+            <DirectorGroup
+              key={group.director.id}
+              group={group}
+              requesterId={requester.id}
+              requesterRole={requester.cabinet_role}
+              allMembers={teamData.flatMap((d) => [d.director, ...d.courtiers])}
+              onChanged={refresh}
+            />
           ))}
         </div>
       )}
@@ -440,9 +443,7 @@ function TeamAnnouncements({
   const { data, isLoading, refetch } = useQuery<{ announcements: Announcement[] }>({
     queryKey: ["team-announcements", requesterId],
     queryFn: async () => {
-      const { data, error } = await supabase.functions.invoke("team-get-announcements", {
-        body: { requesterId },
-      });
+      const { data, error } = await supabase.functions.invoke("team-get-announcements");
       if (error || data?.error) throw new Error(data?.error ?? "Erreur de chargement.");
       return data;
     },
@@ -458,7 +459,6 @@ function TeamAnnouncements({
     try {
       const { data, error } = await supabase.functions.invoke("team-post-announcement", {
         body: {
-          posterId: requesterId,
           cabinetRootId,
           message: message.trim(),
           targetId: targetId === "all" ? undefined : targetId,
@@ -638,8 +638,26 @@ function OrgChart({ teamData }: { teamData: TeamGroup[] }) {
   );
 }
 
-function DirectorGroup({ group }: { group: TeamGroup }) {
+function DirectorGroup({
+  group,
+  requesterId,
+  requesterRole,
+  allMembers,
+  onChanged,
+}: {
+  group: TeamGroup;
+  requesterId: string;
+  requesterRole: string;
+  allMembers: MemberStats[];
+  onChanged: () => void;
+}) {
   const { director, courtiers } = group;
+  // Le directeur racine peut retirer n'importe quel autre directeur ou
+  // courtier de son cabinet ; un directeur simple ne peut retirer que ses
+  // propres courtiers directs (même règle côté serveur, voir
+  // cabinet-remove-member).
+  const canRemoveDirector = requesterRole === "root_director" && director.id !== requesterId;
+  const canRemoveCourtiers = requesterRole === "root_director" || director.id === requesterId;
   return (
     <div className="rounded-2xl border border-border bg-card shadow-card">
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border/60 p-4">
@@ -650,9 +668,12 @@ function DirectorGroup({ group }: { group: TeamGroup }) {
             {director.cabinet_role === "root_director" ? "Directeur principal" : "Directeur"}
           </span>
         </div>
-        <div className="flex gap-4 text-xs text-muted-foreground">
+        <div className="flex flex-wrap items-center gap-4 text-xs text-muted-foreground">
           <span>{director.clientsCount} clients</span>
           <span>{formatCHF(director.revenueThisMonth)} ce mois</span>
+          {canRemoveDirector && (
+            <RemoveMemberControl member={director} allMembers={allMembers} onRemoved={onChanged} />
+          )}
         </div>
       </div>
       {courtiers.length === 0 ? (
@@ -665,15 +686,117 @@ function DirectorGroup({ group }: { group: TeamGroup }) {
                 <div className="text-sm font-medium">{fullName(c)}</div>
                 <div className="text-xs text-muted-foreground">Courtier</div>
               </div>
-              <div className="flex gap-4 text-xs text-muted-foreground">
+              <div className="flex flex-wrap items-center gap-4 text-xs text-muted-foreground">
                 <span>{c.clientsCount} clients</span>
                 <span>{formatCHF(c.revenueThisMonth)} ce mois</span>
                 <span className="hidden sm:inline">{formatCHF(c.revenueTotal)} au total</span>
+                {canRemoveCourtiers && (
+                  <RemoveMemberControl member={c} allMembers={allMembers} onRemoved={onChanged} />
+                )}
               </div>
             </div>
           ))}
         </div>
       )}
+    </div>
+  );
+}
+
+function RemoveMemberControl({
+  member,
+  allMembers,
+  onRemoved,
+}: {
+  member: MemberStats;
+  allMembers: MemberStats[];
+  onRemoved: () => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [reassignToId, setReassignToId] = useState("");
+  const [loading, setLoading] = useState(false);
+  const candidates = allMembers.filter((m) => m.id !== member.id);
+
+  const onConfirm = async () => {
+    setLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("cabinet-remove-member", {
+        body: { memberId: member.id, reassignToId: reassignToId || undefined },
+      });
+      if (error || data?.error) {
+        let msg = data?.error ?? error?.message ?? "Erreur lors du retrait.";
+        const ctx = (error as unknown as { context?: Response })?.context;
+        if (ctx && typeof ctx.json === "function") {
+          try {
+            const body = await ctx.json();
+            if (body?.error) msg = String(body.error);
+          } catch {
+            // corps non exploitable
+          }
+        }
+        throw new Error(msg);
+      }
+      toast.success(`${fullName(member)} a été retiré du cabinet.`);
+      setOpen(false);
+      onRemoved();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Erreur lors du retrait.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (!open) {
+    return (
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-[11px] font-medium text-muted-foreground hover:border-destructive hover:text-destructive"
+      >
+        <UserMinus className="h-3 w-3" /> Retirer
+      </button>
+    );
+  }
+
+  return (
+    <div className="w-full basis-full rounded-lg border border-destructive/40 bg-destructive/5 p-3 text-xs space-y-2">
+      <p className="text-foreground">
+        Retirer <strong>{fullName(member)}</strong> du cabinet ?{" "}
+        {member.clientsCount > 0
+          ? `Cette personne a ${member.clientsCount} dossier(s) client, à réattribuer avant le retrait.`
+          : "Cette personne n'a aucun dossier client."}
+      </p>
+      {member.clientsCount > 0 && (
+        <div className="space-y-1">
+          <Label className="text-[11px]">Réattribuer ses dossiers à</Label>
+          <Select value={reassignToId} onValueChange={setReassignToId}>
+            <SelectTrigger className="h-8 text-xs">
+              <SelectValue placeholder="Choisir un destinataire" />
+            </SelectTrigger>
+            <SelectContent>
+              {candidates.map((m) => (
+                <SelectItem key={m.id} value={m.id}>
+                  {fullName(m)}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      )}
+      <div className="flex gap-2">
+        <Button
+          size="sm"
+          variant="destructive"
+          onClick={onConfirm}
+          disabled={loading || (member.clientsCount > 0 && !reassignToId)}
+          className="gap-1"
+        >
+          {loading && <Loader2 className="h-3 w-3 animate-spin" />}
+          Confirmer le retrait
+        </Button>
+        <Button size="sm" variant="outline" onClick={() => setOpen(false)} disabled={loading}>
+          Annuler
+        </Button>
+      </div>
     </div>
   );
 }
@@ -694,7 +817,7 @@ function PendingInviteRow({
     setLoading(true);
     try {
       const { data, error } = await supabase.functions.invoke("cabinet-cancel-invite", {
-        body: { inviteId: invite.id, requesterId },
+        body: { inviteId: invite.id },
       });
       if (error || data?.error) throw new Error(data?.error ?? "Erreur lors de l'annulation.");
       toast.success("Invitation annulée.");
@@ -732,14 +855,10 @@ function PendingInviteRow({
 
 function InviteForm({
   cabinetRootId,
-  inviterId,
-  inviterEmail,
   onClose,
   onSuccess,
 }: {
   cabinetRootId: string;
-  inviterId: string;
-  inviterEmail: string;
   onClose: () => void;
   onSuccess: () => void;
 }) {
@@ -756,8 +875,6 @@ function InviteForm({
     try {
       const { data, error } = await supabase.functions.invoke("cabinet-add-seat", {
         body: {
-          inviterId,
-          inviterEmail,
           cabinetRootId,
           inviteeEmail: email.trim(),
           inviteeFirstName: firstName.trim() || undefined,

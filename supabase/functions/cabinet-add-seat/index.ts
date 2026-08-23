@@ -13,6 +13,24 @@ const corsHeaders = {
 
 const SEAT_PRICE_ID = "price_1U17fiRzqfEoHxSu8CIqtbtA";
 
+/** Extrait l'id utilisateur vérifié depuis le JWT de la requête (déjà
+ *  validé par la plateforme Supabase — verify_jwt=true dans config.toml —
+ *  avant même l'exécution de cette fonction). Ne JAMAIS faire confiance à
+ *  un id envoyé dans le corps de la requête pour l'identité de l'appelant :
+ *  n'importe qui pourrait sinon usurper n'importe quel autre compte. */
+function getVerifiedUserId(req: Request): string {
+  const authHeader = req.headers.get("Authorization") ?? "";
+  const token = authHeader.replace(/^Bearer\s+/i, "").trim();
+  if (!token) throw new Error("Non authentifié.");
+  const parts = token.split(".");
+  if (parts.length !== 3) throw new Error("Jeton invalide.");
+  let b64 = parts[1].replace(/-/g, "+").replace(/_/g, "/");
+  while (b64.length % 4 !== 0) b64 += "=";
+  const payload = JSON.parse(atob(b64));
+  if (!payload.sub) throw new Error("Jeton invalide.");
+  return payload.sub as string;
+}
+
 async function sendBrevoEmail(to: string, subject: string, htmlContent: string) {
   const brevoKey = Deno.env.get("BREVO_API_KEY");
   if (!brevoKey) throw new Error("BREVO_API_KEY manquante");
@@ -36,9 +54,8 @@ Deno.serve(async (req) => {
   }
 
   try {
+    const inviterId = getVerifiedUserId(req);
     const {
-      inviterId,
-      inviterEmail,
       cabinetRootId,
       inviteeEmail,
       inviteeFirstName,
@@ -47,7 +64,7 @@ Deno.serve(async (req) => {
       payer,
     } = await req.json();
 
-    if (!inviterId || !inviterEmail || !cabinetRootId || !inviteeEmail) {
+    if (!cabinetRootId || !inviteeEmail) {
       throw new Error("Paramètres manquants.");
     }
     if (role !== "director" && role !== "courtier") {
@@ -67,11 +84,29 @@ Deno.serve(async (req) => {
     // facturation ne doit jamais se déclencher quand ils invitent
     // quelqu'un, même s'ils choisissent "cabinet paie".
     const inviterProfileRes = await fetch(
-      `${supabaseUrl}/rest/v1/profiles?id=eq.${inviterId}&select=plan`,
+      `${supabaseUrl}/rest/v1/profiles?id=eq.${inviterId}&select=email,plan,cabinet_role,cabinet_root_id`,
       { headers: { "apikey": supabaseKey, "Authorization": `Bearer ${supabaseKey}` } },
     );
     const inviterProfiles = await inviterProfileRes.json();
-    const isInternal = inviterProfiles[0]?.plan === "internal";
+    const inviter = inviterProfiles[0];
+    if (!inviter) throw new Error("Profil introuvable.");
+    const isInternal = inviter.plan === "internal";
+    const inviterEmail = inviter.email;
+
+    // Autorité sur le cabinet ciblé : le directeur racine ne peut agir que
+    // pour son propre cabinet (cabinetRootId === son propre id), un
+    // directeur normal seulement pour le cabinet auquel il appartient
+    // (cabinetRootId === son cabinet_root_id). Sans ce contrôle, n'importe
+    // quel compte authentifié pourrait injecter une invitation — et
+    // déclencher une facturation Stripe réelle — dans le cabinet de
+    // quelqu'un d'autre en devinant/connaissant son cabinetRootId.
+    const inviterHasAuthority =
+      isInternal ||
+      (inviter.cabinet_role === "root_director" && cabinetRootId === inviterId) ||
+      (inviter.cabinet_role === "director" && cabinetRootId === inviter.cabinet_root_id);
+    if (!inviterHasAuthority) {
+      throw new Error("Vous n'avez pas l'autorité pour inviter dans ce cabinet.");
+    }
 
     let seatItemId: string | null = null;
 
