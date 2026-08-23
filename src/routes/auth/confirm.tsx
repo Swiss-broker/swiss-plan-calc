@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { PRICE_IDS, type BillablePlan } from "@/lib/billing/plans";
 
 const confirmSearchSchema = z.object({
   plan: z.enum(["starter", "pro", "cabinet"]).optional(),
@@ -16,12 +17,6 @@ export const Route = createFileRoute("/auth/confirm")({
   validateSearch: (s) => confirmSearchSchema.parse(s),
   component: ConfirmPage,
 });
-
-const PRICE_IDS: Record<string, string> = {
-  starter: import.meta.env.VITE_STRIPE_STARTER_MONTHLY ?? "",
-  pro: import.meta.env.VITE_STRIPE_PRO_MONTHLY ?? "",
-  cabinet: import.meta.env.VITE_STRIPE_CABINET_MONTHLY ?? "",
-};
 
 function ConfirmPage() {
   const search = Route.useSearch();
@@ -53,7 +48,7 @@ function ConfirmPage() {
     }
 
     // Code valide — on lance Stripe
-    const priceId = PRICE_IDS[plan];
+    const priceId = PRICE_IDS[plan as BillablePlan];
     if (!priceId) {
       navigate({ to: "/dashboard" });
       return;

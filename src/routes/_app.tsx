@@ -26,6 +26,8 @@ import { usePlan } from "@/contexts/PlanContext";
 import { useT } from "@/contexts/LanguageContext";
 import { LanguageSwitcher } from "@/components/common/LanguageSwitcher";
 import { cn } from "@/lib/utils";
+import { ACTIVE_PLANS } from "@/lib/billing/plans";
+import { SubscriptionRequired } from "@/components/billing/SubscriptionRequired";
 // Logo réel du cabinet, remplace l'icône "S" et le texte générés en CSS.
 import logoIcon from "@/assets/logo-icon.png";
 import logoFull from "@/assets/logo-full.png";
@@ -36,6 +38,7 @@ export const Route = createFileRoute("/_app")({
 
 function AppShell() {
   const { isAuthenticated, isLoading, user, signOut } = useAuth();
+  const { plan, isLoading: planLoading } = usePlan();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -44,12 +47,22 @@ function AppShell() {
     }
   }, [isAuthenticated, isLoading, navigate]);
 
-  if (isLoading || !isAuthenticated) {
+  if (isLoading || !isAuthenticated || planLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
         <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
       </div>
     );
+  }
+
+  // Porte de paiement : "trial" est un état transitoire entre la
+  // vérification du code par email et le paiement Stripe (voir
+  // src/lib/billing/plans.ts). Sans ce contrôle, n'importe qui peut créer
+  // un compte, vérifier son email, et utiliser toute l'application
+  // (calculateurs, IA, PDF) gratuitement sans jamais payer — faille
+  // constatée en production.
+  if (!ACTIVE_PLANS.has(plan)) {
+    return <SubscriptionRequired email={user?.email ?? ""} userId={user?.id ?? ""} onSignOut={signOut} />;
   }
 
   return (

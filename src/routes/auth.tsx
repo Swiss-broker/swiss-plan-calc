@@ -13,6 +13,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useT } from "@/contexts/LanguageContext";
 import { PublicLanguageSwitcher } from "@/components/common/PublicLanguageSwitcher";
 import { t as translate } from "@/lib/i18n";
+import { PRICE_IDS, PLAN_LABELS, type BillablePlan } from "@/lib/billing/plans";
 
 const authSearchSchema = z.object({
   mode: z.enum(["signin", "signup"]).optional(),
@@ -50,17 +51,6 @@ const signinSchema = z.object({
 type SignupValues = z.infer<typeof signupSchema>;
 type SigninValues = z.infer<typeof signinSchema>;
 
-const PRICE_IDS: Record<string, string> = {
-  starter: import.meta.env.VITE_STRIPE_STARTER_MONTHLY ?? "",
-  pro: import.meta.env.VITE_STRIPE_PRO_MONTHLY ?? "",
-  cabinet: import.meta.env.VITE_STRIPE_CABINET_MONTHLY ?? "",
-};
-const PLAN_LABELS: Record<string, string> = {
-  starter: "Starter",
-  pro: "Pro",
-  cabinet: "Cabinet",
-};
-
 function AuthPage() {
   const t = useT();
   const search = Route.useSearch();
@@ -69,7 +59,7 @@ function AuthPage() {
   const [mode, setMode] = useState<"signin" | "signup">(search.mode ?? "signin");
   const selectedPlan = search.plan ?? "pro";
 
-const [otpState, setOtpState] = useState<{ email: string; plan: string; inviteToken?: string } | null>(null);
+const [otpState, setOtpState] = useState<{ email: string; plan: BillablePlan; inviteToken?: string } | null>(null);
   const [otpToken, setOtpToken] = useState("");
   const [otpLoading, setOtpLoading] = useState(false);
   const [otpError, setOtpError] = useState<string | null>(null);
@@ -246,7 +236,7 @@ const [otpState, setOtpState] = useState<{ email: string; plan: string; inviteTo
             </div>
             <h1 className="text-2xl font-bold tracking-tight">
               {mode === "signup"
-                ? `Créer un compte ${PLAN_LABELS[selectedPlan] ?? "courtier"}`
+                ? `Créer un compte ${PLAN_LABELS[selectedPlan as BillablePlan] ?? "courtier"}`
                 : t("auth.signin.title")}
             </h1>
           </div>
@@ -285,9 +275,9 @@ function SignupForm({
   inviteToken,
   onOtpRequired,
 }: {
-  plan: string;
+  plan: BillablePlan;
   inviteToken?: string;
-  onOtpRequired: (state: { email: string; plan: string; inviteToken?: string }) => void;
+  onOtpRequired: (state: { email: string; plan: BillablePlan; inviteToken?: string }) => void;
 }) {
   const t = useT();
   const [loading, setLoading] = useState(false);
