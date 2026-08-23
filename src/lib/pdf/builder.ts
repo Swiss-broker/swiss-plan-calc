@@ -130,6 +130,25 @@ function hex(h: string | undefined, fb: [number, number, number]): [number, numb
   return [r, g, b].some(Number.isNaN) ? fb : [r, g, b];
 }
 
+// Éclaircit/assombrit une couleur vers le blanc/noir. Sert à dériver les
+// fonds pastel (callouts, cellules mises en évidence) et les bandeaux
+// foncés directement depuis la couleur du courtier (primaryColor/accentColor),
+// au lieu de teintes fixes qui ne juraient qu'avec le bleu par défaut.
+function tint(c: [number, number, number], amount: number): [number, number, number] {
+  return [
+    Math.round(c[0] + (255 - c[0]) * amount),
+    Math.round(c[1] + (255 - c[1]) * amount),
+    Math.round(c[2] + (255 - c[2]) * amount),
+  ];
+}
+function shade(c: [number, number, number], amount: number): [number, number, number] {
+  return [
+    Math.round(c[0] * (1 - amount)),
+    Math.round(c[1] * (1 - amount)),
+    Math.round(c[2] * (1 - amount)),
+  ];
+}
+
 export class ReportPdf {
   private footerDrawnPages = new Set<number>();
   doc: jsPDF;
@@ -328,10 +347,11 @@ export class ReportPdf {
     return this;
   }
 
-  callout(text: string, tone: "info" | "success" | "warning" = "info") {
+  callout(text: string, tone: "info" | "success" | "warning" | "accent" = "info") {
     text = sanitizePdfText(text);
     const colors = {
-      info: { bg: [239, 246, 255] as [number, number, number], border: this.primary },
+      info: { bg: tint(this.primary, 0.92), border: this.primary },
+      accent: { bg: tint(this.accent, 0.86), border: this.accent },
       success: { bg: [236, 253, 245] as [number, number, number], border: [16, 185, 129] as [number, number, number] },
       warning: { bg: [254, 252, 232] as [number, number, number], border: [202, 138, 4] as [number, number, number] },
     }[tone];
@@ -385,7 +405,7 @@ export class ReportPdf {
       didParseCell: (data) => {
         if (opts?.highlightLast && data.section === "body" && data.row.index === body.length - 1) {
           data.cell.styles.fontStyle = "bold";
-          data.cell.styles.fillColor = [219, 234, 254];
+          data.cell.styles.fillColor = tint(this.primary, 0.82);
         }
       },
       didDrawPage: () => this.drawFooter(),
@@ -394,9 +414,10 @@ export class ReportPdf {
     return this;
   }
 
-  /** Grille de tuiles : libellé + valeur (CHF) en grand, style "card" moderne */
-  /** Grille de tuiles : libellé + valeur (CHF) en grand, style "card" moderne */
-  metricsGrid(items: Array<{ label: string; value: number | string; tone?: "primary" | "success" | "warning" }>) {
+  /** Grille de tuiles : libellé + valeur (CHF) en grand, style "card" moderne.
+   *  tone "accent" ressort du lot (fond teinté) — réservé au chiffre qui
+   *  doit attirer l'œil en premier (ex. gain identifié), pas à toute la grille. */
+  metricsGrid(items: Array<{ label: string; value: number | string; tone?: "primary" | "success" | "warning" | "accent" }>) {
     const cols = items.length <= 2 ? items.length : items.length === 3 ? 3 : 2;
     const rows = Math.ceil(items.length / cols);
     const gap = 4;
@@ -408,17 +429,21 @@ export class ReportPdf {
       const c = idx % cols;
       const x = this.margin + c * (tileW + gap);
       const y = this.cursorY + r * (tileH + gap);
-      const accent: [number, number, number] =
+      const accentColor: [number, number, number] =
         it.tone === "success"
           ? [16, 185, 129]
           : it.tone === "warning"
             ? [202, 138, 4]
-            : this.primary;
-      this.doc.setFillColor(255, 255, 255);
-      this.doc.setDrawColor(...this.border);
+            : it.tone === "accent"
+              ? this.accent
+              : this.primary;
+      const tileFill: [number, number, number] = it.tone === "accent" ? tint(this.accent, 0.88) : [255, 255, 255];
+      const tileBorder: [number, number, number] = it.tone === "accent" ? this.accent : this.border;
+      this.doc.setFillColor(...tileFill);
+      this.doc.setDrawColor(...tileBorder);
       this.doc.setLineWidth(0.25);
       this.doc.rect(x, y, tileW, tileH, "FD");
-      this.doc.setFillColor(...accent);
+      this.doc.setFillColor(...accentColor);
       this.doc.rect(x, y, 1.5, tileH, "F");
       const maxTextW = tileW - 8;
       // Libelle sur 2 lignes max, pour ne jamais deborder sur la tuile voisine
@@ -433,7 +458,7 @@ export class ReportPdf {
       const valueFontSize = rawValue.length > 18 ? 10 : rawValue.length > 12 ? 12 : 14;
       this.doc.setFont("helvetica", "bold");
       this.doc.setFontSize(valueFontSize);
-      this.doc.setTextColor(...this.ink);
+      this.doc.setTextColor(...(it.tone === "accent" ? shade(this.accent, 0.35) : this.ink));
       const valueLines = this.doc.splitTextToSize(rawValue, maxTextW) as string[];
       const valueY = labelLines.length > 1 ? y + 20 : y + 17;
       this.doc.text(valueLines.slice(0, 2), x + 5, valueY);
@@ -455,29 +480,29 @@ export class ReportPdf {
     return this;
   }
 
-  /** Bandeau "SITUATION ACTUELLE" · fond gris clair, filet vertical. */
+  /** Bandeau "SITUATION ACTUELLE" · teinte foncée dérivée de la couleur
+   *  primaire du courtier — grounded, sert de référence. */
   situationBanner(label?: string) {
     const text = label ?? t("pdf.banner.current", undefined, "SITUATION ACTUELLE");
     this.ensureSpace(10);
     const { doc, margin, contentWidth } = this;
-    doc.setFillColor(...this.surface);
+    doc.setFillColor(...shade(this.primary, 0.55));
     doc.rect(margin, this.cursorY, contentWidth, 7, "F");
-    doc.setFillColor(148, 163, 184);
-    doc.rect(margin, this.cursorY, 1.5, 7, "F");
     doc.setFont("helvetica", "bold");
     doc.setFontSize(9.5);
-    doc.setTextColor(...this.ink);
+    doc.setTextColor(255, 255, 255);
     doc.text(text, margin + 4, this.cursorY + 4.8);
     this.cursorY += 10;
     return this;
   }
 
-  /** Bandeau "PROJECTION" · fond couleur primaire, plat. */
+  /** Bandeau "PROJECTION" · couleur d'accent du courtier, plat — met en
+   *  évidence la situation optimisée, symétrique de situationBanner. */
   projectionBanner(label?: string) {
     const text = label ?? t("pdf.banner.projection", undefined, "PROJECTION");
     this.ensureSpace(10);
-    const { doc, margin, contentWidth, primary } = this;
-    doc.setFillColor(...primary);
+    const { doc, margin, contentWidth, accent } = this;
+    doc.setFillColor(...accent);
     doc.rect(margin, this.cursorY, contentWidth, 7, "F");
     doc.setFont("helvetica", "bold");
     doc.setFontSize(9.5);
