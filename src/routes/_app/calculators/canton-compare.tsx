@@ -10,7 +10,8 @@ import {
   CartesianGrid,
   Cell,
 } from "recharts";
-import { Info, Sparkles, AlertTriangle } from "lucide-react";
+import { Info, Sparkles, AlertTriangle, Download } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { NumField as BaseNumField } from "@/components/ui/num-field";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
@@ -37,6 +38,7 @@ import { SplitCompareLayout, type SplitRow } from "@/components/calculators/Spli
 import { formatCHF } from "@/lib/format";
 import { SaveSimulationButton } from "@/components/calculators/SaveSimulationButton";
 import { useBrokerPdfHeader } from "@/hooks/useBrokerPdfHeader";
+import { exportCantonComparePdf } from "@/lib/pdf/reports";
 import { useT } from "@/contexts/LanguageContext";
 import { useClientDashboard } from "@/hooks/use-client-dashboard";
 import { useQuery } from "@tanstack/react-query";
@@ -314,6 +316,22 @@ function CantonCompareCalc() {
   const hasReferences = data.some((d) => REFERENCE_CODES.has(d.code));
 
   const brokerHeader = useBrokerPdfHeader();
+
+  const handleExportPdf = () => {
+    exportCantonComparePdf({
+      header: brokerHeader,
+      input: {
+        grossSalary: base.grossSalary,
+        spouseGrossSalary: base.spouseGrossSalary,
+        status: lumpSumStatus,
+        children: base.children,
+        netWealth: base.netWealth,
+        referenceCanton,
+      },
+      rows: data,
+    });
+  };
+
   const [guideOpen, setGuideOpen] = useState(false);
   const guideSteps: GuideStep[] = [
     { title: t("calc.canton_compare.guide.s1.title"), body: t("calc.canton_compare.guide.s1.body") },
@@ -702,6 +720,10 @@ function CantonCompareCalc() {
       </CalcCard>
 
       <div className="flex flex-wrap justify-end gap-2" data-guide="canton-save">
+        <Button type="button" variant="outline" className="gap-2" onClick={handleExportPdf}>
+          <Download className="h-4 w-4" />
+          Télécharger le rapport PDF
+        </Button>
         <SaveSimulationButton
           kind="canton_compare"
           inputs={{ ...base, referenceCanton }}

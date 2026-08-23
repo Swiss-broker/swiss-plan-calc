@@ -19,7 +19,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { Calculator, Info, RotateCcw, Pencil, AlertTriangle } from "lucide-react";
+import { Calculator, Info, RotateCcw, Pencil, AlertTriangle, Download } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { tCanton } from "@/lib/i18n";
 import {
@@ -39,6 +39,7 @@ import type { IncomeTaxInput } from "@/lib/tax/income";
 import { SaveSimulationButton } from "@/components/calculators/SaveSimulationButton";
 import { useAuth } from "@/contexts/AuthContext";
 import { useBrokerPdfHeader } from "@/hooks/useBrokerPdfHeader";
+import { exportLppPdf } from "@/lib/pdf/reports";
 import { zodValidator, fallback } from "@tanstack/zod-adapter";
 import { z } from "zod";
 import { usePrefillFromClient, useHydrateFormFromPrefill } from "@/hooks/usePrefillFromClient";
@@ -246,6 +247,26 @@ function LppCalc() {
 
   const { user } = useAuth();
   const brokerHeader = useBrokerPdfHeader();
+
+  const handleExportPdf = () => {
+    exportLppPdf({
+      header: brokerHeader,
+      input: {
+        currentAge: form.currentAge,
+        retirementAge: form.retirementAge,
+        insuredSalary: form.insuredSalary,
+        expectedReturnRate: form.expectedReturnRate,
+        feeRate: form.feeRate,
+        canton: form.canton,
+        grossSalary: form.grossSalary,
+        buybackCapacity: form.buybackCapacity,
+        buybackYears: form.buybackYears,
+      },
+      projection,
+      buybackPlan,
+    });
+  };
+
   const [guideOpen, setGuideOpen] = useState(false);
   const guideSteps: GuideStep[] = [
     { title: t("calc.lpp.step.welcome.t"), body: t("calc.lpp.step.welcome.b") },
@@ -653,6 +674,10 @@ function LppCalc() {
       />
 
       <div className="flex flex-wrap justify-end gap-2">
+        <Button type="button" variant="outline" className="gap-2" onClick={handleExportPdf}>
+          <Download className="h-4 w-4" />
+          Télécharger le rapport PDF
+        </Button>
         <SaveSimulationButton
           kind="lpp"
           inputs={form}

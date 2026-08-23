@@ -1,4 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { Download } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { ClientPrefillBadge } from "@/components/calculators/ClientPrefillBadge";
 import { useMemo, useRef, useState, useEffect } from "react";import {
   Select,
@@ -22,6 +24,7 @@ import type { IncomeTaxInput } from "@/lib/tax/income";
 import { SaveSimulationButton } from "@/components/calculators/SaveSimulationButton";
 import { useAuth } from "@/contexts/AuthContext";
 import { useBrokerPdfHeader } from "@/hooks/useBrokerPdfHeader";
+import { exportPillar3aPdf } from "@/lib/pdf/reports";
 import { zodValidator, fallback } from "@tanstack/zod-adapter";
 import { z } from "zod";
 import { usePrefillFromClient, useHydrateFormFromPrefill } from "@/hooks/usePrefillFromClient";
@@ -262,6 +265,24 @@ function Pillar3aCalc() {
 
   const { user } = useAuth();
   const brokerHeader = useBrokerPdfHeader();
+
+  const handleExportPdf = () => {
+    exportPillar3aPdf({
+      header: brokerHeader,
+      input: {
+        canton: form.canton,
+        contribution: form.contribution,
+        yearsToRetirement: form.yearsToRetirement,
+        expectedReturn: form.expectedReturn,
+        withdrawalCapital: form.withdrawalCapital,
+        withdrawalAccounts: form.withdrawalAccounts,
+        grossSalary: form.grossSalary,
+      },
+      taxSavings: savings,
+      projection,
+      staggered: stag,
+    });
+  };
 
   const projection3b = useMemo(() => {
     const r = form.pillar3bReturn / 100;
@@ -563,6 +584,10 @@ useEffect(() => {
       </CalcCard>
 
       <div className="flex flex-wrap justify-end gap-2" data-guide="p3a-save">
+        <Button type="button" variant="outline" className="gap-2" onClick={handleExportPdf}>
+          <Download className="h-4 w-4" />
+          Télécharger le rapport PDF
+        </Button>
         <SaveSimulationButton
           kind="pillar3a"
           inputs={form}

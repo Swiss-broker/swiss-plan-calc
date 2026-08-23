@@ -1,5 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { Download } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { useClientFiscalSnapshot } from "@/hooks/useClientFiscalSnapshot";
 import { NumField as BaseNumField } from "@/components/ui/num-field";
 import { Label } from "@/components/ui/label";
@@ -16,6 +18,7 @@ import { CalcCard, MoneyTile, Row } from "@/components/calculators/CalcUI";
 import { SaveSimulationButton } from "@/components/calculators/SaveSimulationButton";
 import { useAuth } from "@/contexts/AuthContext";
 import { useBrokerPdfHeader } from "@/hooks/useBrokerPdfHeader";
+import { exportRetirementPdf } from "@/lib/pdf/reports";
 import { useT } from "@/contexts/LanguageContext";
 
 import { zodValidator, fallback } from "@tanstack/zod-adapter";
@@ -116,6 +119,24 @@ const projectedCapital = dashboard?.lpp?.projectedCapitalAt65;
 
   const { user } = useAuth();
   const brokerHeader = useBrokerPdfHeader();
+
+  const handleExportPdf = () => {
+    exportRetirementPdf({
+      header: brokerHeader,
+      input: {
+        capital: form.capital,
+        canton: form.canton,
+        conversionRate: form.conversionRate,
+        yearsAlive: form.yearsAlive,
+        selfReturnRate: form.selfReturnRate,
+        rentMarginalRate: form.rentMarginalRate,
+      },
+      lumpTax,
+      compare,
+      reco,
+    });
+  };
+
   const [guideOpen, setGuideOpen] = useState(false);
     const guideSteps: GuideStep[] = [
     { title: t("calc.retirement.guide.s1.title"), body: t("calc.retirement.guide.s1.body") },
@@ -318,6 +339,10 @@ const projectedCapital = dashboard?.lpp?.projectedCapitalAt65;
       {bundle && <ConsolidatedBenefitsCard bundle={bundle} />}
 
       <div className="flex flex-wrap justify-end gap-2" data-guide="retirement-save">
+        <Button type="button" variant="outline" className="gap-2" onClick={handleExportPdf}>
+          <Download className="h-4 w-4" />
+          Télécharger le rapport PDF
+        </Button>
         <SaveSimulationButton
           kind="retirement"
           inputs={form}
