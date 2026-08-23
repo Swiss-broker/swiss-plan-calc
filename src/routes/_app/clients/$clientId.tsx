@@ -143,8 +143,6 @@ function ClientDetailPage() {
       await supabase.from("client_notes").delete().eq("client_id", clientId);
       await supabase.from("client_assets").delete().eq("client_id", clientId);
       await supabase.from("client_pension").delete().eq("client_id", clientId);
-      await supabase.from("simulations").delete().eq("client_id", clientId);
-      await supabase.from("scenarios").delete().eq("client_id", clientId);
       const { error } = await supabase.from("clients").delete().eq("id", clientId);
       if (error) throw error;
     },

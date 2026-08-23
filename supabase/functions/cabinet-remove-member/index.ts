@@ -2,8 +2,8 @@
 // Retire un membre actif du cabinet (pas une invitation en attente — voir
 // cabinet-cancel-invite pour ça). Si le membre a des dossiers clients, un
 // destinataire de réassignation est requis : ses dossiers (fortune,
-// prévoyance, notes, scénarios, simulations, documents, société liée) sont
-// transférés avant que le retrait ne soit effectif, pour qu'aucun dossier
+// prévoyance, notes, simulations sauvegardées, documents, société liée)
+// sont transférés avant que le retrait ne soit effectif, pour qu'aucun dossier
 // ne devienne orphelin/inaccessible. Les factures RDV passées (rdv_invoices)
 // ne sont PAS réassignées : elles restent attribuées à qui a réellement
 // fait le travail, pour ne pas fausser l'historique de revenu de chacun.
@@ -36,8 +36,6 @@ const DOSSIER_TABLES = [
   "client_assets",
   "client_pension",
   "client_notes",
-  "scenarios",
-  "simulations",
   "simulation_history",
   "client_documents",
   "client_document_links",
@@ -122,8 +120,8 @@ Deno.serve(async (req) => {
         throw new Error("Le destinataire choisi ne fait pas partie du même cabinet.");
       }
 
-      // Contenu du dossier (fortune, prévoyance, notes, scénarios,
-      // simulations, documents, conversations IA) — tout ce qui a son
+      // Contenu du dossier (fortune, prévoyance, notes, simulations
+      // sauvegardées, documents, conversations IA) — tout ce qui a son
       // propre broker_id dénormalisé.
       for (const table of DOSSIER_TABLES) {
         const res = await fetch(`${supabaseUrl}/rest/v1/${table}?broker_id=eq.${memberId}`, {
