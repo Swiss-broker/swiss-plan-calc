@@ -5,8 +5,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import type { BrokerHeader } from "@/lib/pdf/builder";
 
-const DEFAULT_PRIMARY = "#0F4C81";
-const DEFAULT_ACCENT = "#3B82F6";
+const DEFAULT_PRIMARY = "#008F83";
+const DEFAULT_ACCENT = "#F7A224";
 
 export function useBrokerPdfHeader(): BrokerHeader {
   const { user } = useAuth();

@@ -111,8 +111,8 @@ function AccountPage() {
     brokerage_name: "",
     phone: "",
     default_canton: "",
-    pdf_primary_color: "#0F4C81",
-    pdf_accent_color: "#3B82F6",
+    pdf_primary_color: "#008F83",
+    pdf_accent_color: "#F7A224",
     pdf_footer_note: "",
     logo_url: "" as string,
   });
@@ -135,8 +135,8 @@ function AccountPage() {
           brokerage_name: data.brokerage_name ?? "",
           phone: data.phone ?? "",
           default_canton: data.default_canton ?? "",
-          pdf_primary_color: data.pdf_primary_color ?? "#0F4C81",
-          pdf_accent_color: data.pdf_accent_color ?? "#3B82F6",
+          pdf_primary_color: data.pdf_primary_color ?? "#008F83",
+          pdf_accent_color: data.pdf_accent_color ?? "#F7A224",
           pdf_footer_note: data.pdf_footer_note ?? "",
           logo_url: data.logo_url ?? "",
         });

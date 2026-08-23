@@ -26,6 +26,10 @@ export interface HistoryEntry {
   inputs: Record<string, unknown>;
   summary: Record<string, unknown>;
   tags: string[];
+  // Référence "situation actuelle" pour un client + calculateur donnés,
+  // choisie explicitement par le courtier (voir simulation_history_baseline_marker).
+  // Une seule sauvegarde peut être vraie à la fois par (client_id, kind).
+  is_baseline: boolean;
   created_at: string;
   updated_at: string;
 }

@@ -172,8 +172,8 @@ export class ReportPdf {
     this.pageWidth = this.doc.internal.pageSize.getWidth();
     this.pageHeight = this.doc.internal.pageSize.getHeight();
     this.contentWidth = this.pageWidth - this.margin * 2;
-    this.primary = hex(header.primaryColor, [15, 76, 129]);
-    this.accent = hex(header.accentColor, [59, 130, 246]);
+    this.primary = hex(header.primaryColor, [0, 143, 131]);
+    this.accent = hex(header.accentColor, [247, 162, 36]);
     this.drawHeader();
     this.cursorY = this.headerH + 10;
   }

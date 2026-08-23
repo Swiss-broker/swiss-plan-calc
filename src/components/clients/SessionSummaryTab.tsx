@@ -14,6 +14,7 @@ import {
   CalendarClock,
   ShieldAlert,
   Loader2,
+  Star,
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -263,6 +264,42 @@ export function SessionSummaryTab({ clientId, clientName }: { clientId: string; 
     },
   });
 
+  // Marque une sauvegarde comme référence "situation actuelle" pour son
+  // calculateur : une seule active à la fois par (client, kind), voir
+  // simulation_history_one_baseline_per_client_kind. La sauvegarde la plus
+  // récente du même calculateur sert automatiquement de "situation
+  // projetée" comparée à cette référence dans le dossier PDF.
+  const setBaseline = useMutation({
+    mutationFn: async (entry: HistoryEntry) => {
+      if (entry.is_baseline) {
+        const { error } = await supabase
+          .from("simulation_history")
+          .update({ is_baseline: false })
+          .eq("id", entry.id);
+        if (error) throw error;
+        return;
+      }
+      const { error: clearError } = await supabase
+        .from("simulation_history")
+        .update({ is_baseline: false })
+        .eq("client_id", clientId)
+        .eq("kind", entry.kind)
+        .eq("is_baseline", true);
+      if (clearError) throw clearError;
+      const { error } = await supabase
+        .from("simulation_history")
+        .update({ is_baseline: true })
+        .eq("id", entry.id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["client-simulations", clientId] });
+    },
+    onError: () => {
+      toast.error("Erreur lors de la mise à jour de la référence.");
+    },
+  });
+
   const agg = aggregateGains(entries);
 
   return (
@@ -361,7 +398,13 @@ export function SessionSummaryTab({ clientId, clientName }: { clientId: string; 
           ) : (
             <ul className="space-y-3">
               {entries.map((e) => (
-                <SimItem key={e.id} entry={e} onDelete={() => remove.mutate(e.id)} />
+                <SimItem
+                  key={e.id}
+                  entry={e}
+                  onDelete={() => remove.mutate(e.id)}
+                  onToggleBaseline={() => setBaseline.mutate(e)}
+                  baselineLoading={setBaseline.isPending && setBaseline.variables?.id === e.id}
+                />
               ))}
             </ul>
           )}
@@ -521,15 +564,34 @@ export function SessionSummaryTab({ clientId, clientName }: { clientId: string; 
   );
 }
 
-function SimItem({ entry, onDelete }: { entry: HistoryEntry; onDelete: () => void }) {
+function SimItem({
+  entry,
+  onDelete,
+  onToggleBaseline,
+  baselineLoading,
+}: {
+  entry: HistoryEntry;
+  onDelete: () => void;
+  onToggleBaseline: () => void;
+  baselineLoading: boolean;
+}) {
   const t = useT();
   const route = KIND_ROUTES[entry.kind] as "/calculators/lpp";
   return (
-    <li className="flex items-start gap-3 rounded-lg border bg-card p-3 transition-colors hover:border-primary/40">
+    <li
+      className={`flex items-start gap-3 rounded-lg border bg-card p-3 transition-colors hover:border-primary/40 ${
+        entry.is_baseline ? "border-primary/50 bg-primary/5" : ""
+      }`}
+    >
       <div className="flex-1 min-w-0">
         <div className="flex flex-wrap items-center gap-2">
           <Badge variant="secondary">{KIND_LABELS[entry.kind as SimulationKind]}</Badge>
           <span className="text-sm font-medium">{entry.title}</span>
+          {entry.is_baseline && (
+            <Badge variant="default" className="gap-1">
+              <Star className="h-3 w-3 fill-current" /> Situation actuelle
+            </Badge>
+          )}
         </div>
         {entry.note && (
           <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">{entry.note}</p>
@@ -539,6 +601,23 @@ function SimItem({ entry, onDelete }: { entry: HistoryEntry; onDelete: () => voi
         </div>
       </div>
       <div className="flex shrink-0 gap-1">
+        <Button
+          size="sm"
+          variant="ghost"
+          onClick={onToggleBaseline}
+          disabled={baselineLoading}
+          title={
+            entry.is_baseline
+              ? "Ne plus utiliser comme situation actuelle de référence"
+              : "Définir comme situation actuelle de référence pour ce calculateur"
+          }
+        >
+          {baselineLoading ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <Star className={`h-4 w-4 ${entry.is_baseline ? "fill-primary text-primary" : "text-muted-foreground"}`} />
+          )}
+        </Button>
         <Button asChild size="sm" variant="ghost" title={t("history.action.open_tooltip")}>
   <Link to={route} search={{ clientId: entry.client_id ?? undefined, simId: entry.id }}>
     <ExternalLink className="h-4 w-4" />

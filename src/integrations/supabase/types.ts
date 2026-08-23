@@ -1006,6 +1006,7 @@ export type Database = {
           created_at: string
           id: string
           inputs: Json
+          is_baseline: boolean
           kind: Database["public"]["Enums"]["simulation_kind"]
           note: string | null
           summary: Json
@@ -1019,6 +1020,7 @@ export type Database = {
           created_at?: string
           id?: string
           inputs?: Json
+          is_baseline?: boolean
           kind: Database["public"]["Enums"]["simulation_kind"]
           note?: string | null
           summary?: Json
@@ -1032,6 +1034,7 @@ export type Database = {
           created_at?: string
           id?: string
           inputs?: Json
+          is_baseline?: boolean
           kind?: Database["public"]["Enums"]["simulation_kind"]
           note?: string | null
           summary?: Json
