@@ -3,13 +3,32 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+/** Extrait l'id utilisateur vérifié depuis le JWT de la requête (déjà
+ *  validé par la plateforme Supabase — verify_jwt=true dans config.toml —
+ *  avant même l'exécution de cette fonction). Ne JAMAIS faire confiance à
+ *  un id envoyé dans le corps de la requête pour l'identité de l'appelant :
+ *  n'importe qui pourrait sinon usurper n'importe quel autre compte. */
+function getVerifiedUserId(req: Request): string {
+  const authHeader = req.headers.get("Authorization") ?? "";
+  const token = authHeader.replace(/^Bearer\s+/i, "").trim();
+  if (!token) throw new Error("Non authentifié.");
+  const parts = token.split(".");
+  if (parts.length !== 3) throw new Error("Jeton invalide.");
+  let b64 = parts[1].replace(/-/g, "+").replace(/_/g, "/");
+  while (b64.length % 4 !== 0) b64 += "=";
+  const payload = JSON.parse(atob(b64));
+  if (!payload.sub) throw new Error("Jeton invalide.");
+  return payload.sub as string;
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
 
   try {
-    const { brokerId, clientId, amountChf, description, returnUrl } = await req.json();
+    const brokerId = getVerifiedUserId(req);
+    const { clientId, amountChf, description, returnUrl } = await req.json();
 
     if (!amountChf || amountChf < 80) {
       throw new Error("Le montant minimum de facturation est de 80 CHF.");
@@ -56,17 +75,23 @@ Deno.serve(async (req) => {
       snapshot_email: null,
     };
     if (clientId) {
+      // select inclut broker_id : sans cette vérification, n'importe quel
+      // compte authentifié pourrait facturer un rendez-vous en désignant le
+      // clientId d'un tout autre courtier, embarquant ses données
+      // personnelles (nom, date de naissance, email) dans une facture qui
+      // n'est pas la sienne.
       const clientRes = await fetch(
-        `${supabaseUrl}/rest/v1/clients?id=eq.${clientId}&select=first_name,last_name,date_of_birth,gender,nationality,email`,
+        `${supabaseUrl}/rest/v1/clients?id=eq.${clientId}&select=broker_id,first_name,last_name,date_of_birth,gender,nationality,email`,
         { headers: { "apikey": supabaseKey, "Authorization": `Bearer ${supabaseKey}` } }
       );
       const clientBody = await clientRes.json();
       if (!clientRes.ok) {
-        // On log l'erreur exacte pour pouvoir la lire dans les logs Supabase,
-        // mais on ne bloque pas la création de la facture pour autant :
-        // le paiement doit pouvoir se faire même si l'instantané échoue.
-        console.error("Erreur récupération identité client pour snapshot:", clientRes.status, JSON.stringify(clientBody));
-      } else if (Array.isArray(clientBody) && clientBody.length > 0) {
+        throw new Error("Erreur lors de la vérification du client.");
+      }
+      if (Array.isArray(clientBody) && clientBody.length > 0 && clientBody[0].broker_id !== brokerId) {
+        throw new Error("Ce client n'appartient pas à votre compte.");
+      }
+      if (Array.isArray(clientBody) && clientBody.length > 0) {
         const c = clientBody[0];
         snapshot = {
           snapshot_first_name: c.first_name ?? null,

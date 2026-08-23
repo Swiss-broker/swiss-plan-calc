@@ -6,6 +6,24 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+/** Extrait l'id utilisateur vérifié depuis le JWT de la requête (déjà
+ *  validé par la plateforme Supabase — verify_jwt=true dans config.toml —
+ *  avant même l'exécution de cette fonction). Ne JAMAIS faire confiance à
+ *  un id envoyé dans le corps de la requête pour l'identité de l'appelant :
+ *  n'importe qui pourrait sinon usurper n'importe quel autre compte. */
+function getVerifiedUserId(req: Request): string {
+  const authHeader = req.headers.get("Authorization") ?? "";
+  const token = authHeader.replace(/^Bearer\s+/i, "").trim();
+  if (!token) throw new Error("Non authentifié.");
+  const parts = token.split(".");
+  if (parts.length !== 3) throw new Error("Jeton invalide.");
+  let b64 = parts[1].replace(/-/g, "+").replace(/_/g, "/");
+  while (b64.length % 4 !== 0) b64 += "=";
+  const payload = JSON.parse(atob(b64));
+  if (!payload.sub) throw new Error("Jeton invalide.");
+  return payload.sub as string;
+}
+
 async function sendBrevoEmail(to: string, subject: string, htmlContent: string) {
   const brevoKey = Deno.env.get("BREVO_API_KEY");
   if (!brevoKey) {
@@ -36,11 +54,29 @@ Deno.serve(async (req) => {
   }
 
   try {
+    const callerId = getVerifiedUserId(req);
     const { clientEmail, clientName, brokerName, amountChf, paymentLink } = await req.json();
 
     if (!clientEmail) throw new Error("Email du client manquant.");
     if (!paymentLink) throw new Error("Lien de paiement manquant.");
     if (!amountChf) throw new Error("Montant manquant.");
+
+    // Cette fonction envoie un email depuis le domaine de confiance de
+    // l'app à une adresse arbitraire : sans vérifier que le lien de
+    // paiement correspond bien à une facture réelle appartenant à
+    // l'appelant, n'importe quel compte authentifié pourrait s'en servir
+    // comme relais pour envoyer un contenu de phishing à qui il veut.
+    const supabaseUrl = Deno.env.get("SUPABASE_URL");
+    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    if (!supabaseUrl || !supabaseKey) throw new Error("Variables manquantes");
+    const invoiceRes = await fetch(
+      `${supabaseUrl}/rest/v1/rdv_invoices?broker_id=eq.${callerId}&stripe_payment_link=eq.${encodeURIComponent(paymentLink)}&select=id`,
+      { headers: { "apikey": supabaseKey, "Authorization": `Bearer ${supabaseKey}` } },
+    );
+    const invoices = await invoiceRes.json();
+    if (!Array.isArray(invoices) || invoices.length === 0) {
+      throw new Error("Ce lien de paiement ne correspond à aucune facture vous appartenant.");
+    }
 
     const displayAmount = Number(amountChf).toLocaleString("fr-CH", {
       minimumFractionDigits: 2,

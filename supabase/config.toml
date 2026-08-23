@@ -2,7 +2,7 @@ project_id = "ihepboeaudnxqxijeykl"
 
 [functions.ai-chat]
 enabled = true
-verify_jwt = false
+verify_jwt = true
 import_map = "./functions/ai-chat/deno.json"
 entrypoint = "./functions/ai-chat/index.ts"
 
@@ -31,7 +31,7 @@ verify_jwt = true
 verify_jwt = false
 
 [functions.wiki-generate-article]
-verify_jwt = false
+verify_jwt = true
 
 [functions.send-rdv-payment-link]
 verify_jwt = true

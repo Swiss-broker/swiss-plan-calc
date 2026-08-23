@@ -153,22 +153,13 @@ PATRIMOINE
         .filter((m) => m.id !== "welcome")
         .map((m) => ({ role: m.role, content: m.content }));
 
-      const response = await fetch(
-        "https://ihepboeaudnxqxijeykl.supabase.co/functions/v1/ai-chat",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "apikey": import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-          },
-          body: JSON.stringify({
-            system: SYSTEM_PROMPT + clientContext,
-            messages: history,
-          }),
-        }
-      );;
-
-      const data = await response.json();
+      const { data, error } = await supabase.functions.invoke("ai-chat", {
+        body: {
+          system: SYSTEM_PROMPT + clientContext,
+          messages: history,
+        },
+      });
+      if (error) throw error;
       const assistantContent = data.content?.[0]?.text ?? "Désolé, je n'ai pas pu générer une réponse.";
 
       setMessages((prev) => [

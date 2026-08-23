@@ -3,18 +3,46 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+/** Extrait l'id utilisateur vérifié depuis le JWT de la requête (déjà
+ *  validé par la plateforme Supabase — verify_jwt=true dans config.toml —
+ *  avant même l'exécution de cette fonction). Ne JAMAIS faire confiance à
+ *  un id envoyé dans le corps de la requête pour l'identité de l'appelant :
+ *  n'importe qui pourrait sinon usurper n'importe quel autre compte. */
+function getVerifiedUserId(req: Request): string {
+  const authHeader = req.headers.get("Authorization") ?? "";
+  const token = authHeader.replace(/^Bearer\s+/i, "").trim();
+  if (!token) throw new Error("Non authentifié.");
+  const parts = token.split(".");
+  if (parts.length !== 3) throw new Error("Jeton invalide.");
+  let b64 = parts[1].replace(/-/g, "+").replace(/_/g, "/");
+  while (b64.length % 4 !== 0) b64 += "=";
+  const payload = JSON.parse(atob(b64));
+  if (!payload.sub) throw new Error("Jeton invalide.");
+  return payload.sub as string;
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
 
   try {
-    const { brokerId, brokerEmail, returnUrl } = await req.json();
+    const brokerId = getVerifiedUserId(req);
+    const { returnUrl } = await req.json();
     const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
     const supabaseUrl = Deno.env.get("SUPABASE_URL");
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 
     if (!stripeKey || !supabaseUrl || !supabaseKey) throw new Error("Variables manquantes");
+
+    // L'email vient du profil vérifié, jamais du corps de la requête.
+    const profileRes = await fetch(
+      `${supabaseUrl}/rest/v1/profiles?id=eq.${brokerId}&select=email`,
+      { headers: { "apikey": supabaseKey, "Authorization": `Bearer ${supabaseKey}` } },
+    );
+    const callerProfiles = await profileRes.json();
+    const brokerEmail = callerProfiles[0]?.email;
+    if (!brokerEmail) throw new Error("Profil introuvable.");
 
     // Vérifier si le courtier a déjà un compte Connect
     const existingRes = await fetch(

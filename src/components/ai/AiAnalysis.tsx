@@ -3,6 +3,7 @@ import { Sparkles, Loader2, ChevronDown, ChevronUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import ReactMarkdown from "react-markdown";
 import type { Client, ClientPension, ClientAssets } from "@/lib/clients/types";
+import { supabase } from "@/integrations/supabase/client";
 
 interface Props {
   client: Client;
@@ -52,21 +53,13 @@ Sois concis, actionnable, sans emojis ni astérisques. Texte brut uniquement, ti
     setLoading(true);
     setAnalysis(null);
     try {
-      const response = await fetch(
-        "https://ihepboeaudnxqxijeykl.supabase.co/functions/v1/ai-chat",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "apikey": import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-          },
-          body: JSON.stringify({
-            system: "Tu es un expert en prévoyance et fiscalité suisse. Tu réponds en français, sans emojis, sans astérisques, en texte brut structuré.",
-            messages: [{ role: "user", content: buildPrompt() }],
-          }),
-        }
-      );
-      const data = await response.json();
+      const { data, error } = await supabase.functions.invoke("ai-chat", {
+        body: {
+          system: "Tu es un expert en prévoyance et fiscalité suisse. Tu réponds en français, sans emojis, sans astérisques, en texte brut structuré.",
+          messages: [{ role: "user", content: buildPrompt() }],
+        },
+      });
+      if (error) throw error;
       setAnalysis(data.content?.[0]?.text ?? "Impossible de générer l'analyse.");
       setOpen(true);
     } catch {
@@ -157,21 +150,13 @@ Sois concis, chiffré si possible, sans emojis ni astérisques. Texte brut uniqu
     setLoading(true);
     setAnalysis(null);
     try {
-      const response = await fetch(
-        "https://ihepboeaudnxqxijeykl.supabase.co/functions/v1/ai-chat",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "apikey": import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-          },
-          body: JSON.stringify({
-            system: "Tu es un expert en fiscalité des sociétés suisses. Tu réponds en français, sans emojis, sans astérisques, en texte brut structuré.",
-            messages: [{ role: "user", content: buildPrompt() }],
-          }),
-        }
-      );
-      const data = await response.json();
+      const { data, error } = await supabase.functions.invoke("ai-chat", {
+        body: {
+          system: "Tu es un expert en fiscalité des sociétés suisses. Tu réponds en français, sans emojis, sans astérisques, en texte brut structuré.",
+          messages: [{ role: "user", content: buildPrompt() }],
+        },
+      });
+      if (error) throw error;
       setAnalysis(data.content?.[0]?.text ?? "Impossible de générer l'analyse.");
       setOpen(true);
     } catch {

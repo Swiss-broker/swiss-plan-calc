@@ -46,12 +46,31 @@ function stripCitationTags(text: string): string {
   return text.replace(/<cite[^>]*>(.*?)<\/cite>/gs, "$1");
 }
 
+/** Extrait l'id utilisateur vérifié depuis le JWT de la requête (déjà
+ *  validé par la plateforme Supabase — verify_jwt=true dans config.toml —
+ *  avant même l'exécution de cette fonction). Ne JAMAIS faire confiance à
+ *  un id envoyé dans le corps de la requête pour l'identité de l'appelant :
+ *  n'importe qui pourrait sinon usurper n'importe quel autre compte. */
+function getVerifiedUserId(req: Request): string {
+  const authHeader = req.headers.get("Authorization") ?? "";
+  const token = authHeader.replace(/^Bearer\s+/i, "").trim();
+  if (!token) throw new Error("Non authentifié.");
+  const parts = token.split(".");
+  if (parts.length !== 3) throw new Error("Jeton invalide.");
+  let b64 = parts[1].replace(/-/g, "+").replace(/_/g, "/");
+  while (b64.length % 4 !== 0) b64 += "=";
+  const payload = JSON.parse(atob(b64));
+  if (!payload.sub) throw new Error("Jeton invalide.");
+  return payload.sub as string;
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
 
   try {
+    const callerId = getVerifiedUserId(req);
     const { topic } = await req.json();
     if (!topic || typeof topic !== "string") {
       throw new Error("Le sujet de l'article est requis.");
@@ -62,6 +81,18 @@ Deno.serve(async (req) => {
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
     if (!apiKey || !supabaseUrl || !supabaseKey) {
       throw new Error("Variables d'environnement manquantes");
+    }
+
+    // Génération de contenu coûteuse (recherche web + traduction via
+    // l'API Anthropic) réservée aux administrateurs : ni un courtier
+    // normal, ni personne d'anonyme, ne doit pouvoir la déclencher.
+    const adminRes = await fetch(
+      `${supabaseUrl}/rest/v1/admin_users?user_id=eq.${callerId}&select=user_id`,
+      { headers: { "apikey": supabaseKey, "Authorization": `Bearer ${supabaseKey}` } },
+    );
+    const adminRows = await adminRes.json();
+    if (!Array.isArray(adminRows) || adminRows.length === 0) {
+      throw new Error("Réservé aux administrateurs.");
     }
 
     // ── 1. Génération FR avec recherche sur sources officielles ──
