@@ -8,6 +8,7 @@ import {
   GitCompare,
   Loader2,
   Search,
+  Star,
   Trash2,
   X,
 } from "lucide-react";
@@ -169,6 +170,44 @@ function HistoryPage() {
     onError: (e: Error) => toast.error(e.message),
   });
 
+  // Marque une sauvegarde comme référence "situation actuelle" pour son
+  // client et son calculateur (une seule à la fois, voir
+  // simulation_history_one_baseline_per_client_kind) — utilisée par le
+  // dossier PDF pour construire le duo actuelle/projetée. Même logique que
+  // dans l'onglet Synthèse RDV de la fiche client, disponible ici aussi
+  // pour ne pas obliger à repasser par une fiche client précise.
+  const setBaseline = useMutation({
+    mutationFn: async (entry: HistoryEntry) => {
+      if (entry.is_baseline) {
+        const { error } = await supabase
+          .from("simulation_history")
+          .update({ is_baseline: false })
+          .eq("id", entry.id);
+        if (error) throw error;
+        return;
+      }
+      if (!entry.client_id) throw new Error("Cette sauvegarde n'est rattachée à aucun client.");
+      const { error: clearError } = await supabase
+        .from("simulation_history")
+        .update({ is_baseline: false })
+        .eq("client_id", entry.client_id)
+        .eq("kind", entry.kind)
+        .eq("is_baseline", true);
+      if (clearError) throw clearError;
+      const { error } = await supabase
+        .from("simulation_history")
+        .update({ is_baseline: true })
+        .eq("id", entry.id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["simulation-history"] });
+    },
+    onError: () => {
+      toast.error("Erreur lors de la mise à jour de la référence.");
+    },
+  });
+
   return (
     <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
@@ -305,7 +344,14 @@ function HistoryPage() {
                           />
                         </TableCell>
                         <TableCell>
-                          <div className="font-medium">{e.title}</div>
+                          <div className="flex items-center gap-1.5">
+                            <span className="font-medium">{e.title}</span>
+                            {e.is_baseline && (
+                              <Badge variant="default" className="gap-1 text-[10px]">
+                                <Star className="h-3 w-3 fill-current" /> Situation actuelle
+                              </Badge>
+                            )}
+                          </div>
                           {e.note && (
                             <div className="line-clamp-1 text-xs text-muted-foreground">
                               {e.note}
@@ -332,6 +378,25 @@ function HistoryPage() {
                         </TableCell>
                         <TableCell className="text-right">
                           <div className="flex justify-end gap-1">
+                            {e.client_id && (
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => setBaseline.mutate(e)}
+                                disabled={setBaseline.isPending && setBaseline.variables?.id === e.id}
+                                title={
+                                  e.is_baseline
+                                    ? "Ne plus utiliser comme situation actuelle de référence"
+                                    : "Définir comme situation actuelle de référence pour ce calculateur"
+                                }
+                              >
+                                {setBaseline.isPending && setBaseline.variables?.id === e.id ? (
+                                  <Loader2 className="h-4 w-4 animate-spin" />
+                                ) : (
+                                  <Star className={`h-4 w-4 ${e.is_baseline ? "fill-primary text-primary" : "text-muted-foreground"}`} />
+                                )}
+                              </Button>
+                            )}
                             <Button
                               size="sm"
                               variant="ghost"
