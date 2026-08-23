@@ -9,7 +9,8 @@ import {
 } from "@/components/ui/select";
 import { NumField as BaseNumField } from "@/components/ui/num-field";
 import { Label } from "@/components/ui/label";
-import { Sparkles, ShieldCheck, TrendingUp, Activity } from "lucide-react";
+import { Sparkles, ShieldCheck, TrendingUp, Activity, Download } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import {
   Line,
   ResponsiveContainer,
@@ -30,6 +31,8 @@ import {
 } from "@/lib/lpp/vested";
 import { formatCHF } from "@/lib/format";
 import { SaveSimulationButton } from "@/components/calculators/SaveSimulationButton";
+import { useBrokerPdfHeader } from "@/hooks/useBrokerPdfHeader";
+import { exportVestedBenefitsPdf } from "@/lib/pdf/reports";
 
 import { zodValidator, fallback } from "@tanstack/zod-adapter";
 import { z } from "zod";
@@ -90,6 +93,19 @@ function VestedBenefitsCalc() {
   );
 
   const recommended = recommendVestedStrategy(form.yearsToRetirement);
+  const brokerHeader = useBrokerPdfHeader();
+  const handleExportPdf = () => {
+    exportVestedBenefitsPdf({
+      header: brokerHeader,
+      input: {
+        initialBalance: form.initialBalance,
+        yearsToRetirement: form.yearsToRetirement,
+        withdrawalCanton: form.withdrawalCanton,
+      },
+      projections,
+      recommended,
+    });
+  };
 
   const strategyLabel = (id: VestedStrategy) => {
     const map: Record<VestedStrategy, string> = {
@@ -296,6 +312,10 @@ function VestedBenefitsCalc() {
       </CalcCard>
 
       <div className="flex flex-wrap justify-end gap-2">
+        <Button type="button" variant="outline" className="gap-2" onClick={handleExportPdf}>
+          <Download className="h-4 w-4" />
+          Télécharger le rapport PDF
+        </Button>
         <SaveSimulationButton
           kind="vested_benefits"
           inputs={form}

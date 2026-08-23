@@ -280,16 +280,152 @@ export async function regeneratePdf(
       });
       return;
     }
-    case "investment_compare":
-    case "avs_ai":
-    case "vested_benefits":
-    case "cross_border":
-    case "tou":
-    case "director_compensation":
-    case "health_insurance_france":
-    case "overtime":
+    case "investment_compare": {
+      const [{ compareInvestments }, { exportInvestmentComparePdf }] = await Promise.all([
+        import("@/lib/investment-compare"),
+        import("@/lib/pdf/reports"),
+      ]);
+      const saved = inputs as { a?: Parameters<typeof compareInvestments>[0]; b?: Parameters<typeof compareInvestments>[1] };
+      if (!saved.a || !saved.b) return;
+      const comparison = compareInvestments(saved.a, saved.b);
+      exportInvestmentComparePdf({ header, comparison });
+      return;
+    }
+    case "avs_ai": {
+      const [{ projectAvsPension }, { exportAvsAiPdf }] = await Promise.all([
+        import("@/lib/avs"),
+        import("@/lib/pdf/reports"),
+      ]);
+      const f = inputs as Record<string, number | string | boolean>;
+      const buildPerson = (prefix: string) => ({
+        birthYear: num(f[`${prefix}BirthYear`] ?? f.birthYear),
+        gender: (f[`${prefix}Gender`] ?? f.gender) as never,
+        contributionStartYear: num(f[`${prefix}ContributionStartYear`] ?? f.contributionStartYear),
+        retirementYear: num(f[`${prefix}RetirementYear`] ?? f.retirementYear),
+        averageAnnualIncome: num(f[`${prefix}AverageAnnualIncome`] ?? f.averageAnnualIncome),
+      });
+      const primary = {
+        birthYear: num(f.birthYear),
+        gender: f.gender as never,
+        contributionStartYear: num(f.contributionStartYear),
+        retirementYear: num(f.retirementYear),
+        averageAnnualIncome: num(f.averageAnnualIncome),
+        departureYear: num(f.departureYear) > 0 ? num(f.departureYear) : null,
+        educationalYears: num(f.educationalYears),
+        educationalShare: num(f.educationalShare),
+        assistanceYears: num(f.assistanceYears),
+        assistanceShare: num(f.assistanceShare),
+      };
+      const isCouple = Boolean(f.isCouple);
+      const projection = projectAvsPension({
+        status: isCouple ? "married" : "single",
+        primary,
+        spouse: isCouple ? buildPerson("spouse") : undefined,
+      });
+      const currentYear = new Date().getFullYear();
+      const aiProjection = projectAvsPension({
+        status: "single",
+        primary: { ...primary, retirementYear: currentYear, departureYear: null },
+      });
+      exportAvsAiPdf({
+        header,
+        input: {
+          birthYear: primary.birthYear,
+          gender: String(primary.gender),
+          contributionStartYear: primary.contributionStartYear,
+          retirementYear: primary.retirementYear,
+          averageAnnualIncome: primary.averageAnnualIncome,
+          isCouple,
+          spouseBirthYear: num(f.spouseBirthYear),
+          spouseAverageAnnualIncome: num(f.spouseAverageAnnualIncome),
+        },
+        projection,
+        aiProjection,
+      });
+      return;
+    }
+    case "vested_benefits": {
+      const [{ compareVestedStrategies, recommendVestedStrategy }, { exportVestedBenefitsPdf }] = await Promise.all([
+        import("@/lib/lpp/vested"),
+        import("@/lib/pdf/reports"),
+      ]);
+      const f = inputs as Record<string, number | string>;
+      const initialBalance = num(f.initialBalance);
+      const yearsToRetirement = num(f.yearsToRetirement);
+      const withdrawalCanton = String(f.withdrawalCanton);
+      const projections = compareVestedStrategies(initialBalance, yearsToRetirement, withdrawalCanton);
+      const recommended = recommendVestedStrategy(yearsToRetirement);
+      exportVestedBenefitsPdf({
+        header,
+        input: { initialBalance, yearsToRetirement, withdrawalCanton },
+        projections,
+        recommended,
+      });
+      return;
+    }
+    case "director_compensation": {
+      const [
+        { computeAllStrategies, computeStrategy, computeStrategyFromAbsolute, recommendBestStrategy },
+        { exportDirectorCompensationPdf },
+      ] = await Promise.all([import("@/lib/director-compensation"), import("@/lib/pdf/reports")]);
+      const saved = inputs as Record<string, unknown>;
+      const { hasCurrent, current, custom, ...directorInputs } = saved;
+      const di = directorInputs as unknown as Parameters<typeof computeAllStrategies>[0];
+      const presetResults = computeAllStrategies(di);
+      const customResult = custom
+        ? computeStrategy(di, custom as Parameters<typeof computeStrategy>[1])
+        : null;
+      const strategiesForCompare = customResult ? [...presetResults, customResult] : presetResults;
+      const currentResult =
+        hasCurrent && current
+          ? computeStrategyFromAbsolute(di, current as Parameters<typeof computeStrategyFromAbsolute>[1], "Situation actuelle")
+          : null;
+      const recommendation = recommendBestStrategy(strategiesForCompare);
+      exportDirectorCompensationPdf({
+        header,
+        inputs: di,
+        results: strategiesForCompare,
+        recommended: recommendation.best,
+        current: currentResult,
+      });
+      return;
+    }
+    case "health_insurance_france": {
+      const [{ computeHealthFrance }, { exportHealthFrancePdf }] = await Promise.all([
+        import("@/lib/health-france"),
+        import("@/lib/pdf/reports"),
+      ]);
+      const hfInput = inputs as unknown as Parameters<typeof computeHealthFrance>[0];
+      const result = computeHealthFrance(hfInput);
+      exportHealthFrancePdf({ header, input: hfInput, result });
+      return;
+    }
+    case "overtime": {
+      const [{ computeOvertime }, { exportOvertimePdf }] = await Promise.all([
+        import("@/lib/overtime-fr"),
+        import("@/lib/pdf/reports"),
+      ]);
+      const otInput = inputs as unknown as Parameters<typeof computeOvertime>[0];
+      const result = computeOvertime(otInput);
+      exportOvertimePdf({ header, input: otInput, result });
+      return;
+    }
     case "tax_global": {
-      // Pas de regénération PDF pour ces calculateurs (lien profond + bouton Exporter dans la fiche).
+      const [{ computeTaxGlobal }, { exportTaxGlobalPdf }] = await Promise.all([
+        import("@/lib/tax-global/engine"),
+        import("@/lib/pdf/reports"),
+      ]);
+      const tgInput = inputs as unknown as Parameters<typeof computeTaxGlobal>[0];
+      const result = computeTaxGlobal(tgInput);
+      exportTaxGlobalPdf({ header, input: tgInput, result });
+      return;
+    }
+    case "cross_border":
+    case "tou": {
+      // Aucun bouton Sauvegarder n'existe pour ces calculateurs autonomes
+      // (cross-border.tsx / tou.tsx) : ils ne peuvent jamais produire de
+      // ligne simulation_history, donc ce cas n'est jamais atteint en
+      // pratique. Gardé explicite plutôt qu'un défaut silencieux.
       return;
     }
   }

@@ -3,7 +3,8 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { z } from "zod";
 import { zodValidator, fallback } from "@tanstack/zod-adapter";
-import { ChevronDown, Clock, Info, FileText } from "lucide-react";
+import { ChevronDown, Clock, Info, FileText, Download } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import {
   Select,
   SelectContent,
@@ -21,6 +22,8 @@ import {
 } from "@/components/ui/collapsible";
 import { CalcCard, MoneyTile, Row } from "@/components/calculators/CalcUI";
 import { SaveSimulationButton } from "@/components/calculators/SaveSimulationButton";
+import { useBrokerPdfHeader } from "@/hooks/useBrokerPdfHeader";
+import { exportOvertimePdf } from "@/lib/pdf/reports";
 import { ClientLinkBanner } from "@/components/calculators/ClientLinkBanner";
 import { CANTONS, CANTON_BY_CODE } from "@/lib/swiss/cantons";
 import {
@@ -85,6 +88,10 @@ function OvertimeCalc() {
     setForm((f) => ({ ...f, [k]: v }));
 
   const result = useMemo(() => computeOvertime(form), [form]);
+  const brokerHeader = useBrokerPdfHeader();
+  const handleExportPdf = () => {
+    exportOvertimePdf({ header: brokerHeader, input: form, result });
+  };
   const [detailOpen, setDetailOpen] = useState(true);
   const [guideOpen, setGuideOpen] = useState(false);
 
@@ -397,6 +404,10 @@ function OvertimeCalc() {
         </div>
 
         <div className="flex justify-end" data-guide="overtime-save">
+          <Button type="button" variant="outline" className="gap-2" onClick={handleExportPdf}>
+            <Download className="h-4 w-4" />
+            Télécharger le rapport PDF
+          </Button>
           <SaveSimulationButton
             kind="overtime"
             inputs={form}

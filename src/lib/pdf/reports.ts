@@ -564,6 +564,9 @@ export function exportCantonComparePdf(args: {
 import type { CrossBorderInput, CrossBorderResult } from "@/lib/tax/cross-border";
 import type { QuasiResidentResult, TOUComparisonResult } from "@/lib/tax/tou";
 import type { VestedProjectionResult } from "@/lib/lpp/vested";
+import type { InvestmentComparison } from "@/lib/investment-compare";
+import type { AvsProjection } from "@/lib/avs";
+import type { TaxGlobalInput, TaxGlobalResult } from "@/lib/tax-global/types";
 
 export function exportCrossBorderPdf(args: {
   header?: Partial<PdfHeaderInfo>;
@@ -1093,4 +1096,275 @@ export function exportOvertimePdf(args: {
   );
 
   pdf.save(makeFilename("heures_sup_frontalier", input.workCanton));
+}
+
+// ============================================================================
+// COMPARATEUR D'INVESTISSEMENTS
+// ============================================================================
+
+const INVESTMENT_TYPE_LABEL: Record<string, string> = {
+  life_insurance: "Assurance-vie",
+  fund: "Fonds de placement",
+  etf: "ETF",
+  savings: "Épargne / compte",
+  pillar_3a: "3e pilier A",
+  pillar_3b: "3e pilier B",
+  other: "Autre",
+};
+
+export function exportInvestmentComparePdf(args: {
+  header?: Partial<PdfHeaderInfo>;
+  comparison: InvestmentComparison;
+}) {
+  const { comparison } = args;
+  const { a, b } = comparison;
+  const nameA = a.input.name || "Placement A";
+  const nameB = b.input.name || "Placement B";
+  const winnerName = comparison.winner === "a" ? nameA : comparison.winner === "b" ? nameB : null;
+
+  const pdf = new ReportPdf({
+    title: "Comparateur d'investissements",
+    subtitle: `${nameA} vs ${nameB} · ${a.input.durationYears} ans`,
+    ...args.header,
+  } as PdfHeaderInfo);
+
+  pdf.section("Synthèse");
+  pdf.paragraph(
+    `Cette simulation compare deux placements sur ${a.input.durationYears} ans, en tenant compte du rendement brut, des frais annuels ` +
+      `et de l'impôt appliqué au gain lors de la sortie. Les montants sont exprimés en valeur nominale, sans ajustement pour l'inflation.`,
+  );
+  if (comparison.winner === "tie") {
+    pdf.callout("Les deux placements aboutissent à un capital net quasiment identique sur la période retenue.", "info");
+  } else {
+    pdf.metricsGrid([
+      { label: "Meilleur placement", value: winnerName ?? "—", tone: "success" },
+      { label: "Écart de capital net", value: comparison.netDifference, tone: "success" },
+      { label: "Avantage", value: formatPct(comparison.pctAdvantage), tone: "primary" },
+      { label: "Durée simulée", value: `${a.input.durationYears} ans` },
+    ]);
+  }
+
+  pdf.section(`Hypothèses · ${nameA}`);
+  pdf.kvTable([
+    ["Type de placement", INVESTMENT_TYPE_LABEL[a.input.type] ?? a.input.type],
+    ["Capital initial", formatCHF(a.input.initialCapital)],
+    ["Versement périodique", a.input.contributionFrequency === "none" ? "Aucun" : `${formatCHF(a.input.periodicContribution)} (${a.input.contributionFrequency === "monthly" ? "mensuel" : "annuel"})`],
+    ["Rendement brut annuel", `${a.input.grossReturnRate.toFixed(2)} %`],
+    ["Frais annuels", `${a.input.annualFeeRate.toFixed(2)} %`],
+    ["Mode d'intérêts", a.input.interestMode === "simple" ? "Simples" : "Composés"],
+    ["Impôt à la sortie", `${a.input.exitTaxRate.toFixed(1)} %`],
+  ]);
+
+  pdf.section(`Hypothèses · ${nameB}`);
+  pdf.kvTable([
+    ["Type de placement", INVESTMENT_TYPE_LABEL[b.input.type] ?? b.input.type],
+    ["Capital initial", formatCHF(b.input.initialCapital)],
+    ["Versement périodique", b.input.contributionFrequency === "none" ? "Aucun" : `${formatCHF(b.input.periodicContribution)} (${b.input.contributionFrequency === "monthly" ? "mensuel" : "annuel"})`],
+    ["Rendement brut annuel", `${b.input.grossReturnRate.toFixed(2)} %`],
+    ["Frais annuels", `${b.input.annualFeeRate.toFixed(2)} %`],
+    ["Mode d'intérêts", b.input.interestMode === "simple" ? "Simples" : "Composés"],
+    ["Impôt à la sortie", `${b.input.exitTaxRate.toFixed(1)} %`],
+  ]);
+
+  pdf.section("Résultats détaillés");
+  pdf.table(
+    ["Placement", "Total versé", "Capital brut final", "Frais cumulés", "Impôt sortie", "Capital net final"],
+    [
+      [nameA, formatCHF(a.totalContributed), formatCHF(a.finalGrossCapital), formatCHF(a.feesImpact), formatCHF(a.exitTax), formatCHF(a.finalNetCapital)],
+      [nameB, formatCHF(b.totalContributed), formatCHF(b.finalGrossCapital), formatCHF(b.feesImpact), formatCHF(b.exitTax), formatCHF(b.finalNetCapital)],
+    ],
+    { highlightLast: false },
+  );
+
+  pdf.section("Limites du modèle");
+  pdf.paragraph(
+    "Les rendements sont supposés constants sur toute la période, ce qui ne reflète pas la volatilité réelle des marchés. Les montants " +
+      "ne sont pas actualisés pour l'inflation. L'impôt à la sortie appliqué est une hypothèse simplifiée : le traitement fiscal réel " +
+      "dépend du type de placement (par exemple un 3e pilier suit des règles spécifiques différentes d'un compte d'épargne ou d'un fonds).",
+    { italic: true, muted: true },
+  );
+
+  pdf.save(makeFilename("comparateur_investissements"));
+}
+
+// ============================================================================
+// AVS / AI
+// ============================================================================
+
+export function exportAvsAiPdf(args: {
+  header?: Partial<PdfHeaderInfo>;
+  input: {
+    birthYear: number;
+    gender: string;
+    contributionStartYear: number;
+    retirementYear: number;
+    averageAnnualIncome: number;
+    isCouple: boolean;
+    spouseBirthYear?: number;
+    spouseAverageAnnualIncome?: number;
+  };
+  projection: AvsProjection;
+  aiProjection: AvsProjection;
+}) {
+  const { input, projection, aiProjection } = args;
+  const pdf = new ReportPdf({
+    title: t("pdf.avs.title", undefined, "AVS / AI · Estimation de rente"),
+    subtitle: `Retraite envisagée en ${input.retirementYear}`,
+    ...args.header,
+  } as PdfHeaderInfo);
+
+  pdf.situationBanner("1ER PILIER · AVS 2026");
+  pdf.section("Synthèse");
+  pdf.paragraph(
+    `Cette estimation projette la rente AVS (vieillesse) sur la base de la carrière de cotisation renseignée, du revenu annuel moyen ` +
+      `déterminant et de l'année de retraite envisagée (${input.retirementYear}). Elle intègre le barème de rente OFAS et, le cas échéant, ` +
+      `le plafonnement applicable aux couples.`,
+  );
+  if (input.isCouple && projection.combinedAnnualPension !== undefined) {
+    pdf.metricsGrid([
+      { label: "Rente couple mensuelle", value: projection.combinedMonthlyPension ?? 0, tone: "primary" },
+      { label: "Rente couple annuelle", value: projection.combinedAnnualPension, tone: "success" },
+      { label: "Années cotisées (principal)", value: String(projection.primary.effectiveYears) },
+      { label: "Années manquantes", value: String(projection.primary.missingYears), tone: projection.primary.missingYears > 0 ? "warning" : undefined },
+    ]);
+    if (projection.cappedCouple) {
+      pdf.callout("Le plafond familial couple (150 % de la rente maximale individuelle) s'applique : la somme des deux rentes est réduite proportionnellement.", "warning");
+    }
+  } else {
+    pdf.metricsGrid([
+      { label: "Rente mensuelle", value: projection.primary.monthlyPension, tone: "primary" },
+      { label: "Rente annuelle", value: projection.primary.annualPension, tone: "success" },
+      { label: "Années cotisées", value: String(projection.primary.effectiveYears) },
+      { label: "Années manquantes", value: String(projection.primary.missingYears), tone: projection.primary.missingYears > 0 ? "warning" : undefined },
+    ]);
+  }
+
+  pdf.section("Profil du principal assuré");
+  pdf.kvTable([
+    ["Année de naissance", String(input.birthYear)],
+    ["Début de cotisation", String(input.contributionStartYear)],
+    ["Année de retraite envisagée", String(input.retirementYear)],
+    ["Revenu annuel moyen déterminant", formatCHF(input.averageAnnualIncome)],
+    ["Rente théorique complète (44 ans)", formatCHF(projection.primary.theoreticalAnnualPension)],
+    ["Taux de rente appliqué", `${(projection.primary.reductionRatio * 100).toFixed(1)} %`],
+  ]);
+
+  if (input.isCouple && projection.spouse) {
+    pdf.section("Profil du conjoint");
+    pdf.kvTable([
+      ["Année de naissance", String(input.spouseBirthYear ?? "—")],
+      ["Revenu annuel moyen déterminant", formatCHF(input.spouseAverageAnnualIncome ?? 0)],
+      ["Années cotisées", String(projection.spouse.effectiveYears)],
+      ["Rente individuelle mensuelle", formatCHF(projection.spouse.monthlyPension)],
+    ]);
+  }
+
+  pdf.spacer(2);
+  pdf.section("Assurance invalidité (AI)");
+  pdf.paragraph(
+    "En cas d'invalidité reconnue avant l'âge de la retraite, la rente AI est calculée selon le même barème que la rente AVS vieillesse, " +
+      "sur la base de la carrière de cotisation accumulée jusqu'à la survenance de l'invalidité.",
+  );
+  pdf.metricsGrid([
+    { label: "Rente AI mensuelle", value: aiProjection.primary.monthlyPension, tone: "primary" },
+    { label: "Rente AI annuelle", value: aiProjection.primary.annualPension, tone: "success" },
+    { label: "Rente théorique complète", value: aiProjection.primary.theoreticalAnnualPension },
+  ]);
+
+  pdf.section("Méthodologie & avertissements");
+  pdf.paragraph(
+    "Cette estimation utilise une formule simplifiée du barème de rente OFAS et ne modélise pas certains éléments (splitting exact des " +
+      "revenus durant le mariage, bonifications complexes). Elle offre une marge de précision suffisante pour la planification, mais ne " +
+      "remplace pas un extrait de compte individuel (CI) officiel, disponible gratuitement auprès de la caisse de compensation AVS.",
+    { italic: true, muted: true },
+  );
+
+  pdf.save(makeFilename("avs_ai", String(input.retirementYear)));
+}
+
+// ============================================================================
+// FISCALITÉ GLOBALE
+// ============================================================================
+
+const CIVIL_STATUS_LABEL_GLOBAL: Record<string, string> = {
+  single: "Célibataire",
+  married: "Marié·e",
+  registered_partnership: "Partenariat enregistré",
+  cohabiting: "Concubinage",
+  divorced: "Divorcé·e",
+  separated: "Séparé·e",
+  widowed: "Veuf·ve",
+};
+
+export function exportTaxGlobalPdf(args: {
+  header?: Partial<PdfHeaderInfo>;
+  input: TaxGlobalInput;
+  result: TaxGlobalResult;
+}) {
+  const { input, result } = args;
+  const pdf = new ReportPdf({
+    title: "Fiscalité globale · Synthèse complète",
+    subtitle: result.regimeLabel,
+    ...args.header,
+  } as PdfHeaderInfo);
+
+  pdf.situationBanner("SITUATION FISCALE GLOBALE · 2026");
+  pdf.section("Synthèse");
+  pdf.paragraph(
+    `Le régime fiscal applicable a été déterminé automatiquement selon le canton de travail (${cantonName(input.canton)}), le permis de séjour, ` +
+      `le pays de résidence et, le cas échéant, la part du revenu réalisée en Suisse. Ce document consolide l'impôt suisse, l'éventuel impôt ` +
+      `dû à l'étranger et les charges sociales (assurance maladie) pour donner une vision complète du revenu net disponible.`,
+  );
+  pdf.metricsGrid([
+    { label: "Impôt total", value: result.totalTaxCHF, tone: "primary" },
+    { label: "Net annuel disponible", value: result.netAnnualCHF, tone: "success" },
+    { label: "Taux effectif", value: formatPct(result.effectiveRate), tone: "primary" },
+    { label: "Taux marginal", value: formatPct(result.marginalRate), tone: "warning" },
+  ]);
+
+  pdf.section("Profil");
+  pdf.kvTable([
+    ["Canton de travail", cantonName(input.canton)],
+    ["Pays de résidence", input.countryOfResidence],
+    ["Permis", input.permit === "swiss" ? "Suisse" : `Permis ${input.permit}`],
+    ["Situation civile", CIVIL_STATUS_LABEL_GLOBAL[input.civilStatus] ?? input.civilStatus],
+    ["Enfants à charge", String(input.children ?? 0)],
+    ["Salaire brut principal", formatCHF(input.grossSalary)],
+    ...(input.spouseGrossSalary
+      ? [["Salaire brut conjoint", formatCHF(input.spouseGrossSalary)] as [string, string]]
+      : []),
+    ...(input.bonus ? [["Bonus", formatCHF(input.bonus)] as [string, string]] : []),
+    ...(input.netWealth ? [["Fortune nette", formatCHF(input.netWealth)] as [string, string]] : []),
+  ]);
+
+  pdf.section("Répartition de la charge");
+  pdf.table(
+    ["Poste", "Montant CHF"],
+    [
+      ["Part suisse (impôt retenu en Suisse)", formatCHF(result.swissShareCHF)],
+      ...(result.foreignShareCHF > 0
+        ? [["Part étrangère (pays de résidence)", formatCHF(result.foreignShareCHF)]]
+        : []),
+      ["Charges sociales (LAMal / CMU)", formatCHF(result.socialChargesCHF)],
+      ["Impôt total", formatCHF(result.totalTaxCHF)],
+      ["Revenu brut de référence", formatCHF(result.grossIncomeCHF)],
+      ["Net annuel disponible", formatCHF(result.netAnnualCHF)],
+    ],
+    { highlightLast: true },
+  );
+
+  if (result.notes.length > 0) {
+    pdf.section("Notes du régime");
+    result.notes.forEach((n) => pdf.paragraph(`• ${n}`));
+  }
+
+  pdf.section("Méthodologie & avertissements");
+  pdf.paragraph(
+    "Ce document consolide plusieurs moteurs de calcul selon le régime détecté (taxation ordinaire, impôt à la source, taxation ordinaire " +
+      "ultérieure, ou régime frontalier). Les barèmes appliqués sont ceux de l'année fiscale 2026. Pour une situation à la frontière entre " +
+      "deux régimes, une vérification auprès de l'administration fiscale cantonale est recommandée.",
+    { italic: true, muted: true },
+  );
+
+  pdf.save(makeFilename("fiscalite_globale", input.canton));
 }

@@ -15,7 +15,7 @@ import {
   CartesianGrid,
   Legend,
 } from "recharts";
-import { RotateCcw, TrendingUp } from "lucide-react";
+import { RotateCcw, TrendingUp, Download } from "lucide-react";
 
 import { CalcCard, MoneyTile, HelpDot } from "@/components/calculators/CalcUI";
 import { NumField as BaseNumField } from "@/components/ui/num-field";
@@ -30,6 +30,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { SaveSimulationButton } from "@/components/calculators/SaveSimulationButton";
+import { useBrokerPdfHeader } from "@/hooks/useBrokerPdfHeader";
+import { exportInvestmentComparePdf } from "@/lib/pdf/reports";
 import { GuideMode, GuideToggleButton, type GuideStep } from "@/components/calculators/GuideMode";
 import { useT } from "@/contexts/LanguageContext";
 import { formatCHF, formatPct } from "@/lib/format";
@@ -119,6 +121,10 @@ function InvestmentCompareCalc() {
   }, [prefill]);
 
   const comparison = useMemo(() => compareInvestments(a, b), [a, b]);
+  const brokerHeader = useBrokerPdfHeader();
+  const handleExportPdf = () => {
+    exportInvestmentComparePdf({ header: brokerHeader, comparison });
+  };
 
   const reset = () => {
     setA({ ...DEFAULT_A, name: t("calc.invcompare.default_a") });
@@ -274,6 +280,10 @@ function InvestmentCompareCalc() {
       </CalcCard>
 
       <div className="flex flex-wrap justify-end gap-2">
+        <Button type="button" variant="outline" className="gap-2" onClick={handleExportPdf}>
+          <Download className="h-4 w-4" />
+          Télécharger le rapport PDF
+        </Button>
         <SaveSimulationButton
           kind={"investment_compare" as never}
           inputs={{ a, b } as Record<string, unknown>}

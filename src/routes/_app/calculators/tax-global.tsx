@@ -2,7 +2,8 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { zodValidator, fallback } from "@tanstack/zod-adapter";
 import { z } from "zod";
-import { Sparkles, Info, ArrowRight } from "lucide-react";
+import { Sparkles, Info, ArrowRight, Download } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 import { CalcCard, MoneyTile, PctTile, Row, InfoLabel, HelpDot } from "@/components/calculators/CalcUI";
 import { ClientLinkBanner } from "@/components/calculators/ClientLinkBanner";
@@ -26,6 +27,8 @@ import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Pillar3bInfoTile } from "@/components/optimizer/OptimizationsPanel";
 import { SaveSimulationButton } from "@/components/calculators/SaveSimulationButton";
+import { useBrokerPdfHeader } from "@/hooks/useBrokerPdfHeader";
+import { exportTaxGlobalPdf } from "@/lib/pdf/reports";
 import { TaxGlobalExplanation } from "@/components/calculators/TaxGlobalExplanation";
 import { TaxGlobalCompareCard } from "@/components/calculators/TaxGlobalCompareCard";
 import { GuideMode, GuideToggleButton, type GuideStep } from "@/components/calculators/GuideMode";
@@ -85,7 +88,11 @@ function TaxGlobalCalc() {
     setForm((f) => ({ ...f, [k]: v }));
 
   const result = useMemo(() => computeTaxGlobal(form), [form]);
-  
+  const brokerHeader = useBrokerPdfHeader();
+  const handleExportPdf = () => {
+    exportTaxGlobalPdf({ header: brokerHeader, input: form, result });
+  };
+
 
   // ── Conversion devise pour revenus étrangers ──
   const [fxCurrency, setFxCurrency] = useState<FxCurrency>("CHF");
@@ -932,6 +939,10 @@ function TaxGlobalCalc() {
 
 
       <div className="flex flex-wrap justify-end gap-2">
+        <Button type="button" variant="outline" className="gap-2" onClick={handleExportPdf}>
+          <Download className="h-4 w-4" />
+          Télécharger le rapport PDF
+        </Button>
         <SaveSimulationButton
           kind="tax_global"
           inputs={form as unknown as Record<string, unknown>}

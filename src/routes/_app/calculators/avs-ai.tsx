@@ -29,6 +29,10 @@ import { ClientLinkBanner } from "@/components/calculators/ClientLinkBanner";
 import { GuideMode, GuideToggleButton, type GuideStep } from "@/components/calculators/GuideMode";
 import { WikiTip } from "@/components/calculators/WikiTip";
 import { SaveSimulationButton } from "@/components/calculators/SaveSimulationButton";
+import { useBrokerPdfHeader } from "@/hooks/useBrokerPdfHeader";
+import { exportAvsAiPdf } from "@/lib/pdf/reports";
+import { Download } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { useT } from "@/contexts/LanguageContext";
 import { parseChildren, ageFromDob } from "@/lib/clients/types";
 import { buildSurvivorBenefits } from "@/lib/avs/survivors";
@@ -202,6 +206,25 @@ function AvsAiCalc() {
       }),
     [form, aiEduYears, aiAssistYears, currentYear],
   );
+
+  const brokerHeader = useBrokerPdfHeader();
+  const handleExportPdf = () => {
+    exportAvsAiPdf({
+      header: brokerHeader,
+      input: {
+        birthYear: form.birthYear,
+        gender: form.gender,
+        contributionStartYear: form.contributionStartYear,
+        retirementYear: form.retirementYear,
+        averageAnnualIncome: form.averageAnnualIncome,
+        isCouple: form.isCouple,
+        spouseBirthYear: form.spouseBirthYear,
+        spouseAverageAnnualIncome: form.spouseAverageAnnualIncome,
+      },
+      projection,
+      aiProjection,
+    });
+  };
 
   const [guideOpen, setGuideOpen] = useState(false);
   const guideSteps: GuideStep[] = [
@@ -562,6 +585,10 @@ function AvsAiCalc() {
         </div>
       </CalcCard>
       <div className="flex flex-wrap justify-end gap-2">
+        <Button type="button" variant="outline" className="gap-2" onClick={handleExportPdf}>
+          <Download className="h-4 w-4" />
+          Télécharger le rapport PDF
+        </Button>
         <SaveSimulationButton
           kind="avs_ai"
           inputs={form}

@@ -3,7 +3,8 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { z } from "zod";
 import { zodValidator, fallback } from "@tanstack/zod-adapter";
-import { Shield, Info, ChevronDown } from "lucide-react";
+import { Shield, Info, ChevronDown, Download } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import {
   Select,
   SelectContent,
@@ -20,6 +21,8 @@ import {
 } from "@/components/ui/collapsible";
 import { CalcCard, MoneyTile, Row, HelpDot } from "@/components/calculators/CalcUI";
 import { SaveSimulationButton } from "@/components/calculators/SaveSimulationButton";
+import { useBrokerPdfHeader } from "@/hooks/useBrokerPdfHeader";
+import { exportHealthFrancePdf } from "@/lib/pdf/reports";
 import { ClientLinkBanner } from "@/components/calculators/ClientLinkBanner";
 import { usePrefillFromClient, useHydrateFormFromPrefill } from "@/hooks/usePrefillFromClient";
 import { useLoadSavedSimulation } from "@/hooks/useLoadSavedSimulation";
@@ -70,6 +73,10 @@ function HealthInsuranceFranceCalc() {
     setForm((f) => ({ ...f, [k]: v }));
 
   const result = useMemo(() => computeHealthFrance(form), [form]);
+  const brokerHeader = useBrokerPdfHeader();
+  const handleExportPdf = () => {
+    exportHealthFrancePdf({ header: brokerHeader, input: form, result });
+  };
   const [guideOpen, setGuideOpen] = useState(false);
 
   const recoLabel = result.recommended === "CMU" ? "CMU (France)" : "LAMal (Suisse)";
@@ -272,6 +279,10 @@ function HealthInsuranceFranceCalc() {
         </CalcCard>
 
         <div className="flex justify-end" data-guide="health-fr-save">
+          <Button type="button" variant="outline" className="gap-2" onClick={handleExportPdf}>
+            <Download className="h-4 w-4" />
+            Télécharger le rapport PDF
+          </Button>
           <SaveSimulationButton
             kind="health_insurance_france"
             inputs={form}
