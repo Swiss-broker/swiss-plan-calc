@@ -2,7 +2,10 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { RouterProvider } from "@tanstack/react-router";
 import { getRouter } from "./router";
+import { installGlobalErrorLogging } from "@/lib/error-logging";
 import "./styles.css";
+
+installGlobalErrorLogging();
 
 const router = getRouter();
 

@@ -44,6 +44,39 @@ export type Database = {
         }
         Relationships: []
       }
+      client_errors: {
+        Row: {
+          broker_id: string | null
+          context: Json | null
+          created_at: string
+          id: string
+          message: string
+          stack: string | null
+          url: string | null
+          user_agent: string | null
+        }
+        Insert: {
+          broker_id?: string | null
+          context?: Json | null
+          created_at?: string
+          id?: string
+          message: string
+          stack?: string | null
+          url?: string | null
+          user_agent?: string | null
+        }
+        Update: {
+          broker_id?: string | null
+          context?: Json | null
+          created_at?: string
+          id?: string
+          message?: string
+          stack?: string | null
+          url?: string | null
+          user_agent?: string | null
+        }
+        Relationships: []
+      }
       admin_notifications: {
         Row: {
           admin_id: string

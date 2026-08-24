@@ -13,6 +13,7 @@ import { LanguageProvider, useLanguage } from "@/contexts/LanguageContext";
 import { ActiveClientProvider } from "@/contexts/ActiveClientContext";
 import { PlanProvider } from "@/contexts/PlanContext";
 import { GuideProvider } from "@/contexts/GuideContext";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { t as translate } from "@/lib/i18n";
 
 const rootSearchSchema = z.object({
@@ -48,7 +49,9 @@ function LanguageScopedTree() {
   const { lang } = useLanguage();
   return (
     <div key={lang} className="contents">
-      <Outlet />
+      <ErrorBoundary>
+        <Outlet />
+      </ErrorBoundary>
       <Toaster richColors position="top-right" />
     </div>
   );

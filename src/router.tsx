@@ -1,8 +1,19 @@
+import { useEffect } from "react";
 import { createRouter, useRouter } from "@tanstack/react-router";
 import { routeTree } from "./routeTree.gen";
+import { logClientError } from "@/lib/error-logging";
 
 function DefaultErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
   const router = useRouter();
+
+  // Erreur de rendu de route la plus courante (bien plus fréquente que les
+  // erreurs hors arbre de routage attrapées par ErrorBoundary) : c'est ici
+  // qu'il faut journaliser pour avoir une vraie visibilité sur les bugs
+  // rencontrés par les courtiers.
+  useEffect(() => {
+    logClientError(error.message, error.stack);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [error]);
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
