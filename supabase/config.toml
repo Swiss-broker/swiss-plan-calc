@@ -36,6 +36,9 @@ verify_jwt = true
 [functions.send-rdv-payment-link]
 verify_jwt = true
 
+[functions.admin-set-broker-plan]
+verify_jwt = true
+
 [functions.cabinet-add-seat]
 verify_jwt = true
 
