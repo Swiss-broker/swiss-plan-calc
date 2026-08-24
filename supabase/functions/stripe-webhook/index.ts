@@ -127,7 +127,23 @@ Deno.serve(async (req) => {
 
     const event = JSON.parse(body);
 
-    const updatePlan = async (email: string, plan: string) => {
+    // Journalise chaque changement de plan dans plan_events, avec sa raison,
+    // pour que le panel admin puisse voir les échecs de paiement et
+    // résiliations récents (aujourd'hui invisibles : le webhook changeait
+    // juste profiles.plan sans laisser aucune trace).
+    const updatePlan = async (
+      email: string,
+      plan: string,
+      reason: "checkout_completed" | "subscription_deleted" | "payment_failed",
+    ) => {
+      const profileRes = await fetch(
+        `${supabaseUrl}/rest/v1/profiles?email=eq.${encodeURIComponent(email)}&select=id,plan`,
+        { headers: { "apikey": supabaseKey, "Authorization": `Bearer ${supabaseKey}` } },
+      );
+      const profiles = await profileRes.json();
+      const profile = profiles[0];
+      if (!profile) return;
+
       await fetch(
         `${supabaseUrl}/rest/v1/profiles?email=eq.${encodeURIComponent(email)}`,
         {
@@ -141,6 +157,25 @@ Deno.serve(async (req) => {
           body: JSON.stringify({ plan }),
         }
       );
+
+      if (profile.plan !== plan) {
+        await fetch(`${supabaseUrl}/rest/v1/plan_events`, {
+          method: "POST",
+          headers: {
+            "apikey": supabaseKey,
+            "Authorization": `Bearer ${supabaseKey}`,
+            "Content-Type": "application/json",
+            "Prefer": "return=minimal",
+          },
+          body: JSON.stringify({
+            broker_id: profile.id,
+            previous_plan: profile.plan,
+            new_plan: plan,
+            reason,
+            stripe_event_id: event.id ?? null,
+          }),
+        });
+      }
     };
 
     if (event.type === "checkout.session.completed") {
@@ -296,7 +331,7 @@ Deno.serve(async (req) => {
           } else {
             // Cas normal : quelqu'un souscrit lui-même au plan Cabinet
             // pour créer son propre cabinet (devient Directeur racine).
-            await updatePlan(email, plan);
+            await updatePlan(email, plan, "checkout_completed");
             if (plan === "cabinet") {
               const profileRes = await fetch(
                 `${supabaseUrl}/rest/v1/profiles?email=eq.${encodeURIComponent(email)}&select=id,cabinet_role`,
@@ -333,7 +368,7 @@ Deno.serve(async (req) => {
       );
       const customer = await customerRes.json();
       if (customer.email) {
-        await updatePlan(customer.email, "expired");
+        await updatePlan(customer.email, "expired", "subscription_deleted");
 
         // Cascade : si ce compte avait lui-même invité des membres cabinet
         // (courtiers ou directeurs) sur ce même abonnement désormais résilié,
@@ -348,6 +383,16 @@ Deno.serve(async (req) => {
         const owners = await ownerRes.json();
         const ownerId = owners[0]?.id;
         if (ownerId) {
+          // Snapshot des membres affectés AVANT le PATCH en masse, pour
+          // pouvoir journaliser leur plan précédent individuellement (le
+          // panel admin doit pouvoir voir que ces courtiers ont perdu
+          // l'accès en cascade, pas juste le directeur qui a résilié).
+          const membersRes = await fetch(
+            `${supabaseUrl}/rest/v1/profiles?manager_id=eq.${ownerId}&select=id,plan`,
+            { headers: { "apikey": supabaseKey, "Authorization": `Bearer ${supabaseKey}` } }
+          );
+          const members: { id: string; plan: string }[] = await membersRes.json();
+
           await fetch(
             `${supabaseUrl}/rest/v1/profiles?manager_id=eq.${ownerId}`,
             {
@@ -361,6 +406,26 @@ Deno.serve(async (req) => {
               body: JSON.stringify({ plan: "expired" }),
             }
           );
+
+          for (const member of members) {
+            if (member.plan === "expired") continue;
+            await fetch(`${supabaseUrl}/rest/v1/plan_events`, {
+              method: "POST",
+              headers: {
+                "apikey": supabaseKey,
+                "Authorization": `Bearer ${supabaseKey}`,
+                "Content-Type": "application/json",
+                "Prefer": "return=minimal",
+              },
+              body: JSON.stringify({
+                broker_id: member.id,
+                previous_plan: member.plan,
+                new_plan: "expired",
+                reason: "subscription_deleted",
+                stripe_event_id: event.id ?? null,
+              }),
+            });
+          }
         }
       }
     }
@@ -372,7 +437,7 @@ Deno.serve(async (req) => {
         { headers: { "Authorization": `Bearer ${stripeKey}` } }
       );
       const customer = await customerRes.json();
-      if (customer.email) await updatePlan(customer.email, "expired");
+      if (customer.email) await updatePlan(customer.email, "expired", "payment_failed");
     }
 
     if (event.type === "payment_intent.succeeded") {

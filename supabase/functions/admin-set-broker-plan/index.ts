@@ -74,13 +74,14 @@ Deno.serve(async (req) => {
     }
 
     const brokerRes = await fetch(
-      `${supabaseUrl}/rest/v1/profiles?id=eq.${brokerId}&select=id`,
+      `${supabaseUrl}/rest/v1/profiles?id=eq.${brokerId}&select=id,plan`,
       { headers: svcHeaders },
     );
     const brokerRows = await brokerRes.json();
     if (!Array.isArray(brokerRows) || brokerRows.length === 0) {
       throw new Error("Courtier introuvable.");
     }
+    const previousPlan = brokerRows[0].plan;
 
     const updateRes = await fetch(`${supabaseUrl}/rest/v1/profiles?id=eq.${brokerId}`, {
       method: "PATCH",
@@ -90,6 +91,24 @@ Deno.serve(async (req) => {
     if (!updateRes.ok) {
       const detail = await updateRes.text();
       throw new Error(`Échec de la mise à jour du plan : ${detail}`);
+    }
+
+    // Journalise le changement manuel dans plan_events, pour la même
+    // visibilité admin que les changements automatiques déclenchés par
+    // Stripe (échec de paiement, résiliation) et pour la traçabilité de
+    // qui a fait quoi.
+    if (previousPlan !== plan) {
+      await fetch(`${supabaseUrl}/rest/v1/plan_events`, {
+        method: "POST",
+        headers: { ...svcHeaders, "Prefer": "return=minimal" },
+        body: JSON.stringify({
+          broker_id: brokerId,
+          previous_plan: previousPlan,
+          new_plan: plan,
+          reason: "admin_override",
+          changed_by: callerId,
+        }),
+      });
     }
 
     return new Response(JSON.stringify({ updated: true, brokerId, plan }), {
