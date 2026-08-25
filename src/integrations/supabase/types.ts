@@ -1361,17 +1361,18 @@ export type Database = {
       access_shared_simulation: {
         Args: { _password?: string; _token: string }
         Returns: {
-          broker_display: string
-          expires_at: string
-          inputs: Json
-          kind: string
-          note: string
-          remaining_views: number
-          shared_at: string
-          simulation_created_at: string
-          summary: Json
-          tags: string[]
-          title: string
+          broker_display: string | null
+          error_code: string | null
+          expires_at: string | null
+          inputs: Json | null
+          kind: string | null
+          note: string | null
+          remaining_views: number | null
+          shared_at: string | null
+          simulation_created_at: string | null
+          summary: Json | null
+          tags: string[] | null
+          title: string | null
         }[]
       }
       get_upload_link_info: {

@@ -58,6 +58,7 @@ type SharedData = {
   expires_at: string | null;
   remaining_views: number | null;
   broker_display: string | null;
+  error_code: string | null;
 };
 
 const ERROR_LABELS: Record<string, string> = {
@@ -67,6 +68,7 @@ const ERROR_LABELS: Record<string, string> = {
   SHARE_MAX_VIEWS: "Le nombre maximum de consultations a été atteint.",
   SHARE_PASSWORD_REQUIRED: "Ce lien est protégé par un mot de passe.",
   SHARE_PASSWORD_INVALID: "Mot de passe incorrect.",
+  SHARE_LOCKED: "Trop de tentatives incorrectes. Réessayez dans quelques minutes.",
 };
 
 function decodeError(msg: string | undefined): string {
@@ -94,6 +96,10 @@ function SharedSimulationPage() {
       if (error) throw error;
       const row = Array.isArray(rows) ? rows[0] : rows;
       if (!row) throw new Error("SHARE_NOT_FOUND");
+      // Un mot de passe incorrect n'est pas remonté comme une exception
+      // Postgres (ça annulerait l'incrémentation du compteur anti
+      // brute-force côté base), mais comme un code d'erreur dans la ligne.
+      if (row.error_code) throw new Error(row.error_code);
       return row as SharedData;
     },
     onSuccess: (row) => {
