@@ -284,7 +284,7 @@ export function computeTaxGlobal(g: TaxGlobalInput): TaxGlobalResult {
       trace: {
         ...baseTrace,
         assumptions: [
-          `Barème IS appliqué : ${scale} (statut ${status}, conjoint actif: ${couple && g.spouseEmployed ? "oui" : "non"})`,
+          `Barème IS appliqué : ${scale} (statut ${statusForScale}, conjoint actif: ${couple && g.spouseEmployed ? "oui" : "non"})`,
           "Impôt à la source mensuel × 12 (hors gratifications irrégulières)",
           touEligibility.eligibleForTOU
             ? `Quasi-résident : ${baseTrace.detection.swissShareOfWorldwide}% du revenu mondial en CH → TOU possible`

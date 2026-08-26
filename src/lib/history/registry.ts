@@ -256,13 +256,18 @@ export async function regeneratePdf(
       return;
     }
     case "canton_compare": {
-      const [{ computeIncomeTax }, { exportCantonComparePdf }, { CANTONS }] = await Promise.all([
+      const [{ computeIncomeTax }, { exportCantonComparePdf }, { getComparableCantons }] = await Promise.all([
         import("@/lib/tax/income"),
         import("@/lib/pdf/reports"),
         import("@/lib/swiss/cantons"),
       ]);
       const f = inputs as Record<string, number | string>;
-      const rows = CANTONS.map((c) => {
+      // getComparableCantons() (pas la liste CANTONS brute, qui inclut des
+      // cantons hors scope v1 comme AG/ZH) : le calculateur interactif
+      // (canton-compare.tsx) ne compare que les cantons "comparable: true" ;
+      // utiliser la liste complète ici faisait planter la régénération du
+      // PDF sur un canton non supporté par computeIncomeTax.
+      const rows = getComparableCantons().map((c) => {
         const r = computeIncomeTax({
           canton: c.code,
           status: f.status as "single" | "married" | "single_with_children",
