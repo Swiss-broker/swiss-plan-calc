@@ -734,6 +734,71 @@ export type Database = {
           },
         ]
       }
+      client_email_log: {
+        Row: {
+          broker_id: string
+          client_id: string
+          id: string
+          sent_at: string
+          subject: string
+          template_key: string | null
+        }
+        Insert: {
+          broker_id: string
+          client_id: string
+          id?: string
+          sent_at?: string
+          subject: string
+          template_key?: string | null
+        }
+        Update: {
+          broker_id?: string
+          client_id?: string
+          id?: string
+          sent_at?: string
+          subject?: string
+          template_key?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_email_log_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      email_templates: {
+        Row: {
+          body: string
+          broker_id: string
+          created_at: string
+          id: string
+          subject: string
+          template_key: string
+          updated_at: string
+        }
+        Insert: {
+          body: string
+          broker_id: string
+          created_at?: string
+          id?: string
+          subject: string
+          template_key: string
+          updated_at?: string
+        }
+        Update: {
+          body?: string
+          broker_id?: string
+          created_at?: string
+          id?: string
+          subject?: string
+          template_key?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       clients: {
         Row: {
           activity_rate: number | null
@@ -1028,6 +1093,7 @@ export type Database = {
           created_at: string
           default_canton: string | null
           email: string
+          email_signature: string | null
           first_name: string | null
           guides_seen: string[]
           id: string
@@ -1049,6 +1115,7 @@ export type Database = {
           created_at?: string
           default_canton?: string | null
           email: string
+          email_signature?: string | null
           first_name?: string | null
           guides_seen?: string[]
           id: string
@@ -1070,6 +1137,7 @@ export type Database = {
           created_at?: string
           default_canton?: string | null
           email?: string
+          email_signature?: string | null
           first_name?: string | null
           guides_seen?: string[]
           id?: string

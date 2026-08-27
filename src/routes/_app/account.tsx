@@ -1,7 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { Loader2, User, Building2, CreditCard, FileText } from "lucide-react";
+import { Loader2, User, Building2, CreditCard, FileText, Mail } from "lucide-react";
+import { EmailTemplatesSection } from "@/components/account/EmailTemplatesSection";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -23,6 +24,7 @@ const TABS = [
   { id: "abonnement", label: "Abonnement", icon: CreditCard },
   { id: "paiements", label: "Mes paiements", icon: CreditCard },
   { id: "pdf", label: "Rapports PDF", icon: FileText },
+  { id: "emails", label: "Modèles d'e-mails", icon: Mail },
 ] as const;
 
 type TabId = typeof TABS[number]["id"];
@@ -495,6 +497,12 @@ function AccountPage() {
               Enregistrer
             </Button>
           </div>
+        </div>
+      )}
+
+      {activeTab === "emails" && (
+        <div className="mt-6">
+          <EmailTemplatesSection />
         </div>
       )}
     </div>

@@ -74,6 +74,7 @@ import { AiAnalysis } from "@/components/ai/AiAnalysis";
 import { AiConversationsTab } from "@/components/ai/AiConversationsTab";
 import { SessionSummaryTab } from "@/components/clients/SessionSummaryTab";
 import { NextAppointmentCard } from "@/components/appointments/NextAppointmentCard";
+import { EmailsTab } from "@/components/clients/EmailsTab";
 export const Route = createFileRoute("/_app/clients/$clientId")({
   head: () => ({ meta: [{ title: "Fiche client · SwissBroker Pro" }] }),
   component: ClientDetailPage,
@@ -410,6 +411,10 @@ function ClientDetailPage() {
             <FolderOpen className="h-3.5 w-3.5" />
             Documents
           </TabsTrigger>
+          <TabsTrigger value="emails" className="gap-1">
+            <Mail className="h-3.5 w-3.5" />
+            E-mails
+          </TabsTrigger>
         </TabsList>
         
         <TabsContent value="session" className="mt-4">
@@ -703,6 +708,10 @@ function ClientDetailPage() {
             clientId={clientId}
             clientFirstName={client.first_name}
           />
+        </TabsContent>
+
+        <TabsContent value="emails" className="mt-4">
+          <EmailsTab clientId={clientId} />
         </TabsContent>
 
 
