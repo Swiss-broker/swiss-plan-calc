@@ -409,7 +409,15 @@ export function ClientWizard({ initial, mode, clientId }: ClientWizardProps) {
 
       let savedId: string;
       if (currentClientId.current) {
-        const { error } = await supabase.from("clients").update(payload).eq("id", currentClientId.current);
+        // broker_id n'est volontairement plus modifiable en UPDATE (voir
+        // migration lock_broker_self_update_paths : ça empêchait un
+        // courtier de réassigner un client à un autre compte). Comme
+        // Postgres refuse la totalité d'un UPDATE dès qu'une seule colonne
+        // du SET n'est pas autorisée, l'inclure ici — même inchangé —
+        // faisait échouer toute la sauvegarde avec "permission denied for
+        // table clients", téléphone y compris.
+        const { broker_id: _broker_id, ...updatePayload } = payload;
+        const { error } = await supabase.from("clients").update(updatePayload).eq("id", currentClientId.current);
         if (error) throw error;
         savedId = currentClientId.current;
       } else {
