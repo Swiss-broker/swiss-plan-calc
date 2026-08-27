@@ -393,6 +393,11 @@ Deno.serve(async (req) => {
           );
           const members: { id: string; plan: string }[] = await membersRes.json();
 
+          // Detache aussi du cabinet (cabinet_role/cabinet_root_id/manager_id),
+          // pas seulement le plan : sinon un membre reactive plus tard (admin,
+          // ou nouvel abonnement individuel) garde un role/rattachement perime
+          // vers un cabinet dont l'abonnement racine n'existe plus. Meme
+          // nettoyage que cabinet-remove-member pour un retrait manuel.
           await fetch(
             `${supabaseUrl}/rest/v1/profiles?manager_id=eq.${ownerId}`,
             {
@@ -403,7 +408,7 @@ Deno.serve(async (req) => {
                 "Content-Type": "application/json",
                 "Prefer": "return=minimal",
               },
-              body: JSON.stringify({ plan: "expired" }),
+              body: JSON.stringify({ plan: "expired", cabinet_role: null, cabinet_root_id: null, manager_id: null }),
             }
           );
 

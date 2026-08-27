@@ -74,7 +74,7 @@ Deno.serve(async (req) => {
     }
 
     const brokerRes = await fetch(
-      `${supabaseUrl}/rest/v1/profiles?id=eq.${brokerId}&select=id,plan`,
+      `${supabaseUrl}/rest/v1/profiles?id=eq.${brokerId}&select=id,plan,cabinet_role`,
       { headers: svcHeaders },
     );
     const brokerRows = await brokerRes.json();
@@ -83,10 +83,21 @@ Deno.serve(async (req) => {
     }
     const previousPlan = brokerRows[0].plan;
 
+    // Un courtier rattaché à un cabinet (cabinet_role non nul) que l'admin
+    // repasse manuellement sur un autre plan doit aussi perdre son
+    // rattachement (cabinet_role/cabinet_root_id/manager_id) : sinon il
+    // garde un role/cabinet perime pendant que son plan a change ailleurs,
+    // meme incohérence que corrigée côté webhook Stripe pour une résiliation.
+    const detachFromCabinet = plan !== "cabinet" && !!brokerRows[0].cabinet_role;
+
     const updateRes = await fetch(`${supabaseUrl}/rest/v1/profiles?id=eq.${brokerId}`, {
       method: "PATCH",
       headers: { ...svcHeaders, "Prefer": "return=minimal" },
-      body: JSON.stringify({ plan }),
+      body: JSON.stringify(
+        detachFromCabinet
+          ? { plan, cabinet_role: null, cabinet_root_id: null, manager_id: null }
+          : { plan },
+      ),
     });
     if (!updateRes.ok) {
       const detail = await updateRes.text();
