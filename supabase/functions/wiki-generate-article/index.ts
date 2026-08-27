@@ -119,7 +119,7 @@ Une fois ta recherche terminée, réponds UNIQUEMENT avec un objet JSON (aucun t
         "content-type": "application/json",
       },
       body: JSON.stringify({
-        model: "claude-sonnet-4-5-20250929",
+        model: "claude-sonnet-5",
         max_tokens: 4000,
         tools: [
           {
@@ -164,7 +164,7 @@ Réponds UNIQUEMENT avec un objet JSON (aucun texte avant/après, pas de balises
         "content-type": "application/json",
       },
       body: JSON.stringify({
-        model: "claude-sonnet-4-5-20250929",
+        model: "claude-sonnet-5",
         max_tokens: 4000,
         messages: [{ role: "user", content: translatePrompt }],
       }),
