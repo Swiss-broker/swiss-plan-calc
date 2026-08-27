@@ -10,27 +10,30 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-/** Extrait l'id utilisateur vérifié depuis le JWT de la requête (déjà
- *  validé par la plateforme Supabase — verify_jwt=true dans config.toml —
- *  avant même l'exécution de cette fonction). Ne JAMAIS faire confiance à
- *  un id envoyé dans le corps de la requête pour l'identité de l'appelant :
- *  n'importe qui pourrait sinon usurper n'importe quel autre compte. */
-function getVerifiedUserId(req: Request): string {
-  const authHeader = req.headers.get("Authorization") ?? "";
-  const token = authHeader.replace(/^Bearer\s+/i, "").trim();
-  if (!token) throw new Error("Non authentifié.");
+// Le compte appelant est deduit du JWT verifie par la passerelle Supabase
+// (verify_jwt=true sur cette fonction : la signature est deja validee avant
+// que ce code ne s'execute), jamais d'un champ du body. Decoder le payload
+// sans re-verifier la signature est donc sur ici, et empeche toute
+// usurpation d'identite via un id envoye par l'appelant.
+function getCallerFromJwt(req: Request): { id: string; email: string | null } | null {
+  const authHeader = req.headers.get("Authorization") ?? req.headers.get("authorization") ?? "";
+  const token = authHeader.replace(/^Bearer\s+/i, "");
   const parts = token.split(".");
-  if (parts.length !== 3) throw new Error("Jeton invalide.");
-  let b64 = parts[1].replace(/-/g, "+").replace(/_/g, "/");
-  while (b64.length % 4 !== 0) b64 += "=";
-  const payload = JSON.parse(atob(b64));
-  if (!payload.sub) throw new Error("Jeton invalide.");
-  return payload.sub as string;
+  if (parts.length !== 3) return null;
+  try {
+    const base64 = parts[1].replace(/-/g, "+").replace(/_/g, "/");
+    const padded = base64.padEnd(Math.ceil(base64.length / 4) * 4, "=");
+    const payload = JSON.parse(atob(padded));
+    if (typeof payload?.sub !== "string") return null;
+    return { id: payload.sub, email: typeof payload.email === "string" ? payload.email : null };
+  } catch {
+    return null;
+  }
 }
 
 async function sb(supabaseUrl: string, supabaseKey: string, path: string) {
   const res = await fetch(`${supabaseUrl}/rest/v1/${path}`, {
-    headers: { "apikey": supabaseKey, "Authorization": `Bearer ${supabaseKey}` },
+    headers: { apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}` },
   });
   return res.json();
 }
@@ -57,21 +60,25 @@ function mondayOf(date: Date): Date {
   return d;
 }
 
-Deno.serve(async (req) => {
+export type Env = { supabaseUrl: string; supabaseKey: string };
+
+export async function handleTeamDashboardDataRequest(req: Request, env: Env): Promise<Response> {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
 
   try {
-    const requesterId = getVerifiedUserId(req);
+    const caller = getCallerFromJwt(req);
+    if (!caller) throw new Error("Authentification requise.");
+    const requesterId = caller.id;
 
-    const supabaseUrl = Deno.env.get("SUPABASE_URL");
-    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    const { supabaseUrl, supabaseKey } = env;
     if (!supabaseUrl || !supabaseKey) throw new Error("Variables manquantes");
 
     // 1. Qui demande, et avec quel rôle ?
     const requesterRows = await sb(
-      supabaseUrl, supabaseKey,
+      supabaseUrl,
+      supabaseKey,
       `profiles?id=eq.${requesterId}&select=id,first_name,last_name,email,cabinet_role,cabinet_root_id,brokerage_name`,
     );
     const requester = requesterRows[0];
@@ -83,7 +90,8 @@ Deno.serve(async (req) => {
     let directors: any[] = [requester];
     if (requester.cabinet_role === "root_director") {
       const others = await sb(
-        supabaseUrl, supabaseKey,
+        supabaseUrl,
+        supabaseKey,
         `profiles?cabinet_root_id=eq.${requester.cabinet_root_id}&cabinet_role=eq.director&select=id,first_name,last_name,email,cabinet_role`,
       );
       directors = [requester, ...others];
@@ -95,12 +103,31 @@ Deno.serve(async (req) => {
 
     async function computeStats(personId: string) {
       const [clientsCount, invoicesMonth, invoicesLastMonth, invoicesTotal] = await Promise.all([
-        fetch(`${supabaseUrl}/rest/v1/clients?broker_id=eq.${personId}&archived=eq.false&select=id`, {
-          headers: { "apikey": supabaseKey, "Authorization": `Bearer ${supabaseKey}`, "Prefer": "count=exact" },
-        }).then((r) => Number(r.headers.get("content-range")?.split("/")[1] ?? 0)),
-        sb(supabaseUrl, supabaseKey, `rdv_invoices?broker_id=eq.${personId}&status=eq.paid&created_at=gte.${monthStart}&select=amount_chf`),
-        sb(supabaseUrl, supabaseKey, `rdv_invoices?broker_id=eq.${personId}&status=eq.paid&created_at=gte.${lastMonthStart}&created_at=lt.${monthStart}&select=amount_chf`),
-        sb(supabaseUrl, supabaseKey, `rdv_invoices?broker_id=eq.${personId}&status=eq.paid&select=amount_chf`),
+        fetch(
+          `${supabaseUrl}/rest/v1/clients?broker_id=eq.${personId}&archived=eq.false&select=id`,
+          {
+            headers: {
+              apikey: supabaseKey,
+              Authorization: `Bearer ${supabaseKey}`,
+              Prefer: "count=exact",
+            },
+          },
+        ).then((r) => Number(r.headers.get("content-range")?.split("/")[1] ?? 0)),
+        sb(
+          supabaseUrl,
+          supabaseKey,
+          `rdv_invoices?broker_id=eq.${personId}&status=eq.paid&created_at=gte.${monthStart}&select=amount_chf`,
+        ),
+        sb(
+          supabaseUrl,
+          supabaseKey,
+          `rdv_invoices?broker_id=eq.${personId}&status=eq.paid&created_at=gte.${lastMonthStart}&created_at=lt.${monthStart}&select=amount_chf`,
+        ),
+        sb(
+          supabaseUrl,
+          supabaseKey,
+          `rdv_invoices?broker_id=eq.${personId}&status=eq.paid&select=amount_chf`,
+        ),
       ]);
       const sum = (rows: any[]) => rows.reduce((s, r) => s + (r.amount_chf ?? 0), 0) / 100;
       return {
@@ -115,7 +142,8 @@ Deno.serve(async (req) => {
     const allMemberIds: string[] = [];
     for (const director of directors) {
       const courtiers = await sb(
-        supabaseUrl, supabaseKey,
+        supabaseUrl,
+        supabaseKey,
         `profiles?manager_id=eq.${director.id}&select=id,first_name,last_name,email,cabinet_role`,
       );
       const directorStats = await computeStats(director.id);
@@ -139,7 +167,13 @@ Deno.serve(async (req) => {
         const end = monthStartISO(offset + 1);
         const countRes = await fetch(
           `${supabaseUrl}/rest/v1/clients?broker_id=in.(${idsFilter})&created_at=gte.${start}&created_at=lt.${end}&select=id`,
-          { headers: { "apikey": supabaseKey, "Authorization": `Bearer ${supabaseKey}`, "Prefer": "count=exact" } },
+          {
+            headers: {
+              apikey: supabaseKey,
+              Authorization: `Bearer ${supabaseKey}`,
+              Prefer: "count=exact",
+            },
+          },
         );
         const count = Number(countRes.headers.get("content-range")?.split("/")[1] ?? 0);
         monthlyHistory.push({ month: monthLabel(offset), clients: count });
@@ -158,14 +192,17 @@ Deno.serve(async (req) => {
       rangeStart.setDate(rangeStart.getDate() - 11 * 7);
 
       const clientsInRange = await sb(
-        supabaseUrl, supabaseKey,
+        supabaseUrl,
+        supabaseKey,
         `clients?broker_id=in.(${idsFilter})&created_at=gte.${rangeStart.toISOString()}&select=broker_id,created_at`,
       );
 
       for (const row of clientsInRange as { broker_id: string; created_at: string }[]) {
         const created = new Date(row.created_at);
         const rowMonday = mondayOf(created);
-        const weekIndex = Math.round((rowMonday.getTime() - rangeStart.getTime()) / (7 * 24 * 3600 * 1000));
+        const weekIndex = Math.round(
+          (rowMonday.getTime() - rangeStart.getTime()) / (7 * 24 * 3600 * 1000),
+        );
         const dayIndex = (created.getDay() + 6) % 7; // 0 = lundi
         if (weekIndex >= 0 && weekIndex < 12) {
           heatmap[dayIndex][weekIndex] += 1;
@@ -182,7 +219,8 @@ Deno.serve(async (req) => {
     //    personnes visibles.
     const visibleInviterIds = directors.map((d) => d.id);
     const pendingInvites = await sb(
-      supabaseUrl, supabaseKey,
+      supabaseUrl,
+      supabaseKey,
       `cabinet_invites?invited_by=in.(${visibleInviterIds.join(",")})&status=eq.pending&select=id,email,first_name,last_name,role,invited_by,created_at`,
     );
 
@@ -214,4 +252,22 @@ Deno.serve(async (req) => {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
-});
+}
+
+// `Deno` n'existe pas sous Node/Vitest : ce garde-fou permet d'importer ce
+// fichier depuis les tests sans jamais tenter de demarrer un vrai serveur
+// Deno en dehors du runtime Edge Functions.
+declare const Deno:
+  | {
+      serve: (h: (req: Request) => Response | Promise<Response>) => void;
+      env: { get(k: string): string | undefined };
+    }
+  | undefined;
+if (typeof Deno !== "undefined") {
+  Deno.serve((req) =>
+    handleTeamDashboardDataRequest(req, {
+      supabaseUrl: Deno.env.get("SUPABASE_URL") ?? "",
+      supabaseKey: Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
+    }),
+  );
+}

@@ -4,39 +4,45 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-/** Extrait l'id utilisateur vérifié depuis le JWT de la requête (déjà
- *  validé par la plateforme Supabase — verify_jwt=true dans config.toml —
- *  avant même l'exécution de cette fonction). Ne JAMAIS faire confiance à
- *  un id envoyé dans le corps de la requête pour l'identité de l'appelant :
- *  n'importe qui pourrait sinon usurper n'importe quel autre compte. */
-function getVerifiedUserId(req: Request): string {
-  const authHeader = req.headers.get("Authorization") ?? "";
-  const token = authHeader.replace(/^Bearer\s+/i, "").trim();
-  if (!token) throw new Error("Non authentifié.");
+// Le compte appelant est deduit du JWT verifie par la passerelle Supabase
+// (verify_jwt=true sur cette fonction : la signature est deja validee avant
+// que ce code ne s'execute), jamais d'un champ du body. Decoder le payload
+// sans re-verifier la signature est donc sur ici, et empeche toute
+// usurpation d'identite via un id envoye par l'appelant.
+function getCallerFromJwt(req: Request): { id: string; email: string | null } | null {
+  const authHeader = req.headers.get("Authorization") ?? req.headers.get("authorization") ?? "";
+  const token = authHeader.replace(/^Bearer\s+/i, "");
   const parts = token.split(".");
-  if (parts.length !== 3) throw new Error("Jeton invalide.");
-  let b64 = parts[1].replace(/-/g, "+").replace(/_/g, "/");
-  while (b64.length % 4 !== 0) b64 += "=";
-  const payload = JSON.parse(atob(b64));
-  if (!payload.sub) throw new Error("Jeton invalide.");
-  return payload.sub as string;
+  if (parts.length !== 3) return null;
+  try {
+    const base64 = parts[1].replace(/-/g, "+").replace(/_/g, "/");
+    const padded = base64.padEnd(Math.ceil(base64.length / 4) * 4, "=");
+    const payload = JSON.parse(atob(padded));
+    if (typeof payload?.sub !== "string") return null;
+    return { id: payload.sub, email: typeof payload.email === "string" ? payload.email : null };
+  } catch {
+    return null;
+  }
 }
 
-Deno.serve(async (req) => {
+export type Env = { supabaseUrl: string; supabaseKey: string };
+
+export async function handleTeamGetAnnouncementsRequest(req: Request, env: Env): Promise<Response> {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
 
   try {
-    const requesterId = getVerifiedUserId(req);
+    const caller = getCallerFromJwt(req);
+    if (!caller) throw new Error("Authentification requise.");
+    const requesterId = caller.id;
 
-    const supabaseUrl = Deno.env.get("SUPABASE_URL");
-    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    const { supabaseUrl, supabaseKey } = env;
     if (!supabaseUrl || !supabaseKey) throw new Error("Variables manquantes");
 
     const requesterRes = await fetch(
       `${supabaseUrl}/rest/v1/profiles?id=eq.${requesterId}&select=cabinet_root_id`,
-      { headers: { "apikey": supabaseKey, "Authorization": `Bearer ${supabaseKey}` } },
+      { headers: { apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}` } },
     );
     const requesters = await requesterRes.json();
     const cabinetRootId = requesters[0]?.cabinet_root_id;
@@ -47,7 +53,7 @@ Deno.serve(async (req) => {
     const orFilter = `target_id.is.null,target_id.eq.${requesterId},posted_by.eq.${requesterId}`;
     const annRes = await fetch(
       `${supabaseUrl}/rest/v1/team_announcements?cabinet_root_id=eq.${cabinetRootId}&or=(${orFilter})&select=id,message,posted_by,target_id,created_at,profiles!posted_by(first_name,last_name)&order=created_at.desc&limit=10`,
-      { headers: { "apikey": supabaseKey, "Authorization": `Bearer ${supabaseKey}` } },
+      { headers: { apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}` } },
     );
     const announcements = await annRes.json();
 
@@ -60,4 +66,22 @@ Deno.serve(async (req) => {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
-});
+}
+
+// `Deno` n'existe pas sous Node/Vitest : ce garde-fou permet d'importer ce
+// fichier depuis les tests sans jamais tenter de demarrer un vrai serveur
+// Deno en dehors du runtime Edge Functions.
+declare const Deno:
+  | {
+      serve: (h: (req: Request) => Response | Promise<Response>) => void;
+      env: { get(k: string): string | undefined };
+    }
+  | undefined;
+if (typeof Deno !== "undefined") {
+  Deno.serve((req) =>
+    handleTeamGetAnnouncementsRequest(req, {
+      supabaseUrl: Deno.env.get("SUPABASE_URL") ?? "",
+      supabaseKey: Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
+    }),
+  );
+}

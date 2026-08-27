@@ -3,55 +3,46 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-/** Extrait l'id utilisateur vérifié depuis le JWT de la requête (déjà
- *  validé par la plateforme Supabase — verify_jwt=true dans config.toml —
- *  avant même l'exécution de cette fonction). Ne JAMAIS faire confiance à
- *  un id envoyé dans le corps de la requête pour l'identité de l'appelant :
- *  n'importe qui pourrait sinon usurper n'importe quel autre compte. */
-function getVerifiedUserId(req: Request): string {
-  const authHeader = req.headers.get("Authorization") ?? "";
-  const token = authHeader.replace(/^Bearer\s+/i, "").trim();
-  if (!token) throw new Error("Non authentifié.");
+// Le compte appelant est deduit du JWT verifie par la passerelle Supabase
+// (verify_jwt=true sur cette fonction : la signature est deja validee avant
+// que ce code ne s'execute), jamais d'un champ du body. Decoder le payload
+// sans re-verifier la signature est donc sur ici, et empeche qu'un
+// utilisateur ouvre le portail de facturation Stripe de quelqu'un d'autre.
+function getCallerFromJwt(req: Request): { id: string; email: string | null } | null {
+  const authHeader = req.headers.get("Authorization") ?? req.headers.get("authorization") ?? "";
+  const token = authHeader.replace(/^Bearer\s+/i, "");
   const parts = token.split(".");
-  if (parts.length !== 3) throw new Error("Jeton invalide.");
-  let b64 = parts[1].replace(/-/g, "+").replace(/_/g, "/");
-  while (b64.length % 4 !== 0) b64 += "=";
-  const payload = JSON.parse(atob(b64));
-  if (!payload.sub) throw new Error("Jeton invalide.");
-  return payload.sub as string;
+  if (parts.length !== 3) return null;
+  try {
+    const base64 = parts[1].replace(/-/g, "+").replace(/_/g, "/");
+    const padded = base64.padEnd(Math.ceil(base64.length / 4) * 4, "=");
+    const payload = JSON.parse(atob(padded));
+    if (typeof payload?.sub !== "string") return null;
+    return { id: payload.sub, email: typeof payload.email === "string" ? payload.email : null };
+  } catch {
+    return null;
+  }
 }
 
-Deno.serve(async (req) => {
+export type Env = { stripeKey: string; siteUrl: string };
+
+export async function handleStripePortalRequest(req: Request, env: Env): Promise<Response> {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
 
   try {
-    const callerId = getVerifiedUserId(req);
-    const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
-    const supabaseUrl = Deno.env.get("SUPABASE_URL");
-    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-    const siteUrl = Deno.env.get("SITE_URL") ?? "https://swiss-plan-calc.vercel.app";
+    const caller = getCallerFromJwt(req);
+    if (!caller?.email) throw new Error("Authentification requise.");
+    const brokerEmail = caller.email;
 
-    if (!stripeKey || !supabaseUrl || !supabaseKey) throw new Error("Variables manquantes");
-
-    // L'email vient du profil de l'appelant vérifié, jamais du corps de la
-    // requête : une session Stripe Billing Portal donne accès complet
-    // (annulation d'abonnement, moyen de paiement) à quiconque détient son
-    // URL, sans nouvelle authentification — la faire générer pour l'email
-    // de quelqu'un d'autre reviendrait à lui offrir ce contrôle.
-    const profileRes = await fetch(
-      `${supabaseUrl}/rest/v1/profiles?id=eq.${callerId}&select=email`,
-      { headers: { "apikey": supabaseKey, "Authorization": `Bearer ${supabaseKey}` } },
-    );
-    const profiles = await profileRes.json();
-    const brokerEmail = profiles[0]?.email;
-    if (!brokerEmail) throw new Error("Profil introuvable.");
+    const { stripeKey, siteUrl } = env;
+    if (!stripeKey) throw new Error("STRIPE_SECRET_KEY manquante");
 
     // Cherche le customer Stripe par email
     const searchRes = await fetch(
       `https://api.stripe.com/v1/customers?email=${encodeURIComponent(brokerEmail)}&limit=1`,
-      { headers: { "Authorization": `Bearer ${stripeKey}` } }
+      { headers: { Authorization: `Bearer ${stripeKey}` } },
     );
     const searchData = await searchRes.json();
     const customer = searchData.data?.[0];
@@ -61,7 +52,7 @@ Deno.serve(async (req) => {
     const portalRes = await fetch("https://api.stripe.com/v1/billing_portal/sessions", {
       method: "POST",
       headers: {
-        "Authorization": `Bearer ${stripeKey}`,
+        Authorization: `Bearer ${stripeKey}`,
         "Content-Type": "application/x-www-form-urlencoded",
       },
       body: new URLSearchParams({
@@ -82,4 +73,22 @@ Deno.serve(async (req) => {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
-});
+}
+
+// `Deno` n'existe pas sous Node/Vitest : ce garde-fou permet d'importer ce
+// fichier depuis les tests sans jamais tenter de demarrer un vrai serveur
+// Deno en dehors du runtime Edge Functions.
+declare const Deno:
+  | {
+      serve: (h: (req: Request) => Response | Promise<Response>) => void;
+      env: { get(k: string): string | undefined };
+    }
+  | undefined;
+if (typeof Deno !== "undefined") {
+  Deno.serve((req) =>
+    handleStripePortalRequest(req, {
+      stripeKey: Deno.env.get("STRIPE_SECRET_KEY") ?? "",
+      siteUrl: Deno.env.get("SITE_URL") ?? "https://swiss-plan-calc.vercel.app",
+    }),
+  );
+}

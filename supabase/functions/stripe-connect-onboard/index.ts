@@ -3,51 +3,61 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-/** Extrait l'id utilisateur vérifié depuis le JWT de la requête (déjà
- *  validé par la plateforme Supabase — verify_jwt=true dans config.toml —
- *  avant même l'exécution de cette fonction). Ne JAMAIS faire confiance à
- *  un id envoyé dans le corps de la requête pour l'identité de l'appelant :
- *  n'importe qui pourrait sinon usurper n'importe quel autre compte. */
-function getVerifiedUserId(req: Request): string {
-  const authHeader = req.headers.get("Authorization") ?? "";
-  const token = authHeader.replace(/^Bearer\s+/i, "").trim();
-  if (!token) throw new Error("Non authentifié.");
+// Le compte appelant est deduit du JWT verifie par la passerelle Supabase
+// (verify_jwt=true sur cette fonction : la signature est deja validee avant
+// que ce code ne s'execute), jamais d'un champ du body. Decoder le payload
+// sans re-verifier la signature est donc sur ici, et empeche qu'un
+// utilisateur cree/pilote le compte Stripe Connect de quelqu'un d'autre.
+function getCallerFromJwt(req: Request): { id: string; email: string | null } | null {
+  const authHeader = req.headers.get("Authorization") ?? req.headers.get("authorization") ?? "";
+  const token = authHeader.replace(/^Bearer\s+/i, "");
   const parts = token.split(".");
-  if (parts.length !== 3) throw new Error("Jeton invalide.");
-  let b64 = parts[1].replace(/-/g, "+").replace(/_/g, "/");
-  while (b64.length % 4 !== 0) b64 += "=";
-  const payload = JSON.parse(atob(b64));
-  if (!payload.sub) throw new Error("Jeton invalide.");
-  return payload.sub as string;
+  if (parts.length !== 3) return null;
+  try {
+    const base64 = parts[1].replace(/-/g, "+").replace(/_/g, "/");
+    const padded = base64.padEnd(Math.ceil(base64.length / 4) * 4, "=");
+    const payload = JSON.parse(atob(padded));
+    if (typeof payload?.sub !== "string") return null;
+    return { id: payload.sub, email: typeof payload.email === "string" ? payload.email : null };
+  } catch {
+    return null;
+  }
 }
 
-Deno.serve(async (req) => {
+export type Env = { supabaseUrl: string; supabaseKey: string; stripeKey: string };
+
+export async function handleStripeConnectOnboardRequest(req: Request, env: Env): Promise<Response> {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
 
   try {
-    const brokerId = getVerifiedUserId(req);
     const { returnUrl } = await req.json();
-    const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
-    const supabaseUrl = Deno.env.get("SUPABASE_URL");
-    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 
+    const caller = getCallerFromJwt(req);
+    if (!caller) throw new Error("Authentification requise.");
+    const brokerId = caller.id;
+
+    const { supabaseUrl, supabaseKey, stripeKey } = env;
     if (!stripeKey || !supabaseUrl || !supabaseKey) throw new Error("Variables manquantes");
 
-    // L'email vient du profil vérifié, jamais du corps de la requête.
-    const profileRes = await fetch(
-      `${supabaseUrl}/rest/v1/profiles?id=eq.${brokerId}&select=email`,
-      { headers: { "apikey": supabaseKey, "Authorization": `Bearer ${supabaseKey}` } },
-    );
-    const callerProfiles = await profileRes.json();
-    const brokerEmail = callerProfiles[0]?.email;
-    if (!brokerEmail) throw new Error("Profil introuvable.");
+    // Email de secours pour la creation du compte Connect si le JWT n'en
+    // porte pas (cas rare) : lu depuis le profil, jamais depuis le body.
+    let brokerEmail: string | undefined = caller.email ?? undefined;
+    if (!brokerEmail) {
+      const profRes = await fetch(
+        `${supabaseUrl}/rest/v1/profiles?id=eq.${brokerId}&select=email`,
+        { headers: { apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}` } },
+      );
+      const profRows = await profRes.json();
+      brokerEmail = profRows[0]?.email;
+    }
+    if (!brokerEmail) throw new Error("Email du courtier introuvable.");
 
     // Vérifier si le courtier a déjà un compte Connect
     const existingRes = await fetch(
       `${supabaseUrl}/rest/v1/broker_connect_accounts?broker_id=eq.${brokerId}&select=stripe_account_id,onboarding_complete`,
-      { headers: { "apikey": supabaseKey, "Authorization": `Bearer ${supabaseKey}` } }
+      { headers: { apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}` } },
     );
     const existing = await existingRes.json();
 
@@ -60,15 +70,15 @@ Deno.serve(async (req) => {
       const accountRes = await fetch("https://api.stripe.com/v1/accounts", {
         method: "POST",
         headers: {
-          "Authorization": `Bearer ${stripeKey}`,
+          Authorization: `Bearer ${stripeKey}`,
           "Content-Type": "application/x-www-form-urlencoded",
         },
         body: new URLSearchParams({
-          "type": "express",
-          "email": brokerEmail,
-          "country": "CH",
+          type: "express",
+          email: brokerEmail,
+          country: "CH",
           "capabilities[transfers][requested]": "true",
-          "business_type": "individual",
+          business_type: "individual",
           "metadata[broker_id]": brokerId,
         }).toString(),
       });
@@ -80,10 +90,10 @@ Deno.serve(async (req) => {
       await fetch(`${supabaseUrl}/rest/v1/broker_connect_accounts`, {
         method: "POST",
         headers: {
-          "apikey": supabaseKey,
-          "Authorization": `Bearer ${supabaseKey}`,
+          apikey: supabaseKey,
+          Authorization: `Bearer ${supabaseKey}`,
           "Content-Type": "application/json",
-          "Prefer": "return=minimal",
+          Prefer: "return=minimal",
         },
         body: JSON.stringify({
           broker_id: brokerId,
@@ -97,14 +107,14 @@ Deno.serve(async (req) => {
     const linkRes = await fetch("https://api.stripe.com/v1/account_links", {
       method: "POST",
       headers: {
-        "Authorization": `Bearer ${stripeKey}`,
+        Authorization: `Bearer ${stripeKey}`,
         "Content-Type": "application/x-www-form-urlencoded",
       },
       body: new URLSearchParams({
-        "account": stripeAccountId,
-        "refresh_url": `${returnUrl}?connect=refresh`,
-        "return_url": `${returnUrl}?connect=success`,
-        "type": "account_onboarding",
+        account: stripeAccountId,
+        refresh_url: `${returnUrl}?connect=refresh`,
+        return_url: `${returnUrl}?connect=success`,
+        type: "account_onboarding",
       }).toString(),
     });
     const link = await linkRes.json();
@@ -119,4 +129,23 @@ Deno.serve(async (req) => {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
-});
+}
+
+// `Deno` n'existe pas sous Node/Vitest : ce garde-fou permet d'importer ce
+// fichier depuis les tests sans jamais tenter de demarrer un vrai serveur
+// Deno en dehors du runtime Edge Functions.
+declare const Deno:
+  | {
+      serve: (h: (req: Request) => Response | Promise<Response>) => void;
+      env: { get(k: string): string | undefined };
+    }
+  | undefined;
+if (typeof Deno !== "undefined") {
+  Deno.serve((req) =>
+    handleStripeConnectOnboardRequest(req, {
+      supabaseUrl: Deno.env.get("SUPABASE_URL") ?? "",
+      supabaseKey: Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
+      stripeKey: Deno.env.get("STRIPE_SECRET_KEY") ?? "",
+    }),
+  );
+}
