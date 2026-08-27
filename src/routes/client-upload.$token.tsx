@@ -15,6 +15,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import {
   DOCUMENT_CATEGORIES,
+  DOCUMENT_HELP,
   ALLOWED_MIME_TYPES,
   MAX_FILE_SIZE_BYTES,
   formatBytes,
@@ -246,6 +247,11 @@ function ClientUploadPage() {
                 ))}
               </SelectContent>
             </Select>
+            {DOCUMENT_HELP[category] && (
+              <p className="mt-3 text-xs text-muted-foreground">
+                <strong>Où trouver ce document ?</strong> {DOCUMENT_HELP[category]}
+              </p>
+            )}
           </CardContent>
         </Card>
 

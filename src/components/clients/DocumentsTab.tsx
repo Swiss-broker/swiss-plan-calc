@@ -53,6 +53,7 @@ import {
   formatBytes,
   type DocumentCategory,
 } from "@/lib/documents/categories";
+import { DocumentRequestsPanel } from "@/components/clients/DocumentRequestsPanel";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const supabase = _supabase as any;
@@ -180,9 +181,20 @@ export function DocumentsTab({
       if (storErr) throw storErr;
       const { error } = await supabase.from("client_documents").delete().eq("id", doc.id);
       if (error) throw error;
+
+      // Si ce document était celui qui avait fait passer le suivi à
+      // "reçu"/"vérifié", le statut retombe à "manquant" (la ligne est
+      // supprimée) plutôt que de laisser un statut trompeur sans fichier.
+      await supabase
+        .from("client_document_requests")
+        .delete()
+        .eq("client_id", clientId)
+        .eq("category", doc.category)
+        .eq("document_id", doc.id);
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["client-documents", clientId] });
+      qc.invalidateQueries({ queryKey: ["client-document-requests", clientId] });
       toast.success("Document supprimé.");
     },
     onError: (e: Error) => toast.error(e.message),
@@ -206,21 +218,41 @@ export function DocumentsTab({
           .from("client-documents")
           .upload(path, file, { contentType: file.type, upsert: false });
         if (upErr) throw upErr;
-        const { error: insErr } = await supabase.from("client_documents").insert({
-          client_id: clientId,
-          broker_id: user.id,
-          category: uploadCategory,
-          original_filename: safeName,
-          storage_path: path,
-          mime_type: file.type,
-          size_bytes: file.size,
-          uploaded_by: "broker",
-        });
+        const { data: inserted, error: insErr } = await supabase
+          .from("client_documents")
+          .insert({
+            client_id: clientId,
+            broker_id: user.id,
+            category: uploadCategory,
+            original_filename: safeName,
+            storage_path: path,
+            mime_type: file.type,
+            size_bytes: file.size,
+            uploaded_by: "broker",
+          })
+          .select("id")
+          .single();
         if (insErr) throw insErr;
+
+        // Dépôt fait par le courtier lui-même : la ligne de suivi passe
+        // directement à "reçu" (pas de notification, le courtier sait déjà).
+        await supabase.from("client_document_requests").upsert(
+          {
+            client_id: clientId,
+            broker_id: user.id,
+            category: uploadCategory,
+            status: "recu",
+            received_at: new Date().toISOString(),
+            verified_at: null,
+            document_id: inserted?.id ?? null,
+          },
+          { onConflict: "client_id,category" },
+        );
       }
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["client-documents", clientId] });
+      qc.invalidateQueries({ queryKey: ["client-document-requests", clientId] });
       toast.success("Document(s) ajouté(s).");
     },
     onError: (e: Error) => toast.error(e.message),
@@ -350,6 +382,8 @@ export function DocumentsTab({
 
   return (
     <div className="space-y-6">
+      <DocumentRequestsPanel clientId={clientId} />
+
       {/* Lien client */}
       <Card className="p-6">
         <div className="flex items-start justify-between gap-4">

@@ -71,6 +71,22 @@ setNotifications((data ?? []) as unknown as Notification[]);
     setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
   }
 
+  // "Relancer" depuis une notification de relance documentaire J+2 :
+  // remet à zéro le délai de suivi (le job de relance ne renotifie qu'après
+  // 2 nouveaux jours). N'envoie jamais d'e-mail au client : le courtier
+  // garde la main sur le contact réel via la fiche client.
+  async function relanceDocuments(n: Notification) {
+    const clientId = n.link?.startsWith("/clients/") ? n.link.slice("/clients/".length) : null;
+    if (clientId) {
+      await (supabase as any)
+        .from("client_document_requests")
+        .update({ requested_at: new Date().toISOString(), reminder_sent_at: null })
+        .eq("client_id", clientId)
+        .in("status", ["demande", "a_remplacer"]);
+    }
+    await markAsRead(n.id);
+  }
+
   return (
     <div className="relative" ref={ref} style={{ position: 'relative' }}>
       <Button
@@ -111,29 +127,70 @@ setNotifications((data ?? []) as unknown as Notification[]);
                 Aucune notification
               </p>
             ) : (
-              notifications.map((n) => (
-                <Link
-                  key={n.id}
-                  to={n.link || "/dashboard"}
-                  onClick={() => { markAsRead(n.id); setOpen(false); }}
-                  className={`block border-b border-border/60 px-4 py-3 text-sm transition-colors hover:bg-accent/50 ${
-                    !n.read ? "bg-primary/5" : ""
-                  }`}
-                >
-                  <div className="flex items-start gap-2">
-                    {!n.read && <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-primary" />}
-                    <div className="min-w-0 flex-1">
-                      <p className="font-medium text-foreground">{n.title}</p>
-                      {n.body && (
-                        <p className="mt-0.5 truncate text-xs text-muted-foreground">{n.body}</p>
-                      )}
-                      <p className="mt-1 text-[11px] text-muted-foreground">
-                        {new Date(n.created_at).toLocaleString("fr-CH")}
-                      </p>
+              notifications.map((n) =>
+                n.type === "documents_pending_j2" ? (
+                  <div
+                    key={n.id}
+                    className={`border-b border-border/60 px-4 py-3 text-sm ${!n.read ? "bg-primary/5" : ""}`}
+                  >
+                    <div className="flex items-start gap-2">
+                      {!n.read && <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-primary" />}
+                      <div className="min-w-0 flex-1">
+                        <p className="font-medium text-foreground">{n.title}</p>
+                        {n.body && <p className="mt-0.5 text-xs text-muted-foreground">{n.body}</p>}
+                        <p className="mt-1 text-[11px] text-muted-foreground">
+                          {new Date(n.created_at).toLocaleString("fr-CH")}
+                        </p>
+                        <div className="mt-2 flex flex-wrap gap-3 text-xs font-medium">
+                          <Link
+                            to={n.link || "/dashboard"}
+                            onClick={() => { markAsRead(n.id); setOpen(false); }}
+                            className="text-primary hover:underline"
+                          >
+                            Voir le dossier
+                          </Link>
+                          <button
+                            type="button"
+                            onClick={() => relanceDocuments(n)}
+                            className="text-primary hover:underline"
+                          >
+                            Relancer
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => markAsRead(n.id)}
+                            className="text-muted-foreground hover:underline"
+                          >
+                            Ignorer
+                          </button>
+                        </div>
+                      </div>
                     </div>
                   </div>
-                </Link>
-              ))
+                ) : (
+                  <Link
+                    key={n.id}
+                    to={n.link || "/dashboard"}
+                    onClick={() => { markAsRead(n.id); setOpen(false); }}
+                    className={`block border-b border-border/60 px-4 py-3 text-sm transition-colors hover:bg-accent/50 ${
+                      !n.read ? "bg-primary/5" : ""
+                    }`}
+                  >
+                    <div className="flex items-start gap-2">
+                      {!n.read && <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-primary" />}
+                      <div className="min-w-0 flex-1">
+                        <p className="font-medium text-foreground">{n.title}</p>
+                        {n.body && (
+                          <p className="mt-0.5 truncate text-xs text-muted-foreground">{n.body}</p>
+                        )}
+                        <p className="mt-1 text-[11px] text-muted-foreground">
+                          {new Date(n.created_at).toLocaleString("fr-CH")}
+                        </p>
+                      </div>
+                    </div>
+                  </Link>
+                ),
+              )
             )}
           </div>
         </div>

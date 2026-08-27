@@ -20,6 +20,7 @@ export const corsHeaders = {
 
 export const ALLOWED_CATEGORIES = new Set([
   "attestation_lpp",
+  "libre_passage",
   "fiche_salaire",
   "declaration_fiscale",
   "piece_identite",

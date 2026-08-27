@@ -451,6 +451,79 @@ export type Database = {
           },
         ]
       }
+      client_document_requests: {
+        Row: {
+          broker_id: string
+          category: Database["public"]["Enums"]["client_document_category"]
+          client_id: string
+          created_at: string
+          document_id: string | null
+          id: string
+          link_id: string | null
+          note: string | null
+          received_at: string | null
+          reminder_sent_at: string | null
+          requested_at: string
+          status: string
+          updated_at: string
+          verified_at: string | null
+        }
+        Insert: {
+          broker_id: string
+          category: Database["public"]["Enums"]["client_document_category"]
+          client_id: string
+          created_at?: string
+          document_id?: string | null
+          id?: string
+          link_id?: string | null
+          note?: string | null
+          received_at?: string | null
+          reminder_sent_at?: string | null
+          requested_at?: string
+          status?: string
+          updated_at?: string
+          verified_at?: string | null
+        }
+        Update: {
+          broker_id?: string
+          category?: Database["public"]["Enums"]["client_document_category"]
+          client_id?: string
+          created_at?: string
+          document_id?: string | null
+          id?: string
+          link_id?: string | null
+          note?: string | null
+          received_at?: string | null
+          reminder_sent_at?: string | null
+          requested_at?: string
+          status?: string
+          updated_at?: string
+          verified_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_document_requests_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_document_requests_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "client_documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_document_requests_link_id_fkey"
+            columns: ["link_id"]
+            isOneToOne: false
+            referencedRelation: "client_document_links"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       client_document_links: {
         Row: {
           broker_id: string
@@ -1509,6 +1582,7 @@ export type Database = {
         | "separated"
       client_document_category:
         | "attestation_lpp"
+        | "libre_passage"
         | "fiche_salaire"
         | "declaration_fiscale"
         | "piece_identite"
@@ -1732,6 +1806,7 @@ export const Constants = {
       ],
       client_document_category: [
         "attestation_lpp",
+        "libre_passage",
         "fiche_salaire",
         "declaration_fiscale",
         "piece_identite",
