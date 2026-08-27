@@ -161,7 +161,7 @@ export function DocumentRequestsPanel({ clientId }: { clientId: string }) {
       <div>
         <h3 className="text-lg font-semibold">Documents à fournir</h3>
         <p className="mt-1 text-sm text-muted-foreground">
-          Suivi de ce qui a été demandé au client, reçu et vérifié — par-dessus les documents du dossier.
+          Suivi de ce qui a été demandé au client, reçu et vérifié, par-dessus les documents du dossier.
         </p>
       </div>
 
@@ -297,7 +297,7 @@ export function DocumentRequestsPanel({ clientId }: { clientId: string }) {
           <Textarea
             value={replaceNote}
             onChange={(e) => setReplaceNote(e.target.value)}
-            placeholder="Précisez pourquoi (optionnel) — ex. document illisible, mauvaise année, page manquante..."
+            placeholder="Précisez pourquoi (optionnel), ex. document illisible, mauvaise année, page manquante..."
             rows={3}
           />
           <DialogFooter>

@@ -391,7 +391,7 @@ export function AppointmentDialog({
                   .map((m) => (
                     <label key={m} className="flex items-center gap-2 text-sm">
                       <Checkbox checked onCheckedChange={() => toggleReminder(m)} />
-                      Personnalisé — {(m / 60).toString().replace(".", ",")} h avant
+                      Personnalisé : {(m / 60).toString().replace(".", ",")} h avant
                     </label>
                   ))}
                 <div className="flex items-center gap-2">

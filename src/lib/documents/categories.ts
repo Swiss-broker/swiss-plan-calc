@@ -17,7 +17,7 @@ export const CATEGORY_LABELS: Record<DocumentCategory, string> = Object.fromEntr
   DOCUMENT_CATEGORIES.map((c) => [c.value, c.label]),
 ) as Record<DocumentCategory, string>;
 
-// "Où trouver ce document ?" — aide prudente affichée au courtier et au
+// "Où trouver ce document ?" : aide prudente affichée au courtier et au
 // client. Volontairement formulée avec "généralement" : les démarches
 // varient selon la caisse/l'assureur/le canton, ce texte n'est qu'une
 // indication de départ, jamais une garantie.
@@ -35,7 +35,7 @@ export const DOCUMENT_HELP: Partial<Record<DocumentCategory, string>> = {
   police_lca:
     "Généralement disponible dans l'espace client en ligne de votre assurance, ou sur le contrat papier reçu à la souscription.",
   autres:
-    "Ce document dépend du cas précis — généralement transmis par l'organisme concerné (caisse, assurance, employeur, administration) directement ou via son portail en ligne.",
+    "Ce document dépend du cas précis, généralement transmis par l'organisme concerné (caisse, assurance, employeur, administration) directement ou via son portail en ligne.",
 };
 
 export const ALLOWED_MIME_TYPES = [
