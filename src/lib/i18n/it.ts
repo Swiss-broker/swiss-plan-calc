@@ -132,6 +132,7 @@ export const it: Record<string, string> = {
   "nav.dashboard": "Pannello",
   "nav.team": "Team",
   "nav.clients": "Clienti",
+  "nav.calendar": "Calendario",
   "nav.companies": "Società",
   "nav.calculators": "Calcolatori",
   "nav.wiki": "Wiki & Formazione",

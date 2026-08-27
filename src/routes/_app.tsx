@@ -18,6 +18,7 @@ import {
   Bookmark,
   BookOpen,
   MessageSquare,
+  CalendarDays,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger, SheetTitle, SheetHeader } from "@/components/ui/sheet";
@@ -87,6 +88,7 @@ const NAV = [
   { to: "/dashboard", labelKey: "nav.dashboard", icon: LayoutDashboard },
   { to: "/team", labelKey: "nav.team", icon: Users2, teamOnly: true },
   { to: "/clients", labelKey: "nav.clients", icon: Users },
+  { to: "/calendar", labelKey: "nav.calendar", icon: CalendarDays },
   { to: "/companies", labelKey: "nav.companies", icon: Building2 },
   { to: "/calculators", labelKey: "nav.calculators", icon: Calculator },
   { to: "/wiki", labelKey: "nav.wiki", icon: BookOpen },

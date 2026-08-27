@@ -132,6 +132,7 @@ export const en: Record<string, string> = {
   "nav.dashboard": "Dashboard",
   "nav.team": "Team",
   "nav.clients": "Clients",
+  "nav.calendar": "Calendar",
   "nav.companies": "Companies",
   "nav.calculators": "Calculators",
   "nav.wiki": "Wiki & Training",

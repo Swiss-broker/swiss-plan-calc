@@ -133,6 +133,7 @@ export const de: Record<string, string> = {
   "nav.dashboard": "Übersicht",
   "nav.team": "Team",
   "nav.clients": "Kunden",
+  "nav.calendar": "Kalender",
   "nav.companies": "Unternehmen",
   "nav.calculators": "Rechner",
   "nav.wiki": "Wiki & Schulung",

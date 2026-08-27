@@ -73,6 +73,7 @@ import { AlertTriangle, Building2, ClipboardList, MessageSquare, Sparkles } from
 import { AiAnalysis } from "@/components/ai/AiAnalysis";
 import { AiConversationsTab } from "@/components/ai/AiConversationsTab";
 import { SessionSummaryTab } from "@/components/clients/SessionSummaryTab";
+import { NextAppointmentCard } from "@/components/appointments/NextAppointmentCard";
 export const Route = createFileRoute("/_app/clients/$clientId")({
   head: () => ({ meta: [{ title: "Fiche client · SwissBroker Pro" }] }),
   component: ClientDetailPage,
@@ -367,6 +368,10 @@ function ClientDetailPage() {
           icon={Wallet}
         />
         <Kpi label="Fortune nette" value={formatCHF(fortune)} icon={Wallet} />
+      </div>
+
+      <div className="mt-6">
+        <NextAppointmentCard clientId={clientId} />
       </div>
 
       <div className="mt-6">

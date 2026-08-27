@@ -22,6 +22,7 @@ import { Route as AppHistoryRouteImport } from './routes/_app/history'
 import { Route as AppFeedbackRouteImport } from './routes/_app/feedback'
 import { Route as AppDashboardRouteImport } from './routes/_app/dashboard'
 import { Route as AppCompaniesRouteImport } from './routes/_app/companies'
+import { Route as AppCalendarRouteImport } from './routes/_app/calendar'
 import { Route as AppCalculatorsRouteImport } from './routes/_app/calculators'
 import { Route as AppAccountRouteImport } from './routes/_app/account'
 import { Route as AppCompaniesIndexRouteImport } from './routes/_app/companies/index'
@@ -113,6 +114,11 @@ const AppDashboardRoute = AppDashboardRouteImport.update({
 const AppCompaniesRoute = AppCompaniesRouteImport.update({
   id: '/companies',
   path: '/companies',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppCalendarRoute = AppCalendarRouteImport.update({
+  id: '/calendar',
+  path: '/calendar',
   getParentRoute: () => AppRoute,
 } as any)
 const AppCalculatorsRoute = AppCalculatorsRouteImport.update({
@@ -271,6 +277,7 @@ export interface FileRoutesByFullPath {
   '/reset-password': typeof ResetPasswordRoute
   '/account': typeof AppAccountRoute
   '/calculators': typeof AppCalculatorsRouteWithChildren
+  '/calendar': typeof AppCalendarRoute
   '/companies': typeof AppCompaniesRouteWithChildren
   '/dashboard': typeof AppDashboardRoute
   '/feedback': typeof AppFeedbackRoute
@@ -312,6 +319,7 @@ export interface FileRoutesByTo {
   '/auth': typeof AuthRouteWithChildren
   '/reset-password': typeof ResetPasswordRoute
   '/account': typeof AppAccountRoute
+  '/calendar': typeof AppCalendarRoute
   '/dashboard': typeof AppDashboardRoute
   '/feedback': typeof AppFeedbackRoute
   '/history': typeof AppHistoryRoute
@@ -355,6 +363,7 @@ export interface FileRoutesById {
   '/reset-password': typeof ResetPasswordRoute
   '/_app/account': typeof AppAccountRoute
   '/_app/calculators': typeof AppCalculatorsRouteWithChildren
+  '/_app/calendar': typeof AppCalendarRoute
   '/_app/companies': typeof AppCompaniesRouteWithChildren
   '/_app/dashboard': typeof AppDashboardRoute
   '/_app/feedback': typeof AppFeedbackRoute
@@ -399,6 +408,7 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/account'
     | '/calculators'
+    | '/calendar'
     | '/companies'
     | '/dashboard'
     | '/feedback'
@@ -440,6 +450,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/reset-password'
     | '/account'
+    | '/calendar'
     | '/dashboard'
     | '/feedback'
     | '/history'
@@ -482,6 +493,7 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/_app/account'
     | '/_app/calculators'
+    | '/_app/calendar'
     | '/_app/companies'
     | '/_app/dashboard'
     | '/_app/feedback'
@@ -619,6 +631,13 @@ declare module '@tanstack/react-router' {
       path: '/companies'
       fullPath: '/companies'
       preLoaderRoute: typeof AppCompaniesRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/calendar': {
+      id: '/_app/calendar'
+      path: '/calendar'
+      fullPath: '/calendar'
+      preLoaderRoute: typeof AppCalendarRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/calculators': {
@@ -887,6 +906,7 @@ const AppCompaniesRouteWithChildren = AppCompaniesRoute._addFileChildren(
 interface AppRouteChildren {
   AppAccountRoute: typeof AppAccountRoute
   AppCalculatorsRoute: typeof AppCalculatorsRouteWithChildren
+  AppCalendarRoute: typeof AppCalendarRoute
   AppCompaniesRoute: typeof AppCompaniesRouteWithChildren
   AppDashboardRoute: typeof AppDashboardRoute
   AppFeedbackRoute: typeof AppFeedbackRoute
@@ -903,6 +923,7 @@ interface AppRouteChildren {
 const AppRouteChildren: AppRouteChildren = {
   AppAccountRoute: AppAccountRoute,
   AppCalculatorsRoute: AppCalculatorsRouteWithChildren,
+  AppCalendarRoute: AppCalendarRoute,
   AppCompaniesRoute: AppCompaniesRouteWithChildren,
   AppDashboardRoute: AppDashboardRoute,
   AppFeedbackRoute: AppFeedbackRoute,

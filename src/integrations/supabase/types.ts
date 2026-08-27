@@ -363,6 +363,94 @@ export type Database = {
           },
         ]
       }
+      appointments: {
+        Row: {
+          appointment_type: string | null
+          broker_id: string
+          client_id: string | null
+          created_at: string
+          duration_minutes: number
+          id: string
+          location: string | null
+          note: string | null
+          starts_at: string
+          status: string
+          title: string
+          updated_at: string
+          video_link: string | null
+        }
+        Insert: {
+          appointment_type?: string | null
+          broker_id: string
+          client_id?: string | null
+          created_at?: string
+          duration_minutes?: number
+          id?: string
+          location?: string | null
+          note?: string | null
+          starts_at: string
+          status?: string
+          title: string
+          updated_at?: string
+          video_link?: string | null
+        }
+        Update: {
+          appointment_type?: string | null
+          broker_id?: string
+          client_id?: string | null
+          created_at?: string
+          duration_minutes?: number
+          id?: string
+          location?: string | null
+          note?: string | null
+          starts_at?: string
+          status?: string
+          title?: string
+          updated_at?: string
+          video_link?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "appointments_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      appointment_reminders: {
+        Row: {
+          appointment_id: string
+          created_at: string
+          id: string
+          notified: boolean
+          remind_before_minutes: number
+        }
+        Insert: {
+          appointment_id: string
+          created_at?: string
+          id?: string
+          notified?: boolean
+          remind_before_minutes: number
+        }
+        Update: {
+          appointment_id?: string
+          created_at?: string
+          id?: string
+          notified?: boolean
+          remind_before_minutes?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "appointment_reminders_appointment_id_fkey"
+            columns: ["appointment_id"]
+            isOneToOne: false
+            referencedRelation: "appointments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       client_document_links: {
         Row: {
           broker_id: string
