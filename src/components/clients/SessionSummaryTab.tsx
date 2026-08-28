@@ -34,31 +34,6 @@ import { formatDateShort } from "@/lib/i18n/format";
 import { useT } from "@/contexts/LanguageContext";
 import { SynthesisReportModal } from "./SynthesisReportModal";
 
-// Champs d'identité surveillés : s'ils changent après un paiement, le PDF
-// se reverrouille automatiquement. Téléphone et permis de séjour exclus
-// volontairement (ils peuvent changer sans que ce soit un autre client).
-const IDENTITY_FIELDS = [
-  "first_name",
-  "last_name",
-  "date_of_birth",
-  "gender",
-  "nationality",
-  "email",
-] as const;
-
-type IdentitySnapshot = {
-  first_name: string | null;
-  last_name: string | null;
-  date_of_birth: string | null;
-  gender: string | null;
-  nationality: string | null;
-  email: string | null;
-};
-
-function identityMatches(current: IdentitySnapshot, snapshot: IdentitySnapshot): boolean {
-  return IDENTITY_FIELDS.every((f) => (current[f] ?? null) === (snapshot[f] ?? null));
-}
-
 export function SessionSummaryTab({ clientId, clientName }: { clientId: string; clientName: string }) {
   const t = useT();
   const qc = useQueryClient();
@@ -118,19 +93,18 @@ export function SessionSummaryTab({ clientId, clientName }: { clientId: string; 
     }
   };
 
-  // Identité actuelle du client, utilisée pour vérifier qu'elle correspond
-  // toujours à l'instantané pris au moment du paiement, et pour récupérer
-  // l'email sans avoir à le redemander au courtier lors de l'envoi du lien.
+  // Email du client, pour ne pas avoir à le redemander au courtier lors de
+  // l'envoi du lien de paiement.
   const { data: currentIdentity } = useQuery({
     queryKey: ["client-identity", clientId],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("clients")
-        .select("first_name,last_name,date_of_birth,gender,nationality,email")
+        .select("email")
         .eq("id", clientId)
         .single();
       if (error) throw error;
-      return data as IdentitySnapshot;
+      return data as { email: string | null };
     },
   });
 
@@ -172,54 +146,35 @@ export function SessionSummaryTab({ clientId, clientName }: { clientId: string; 
     }
   };
 
-  // Vérifier si le PDF est débloqué : une facture payée doit exister ET
-  // l'identité actuelle du client doit correspondre à l'instantané pris
-  // au moment du paiement (sinon, la fiche a été recyclée pour un autre
-  // client, et le PDF doit rester verrouillé).
-  const {
-    data: pdfUnlockResult = { unlocked: false, revokedByIdentityChange: false },
-    refetch: refetchPdf,
-  } = useQuery({
-    queryKey: ["pdf-unlocked", clientId, currentIdentity],
-    enabled: !!currentIdentity,
-    refetchInterval: 5000,
-    queryFn: async () => {
-      const { data } = await supabase
-        .from("rdv_invoices")
-        .select(
-          "pdf_unlocked,snapshot_first_name,snapshot_last_name,snapshot_date_of_birth,snapshot_gender,snapshot_nationality,snapshot_email",
-        )
-        .eq("client_id", clientId)
-        .eq("pdf_unlocked", true)
-        .order("created_at", { ascending: false })
-        .limit(1);
+  // Vérifier si le PDF est débloqué. La source de vérité est désormais
+  // entièrement côté serveur : un trigger PostgreSQL (sync_pdf_unlock_
+  // with_identity) reverrouille automatiquement rdv_invoices.pdf_unlocked
+  // dès que l'identité du client change, en comparant à l'instantané pris
+  // au moment du paiement — donc plus besoin de refaire cette comparaison
+  // ici. Comme une facture "payée" (status='paid') n'a pdf_unlocked=false
+  // que si ce trigger l'a reverrouillée après coup, ça suffit à distinguer
+  // "jamais payé" de "payé puis reverrouillé" pour le message affiché.
+  const { data: pdfUnlockResult = { unlocked: false, revokedByIdentityChange: false }, refetch: refetchPdf } =
+    useQuery({
+      queryKey: ["pdf-unlocked", clientId],
+      refetchInterval: 5000,
+      queryFn: async () => {
+        const { data } = await supabase
+          .from("rdv_invoices")
+          .select("pdf_unlocked")
+          .eq("client_id", clientId)
+          .eq("status", "paid")
+          .order("created_at", { ascending: false })
+          .limit(1);
 
-      if (!data || data.length === 0 || !currentIdentity) {
-        return { unlocked: false, revokedByIdentityChange: false };
-      }
+        if (!data || data.length === 0) {
+          return { unlocked: false, revokedByIdentityChange: false };
+        }
 
-      const invoice = data[0];
-      const snapshot: IdentitySnapshot = {
-        first_name: invoice.snapshot_first_name,
-        last_name: invoice.snapshot_last_name,
-        date_of_birth: invoice.snapshot_date_of_birth,
-        gender: invoice.snapshot_gender,
-        nationality: invoice.snapshot_nationality,
-        email: invoice.snapshot_email,
-      };
-
-      // Si l'instantané est totalement vide (ancienne facture créée avant
-      // ce correctif), on ne peut pas comparer : on laisse débloqué pour
-      // ne pas casser les paiements déjà effectués avant cette mise à jour.
-      const snapshotIsEmpty = IDENTITY_FIELDS.every((f) => snapshot[f] == null);
-      if (snapshotIsEmpty) {
-        return { unlocked: true, revokedByIdentityChange: false };
-      }
-
-      const matches = identityMatches(currentIdentity, snapshot);
-      return { unlocked: matches, revokedByIdentityChange: !matches };
-    },
-  });
+        const unlocked = data[0].pdf_unlocked;
+        return { unlocked, revokedByIdentityChange: !unlocked };
+      },
+    });
 
   const pdfUnlocked = pdfUnlockResult.unlocked;
   const revokedByIdentityChange = pdfUnlockResult.revokedByIdentityChange;
