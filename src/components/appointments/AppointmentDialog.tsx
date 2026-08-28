@@ -213,7 +213,13 @@ export function AppointmentDialog({
       }
     },
     onSuccess: () => {
-      toast.success(isEdit ? "Rendez-vous modifié" : "Rendez-vous créé");
+      const resolvedClientId = clientId === "none" ? null : clientId;
+      if (status === "termine" && resolvedClientId) {
+        toast.success("Rendez-vous marqué comme terminé. Retrouvez le suivi dans l'onglet « Suivi RDV » de la fiche client.");
+        qc.invalidateQueries({ queryKey: ["client-completed-appointments", resolvedClientId] });
+      } else {
+        toast.success(isEdit ? "Rendez-vous modifié" : "Rendez-vous créé");
+      }
       qc.invalidateQueries({ queryKey: ["appointments"] });
       qc.invalidateQueries({ queryKey: ["next-appointment"] });
       onOpenChange(false);

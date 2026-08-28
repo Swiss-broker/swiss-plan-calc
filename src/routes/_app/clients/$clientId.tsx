@@ -69,12 +69,13 @@ import { ClientCompanyCard } from "@/components/clients/ClientCompanyCard";
 import { DeleteConfirmDialog } from "@/components/common/DeleteConfirmDialog";
 import { ArchiveConfirmDialog } from "@/components/common/ArchiveConfirmDialog";
 import { LEGAL_FORM_LABELS, type Company } from "@/lib/companies/types";
-import { AlertTriangle, Building2, ClipboardList, MessageSquare, Sparkles } from "lucide-react";
+import { AlertTriangle, Building2, ClipboardList, MessageSquare, Sparkles, ListChecks } from "lucide-react";
 import { AiAnalysis } from "@/components/ai/AiAnalysis";
 import { AiConversationsTab } from "@/components/ai/AiConversationsTab";
 import { SessionSummaryTab } from "@/components/clients/SessionSummaryTab";
 import { NextAppointmentCard } from "@/components/appointments/NextAppointmentCard";
 import { EmailsTab } from "@/components/clients/EmailsTab";
+import { FollowUpTab } from "@/components/clients/FollowUpTab";
 export const Route = createFileRoute("/_app/clients/$clientId")({
   head: () => ({ meta: [{ title: "Fiche client · SwissBroker Pro" }] }),
   component: ClientDetailPage,
@@ -415,13 +416,21 @@ function ClientDetailPage() {
             <Mail className="h-3.5 w-3.5" />
             E-mails
           </TabsTrigger>
+          <TabsTrigger value="followup" className="gap-1">
+            <ListChecks className="h-3.5 w-3.5" />
+            Suivi RDV
+          </TabsTrigger>
         </TabsList>
-        
+
         <TabsContent value="session" className="mt-4">
           <SessionSummaryTab
             clientId={clientId}
             clientName={`${client.first_name} ${client.last_name}`.trim()}
           />
+        </TabsContent>
+
+        <TabsContent value="followup" className="mt-4">
+          <FollowUpTab clientId={clientId} clientFirstName={client.first_name} />
         </TabsContent>
 
         <TabsContent value="ai" className="mt-4">

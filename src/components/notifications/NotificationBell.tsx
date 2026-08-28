@@ -128,7 +128,39 @@ setNotifications((data ?? []) as unknown as Notification[]);
               </p>
             ) : (
               notifications.map((n) =>
-                n.type === "documents_pending_j2" ? (
+                n.type === "appointment_followup" ? (
+                  <div
+                    key={n.id}
+                    className={`border-b border-border/60 px-4 py-3 text-sm ${!n.read ? "bg-primary/5" : ""}`}
+                  >
+                    <div className="flex items-start gap-2">
+                      {!n.read && <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-primary" />}
+                      <div className="min-w-0 flex-1">
+                        <p className="font-medium text-foreground">{n.title}</p>
+                        {n.body && <p className="mt-0.5 text-xs text-muted-foreground">{n.body}</p>}
+                        <p className="mt-1 text-[11px] text-muted-foreground">
+                          {new Date(n.created_at).toLocaleString("fr-CH")}
+                        </p>
+                        <div className="mt-2 flex flex-wrap gap-3 text-xs font-medium">
+                          <Link
+                            to={n.link || "/dashboard"}
+                            onClick={() => { markAsRead(n.id); setOpen(false); }}
+                            className="text-primary hover:underline"
+                          >
+                            Voir le suivi
+                          </Link>
+                          <button
+                            type="button"
+                            onClick={() => markAsRead(n.id)}
+                            className="text-muted-foreground hover:underline"
+                          >
+                            Ignorer
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ) : n.type === "documents_pending_j2" ? (
                   <div
                     key={n.id}
                     className={`border-b border-border/60 px-4 py-3 text-sm ${!n.read ? "bg-primary/5" : ""}`}
