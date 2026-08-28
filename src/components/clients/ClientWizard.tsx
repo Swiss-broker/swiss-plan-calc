@@ -291,14 +291,15 @@ export function ClientWizard({ initial, mode, clientId }: ClientWizardProps) {
   const [, forceRerender] = useState(0);
 
   // Instantané de l'identité telle qu'elle était au chargement du formulaire,
-  // pour détecter si le courtier modifie un champ sensible pour la synthèse PDF.
+  // pour détecter si le courtier modifie un champ sensible pour la synthèse
+  // PDF. Volontairement limité à nom/prénom/date de naissance : email,
+  // téléphone, genre ou nationalité peuvent changer légitimement pour la
+  // même personne (nouvelle adresse mail, naturalisation...) sans que ce
+  // soit un changement d'identité au sens du reverrouillage du PDF.
   const originalIdentity = useRef({
     first_name: initial?.client?.first_name ?? "",
     last_name: initial?.client?.last_name ?? "",
     date_of_birth: initial?.client?.date_of_birth ?? "",
-    gender: (initial?.client?.gender as string | null) ?? "",
-    nationality: initial?.client?.nationality ?? "",
-    email: initial?.client?.email ?? "",
   });
 
   // Existe-t-il une facture RDV payée et débloquée pour ce client ? Seulement
@@ -318,16 +319,18 @@ export function ClientWizard({ initial, mode, clientId }: ClientWizardProps) {
     },
   });
 
+  // Aligné sur le seuil du trigger serveur (sync_pdf_unlock_with_identity) :
+  // il faut qu'au moins 2 des 3 champs diffèrent pour compter comme un vrai
+  // changement d'identité. Une simple faute de frappe corrigée sur un seul
+  // champ ne doit pas forcer le client à repayer sa synthèse.
   const identityFieldsChanged = () => {
     const o = originalIdentity.current;
-    return (
-      form.first_name.trim() !== o.first_name ||
-      form.last_name.trim() !== o.last_name ||
-      form.date_of_birth !== o.date_of_birth ||
-      (form.gender || "") !== o.gender ||
-      form.nationality !== o.nationality ||
-      form.email.trim() !== o.email
-    );
+    const changed = [
+      form.first_name.trim() !== o.first_name,
+      form.last_name.trim() !== o.last_name,
+      form.date_of_birth !== o.date_of_birth,
+    ].filter(Boolean).length;
+    return changed >= 2;
   };
 
   // Suggestion auto du statut fiscal : uniquement à la création, et seulement
