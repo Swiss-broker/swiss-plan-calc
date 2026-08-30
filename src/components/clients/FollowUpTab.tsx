@@ -369,7 +369,8 @@ Texte brut, tirets simples pour les listes, sans emojis ni astérisques.`,
         },
       });
       if (error) throw error;
-      setReportContent(data.content?.[0]?.text ?? "");
+      const textBlock = data.content?.find((c: { type: string; text?: string }) => c.type === "text");
+      setReportContent(textBlock?.text ?? "");
       setReportSource("ia");
       setReportOpen(true);
     } catch {

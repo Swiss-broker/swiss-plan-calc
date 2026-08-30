@@ -60,7 +60,8 @@ Sois concis, actionnable, sans emojis ni astérisques. Texte brut uniquement, ti
         },
       });
       if (error) throw error;
-      setAnalysis(data.content?.[0]?.text ?? "Impossible de générer l'analyse.");
+      const textBlock = data.content?.find((c: { type: string; text?: string }) => c.type === "text");
+      setAnalysis(textBlock?.text ?? "Impossible de générer l'analyse.");
       setOpen(true);
     } catch {
       setAnalysis("Une erreur est survenue. Veuillez réessayer.");
@@ -157,7 +158,8 @@ Sois concis, chiffré si possible, sans emojis ni astérisques. Texte brut uniqu
         },
       });
       if (error) throw error;
-      setAnalysis(data.content?.[0]?.text ?? "Impossible de générer l'analyse.");
+      const textBlock = data.content?.find((c: { type: string; text?: string }) => c.type === "text");
+      setAnalysis(textBlock?.text ?? "Impossible de générer l'analyse.");
       setOpen(true);
     } catch {
       setAnalysis("Une erreur est survenue. Veuillez réessayer.");

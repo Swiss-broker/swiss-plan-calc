@@ -24,7 +24,13 @@ async function callAnthropic(apiKey: string, model: string, system: unknown, mes
       "x-api-key": apiKey,
       "anthropic-version": "2023-06-01",
     },
-    body: JSON.stringify({ model, max_tokens: 1024, system, messages }),
+    // Le "thinking" etendu est desactive explicitement : sur un prompt
+    // structure (briefing client, chat), le modele pouvait consommer tout
+    // le budget max_tokens en reflexion interne et repondre avec un bloc
+    // "thinking" mais AUCUN bloc "text" -- ecran vide cote courtier, sans
+    // la moindre erreur remontee (statut 200). Ces prompts n'ont pas besoin
+    // de raisonnement etendu, une reponse directe suffit.
+    body: JSON.stringify({ model, max_tokens: 1024, system, messages, thinking: { type: "disabled" } }),
   });
   const data = await response.json();
   return { response, data };

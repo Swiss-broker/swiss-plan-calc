@@ -160,7 +160,8 @@ PATRIMOINE
         },
       });
       if (error) throw error;
-      const assistantContent = data.content?.[0]?.text ?? "Désolé, je n'ai pas pu générer une réponse.";
+      const textBlock = data.content?.find((c: { type: string; text?: string }) => c.type === "text");
+      const assistantContent = textBlock?.text ?? "Désolé, je n'ai pas pu générer une réponse.";
 
       setMessages((prev) => [
         ...prev,
