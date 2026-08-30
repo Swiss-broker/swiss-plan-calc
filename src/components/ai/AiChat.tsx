@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { useActiveClient } from "@/contexts/ActiveClientContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { logClientError } from "@/lib/error-logging";
 import { Textarea } from "@/components/ui/textarea";
 import ReactMarkdown from "react-markdown";
 
@@ -161,6 +162,9 @@ PATRIMOINE
       });
       if (error) throw error;
       const textBlock = data.content?.find((c: { type: string; text?: string }) => c.type === "text");
+      if (!textBlock?.text) {
+        logClientError("ai-chat a renvoyé une réponse sans texte exploitable (AiChat)", undefined, { data });
+      }
       const assistantContent = textBlock?.text ?? "Désolé, je n'ai pas pu générer une réponse.";
 
       setMessages((prev) => [

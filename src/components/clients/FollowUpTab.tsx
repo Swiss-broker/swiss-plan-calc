@@ -48,6 +48,7 @@ import { STATUS_COLORS, STATUS_LABELS, type Appointment } from "@/lib/appointmen
 import { DOCUMENT_CATEGORIES, type DocumentCategory } from "@/lib/documents/categories";
 import { AppointmentDialog } from "@/components/appointments/AppointmentDialog";
 import { EmailComposerDialog } from "@/components/clients/EmailComposerDialog";
+import { logClientError } from "@/lib/error-logging";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const supabase = _supabase as any;
@@ -370,6 +371,9 @@ Texte brut, tirets simples pour les listes, sans emojis ni astérisques.`,
       });
       if (error) throw error;
       const textBlock = data.content?.find((c: { type: string; text?: string }) => c.type === "text");
+      if (!textBlock?.text) {
+        logClientError("ai-chat a renvoyé une réponse sans texte exploitable (compte rendu RDV)", undefined, { data });
+      }
       setReportContent(textBlock?.text ?? "");
       setReportSource("ia");
       setReportOpen(true);

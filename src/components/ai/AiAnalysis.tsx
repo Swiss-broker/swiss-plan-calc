@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import ReactMarkdown from "react-markdown";
 import type { Client, ClientPension, ClientAssets } from "@/lib/clients/types";
 import { supabase } from "@/integrations/supabase/client";
+import { logClientError } from "@/lib/error-logging";
 
 interface Props {
   client: Client;
@@ -61,6 +62,9 @@ Sois concis, actionnable, sans emojis ni astérisques. Texte brut uniquement, ti
       });
       if (error) throw error;
       const textBlock = data.content?.find((c: { type: string; text?: string }) => c.type === "text");
+      if (!textBlock?.text) {
+        logClientError("ai-chat a renvoyé une réponse sans texte exploitable (AiAnalysis)", undefined, { data });
+      }
       setAnalysis(textBlock?.text ?? "Impossible de générer l'analyse.");
       setOpen(true);
     } catch {
@@ -159,6 +163,9 @@ Sois concis, chiffré si possible, sans emojis ni astérisques. Texte brut uniqu
       });
       if (error) throw error;
       const textBlock = data.content?.find((c: { type: string; text?: string }) => c.type === "text");
+      if (!textBlock?.text) {
+        logClientError("ai-chat a renvoyé une réponse sans texte exploitable (AiAnalysis)", undefined, { data });
+      }
       setAnalysis(textBlock?.text ?? "Impossible de générer l'analyse.");
       setOpen(true);
     } catch {
