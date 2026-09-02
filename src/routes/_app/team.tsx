@@ -6,7 +6,7 @@ import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Users, UserPlus, TrendingUp, Loader2, X, Mail, Crown, MessageSquare, Send, ChevronDown, UserMinus } from "lucide-react";
-import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
+import { AreaChart, Area, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -121,7 +121,7 @@ function TeamPage() {
     { target: "team-stats", title: "Chiffres clés", body: "Nombre de membres, clients traités, chiffre d'affaires du mois et évolution en un coup d'œil." },
     { target: "team-podium", title: "Classement du mois", body: "Les 3 membres qui ont traité le plus de clients ce mois-ci." },
     { target: "team-chart", title: "Évolution des clients", body: "Le nombre de clients traités par toute l'équipe, mois par mois, sur les 6 derniers mois." },
-    { target: "team-heatmap", title: "Activité de l'équipe", body: "Visualisez l'activité par jour de la semaine sur les 12 dernières semaines. Filtrez par courtier avec le menu déroulant." },
+    { target: "team-heatmap", title: "Activité de l'équipe", body: "Le nombre de clients traités chaque semaine, sur les 12 dernières semaines. Filtrez par courtier avec le menu déroulant." },
     { target: "team-tabs", title: "Mon équipe et invitations", body: "Basculez entre la liste de vos membres actifs et vos invitations en attente." },
   ];
   const growth =
@@ -226,7 +226,7 @@ function TeamPage() {
         <div className="space-y-4">
           <div id="team-podium"><TeamPodium teamData={teamData} /></div>
           <div id="team-chart"><ClientsChart data={data.monthlyHistory} /></div>
-          <div id="team-heatmap"><ActivityHeatmap teamData={teamData} rawData={data.heatmapRaw} /></div>
+          <div id="team-heatmap"><WeeklyActivityChart teamData={teamData} rawData={data.heatmapRaw} /></div>
           {requester.cabinet_role === "root_director" && <OrgChart teamData={teamData} />}
           {teamData.map((group) => (
             <DirectorGroup
@@ -281,7 +281,7 @@ function StatCard({
   );
 }
 
-function ActivityHeatmap({
+function WeeklyActivityChart({
   teamData,
   rawData,
 }: {
@@ -293,10 +293,7 @@ function ActivityHeatmap({
 
   const filtered = selected === "all" ? rawData : rawData.filter((r) => r.broker_id === selected);
 
-  const dayNames = ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"];
   const weeksCount = 12;
-  const ramp = ["#F1EFE8", "#E1F5EE", "#C3ECDD", "#9FE1CB", "#5DCAA5", "#1D9E75", "#0F6E56", "#04342C"];
-
   const mondayOf = (d: Date) => {
     const c = new Date(d);
     const day = (c.getDay() + 6) % 7;
@@ -306,62 +303,76 @@ function ActivityHeatmap({
   };
   const currentMonday = mondayOf(new Date());
   const rangeStart = new Date(currentMonday);
-  rangeStart.setDate(rangeStart.getDate() - 11 * 7);
+  rangeStart.setDate(rangeStart.getDate() - (weeksCount - 1) * 7);
 
-  const grid: number[][] = Array.from({ length: 7 }, () => Array(weeksCount).fill(0));
+  const weekStarts = Array.from({ length: weeksCount }, (_, i) => {
+    const d = new Date(rangeStart);
+    d.setDate(d.getDate() + i * 7);
+    return d;
+  });
+
+  const counts = Array(weeksCount).fill(0);
   for (const row of filtered) {
-    const created = new Date(row.created_at);
-    const rowMonday = mondayOf(created);
+    const rowMonday = mondayOf(new Date(row.created_at));
     const weekIndex = Math.round((rowMonday.getTime() - rangeStart.getTime()) / (7 * 24 * 3600 * 1000));
-    const dayIndex = (created.getDay() + 6) % 7;
-    if (weekIndex >= 0 && weekIndex < weeksCount) grid[dayIndex][weekIndex] += 1;
+    if (weekIndex >= 0 && weekIndex < weeksCount) counts[weekIndex] += 1;
   }
 
+  const chartData = weekStarts.map((d, i) => ({
+    week: d.toLocaleDateString("fr-CH", { day: "2-digit", month: "short" }),
+    clients: counts[i],
+  }));
+
   const total = filtered.length;
-  const maxVal = Math.max(1, ...grid.flat());
 
   return (
-    <div className="rounded-2xl bg-muted/30 p-5">
+    <div className="rounded-2xl border border-border bg-card p-5 shadow-card">
       <div className="flex flex-wrap items-baseline justify-between gap-3">
         <div>
-          <p className="text-xs text-muted-foreground">Activité de l'équipe</p>
-          <p className="mt-1 text-2xl font-bold">{total} clients</p>
+          <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+            Activité de l'équipe
+          </h2>
+          <p className="mt-1 text-2xl font-bold">{total} clients <span className="text-sm font-normal text-muted-foreground">sur 12 semaines</span></p>
         </div>
-        <select
-          value={selected}
-          onChange={(e) => setSelected(e.target.value)}
-          className="rounded-full border border-border bg-background px-3 py-1.5 text-xs"
-        >
-          <option value="all">Toute l'équipe</option>
-          {allMembers.map((m) => (
-            <option key={m.id} value={m.id}>
-              {fullName(m)}
-            </option>
-          ))}
-        </select>
+        <Select value={selected} onValueChange={setSelected}>
+          <SelectTrigger className="h-8 w-[180px] text-xs">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Toute l'équipe</SelectItem>
+            {allMembers.map((m) => (
+              <SelectItem key={m.id} value={m.id}>
+                {fullName(m)}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
-      <div className="mt-5 space-y-1">
-        {dayNames.map((day, dayIdx) => (
-          <div key={day} className="grid items-center gap-1" style={{ gridTemplateColumns: `36px repeat(${weeksCount}, 1fr)` }}>
-            <span className="text-[11px] text-muted-foreground">{day}</span>
-            {grid[dayIdx].map((val, weekIdx) => {
-              const level = Math.min(7, Math.round((val / maxVal) * 7));
-              return (
-                <div
-                  key={weekIdx}
-                  title={`${day}, semaine ${weekIdx + 1} : ${val} client${val > 1 ? "s" : ""}`}
-                  className="h-4 rounded transition-transform hover:scale-110"
-                  style={{ background: ramp[level] }}
-                />
-              );
-            })}
-          </div>
-        ))}
-      </div>
-      <div className="mt-3 flex items-center justify-end gap-2 text-[11px] text-muted-foreground">
-        <span>Faible</span>
-        <div className="h-1.5 w-14 rounded-full" style={{ background: "linear-gradient(90deg, #E1F5EE, #1D9E75, #04342C)" }} />
-        <span>Forte</span>
+      <div className="mt-4 h-56 w-full">
+        <ResponsiveContainer width="100%" height="100%">
+          <BarChart data={chartData} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
+            <CartesianGrid stroke="var(--border)" strokeOpacity={0.4} vertical={false} />
+            <XAxis dataKey="week" tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} axisLine={false} tickLine={false} interval={1} />
+            <YAxis
+              tick={{ fontSize: 12, fill: "var(--muted-foreground)" }}
+              axisLine={false}
+              tickLine={false}
+              allowDecimals={false}
+              width={28}
+            />
+            <Tooltip
+              formatter={(v: number) => [`${v} client${v > 1 ? "s" : ""}`, "Traités cette semaine"]}
+              labelFormatter={(label: string) => `Semaine du ${label}`}
+              contentStyle={{
+                background: "var(--card)",
+                border: "1px solid var(--border)",
+                borderRadius: 8,
+                fontSize: 12,
+              }}
+            />
+            <Bar dataKey="clients" name="Clients traités" fill="var(--primary)" radius={[4, 4, 0, 0]} maxBarSize={28} />
+          </BarChart>
+        </ResponsiveContainer>
       </div>
     </div>
   );
