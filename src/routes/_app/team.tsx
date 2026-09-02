@@ -121,7 +121,7 @@ function TeamPage() {
     { target: "team-stats", title: "Chiffres clés", body: "Nombre de membres, clients traités, chiffre d'affaires du mois et évolution en un coup d'œil." },
     { target: "team-podium", title: "Classement du mois", body: "Les 3 membres qui ont traité le plus de clients ce mois-ci." },
     { target: "team-chart", title: "Évolution des clients", body: "Le nombre de clients traités par toute l'équipe, mois par mois, sur les 6 derniers mois." },
-    { target: "team-heatmap", title: "Activité de l'équipe", body: "Une case par jour sur les 12 dernières semaines, plus foncée quand l'équipe traite plus de clients. Filtrez par courtier avec le menu déroulant." },
+    { target: "team-heatmap", title: "Activité de l'équipe", body: "Une barre par semaine sur les 12 dernières semaines, plus haute et plus foncée quand l'équipe traite plus de clients. La semaine la plus active est marquée « Pic ». Filtrez par courtier avec le menu déroulant." },
     { target: "team-tabs", title: "Mon équipe et invitations", body: "Basculez entre la liste de vos membres actifs et vos invitations en attente." },
   ];
   const growth =
@@ -226,7 +226,7 @@ function TeamPage() {
         <div className="space-y-4">
           <div id="team-podium"><TeamPodium teamData={teamData} /></div>
           <div id="team-chart"><ClientsChart data={data.monthlyHistory} /></div>
-          <div id="team-heatmap"><TeamActivityHeatmap teamData={teamData} rawData={data.heatmapRaw} /></div>
+          <div id="team-heatmap"><TeamActivityStrip teamData={teamData} rawData={data.heatmapRaw} /></div>
           {requester.cabinet_role === "root_director" && <OrgChart teamData={teamData} />}
           {teamData.map((group) => (
             <DirectorGroup
@@ -281,16 +281,11 @@ function StatCard({
   );
 }
 
-const HEATMAP_WEEKS = 12;
-const HEATMAP_DAY_LABELS = ["L", "M", "M", "J", "V", "S", "D"];
-const HEATMAP_MONTH_LABELS = [
-  "janv.", "févr.", "mars", "avr.", "mai", "juin",
-  "juil.", "août", "sept.", "oct.", "nov.", "déc.",
-];
 // Paliers d'intensité en % de mélange avec --primary : calculés relativement
 // au maximum observé (et non des seuils fixes), pour rester lisible que
-// l'équipe traite 3 ou 30 clients par jour.
-const HEATMAP_LEVEL_MIX = [0, 20, 42, 66, 92];
+// l'équipe traite 3 ou 30 clients par semaine.
+const ACTIVITY_LEVEL_MIX = [0, 20, 42, 66, 92];
+const ACTIVITY_WEEKS = 12;
 
 function mondayOf(d: Date) {
   const c = new Date(d);
@@ -300,7 +295,10 @@ function mondayOf(d: Date) {
   return c;
 }
 
-function TeamActivityHeatmap({
+// Bande d'activité : une barre par semaine, hauteur et couleur montent
+// ensemble avec le volume — pas d'axes ni de grille, la semaine en tête
+// (le "Pic") est mise en évidence plutôt que simplement la plus haute.
+function TeamActivityStrip({
   teamData,
   rawData,
 }: {
@@ -310,48 +308,27 @@ function TeamActivityHeatmap({
   const allMembers = teamData.flatMap((d) => [d.director, ...d.courtiers]);
   const [memberId, setMemberId] = useState<string>("all");
 
-  const gridStart = new Date(mondayOf(new Date()));
-  gridStart.setDate(gridStart.getDate() - (HEATMAP_WEEKS - 1) * 7);
+  const rangeStart = new Date(mondayOf(new Date()));
+  rangeStart.setDate(rangeStart.getDate() - (ACTIVITY_WEEKS - 1) * 7);
 
   const filtered = memberId === "all" ? rawData : rawData.filter((r) => r.broker_id === memberId);
 
-  const dayCounts = new Map<string, number>();
+  const weekTotals = Array(ACTIVITY_WEEKS).fill(0);
   for (const row of filtered) {
-    const d = new Date(row.created_at);
-    d.setHours(0, 0, 0, 0);
-    const key = d.toISOString().slice(0, 10);
-    dayCounts.set(key, (dayCounts.get(key) ?? 0) + 1);
+    const rowMonday = mondayOf(new Date(row.created_at));
+    const weekIndex = Math.round((rowMonday.getTime() - rangeStart.getTime()) / (7 * 24 * 3600 * 1000));
+    if (weekIndex >= 0 && weekIndex < ACTIVITY_WEEKS) weekTotals[weekIndex] += 1;
   }
 
-  const days: { date: Date; key: string; count: number }[] = [];
-  for (let i = 0; i < HEATMAP_WEEKS * 7; i++) {
-    const date = new Date(gridStart);
-    date.setDate(date.getDate() + i);
-    const key = date.toISOString().slice(0, 10);
-    days.push({ date, key, count: dayCounts.get(key) ?? 0 });
-  }
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
+  const weekStarts = Array.from({ length: ACTIVITY_WEEKS }, (_, i) => {
+    const d = new Date(rangeStart);
+    d.setDate(d.getDate() + i * 7);
+    return d;
+  });
 
-  const maxCount = Math.max(0, ...days.map((d) => d.count));
-  const levelOf = (count: number) => {
-    if (count === 0 || maxCount === 0) return 0;
-    return Math.min(4, Math.max(1, Math.ceil((count / maxCount) * 4)));
-  };
-
-  const total = days.reduce((s, d) => s + d.count, 0);
-
-  // Une étiquette de mois par colonne où le mois change, pour situer la grille
-  // sans surcharger l'en-tête d'une graduation par semaine.
-  const monthLabels: { col: number; label: string }[] = [];
-  let lastMonth = -1;
-  for (let col = 0; col < HEATMAP_WEEKS; col++) {
-    const colDate = days[col * 7].date;
-    if (colDate.getMonth() !== lastMonth) {
-      monthLabels.push({ col, label: HEATMAP_MONTH_LABELS[colDate.getMonth()] });
-      lastMonth = colDate.getMonth();
-    }
-  }
+  const total = weekTotals.reduce((s, v) => s + v, 0);
+  const maxWeek = Math.max(0, ...weekTotals);
+  const peakIndex = maxWeek > 0 ? weekTotals.indexOf(maxWeek) : -1;
 
   return (
     <div className="rounded-2xl border border-border bg-card p-5 shadow-card">
@@ -381,77 +358,49 @@ function TeamActivityHeatmap({
         )}
       </div>
 
-      <div className="mt-5 overflow-x-auto">
-        <div className="inline-flex min-w-full flex-col gap-1">
-          <div className="flex pl-6">
-            {Array.from({ length: HEATMAP_WEEKS }).map((_, col) => {
-              const label = monthLabels.find((m) => m.col === col)?.label;
-              return (
-                <span key={col} className="w-4 text-[11px] whitespace-nowrap text-muted-foreground">
-                  {label ?? ""}
-                </span>
-              );
-            })}
-          </div>
-          <div className="flex gap-[3px]">
-            <div className="mr-1 flex flex-col justify-between gap-[3px]">
-              {HEATMAP_DAY_LABELS.map((label, i) => (
+      <div className="mt-6 flex items-end gap-2.5 overflow-x-auto px-1" style={{ height: 96 }}>
+        {weekTotals.map((v, i) => {
+          const barHeight = v === 0 ? 4 : Math.max(10, Math.round((v / maxWeek) * 88));
+          const level = v === 0 || maxWeek === 0 ? 0 : Math.min(4, Math.max(1, Math.ceil((v / maxWeek) * 4)));
+          const isPeak = i === peakIndex;
+          const label = `Semaine du ${weekStarts[i].toLocaleDateString("fr-CH", { day: "numeric", month: "long" })} : ${v} client${v !== 1 ? "s" : ""}`;
+          return (
+            <div key={i} className="flex min-w-[20px] flex-1 flex-col items-center gap-1.5">
+              {isPeak ? (
                 <span
-                  key={i}
-                  className="flex h-[13px] w-4 items-center text-[10px] leading-none text-muted-foreground"
+                  className="rounded-full px-2 py-0.5 text-[10px] font-bold"
+                  style={{ background: "var(--warning-light)", color: "var(--warning-foreground)" }}
                 >
-                  {i % 2 === 1 ? label : ""}
+                  Pic
                 </span>
-              ))}
+              ) : (
+                <span className={`text-xs font-semibold tabular-nums ${v === 0 ? "text-muted-foreground/50" : ""}`}>
+                  {v}
+                </span>
+              )}
+              <div
+                role="img"
+                aria-label={label}
+                title={label}
+                className="w-full max-w-[34px] rounded-t-lg rounded-b-[3px] transition-transform hover:scale-y-[1.03]"
+                style={{
+                  height: barHeight,
+                  background:
+                    level === 0
+                      ? "var(--muted)"
+                      : `color-mix(in oklab, var(--primary) ${ACTIVITY_LEVEL_MIX[level]}%, var(--card))`,
+                }}
+              />
             </div>
-            {Array.from({ length: HEATMAP_WEEKS }).map((_, col) => (
-              <div key={col} className="flex flex-col gap-[3px]">
-                {Array.from({ length: 7 }).map((_, row) => {
-                  const day = days[col * 7 + row];
-                  const level = levelOf(day.count);
-                  const isFuture = day.date > today;
-                  const label = day.date.toLocaleDateString("fr-CH", {
-                    weekday: "long",
-                    day: "numeric",
-                    month: "long",
-                  });
-                  if (isFuture) {
-                    return <div key={row} aria-hidden="true" className="h-[13px] w-[13px]" />;
-                  }
-                  return (
-                    <div
-                      key={row}
-                      role="img"
-                      aria-label={`${label} : ${day.count} client${day.count !== 1 ? "s" : ""} traité${day.count !== 1 ? "s" : ""}`}
-                      title={`${label} — ${day.count} client${day.count !== 1 ? "s" : ""} traité${day.count !== 1 ? "s" : ""}`}
-                      className="h-[13px] w-[13px] rounded-[3px] border border-border/60 transition-transform hover:scale-125"
-                      style={{
-                        background:
-                          level === 0
-                            ? "var(--muted)"
-                            : `color-mix(in oklab, var(--primary) ${HEATMAP_LEVEL_MIX[level]}%, var(--card))`,
-                      }}
-                    />
-                  );
-                })}
-              </div>
-            ))}
-          </div>
-        </div>
+          );
+        })}
       </div>
-
-      <div className="mt-4 flex items-center justify-end gap-1.5 text-[11px] text-muted-foreground">
-        <span>Moins</span>
-        {HEATMAP_LEVEL_MIX.map((mix, i) => (
-          <span
-            key={i}
-            className="h-[11px] w-[11px] rounded-[3px] border border-border/60"
-            style={{
-              background: i === 0 ? "var(--muted)" : `color-mix(in oklab, var(--primary) ${mix}%, var(--card))`,
-            }}
-          />
+      <div className="mt-2 flex gap-2.5 px-1">
+        {weekStarts.map((d, i) => (
+          <span key={i} className="min-w-[20px] flex-1 text-center text-[10px] whitespace-nowrap text-muted-foreground">
+            {i % 2 === 0 ? d.toLocaleDateString("fr-CH", { day: "numeric", month: "short" }) : ""}
+          </span>
         ))}
-        <span>Plus</span>
       </div>
     </div>
   );
