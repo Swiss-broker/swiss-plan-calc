@@ -5,7 +5,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Users, UserPlus, TrendingUp, Loader2, X, Mail, Crown, MessageSquare, Send, ChevronDown, UserMinus } from "lucide-react";
+import { Users, UserPlus, TrendingUp, TrendingDown, Minus, Loader2, X, Mail, Crown, MessageSquare, Send, ChevronDown, UserMinus } from "lucide-react";
 import { AreaChart, Area, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -121,7 +121,7 @@ function TeamPage() {
     { target: "team-stats", title: "Chiffres clés", body: "Nombre de membres, clients traités, chiffre d'affaires du mois et évolution en un coup d'œil." },
     { target: "team-podium", title: "Classement du mois", body: "Les 3 membres qui ont traité le plus de clients ce mois-ci." },
     { target: "team-chart", title: "Évolution des clients", body: "Le nombre de clients traités par toute l'équipe, mois par mois, sur les 6 derniers mois." },
-    { target: "team-heatmap", title: "Activité de l'équipe", body: "Le nombre de clients traités chaque semaine, sur les 12 dernières semaines. Filtrez par courtier avec le menu déroulant." },
+    { target: "team-heatmap", title: "Activité de l'équipe", body: "Chaque membre avec sa tendance sur 12 semaines : total, mini-graphique et évolution récente, classés du plus actif au moins actif." },
     { target: "team-tabs", title: "Mon équipe et invitations", body: "Basculez entre la liste de vos membres actifs et vos invitations en attente." },
   ];
   const growth =
@@ -226,7 +226,7 @@ function TeamPage() {
         <div className="space-y-4">
           <div id="team-podium"><TeamPodium teamData={teamData} /></div>
           <div id="team-chart"><ClientsChart data={data.monthlyHistory} /></div>
-          <div id="team-heatmap"><WeeklyActivityChart teamData={teamData} rawData={data.heatmapRaw} /></div>
+          <div id="team-heatmap"><TeamActivityList teamData={teamData} rawData={data.heatmapRaw} /></div>
           {requester.cabinet_role === "root_director" && <OrgChart teamData={teamData} />}
           {teamData.map((group) => (
             <DirectorGroup
@@ -281,7 +281,25 @@ function StatCard({
   );
 }
 
-function WeeklyActivityChart({
+// Mini-courbe SVG sans dépendance externe : juste la forme de la tendance,
+// aucun axe ni grille, pour rester épuré même avec un membre par ligne.
+function Sparkline({ data }: { data: number[] }) {
+  const w = 100;
+  const h = 28;
+  const max = Math.max(1, ...data);
+  const stepX = w / Math.max(1, data.length - 1);
+  const points = data.map((v, i) => `${i * stepX},${h - (v / max) * (h - 4) - 2}`);
+  const linePath = `M${points.join(" L")}`;
+  const areaPath = `${linePath} L${w},${h} L0,${h} Z`;
+  return (
+    <svg viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none" className="h-8 w-full" aria-hidden="true">
+      <path d={areaPath} fill="var(--primary)" opacity={0.12} />
+      <path d={linePath} fill="none" stroke="var(--primary)" strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function TeamActivityList({
   teamData,
   rawData,
 }: {
@@ -289,9 +307,6 @@ function WeeklyActivityChart({
   rawData: { broker_id: string; created_at: string }[];
 }) {
   const allMembers = teamData.flatMap((d) => [d.director, ...d.courtiers]);
-  const [selected, setSelected] = useState<string>("all");
-
-  const filtered = selected === "all" ? rawData : rawData.filter((r) => r.broker_id === selected);
 
   const weeksCount = 12;
   const mondayOf = (d: Date) => {
@@ -305,75 +320,78 @@ function WeeklyActivityChart({
   const rangeStart = new Date(currentMonday);
   rangeStart.setDate(rangeStart.getDate() - (weeksCount - 1) * 7);
 
-  const weekStarts = Array.from({ length: weeksCount }, (_, i) => {
-    const d = new Date(rangeStart);
-    d.setDate(d.getDate() + i * 7);
-    return d;
-  });
+  const series = allMembers
+    .map((m) => {
+      const counts = Array(weeksCount).fill(0);
+      for (const row of rawData) {
+        if (row.broker_id !== m.id) continue;
+        const rowMonday = mondayOf(new Date(row.created_at));
+        const weekIndex = Math.round((rowMonday.getTime() - rangeStart.getTime()) / (7 * 24 * 3600 * 1000));
+        if (weekIndex >= 0 && weekIndex < weeksCount) counts[weekIndex] += 1;
+      }
+      const total = counts.reduce((s, v) => s + v, 0);
+      const recent = counts.slice(-4).reduce((s, v) => s + v, 0);
+      const prior = counts.slice(-8, -4).reduce((s, v) => s + v, 0);
+      const trend = prior === 0 ? (recent > 0 ? 100 : 0) : Math.round(((recent - prior) / prior) * 100);
+      return { member: m, counts, total, trend };
+    })
+    .sort((a, b) => b.total - a.total);
 
-  const counts = Array(weeksCount).fill(0);
-  for (const row of filtered) {
-    const rowMonday = mondayOf(new Date(row.created_at));
-    const weekIndex = Math.round((rowMonday.getTime() - rangeStart.getTime()) / (7 * 24 * 3600 * 1000));
-    if (weekIndex >= 0 && weekIndex < weeksCount) counts[weekIndex] += 1;
-  }
-
-  const chartData = weekStarts.map((d, i) => ({
-    week: d.toLocaleDateString("fr-CH", { day: "2-digit", month: "short" }),
-    clients: counts[i],
-  }));
-
-  const total = filtered.length;
+  const grandTotal = series.reduce((s, r) => s + r.total, 0);
 
   return (
     <div className="rounded-2xl border border-border bg-card p-5 shadow-card">
-      <div className="flex flex-wrap items-baseline justify-between gap-3">
-        <div>
-          <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
-            Activité de l'équipe
-          </h2>
-          <p className="mt-1 text-2xl font-bold">{total} clients <span className="text-sm font-normal text-muted-foreground">sur 12 semaines</span></p>
-        </div>
-        <Select value={selected} onValueChange={setSelected}>
-          <SelectTrigger className="h-8 w-[180px] text-xs">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Toute l'équipe</SelectItem>
-            {allMembers.map((m) => (
-              <SelectItem key={m.id} value={m.id}>
-                {fullName(m)}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+      <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+        Activité de l'équipe
+      </h2>
+      <p className="mt-1 text-2xl font-bold">
+        {grandTotal} clients <span className="text-sm font-normal text-muted-foreground">sur 12 semaines, par membre</span>
+      </p>
+
+      <div className="mt-5 divide-y divide-border/60">
+        {series.length === 0 ? (
+          <p className="py-6 text-center text-sm text-muted-foreground">Aucune activité récente.</p>
+        ) : (
+          series.map(({ member, counts, total, trend }) => (
+            <div key={member.id} className="flex items-center gap-4 py-3">
+              <div className="w-36 min-w-0 shrink-0 sm:w-44">
+                <p className="truncate text-sm font-medium">{fullName(member)}</p>
+                <p className="text-xs text-muted-foreground">
+                  {member.cabinet_role === "director" ? "Directeur" : "Courtier"}
+                </p>
+              </div>
+              <div className="min-w-[80px] max-w-[200px] flex-1">
+                <Sparkline data={counts} />
+              </div>
+              <span className="w-10 shrink-0 text-right text-sm font-semibold tabular-nums">{total}</span>
+              <span
+                className={`flex w-16 shrink-0 items-center justify-end gap-1 text-xs font-medium tabular-nums ${
+                  total === 0 ? "text-muted-foreground" : trend > 0 ? "text-primary" : trend < 0 ? "text-muted-foreground" : "text-muted-foreground"
+                }`}
+              >
+                {total === 0 ? (
+                  "—"
+                ) : trend > 0 ? (
+                  <>
+                    <TrendingUp className="h-3 w-3" /> +{trend}%
+                  </>
+                ) : trend < 0 ? (
+                  <>
+                    <TrendingDown className="h-3 w-3" /> {trend}%
+                  </>
+                ) : (
+                  <>
+                    <Minus className="h-3 w-3" /> 0%
+                  </>
+                )}
+              </span>
+            </div>
+          ))
+        )}
       </div>
-      <div className="mt-4 h-56 w-full">
-        <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={chartData} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
-            <CartesianGrid stroke="var(--border)" strokeOpacity={0.4} vertical={false} />
-            <XAxis dataKey="week" tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} axisLine={false} tickLine={false} interval={1} />
-            <YAxis
-              tick={{ fontSize: 12, fill: "var(--muted-foreground)" }}
-              axisLine={false}
-              tickLine={false}
-              allowDecimals={false}
-              width={28}
-            />
-            <Tooltip
-              formatter={(v: number) => [`${v} client${v > 1 ? "s" : ""}`, "Traités cette semaine"]}
-              labelFormatter={(label: string) => `Semaine du ${label}`}
-              contentStyle={{
-                background: "var(--card)",
-                border: "1px solid var(--border)",
-                borderRadius: 8,
-                fontSize: 12,
-              }}
-            />
-            <Bar dataKey="clients" name="Clients traités" fill="var(--primary)" radius={[4, 4, 0, 0]} maxBarSize={28} />
-          </BarChart>
-        </ResponsiveContainer>
-      </div>
+      <p className="mt-4 text-[11px] text-muted-foreground">
+        Nombre de clients traités par semaine (12 dernières semaines) et évolution des 4 dernières semaines par rapport aux 4 précédentes.
+      </p>
     </div>
   );
 }
