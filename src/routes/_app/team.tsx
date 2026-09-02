@@ -5,7 +5,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Users, UserPlus, TrendingUp, TrendingDown, Minus, Loader2, X, Mail, Crown, MessageSquare, Send, ChevronDown, UserMinus } from "lucide-react";
+import { Users, UserPlus, TrendingUp, Loader2, X, Mail, Crown, MessageSquare, Send, ChevronDown, UserMinus } from "lucide-react";
 import { AreaChart, Area, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -121,7 +121,7 @@ function TeamPage() {
     { target: "team-stats", title: "Chiffres clés", body: "Nombre de membres, clients traités, chiffre d'affaires du mois et évolution en un coup d'œil." },
     { target: "team-podium", title: "Classement du mois", body: "Les 3 membres qui ont traité le plus de clients ce mois-ci." },
     { target: "team-chart", title: "Évolution des clients", body: "Le nombre de clients traités par toute l'équipe, mois par mois, sur les 6 derniers mois." },
-    { target: "team-heatmap", title: "Activité de l'équipe", body: "Chaque membre avec sa tendance sur 12 semaines : total, mini-graphique et évolution récente, classés du plus actif au moins actif." },
+    { target: "team-heatmap", title: "Activité de l'équipe", body: "Une case par jour sur les 12 dernières semaines, plus foncée quand l'équipe traite plus de clients. Filtrez par courtier avec le menu déroulant." },
     { target: "team-tabs", title: "Mon équipe et invitations", body: "Basculez entre la liste de vos membres actifs et vos invitations en attente." },
   ];
   const growth =
@@ -226,7 +226,7 @@ function TeamPage() {
         <div className="space-y-4">
           <div id="team-podium"><TeamPodium teamData={teamData} /></div>
           <div id="team-chart"><ClientsChart data={data.monthlyHistory} /></div>
-          <div id="team-heatmap"><TeamActivityList teamData={teamData} rawData={data.heatmapRaw} /></div>
+          <div id="team-heatmap"><TeamActivityHeatmap teamData={teamData} rawData={data.heatmapRaw} /></div>
           {requester.cabinet_role === "root_director" && <OrgChart teamData={teamData} />}
           {teamData.map((group) => (
             <DirectorGroup
@@ -281,25 +281,26 @@ function StatCard({
   );
 }
 
-// Mini-courbe SVG sans dépendance externe : juste la forme de la tendance,
-// aucun axe ni grille, pour rester épuré même avec un membre par ligne.
-function Sparkline({ data }: { data: number[] }) {
-  const w = 100;
-  const h = 28;
-  const max = Math.max(1, ...data);
-  const stepX = w / Math.max(1, data.length - 1);
-  const points = data.map((v, i) => `${i * stepX},${h - (v / max) * (h - 4) - 2}`);
-  const linePath = `M${points.join(" L")}`;
-  const areaPath = `${linePath} L${w},${h} L0,${h} Z`;
-  return (
-    <svg viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none" className="h-8 w-full" aria-hidden="true">
-      <path d={areaPath} fill="var(--primary)" opacity={0.12} />
-      <path d={linePath} fill="none" stroke="var(--primary)" strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
+const HEATMAP_WEEKS = 12;
+const HEATMAP_DAY_LABELS = ["L", "M", "M", "J", "V", "S", "D"];
+const HEATMAP_MONTH_LABELS = [
+  "janv.", "févr.", "mars", "avr.", "mai", "juin",
+  "juil.", "août", "sept.", "oct.", "nov.", "déc.",
+];
+// Paliers d'intensité en % de mélange avec --primary : calculés relativement
+// au maximum observé (et non des seuils fixes), pour rester lisible que
+// l'équipe traite 3 ou 30 clients par jour.
+const HEATMAP_LEVEL_MIX = [0, 20, 42, 66, 92];
+
+function mondayOf(d: Date) {
+  const c = new Date(d);
+  const day = (c.getDay() + 6) % 7;
+  c.setDate(c.getDate() - day);
+  c.setHours(0, 0, 0, 0);
+  return c;
 }
 
-function TeamActivityList({
+function TeamActivityHeatmap({
   teamData,
   rawData,
 }: {
@@ -307,91 +308,151 @@ function TeamActivityList({
   rawData: { broker_id: string; created_at: string }[];
 }) {
   const allMembers = teamData.flatMap((d) => [d.director, ...d.courtiers]);
+  const [memberId, setMemberId] = useState<string>("all");
 
-  const weeksCount = 12;
-  const mondayOf = (d: Date) => {
-    const c = new Date(d);
-    const day = (c.getDay() + 6) % 7;
-    c.setDate(c.getDate() - day);
-    c.setHours(0, 0, 0, 0);
-    return c;
+  const gridStart = new Date(mondayOf(new Date()));
+  gridStart.setDate(gridStart.getDate() - (HEATMAP_WEEKS - 1) * 7);
+
+  const filtered = memberId === "all" ? rawData : rawData.filter((r) => r.broker_id === memberId);
+
+  const dayCounts = new Map<string, number>();
+  for (const row of filtered) {
+    const d = new Date(row.created_at);
+    d.setHours(0, 0, 0, 0);
+    const key = d.toISOString().slice(0, 10);
+    dayCounts.set(key, (dayCounts.get(key) ?? 0) + 1);
+  }
+
+  const days: { date: Date; key: string; count: number }[] = [];
+  for (let i = 0; i < HEATMAP_WEEKS * 7; i++) {
+    const date = new Date(gridStart);
+    date.setDate(date.getDate() + i);
+    const key = date.toISOString().slice(0, 10);
+    days.push({ date, key, count: dayCounts.get(key) ?? 0 });
+  }
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const maxCount = Math.max(0, ...days.map((d) => d.count));
+  const levelOf = (count: number) => {
+    if (count === 0 || maxCount === 0) return 0;
+    return Math.min(4, Math.max(1, Math.ceil((count / maxCount) * 4)));
   };
-  const currentMonday = mondayOf(new Date());
-  const rangeStart = new Date(currentMonday);
-  rangeStart.setDate(rangeStart.getDate() - (weeksCount - 1) * 7);
 
-  const series = allMembers
-    .map((m) => {
-      const counts = Array(weeksCount).fill(0);
-      for (const row of rawData) {
-        if (row.broker_id !== m.id) continue;
-        const rowMonday = mondayOf(new Date(row.created_at));
-        const weekIndex = Math.round((rowMonday.getTime() - rangeStart.getTime()) / (7 * 24 * 3600 * 1000));
-        if (weekIndex >= 0 && weekIndex < weeksCount) counts[weekIndex] += 1;
-      }
-      const total = counts.reduce((s, v) => s + v, 0);
-      const recent = counts.slice(-4).reduce((s, v) => s + v, 0);
-      const prior = counts.slice(-8, -4).reduce((s, v) => s + v, 0);
-      const trend = prior === 0 ? (recent > 0 ? 100 : 0) : Math.round(((recent - prior) / prior) * 100);
-      return { member: m, counts, total, trend };
-    })
-    .sort((a, b) => b.total - a.total);
+  const total = days.reduce((s, d) => s + d.count, 0);
 
-  const grandTotal = series.reduce((s, r) => s + r.total, 0);
+  // Une étiquette de mois par colonne où le mois change, pour situer la grille
+  // sans surcharger l'en-tête d'une graduation par semaine.
+  const monthLabels: { col: number; label: string }[] = [];
+  let lastMonth = -1;
+  for (let col = 0; col < HEATMAP_WEEKS; col++) {
+    const colDate = days[col * 7].date;
+    if (colDate.getMonth() !== lastMonth) {
+      monthLabels.push({ col, label: HEATMAP_MONTH_LABELS[colDate.getMonth()] });
+      lastMonth = colDate.getMonth();
+    }
+  }
 
   return (
     <div className="rounded-2xl border border-border bg-card p-5 shadow-card">
-      <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
-        Activité de l'équipe
-      </h2>
-      <p className="mt-1 text-2xl font-bold">
-        {grandTotal} clients <span className="text-sm font-normal text-muted-foreground">sur 12 semaines, par membre</span>
-      </p>
-
-      <div className="mt-5 divide-y divide-border/60">
-        {series.length === 0 ? (
-          <p className="py-6 text-center text-sm text-muted-foreground">Aucune activité récente.</p>
-        ) : (
-          series.map(({ member, counts, total, trend }) => (
-            <div key={member.id} className="flex items-center gap-4 py-3">
-              <div className="w-36 min-w-0 shrink-0 sm:w-44">
-                <p className="truncate text-sm font-medium">{fullName(member)}</p>
-                <p className="text-xs text-muted-foreground">
-                  {member.cabinet_role === "director" ? "Directeur" : "Courtier"}
-                </p>
-              </div>
-              <div className="min-w-[80px] max-w-[200px] flex-1">
-                <Sparkline data={counts} />
-              </div>
-              <span className="w-10 shrink-0 text-right text-sm font-semibold tabular-nums">{total}</span>
-              <span
-                className={`flex w-16 shrink-0 items-center justify-end gap-1 text-xs font-medium tabular-nums ${
-                  total === 0 ? "text-muted-foreground" : trend > 0 ? "text-primary" : trend < 0 ? "text-muted-foreground" : "text-muted-foreground"
-                }`}
-              >
-                {total === 0 ? (
-                  "—"
-                ) : trend > 0 ? (
-                  <>
-                    <TrendingUp className="h-3 w-3" /> +{trend}%
-                  </>
-                ) : trend < 0 ? (
-                  <>
-                    <TrendingDown className="h-3 w-3" /> {trend}%
-                  </>
-                ) : (
-                  <>
-                    <Minus className="h-3 w-3" /> 0%
-                  </>
-                )}
-              </span>
-            </div>
-          ))
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+            Activité de l'équipe
+          </h2>
+          <p className="mt-1 text-2xl font-bold">
+            {total} clients <span className="text-sm font-normal text-muted-foreground">traités sur 12 semaines</span>
+          </p>
+        </div>
+        {allMembers.length > 1 && (
+          <Select value={memberId} onValueChange={setMemberId}>
+            <SelectTrigger className="h-9 w-[180px] text-sm">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Toute l'équipe</SelectItem>
+              {allMembers.map((m) => (
+                <SelectItem key={m.id} value={m.id}>
+                  {fullName(m)}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         )}
       </div>
-      <p className="mt-4 text-[11px] text-muted-foreground">
-        Nombre de clients traités par semaine (12 dernières semaines) et évolution des 4 dernières semaines par rapport aux 4 précédentes.
-      </p>
+
+      <div className="mt-5 overflow-x-auto">
+        <div className="inline-flex min-w-full flex-col gap-1">
+          <div className="flex pl-6">
+            {Array.from({ length: HEATMAP_WEEKS }).map((_, col) => {
+              const label = monthLabels.find((m) => m.col === col)?.label;
+              return (
+                <span key={col} className="w-4 text-[11px] whitespace-nowrap text-muted-foreground">
+                  {label ?? ""}
+                </span>
+              );
+            })}
+          </div>
+          <div className="flex gap-[3px]">
+            <div className="mr-1 flex flex-col justify-between gap-[3px]">
+              {HEATMAP_DAY_LABELS.map((label, i) => (
+                <span
+                  key={i}
+                  className="flex h-[13px] w-4 items-center text-[10px] leading-none text-muted-foreground"
+                >
+                  {i % 2 === 1 ? label : ""}
+                </span>
+              ))}
+            </div>
+            {Array.from({ length: HEATMAP_WEEKS }).map((_, col) => (
+              <div key={col} className="flex flex-col gap-[3px]">
+                {Array.from({ length: 7 }).map((_, row) => {
+                  const day = days[col * 7 + row];
+                  const level = levelOf(day.count);
+                  const isFuture = day.date > today;
+                  const label = day.date.toLocaleDateString("fr-CH", {
+                    weekday: "long",
+                    day: "numeric",
+                    month: "long",
+                  });
+                  if (isFuture) {
+                    return <div key={row} aria-hidden="true" className="h-[13px] w-[13px]" />;
+                  }
+                  return (
+                    <div
+                      key={row}
+                      role="img"
+                      aria-label={`${label} : ${day.count} client${day.count !== 1 ? "s" : ""} traité${day.count !== 1 ? "s" : ""}`}
+                      title={`${label} — ${day.count} client${day.count !== 1 ? "s" : ""} traité${day.count !== 1 ? "s" : ""}`}
+                      className="h-[13px] w-[13px] rounded-[3px] border border-border/60 transition-transform hover:scale-125"
+                      style={{
+                        background:
+                          level === 0
+                            ? "var(--muted)"
+                            : `color-mix(in oklab, var(--primary) ${HEATMAP_LEVEL_MIX[level]}%, var(--card))`,
+                      }}
+                    />
+                  );
+                })}
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      <div className="mt-4 flex items-center justify-end gap-1.5 text-[11px] text-muted-foreground">
+        <span>Moins</span>
+        {HEATMAP_LEVEL_MIX.map((mix, i) => (
+          <span
+            key={i}
+            className="h-[11px] w-[11px] rounded-[3px] border border-border/60"
+            style={{
+              background: i === 0 ? "var(--muted)" : `color-mix(in oklab, var(--primary) ${mix}%, var(--card))`,
+            }}
+          />
+        ))}
+        <span>Plus</span>
+      </div>
     </div>
   );
 }
