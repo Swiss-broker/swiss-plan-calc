@@ -68,10 +68,24 @@ export function DocumentRequestsPanel({ clientId }: { clientId: string }) {
   const qc = useQueryClient();
   const [replaceTarget, setReplaceTarget] = useState<RequestRow | null>(null);
   const [replaceNote, setReplaceNote] = useState("");
-  // "Demander"/"Relancer" n'écrivent qu'en base : sans ouvrir ensuite le
+  // Documents cochés par le courtier pour la prochaine demande/relance
+  // groupée : un seul e-mail listant uniquement ces documents-là, pas tous
+  // les documents encore en attente pour le client.
+  const [selected, setSelected] = useState<Set<DocumentCategory>>(new Set());
+  // "Envoyer la demande" n'écrit qu'en base : sans ouvrir ensuite le
   // composeur d'e-mail, le client ne reçoit jamais rien et le courtier
   // croit à tort que la demande a été notifiée.
   const [emailTemplate, setEmailTemplate] = useState<TemplateKey | null>(null);
+  const [emailCategories, setEmailCategories] = useState<DocumentCategory[]>([]);
+
+  const toggleSelected = (cat: DocumentCategory) => {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(cat)) next.delete(cat);
+      else next.add(cat);
+      return next;
+    });
+  };
 
   const requestsQuery = useQuery({
     queryKey: ["client-document-requests", clientId],
@@ -90,38 +104,42 @@ export function DocumentRequestsPanel({ clientId }: { clientId: string }) {
 
   const invalidate = () => qc.invalidateQueries({ queryKey: ["client-document-requests", clientId] });
 
-  const demander = useMutation({
-    mutationFn: async (category: DocumentCategory) => {
+  // Une seule action pour la sélection cochée : crée une demande pour les
+  // documents encore "manquant", relance ceux déjà "demandé"/"à remplacer",
+  // puis ouvre un e-mail unique listant uniquement ces documents-là.
+  const sendSelected = useMutation({
+    mutationFn: async (categories: DocumentCategory[]) => {
       if (!user) throw new Error("Auth required");
-      const { error } = await supabase.from("client_document_requests").insert({
-        client_id: clientId,
-        broker_id: user.id,
-        category,
-        status: "demande",
-        requested_at: new Date().toISOString(),
+      for (const category of categories) {
+        const row = byCategory.get(category);
+        if (!row) {
+          const { error } = await supabase.from("client_document_requests").insert({
+            client_id: clientId,
+            broker_id: user.id,
+            category,
+            status: "demande",
+            requested_at: new Date().toISOString(),
+          });
+          if (error) throw error;
+        } else if (row.status === "demande" || row.status === "a_remplacer") {
+          const { error } = await supabase
+            .from("client_document_requests")
+            .update({ requested_at: new Date().toISOString(), reminder_sent_at: null })
+            .eq("id", row.id);
+          if (error) throw error;
+        }
+      }
+    },
+    onSuccess: (_data, categories) => {
+      invalidate();
+      const isPureRelance = categories.every((cat) => {
+        const row = byCategory.get(cat);
+        return row && (row.status === "demande" || row.status === "a_remplacer");
       });
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      invalidate();
-      toast.success("Document demandé.");
-      setEmailTemplate("demande_documents");
-    },
-    onError: (e: Error) => toast.error(e.message),
-  });
-
-  const relancer = useMutation({
-    mutationFn: async (row: RequestRow) => {
-      const { error } = await supabase
-        .from("client_document_requests")
-        .update({ requested_at: new Date().toISOString(), reminder_sent_at: null })
-        .eq("id", row.id);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      invalidate();
-      toast.success("Relance enregistrée.");
-      setEmailTemplate("relance_j2");
+      toast.success(categories.length > 1 ? `${categories.length} documents demandés.` : "Document demandé.");
+      setSelected(new Set());
+      setEmailCategories(categories);
+      setEmailTemplate(isPureRelance ? "relance_j2" : "demande_documents");
     },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -176,8 +194,23 @@ export function DocumentRequestsPanel({ clientId }: { clientId: string }) {
       {requestsQuery.isLoading ? (
         <Loader2 className="mt-4 h-4 w-4 animate-spin" />
       ) : (
-        <div className="mt-4 overflow-x-auto">
-          <Table>
+        <>
+          <div className="mt-4 flex items-center justify-between gap-3 rounded-md border bg-muted/30 p-3">
+            <p className="text-sm text-muted-foreground">
+              {selected.size > 0
+                ? `${selected.size} document${selected.size > 1 ? "s" : ""} sélectionné${selected.size > 1 ? "s" : ""}`
+                : "Cochez les documents à demander ou relancer, puis envoyez un e-mail groupé."}
+            </p>
+            <Button
+              size="sm"
+              disabled={selected.size === 0 || sendSelected.isPending}
+              onClick={() => sendSelected.mutate(Array.from(selected))}
+            >
+              {sendSelected.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Envoyer la demande"}
+            </Button>
+          </div>
+          <div className="mt-4 overflow-x-auto">
+            <Table>
             <TableHeader>
               <TableRow>
                 <TableHead>Document</TableHead>
@@ -233,25 +266,17 @@ export function DocumentRequestsPanel({ clientId }: { clientId: string }) {
                       {fmtDate(row?.verified_at ?? null)}
                     </TableCell>
                     <TableCell className="text-right">
-                      {status === "manquant" && (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          disabled={demander.isPending}
-                          onClick={() => demander.mutate(cat.value)}
-                        >
-                          Demander
-                        </Button>
-                      )}
-                      {(status === "demande" || status === "a_remplacer") && (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          disabled={relancer.isPending}
-                          onClick={() => row && relancer.mutate(row)}
-                        >
-                          Relancer
-                        </Button>
+                      {(status === "manquant" || status === "demande" || status === "a_remplacer") && (
+                        <label className="flex items-center justify-end gap-2 text-xs text-muted-foreground">
+                          {status === "manquant" ? "À demander" : "À relancer"}
+                          <input
+                            type="checkbox"
+                            aria-label={`Sélectionner ${cat.label}`}
+                            checked={selected.has(cat.value)}
+                            onChange={() => toggleSelected(cat.value)}
+                            className="h-4 w-4 rounded border-input"
+                          />
+                        </label>
                       )}
                       {status === "recu" && (
                         <div className="flex justify-end gap-2">
@@ -289,7 +314,8 @@ export function DocumentRequestsPanel({ clientId }: { clientId: string }) {
               })}
             </TableBody>
           </Table>
-        </div>
+          </div>
+        </>
       )}
 
       <Dialog open={!!replaceTarget} onOpenChange={(o) => !o && setReplaceTarget(null)}>
@@ -324,16 +350,17 @@ export function DocumentRequestsPanel({ clientId }: { clientId: string }) {
       </Dialog>
 
       {emailTemplate && (
-        // key força un remount à chaque changement de modèle : le composeur
-        // ne relit defaultTemplateKey qu'au montage (useState), donc sans
-        // ça, demander un 2e document après une relance rouvrirait encore
-        // sur le modèle "relance_j2" au lieu de "demande_documents".
+        // key força un remount à chaque changement de modèle ou de
+        // sélection : le composeur ne relit defaultTemplateKey/categoriesOverride
+        // qu'au montage (useState), donc sans ça, une 2e demande consécutive
+        // avec le même modèle rouvrirait sur la liste de documents précédente.
         <EmailComposerDialog
-          key={emailTemplate}
+          key={`${emailTemplate}-${emailCategories.join(",")}`}
           clientId={clientId}
           open
           onOpenChange={(o) => !o && setEmailTemplate(null)}
           defaultTemplateKey={emailTemplate}
+          categoriesOverride={emailCategories}
           onSent={() => setEmailTemplate(null)}
         />
       )}

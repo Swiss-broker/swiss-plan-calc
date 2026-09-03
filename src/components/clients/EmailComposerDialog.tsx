@@ -35,7 +35,7 @@ import {
   renderTemplate,
   type TemplateKey,
 } from "@/lib/emails/templates";
-import { DOCUMENT_CATEGORIES } from "@/lib/documents/categories";
+import { DOCUMENT_CATEGORIES, type DocumentCategory } from "@/lib/documents/categories";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const supabase = _supabase as any;
@@ -45,12 +45,18 @@ export function EmailComposerDialog({
   open,
   onOpenChange,
   defaultTemplateKey,
+  categoriesOverride,
   onSent,
 }: {
   clientId: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   defaultTemplateKey?: TemplateKey;
+  // Restreint {{documents_manquants}} à cette liste précise (ex. les
+  // documents cochés par le courtier) au lieu de tous les documents encore
+  // en attente pour le client : sans ça, chaque demande ponctuelle renvoie
+  // la liste complète, même pour un seul document.
+  categoriesOverride?: DocumentCategory[];
   onSent?: () => void;
 }) {
   const { user } = useAuth();
@@ -117,10 +123,13 @@ export function EmailComposerDialog({
     const activeLink = data.links.find(
       (l) => !l.revoked && new Date(l.expires_at) > new Date() && l.upload_count < l.max_uploads,
     );
-    const missing = DOCUMENT_CATEGORIES.filter((cat) => {
-      const req = data.requests.find((r) => r.category === cat.value);
-      return !req || (req.status !== "recu" && req.status !== "verifie");
-    });
+    const missing =
+      categoriesOverride && categoriesOverride.length > 0
+        ? DOCUMENT_CATEGORIES.filter((cat) => categoriesOverride.includes(cat.value))
+        : DOCUMENT_CATEGORIES.filter((cat) => {
+            const req = data.requests.find((r) => r.category === cat.value);
+            return !req || (req.status !== "recu" && req.status !== "verifie");
+          });
     const start = data.nextAppointment ? new Date(data.nextAppointment.starts_at) : null;
     return {
       prenom: data.client?.first_name ?? "",
@@ -133,7 +142,7 @@ export function EmailComposerDialog({
       lien_depot: activeLink ? `${window.location.origin}/client-upload/${activeLink.token}` : "",
       signature: data.profile?.email_signature || brokerName || "",
     } as Record<string, string>;
-  }, [contextQuery.data]);
+  }, [contextQuery.data, categoriesOverride]);
 
   // À chaque changement de modèle (ou une fois le contexte chargé), on
   // repart du modèle personnalisé du courtier s'il existe, sinon du
