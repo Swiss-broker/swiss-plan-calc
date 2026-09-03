@@ -3,7 +3,7 @@
 // Compare le taux AFC (annuel) au taux marché (BNS/ECB) à la date de chaque versement.
 
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { z } from "zod";
 import { zodValidator, fallback } from "@tanstack/zod-adapter";
 import { Plus, Trash2, RefreshCw, Download, AlertCircle } from "lucide-react";
@@ -40,6 +40,7 @@ import { exportFxClaimPdf } from "@/lib/pdf/fx-claim-report";
 import { CrossCalcImpactBanner } from "@/components/calculators/CrossCalcImpactBanner";
 import { GuideMode, GuideToggleButton, type GuideStep } from "@/components/calculators/GuideMode";
 import { SaveSimulationButton } from "@/components/calculators/SaveSimulationButton";
+import { useLoadSavedSimulation } from "@/hooks/useLoadSavedSimulation";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import type { Client } from "@/lib/clients/types";
@@ -47,6 +48,7 @@ import { ClientLinkBanner } from "@/components/calculators/ClientLinkBanner";
 
 const searchSchema = z.object({
   clientId: fallback(z.string().uuid().optional(), undefined),
+  simId: fallback(z.string().uuid().optional(), undefined),
 });
 
 export const Route = createFileRoute("/_app/calculators/fx-claim")({
@@ -79,7 +81,8 @@ function addMonths(dateStr: string, months: number): string {
 }
 
 function FxClaimCalc() {
-  const { clientId } = Route.useSearch();
+  const { clientId, simId } = Route.useSearch();
+  const { inputs: savedInputs, isLoading: loadingSaved } = useLoadSavedSimulation(simId);
   const { data: client } = useQuery({
     queryKey: ["fx-claim-client", clientId],
     enabled: Boolean(clientId),
@@ -110,6 +113,32 @@ function FxClaimCalc() {
   const [loading, setLoading] = useState(false);
   const [guideOpen, setGuideOpen] = useState(false);
   const currentYear = new Date().getFullYear();
+
+  // Rechargement d'une analyse sauvegardée : ne s'applique qu'une fois par
+  // simId, pour ne pas écraser les modifications faites après le chargement.
+  // Sans cet effet, "Ouvrir" un versement sauvegardé rouvrait la page vide,
+  // comme si l'analyse n'avait jamais existé.
+  const loadedSimRef = useRef<string | undefined>(undefined);
+  useEffect(() => {
+    if (!simId || !savedInputs) return;
+    if (loadedSimRef.current === simId) return;
+    loadedSimRef.current = simId;
+    const savedTaxYear = Number(savedInputs.taxYear);
+    const savedCurrency = savedInputs.currency as Currency | undefined;
+    if (Number.isFinite(savedTaxYear) && savedTaxYear > 0) setTaxYear(savedTaxYear);
+    if (savedCurrency) setCurrency(savedCurrency);
+    if (Number.isFinite(Number(savedInputs.marginalRate))) setMarginalRate(Number(savedInputs.marginalRate));
+    const officialRate =
+      savedCurrency && Number.isFinite(savedTaxYear) ? AFC_ANNUAL_RATES[savedTaxYear]?.[savedCurrency] : undefined;
+    const savedRate = Number(savedInputs.afcRate);
+    setAfcOverride(
+      Number.isFinite(savedRate) && savedRate > 0 && savedRate !== officialRate ? String(savedRate) : "",
+    );
+    const savedTransactions = Array.isArray(savedInputs.transactions)
+      ? (savedInputs.transactions as FxTransaction[])
+      : [];
+    if (savedTransactions.length > 0) setRows(savedTransactions);
+  }, [simId, savedInputs]);
 
   const afcRate = useMemo(() => {
     const override = parseFloat(afcOverride.replace(",", "."));
@@ -255,6 +284,11 @@ function FxClaimCalc() {
         title="Guide, Réclamation taux de change"
         guideId="calc-fx-claim"
       />
+      {simId && loadingSaved && (
+        <div className="md:col-span-5 rounded-lg border border-border bg-muted/40 p-3 text-sm text-muted-foreground">
+          Chargement de l'analyse sauvegardée…
+        </div>
+      )}
       {client && (
         <div className="md:col-span-5">
           <ClientLinkBanner client={client} />
