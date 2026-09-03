@@ -54,6 +54,7 @@ import {
   type DocumentCategory,
 } from "@/lib/documents/categories";
 import { DocumentRequestsPanel } from "@/components/clients/DocumentRequestsPanel";
+import { EmailComposerDialog } from "@/components/clients/EmailComposerDialog";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const supabase = _supabase as any;
@@ -98,6 +99,7 @@ export function DocumentsTab({
   const { user } = useAuth();
   const qc = useQueryClient();
   const [linkDialogOpen, setLinkDialogOpen] = useState(false);
+  const [emailDialogOpen, setEmailDialogOpen] = useState(false);
   const [expiresInDays, setExpiresInDays] = useState(14);
   const [maxUploads, setMaxUploads] = useState(30);
   const [uploadCategory, setUploadCategory] = useState<DocumentCategory>("attestation_lpp");
@@ -435,11 +437,7 @@ export function DocumentsTab({
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => {
-                  const subject = "Dépôt de vos documents";
-                  const body = `Bonjour ${clientFirstName},\n\nVoici le lien pour déposer vos documents en toute sécurité :\n${linkUrl}\n\nCordialement.`;
-                  window.location.href = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-                }}
+                onClick={() => setEmailDialogOpen(true)}
               >
                 <Mail className="mr-2 h-4 w-4" /> E-mail
               </Button>
@@ -681,6 +679,12 @@ export function DocumentsTab({
         </DialogContent>
       </Dialog>
 
+      <EmailComposerDialog
+        clientId={clientId}
+        open={emailDialogOpen}
+        onOpenChange={setEmailDialogOpen}
+        defaultTemplateKey="demande_documents"
+      />
     </div>
   );
 }

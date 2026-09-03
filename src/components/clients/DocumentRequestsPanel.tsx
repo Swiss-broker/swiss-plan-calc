@@ -24,6 +24,8 @@ import {
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { DOCUMENT_CATEGORIES, DOCUMENT_HELP, type DocumentCategory } from "@/lib/documents/categories";
+import { EmailComposerDialog } from "@/components/clients/EmailComposerDialog";
+import type { TemplateKey } from "@/lib/emails/templates";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const supabase = _supabase as any;
@@ -66,6 +68,10 @@ export function DocumentRequestsPanel({ clientId }: { clientId: string }) {
   const qc = useQueryClient();
   const [replaceTarget, setReplaceTarget] = useState<RequestRow | null>(null);
   const [replaceNote, setReplaceNote] = useState("");
+  // "Demander"/"Relancer" n'écrivent qu'en base : sans ouvrir ensuite le
+  // composeur d'e-mail, le client ne reçoit jamais rien et le courtier
+  // croit à tort que la demande a été notifiée.
+  const [emailTemplate, setEmailTemplate] = useState<TemplateKey | null>(null);
 
   const requestsQuery = useQuery({
     queryKey: ["client-document-requests", clientId],
@@ -99,6 +105,7 @@ export function DocumentRequestsPanel({ clientId }: { clientId: string }) {
     onSuccess: () => {
       invalidate();
       toast.success("Document demandé.");
+      setEmailTemplate("demande_documents");
     },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -113,7 +120,8 @@ export function DocumentRequestsPanel({ clientId }: { clientId: string }) {
     },
     onSuccess: () => {
       invalidate();
-      toast.success("Relance enregistrée. Utilisez le lien de dépôt ci-dessus pour recontacter le client.");
+      toast.success("Relance enregistrée.");
+      setEmailTemplate("relance_j2");
     },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -314,6 +322,21 @@ export function DocumentRequestsPanel({ clientId }: { clientId: string }) {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {emailTemplate && (
+        // key força un remount à chaque changement de modèle : le composeur
+        // ne relit defaultTemplateKey qu'au montage (useState), donc sans
+        // ça, demander un 2e document après une relance rouvrirait encore
+        // sur le modèle "relance_j2" au lieu de "demande_documents".
+        <EmailComposerDialog
+          key={emailTemplate}
+          clientId={clientId}
+          open
+          onOpenChange={(o) => !o && setEmailTemplate(null)}
+          defaultTemplateKey={emailTemplate}
+          onSent={() => setEmailTemplate(null)}
+        />
+      )}
     </Card>
   );
 }
