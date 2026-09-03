@@ -39,6 +39,7 @@ import { useBrokerPdfHeader } from "@/hooks/useBrokerPdfHeader";
 import { exportFxClaimPdf } from "@/lib/pdf/fx-claim-report";
 import { CrossCalcImpactBanner } from "@/components/calculators/CrossCalcImpactBanner";
 import { GuideMode, GuideToggleButton, type GuideStep } from "@/components/calculators/GuideMode";
+import { SaveSimulationButton } from "@/components/calculators/SaveSimulationButton";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import type { Client } from "@/lib/clients/types";
@@ -153,8 +154,8 @@ function FxClaimCalc() {
     },
     {
       target: "fx-claim-export",
-      title: "Générer le courrier",
-      body: "Contrairement aux autres calculateurs, celui-ci ne se sauvegarde pas dans l'historique : il génère directement un courrier PDF de réclamation, prêt à envoyer à l'administration fiscale.",
+      title: "Générer le courrier ou sauvegarder",
+      body: "« Générer le courrier PDF » produit directement le courrier de réclamation prêt à envoyer à l'administration fiscale. « Sauvegarder » rattache cette analyse à la fiche du client, pour qu'elle apparaisse dans sa synthèse RDV comme les autres calculateurs.",
     },
   ];
 
@@ -455,15 +456,37 @@ function FxClaimCalc() {
                 </TableBody>
               </Table>
             </div>
-            <div className="mt-3 flex justify-between">
+            <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
               <Button type="button" variant="outline" size="sm" onClick={addRow}>
                 <Plus className="h-4 w-4 mr-2" />
                 Ajouter un versement
               </Button>
-              <Button type="button" onClick={onExport} data-guide="fx-claim-export">
-                <Download className="h-4 w-4 mr-2" />
-                Générer le courrier PDF
-              </Button>
+              <div className="flex flex-wrap items-center gap-2" data-guide="fx-claim-export">
+                <SaveSimulationButton
+                  kind="fx_claim"
+                  inputs={{
+                    taxYear,
+                    currency,
+                    marginalRate,
+                    afcRate,
+                    transactions: input.transactions,
+                    transactionCount: input.transactions.length,
+                  }}
+                  summary={{
+                    totalChfAfc: result.totalChfAfc,
+                    totalChfMarket: result.totalChfMarket,
+                    totalDeltaChf: result.totalDeltaChf,
+                    estimatedTaxRefund: result.estimatedTaxRefund,
+                    deltaRelativePct: result.deltaRelativePct,
+                    weightedMarketRate: result.weightedMarketRate,
+                  }}
+                  defaultTitle={`Taux de change ${currency} · ${taxYear}`}
+                />
+                <Button type="button" onClick={onExport}>
+                  <Download className="h-4 w-4 mr-2" />
+                  Générer le courrier PDF
+                </Button>
+              </div>
             </div>
           </CalcCard>
         </div>

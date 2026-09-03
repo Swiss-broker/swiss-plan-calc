@@ -127,6 +127,13 @@ export function extractKpis(kind: SimulationKind, summary: SummaryShape): Histor
         { label: "Régime", value: String(summary.regimeLabel ?? summary.regime ?? "—") },
         { label: "Économie optimisations", value: num(summary.bestScenarioSavings), unit: "CHF" },
       ];
+    case "fx_claim":
+      return [
+        { label: "Écart en faveur du client", value: num(summary.totalDeltaChf), unit: "CHF" },
+        { label: "Économie d'impôt estimée", value: num(summary.estimatedTaxRefund), unit: "CHF" },
+        { label: "CHF retenu (AFC)", value: num(summary.totalChfAfc), unit: "CHF" },
+        { label: "CHF réel (marché)", value: num(summary.totalChfMarket), unit: "CHF" },
+      ];
   }
 }
 
@@ -423,6 +430,16 @@ export async function regeneratePdf(
       const tgInput = inputs as unknown as Parameters<typeof computeTaxGlobal>[0];
       const result = computeTaxGlobal(tgInput);
       exportTaxGlobalPdf({ header, input: tgInput, result });
+      return;
+    }
+    case "fx_claim": {
+      const [{ analyzeFxClaim }, { exportFxClaimPdf }] = await Promise.all([
+        import("@/lib/fx/analyze"),
+        import("@/lib/pdf/fx-claim-report"),
+      ]);
+      const claimInput = inputs as unknown as Parameters<typeof analyzeFxClaim>[0];
+      const result = analyzeFxClaim(claimInput);
+      exportFxClaimPdf({ header, input: claimInput, result });
       return;
     }
     case "cross_border":

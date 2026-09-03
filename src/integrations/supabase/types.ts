@@ -1900,6 +1900,7 @@ export type Database = {
         | "tax_global"
         | "health_insurance_france"
         | "overtime"
+        | "fx_claim"
       tax_status:
         | "resident"
         | "source_taxed"
@@ -2123,6 +2124,7 @@ export const Constants = {
         "tax_global",
         "health_insurance_france",
         "overtime",
+        "fx_claim",
       ],
       tax_status: [
         "resident",

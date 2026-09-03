@@ -147,6 +147,7 @@ const EXPLAIN_FR: Partial<Record<SimulationKind, string>> = {
   investment_compare: "Ce calculateur compare deux placements ou stratégies sur une durée donnée, en tenant compte des frais de gestion annuels et de l'impôt applicable à la sortie, pour déterminer lequel vous laisse le plus de capital net à l'échéance.",
   health_insurance_france: "En tant que frontalier résidant en France, vous pouvez choisir entre l'assurance maladie suisse (LAMal) et la couverture maladie universelle française (CMU). Ce choix doit être fait dans les 3 mois suivant le début de votre activité en Suisse, et vous engage pour longtemps : il mérite une comparaison chiffrée précise.",
   overtime: "Si vous êtes frontalier sous l'accord franco-suisse de 1983, vos heures supplémentaires peuvent, sous certaines conditions, être partiellement exonérées d'impôt sur le revenu en France. Ce calculateur détermine le montant exonérable et l'économie fiscale réelle que cela représente pour vous.",
+  fx_claim: "Le fisc français convertit vos revenus suisses en euros avec un taux de change annuel moyen (taux AFC). Si le taux réel du jour de chaque versement vous était plus favorable, l'écart peut représenter un trop-payé d'impôt réclamable. Ce calculateur compare les deux taux, versement par versement.",
 };
 
 function explainKind(kind: SimulationKind): string {
@@ -922,6 +923,13 @@ function formatInputs(entry: HistoryEntry): Array<[string, string]> {
       pushIf(rows, "Enfants à charge", i.childrenCount);
       pushIfPct(rows, "Taux marginal IR FR estimé", i.estimatedFrenchMarginalRate);
       break;
+    case "fx_claim":
+      pushIf(rows, "Année fiscale", i.taxYear);
+      pushStr(rows, "Devise", str(i.currency));
+      pushIfPct(rows, "Taux marginal d'impôt", i.marginalRate);
+      if (has(i.afcRate)) rows.push(["Taux AFC retenu", String(num(i.afcRate))]);
+      pushIf(rows, "Nombre de versements", i.transactionCount);
+      break;
   }
   return rows;
 }
@@ -1041,6 +1049,13 @@ function formatMetrics(
       if (has(s.taxSavings)) out.push({ label: "Économie fiscale (exonération FR)", value: num(s.taxSavings), tone: "success" });
       if (has(s.totalTaxOnOvertime)) out.push({ label: "Impôt total heures sup", value: num(s.totalTaxOnOvertime), tone: "warning" });
       if (has(s.overtimeCHF)) out.push({ label: "Heures sup brutes", value: num(s.overtimeCHF) });
+      break;
+    }
+    case "fx_claim": {
+      if (has(s.totalChfAfc)) out.push({ label: "CHF retenu (AFC)", value: num(s.totalChfAfc), tone: "warning" });
+      if (has(s.totalChfMarket)) out.push({ label: "CHF réel (marché)", value: num(s.totalChfMarket), tone: "primary" });
+      if (has(s.totalDeltaChf)) out.push({ label: "Écart en faveur du client", value: num(s.totalDeltaChf), tone: "success" });
+      if (has(s.estimatedTaxRefund)) out.push({ label: "Économie d'impôt estimée", value: num(s.estimatedTaxRefund), tone: "success" });
       break;
     }
   }
@@ -1287,6 +1302,16 @@ function buildComment(entry: HistoryEntry): string | null {
       if (!has(s.overtimeCHF)) return entry.note?.trim() || null;
       const savTxt = sav > 0 ? ` L'exonération partielle côté français sur vos heures supplémentaires vous fait économiser ${formatCHF(sav)}.` : " Aucune exonération n'a été appliquée dans ce scénario, le statut fiscal retenu n'y ouvrant pas droit ou le seuil d'heures minimal n'étant pas atteint.";
       return `Sur ${formatCHF(brut)} d'heures supplémentaires brutes, l'imposition combinée Suisse/France atteint ${formatCHF(total)}, pour un montant net que vous percevez effectivement de ${formatCHF(net)}.${savTxt}${entry.note ? ` ${entry.note.trim()}` : ""}`;
+    }
+    case "fx_claim": {
+      const deltaChf = num(s.totalDeltaChf);
+      const refund = num(s.estimatedTaxRefund);
+      if (!has(s.totalDeltaChf)) return entry.note?.trim() || null;
+      const txt =
+        deltaChf > 0
+          ? `Le taux de change réel du marché vous était plus favorable que le taux AFC retenu par le fisc sur la période analysée, pour un écart cumulé de ${formatCHF(deltaChf)} et une économie d'impôt estimée de ${formatCHF(refund)}.`
+          : "Sur la période analysée, le taux AFC retenu par le fisc n'était pas défavorable au client : aucun trop-payé identifié.";
+      return `${txt} Une réclamation n'est admise que si chaque date de versement peut être justifiée (fiches de salaire, relevés bancaires).${entry.note ? ` ${entry.note.trim()}` : ""}`;
     }
     case "avs_ai": {
       const monthly = num(s.monthlyPension);

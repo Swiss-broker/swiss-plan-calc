@@ -189,6 +189,16 @@ export function extractGain(entry: HistoryEntry): ExtractedGain {
         details: "Économie fiscale annuelle (meilleur scénario simulé)",
       };
     }
+    case "fx_claim": {
+      const amount = num(summary.estimatedTaxRefund);
+      if (amount <= 0) return none();
+      return {
+        type: "one_time",
+        amount: Math.round(amount),
+        label: "Réclamation taux de change",
+        details: "Économie d'impôt estimée sur l'écart taux AFC / taux marché",
+      };
+    }
     default:
       return none();
   }
