@@ -694,6 +694,18 @@ function LppCalc() {
             totalFees: projection.totalFees,
             totalBuybacks: projection.totalBuybacks,
             totalTaxSavings: buybackPlan.totalTaxSavings,
+            // Retranscrit tel quel dans le PDF de synthèse (section "Actuel
+            // vs Projeté") : la ligne "Capital LPP projeté à la retraite"
+            // compare deux projections à la retraite (avec/sans rachat, même
+            // salaire assuré), pas le solde d'aujourd'hui contre le projeté.
+            compareRows: compareRows.map(({ label, current, projected, format, betterWhen, hint }) => ({
+              label,
+              current,
+              projected,
+              format,
+              betterWhen,
+              hint,
+            })),
           }}
           defaultTitle={`LPP ${form.currentAge}→${form.retirementAge} ans · ${form.canton}`}
         />

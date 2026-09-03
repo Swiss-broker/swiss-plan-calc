@@ -17,6 +17,8 @@ import { extractGain, type ExtractedGain } from "@/lib/simulations/extract-gain"
 import type { HistoryEntry, HistoryKpi, SimulationKind } from "@/lib/history/types";
 import { KIND_LABELS } from "@/lib/history/types";
 import { extractKpis } from "@/lib/history/registry";
+import { consolidatePensionBenefits, PENSION_EVENT_LABELS, type ConsolidatedScenario } from "@/lib/pension-consolidation";
+import { projectLPP } from "@/lib/lpp";
 
 const cantonName = (code?: string | null) =>
   (code && CANTONS.find((c) => c.code === code)?.name) || code || "—";
@@ -46,6 +48,61 @@ const has = (v: unknown): boolean => {
   if (typeof v === "string") return v.trim() !== "" && !Number.isNaN(Number(v));
   return false;
 };
+
+// Tableau "Actuel vs Projeté" tel qu'affiché dans le calculateur au moment
+// de la sauvegarde (SplitCompareLayout côté app). Sauvegardé dans
+// summary.compareRows par SaveSimulationButton pour les calculateurs qui
+// affichent ce comparatif — voir src/components/calculators/SplitCompareLayout.tsx.
+// Absent sur les simulations sauvegardées avant l'ajout de ce champ.
+interface SavedCompareRow {
+  label: string;
+  current: number | string | null | undefined;
+  projected: number | string | null | undefined;
+  format?: "chf" | "pct" | "text" | "chf_per_month";
+}
+
+function extractSavedCompareRows(entry: HistoryEntry): SavedCompareRow[] {
+  const raw = (entry.summary as { compareRows?: unknown } | null | undefined)?.compareRows;
+  if (!Array.isArray(raw)) return [];
+  return raw
+    .filter((r): r is Record<string, unknown> => typeof r === "object" && r !== null)
+    .filter((r) => typeof r.label === "string")
+    .map((r) => ({
+      label: r.label as string,
+      current: r.current as number | string | null | undefined,
+      projected: r.projected as number | string | null | undefined,
+      format: r.format as SavedCompareRow["format"],
+    }));
+}
+
+// Complète une ligne de recommandation avec les deux chiffres réels
+// derrière un delta (ex. "160'922" seul ne dit pas ce qui vaut quoi) : soit
+// la première ligne du compareRows sauvegardé, soit un cas spécifique pour
+// les calculateurs sans SplitCompareLayout (ex. rente vs capital).
+function describeCompareFigures(entry: HistoryEntry): string | null {
+  const rows = extractSavedCompareRows(entry);
+  if (rows.length > 0) {
+    const r = rows[0];
+    return `${r.label} — actuel : ${formatSplitValue(r.current, r.format)}, projeté : ${formatSplitValue(r.projected, r.format)}.`;
+  }
+  if (entry.kind === "retirement") {
+    const annuity = num(entry.summary?.netAnnuity);
+    const lump = num(entry.summary?.netLumpSum);
+    if (annuity > 0 || lump > 0) {
+      return `Rente viagère nette : ${formatCHF(annuity)} · Capital net : ${formatCHF(lump)}.`;
+    }
+  }
+  return null;
+}
+
+function formatSplitValue(v: number | string | null | undefined, format?: SavedCompareRow["format"]): string {
+  if (v === null || v === undefined) return "—";
+  if (typeof v === "string") return v;
+  if (!Number.isFinite(v)) return "—";
+  if (format === "pct") return formatPct(v);
+  if (format === "chf_per_month") return `${formatCHF(v)} / mois`;
+  return formatCHF(v);
+}
 
 const STATUS_FR: Record<string, string> = {
   single: "Célibataire",
@@ -81,7 +138,7 @@ const EXPLAIN_FR: Partial<Record<SimulationKind, string>> = {
   tax_global: "Ce calculateur reconstitue l'ensemble de votre charge fiscale annuelle (impôt fédéral, cantonal et communal réunis), sur la base de votre situation personnelle et professionnelle. Il fait ressortir deux chiffres utiles : votre taux d'imposition moyen sur l'ensemble de votre revenu, et votre taux marginal, c'est-à-dire ce que vous payez d'impôt sur le prochain franc que vous gagnez. Ce second chiffre est particulièrement utile pour savoir si une déduction supplémentaire, comme un versement 3a ou un rachat LPP, vaut la peine pour vous.",
   income_tax: "Ce calcul détermine l'impôt sur le revenu que vous devez, sur la base des barèmes cantonaux et fédéraux en vigueur pour votre situation.",
   source_tax: "L'impôt à la source s'applique automatiquement si vous êtes salarié étranger sans permis d'établissement C : votre employeur prélève directement l'impôt sur votre salaire, selon un barème qui dépend de votre situation familiale et de votre canton.",
-  retirement: "Au moment de la retraite, vous avez le choix entre toucher une rente à vie, ou retirer tout ou partie de votre capital de prévoyance en une fois. C'est une décision importante et difficile à revenir en arrière. Ce calculateur compare les deux options sur la base de votre espérance de vie, du taux de conversion applicable et de votre situation fiscale, pour vous aider à objectiver ce choix.",
+  retirement: "Au moment de la retraite, vous avez le choix entre toucher une rente à vie, ou retirer tout ou partie de votre capital de prévoyance en une fois. C'est une décision importante et difficile à revenir en arrière. Ce calculateur compare les deux options sur la base de votre espérance de vie, du taux de conversion applicable et de votre situation fiscale, pour vous aider à objectiver ce choix. Le montant de capital utilisé ici est celui saisi pour ce test précis : il peut différer de la page « Prestations consolidées », qui reflète toujours la situation actuelle de votre dossier.",
   avs_ai: "L'AVS est votre 1er pilier, le socle obligatoire de la prévoyance suisse. Son montant dépend de deux choses : le nombre d'années où vous avez cotisé (44 ans pour une carrière complète) et votre revenu moyen sur l'ensemble de votre carrière. Chaque année de cotisation manquante réduit votre rente finale.",
   vested_benefits: "Le libre passage correspond à votre capital LPP en transit entre deux emplois, ou lorsque vous quittez temporairement le marché du travail suisse. Ce capital doit être placé sur un compte ou une police dédiée, et la stratégie de placement que vous choisissez influence directement le montant dont vous disposerez à votre prochain emploi ou à la retraite.",
   cross_border: "En tant que frontalier, la façon dont vous êtes imposé dépend d'accords particuliers entre la Suisse et votre pays de résidence, qui peuvent varier sensiblement d'un canton de travail à l'autre. Ce calculateur compare votre charge fiscale selon les différents régimes qui pourraient s'appliquer à votre situation.",
@@ -142,6 +199,17 @@ export function exportSynthesisReportPdf(args: SynthesisReportArgs): void {
   pdf.newPage();
   toc.push({ title: "Profil client", page: pdf.doc.getCurrentPageInfo().pageNumber });
   drawClientProfile(pdf, client, pension, assets, company);
+
+  // ---------- PRESTATIONS CONSOLIDÉES ----------
+  // Chiffre de référence unique (1er + 2e + 3e pilier), calculé par le même
+  // module que la fiche client (src/lib/pension-consolidation), AVANT le
+  // détail des simulations : celles-ci explorent des scénarios "what-if"
+  // (rachat étalé sur X ans, capital saisi à la main, etc.) qui peuvent
+  // légitimement diverger de ce chiffre officiel — le situer en premier
+  // évite de faire passer une divergence pour une erreur de calcul.
+  pdf.newPage();
+  toc.push({ title: "Prestations consolidées", page: pdf.doc.getCurrentPageInfo().pageNumber });
+  drawConsolidatedBenefitsPage(pdf, client, pension, assets);
 
   // ---------- PAGES SIMULATIONS ----------
   // Les simulations s'enchaînent à la suite les unes des autres, sans saut
@@ -505,6 +573,72 @@ function drawClientProfile(
 }
 
 // ============================================================================
+// PRESTATIONS CONSOLIDÉES (1er + 2e + 3e pilier, référence unique)
+// ============================================================================
+function drawConsolidatedBenefitsPage(
+  pdf: ReportPdf,
+  client: Client,
+  pension: ClientPension | null,
+  assets: ClientAssets | null,
+) {
+  pdf.section("Prestations consolidées");
+  pdf.paragraph(
+    "Ce chiffre réunit tout ce que votre dossier finance à la retraite (1er pilier AVS/AI, 2e pilier LPP et 3e pilier), calculé à partir des données actuelles de votre fiche. C'est la référence officielle du cabinet : les simulations détaillées qui suivent explorent chacune un scénario particulier (un montant de rachat étalé sur quelques années, une hypothèse de capital saisie pour un test, etc.) et peuvent donc s'en écarter ponctuellement — ce n'est pas une erreur, juste un scénario différent de cette vue d'ensemble.",
+  );
+
+  const benefits = consolidatePensionBenefits({ client, pension, assets });
+  const retirement = benefits.retirement;
+
+  if (!retirement) {
+    pdf.spacer(2);
+    pdf.paragraph(
+      "Données insuffisantes pour calculer une consolidation (date de naissance, salaire ou avoirs manquants dans la fiche).",
+      { italic: true, muted: true },
+    );
+    return;
+  }
+
+  pdf.spacer(2);
+  pdf.metricsGrid([
+    { label: "Rente mensuelle consolidée", value: retirement.combinedMonthly, tone: "primary" },
+    { label: "Rente annuelle consolidée", value: retirement.combinedAnnual, tone: "success" },
+    { label: "1er pilier (AVS/AI)", value: retirement.pillar1.totalAnnual },
+    { label: "2e pilier + 3a", value: retirement.pillar2.totalAnnual },
+  ]);
+
+  const detailRows = [...retirement.pillar1.items, ...retirement.pillar2.items].map((it) => [
+    it.label,
+    it.pillar,
+    formatCHF(it.annual),
+    formatCHF(it.monthly),
+  ]);
+  if (detailRows.length > 0) {
+    pdf.spacer(3);
+    pdf.table(["Prestation", "Pilier", "Annuel", "Mensuel"], detailRows);
+  }
+  if (retirement.notes.length > 0) {
+    pdf.spacer(2);
+    for (const note of retirement.notes) {
+      pdf.paragraph(`• ${note}`, { muted: true, italic: true });
+    }
+  }
+
+  // Comparaison rapide vieillesse / invalidité / décès, mêmes données,
+  // mêmes hypothèses : c'est la "consolidation des rentes" au sens large.
+  const eventRows: Array<[string, string, string]> = [];
+  for (const event of ["retirement", "disability", "death"] as const) {
+    const scenario: ConsolidatedScenario | null = benefits[event];
+    if (!scenario) continue;
+    eventRows.push([PENSION_EVENT_LABELS[event], formatCHF(scenario.combinedAnnual), formatCHF(scenario.combinedMonthly)]);
+  }
+  if (eventRows.length > 1) {
+    pdf.spacer(4);
+    pdf.paragraph("Comparaison par événement (vieillesse, invalidité, décès) :", { muted: true });
+    pdf.table(["Événement", "Rente annuelle", "Rente mensuelle"], eventRows);
+  }
+}
+
+// ============================================================================
 // SIMULATION (1 page par simulation)
 // ============================================================================
 function drawSimulationPage(pdf: ReportPdf, entry: HistoryEntry, includeCharts: boolean) {
@@ -537,6 +671,27 @@ function drawSimulationPage(pdf: ReportPdf, entry: HistoryEntry, includeCharts: 
     pdf.ensureSpace(15 + gridHeight);
     pdf.section("Résultats clés");
     pdf.metricsGrid(metrics);
+  }
+
+  // Section 2bis · comparatif détaillé "Actuel vs Projeté", exactement comme
+  // affiché dans le calculateur (compareRows sauvegardé dans le summary) —
+  // pas un recalcul indépendant, une retranscription fidèle du tableau que
+  // le courtier a sous les yeux au moment de sauvegarder.
+  const compareRows = extractSavedCompareRows(entry);
+  if (compareRows.length > 0) {
+    pdf.spacer(3);
+    pdf.section("Actuel vs Projeté");
+    pdf.table(
+      ["Indicateur", "Actuel", "Projeté", "Écart"],
+      compareRows.map((r) => [
+        r.label,
+        formatSplitValue(r.current, r.format),
+        formatSplitValue(r.projected, r.format),
+        typeof r.current === "number" && typeof r.projected === "number"
+          ? formatDelta(r.projected - r.current)
+          : "—",
+      ]),
+    );
   }
 
   // Section 3 · graphique simplifié si pertinent
@@ -1191,14 +1346,44 @@ function drawComparisonPage(
   // Capital LPP — utilise la paire actuelle/projetée explicite si le
   // courtier en a marqué une (voir spreadPairs), pour ne jamais afficher un
   // écart différent de celui déjà détaillé sur la page de comparaison du
-  // calculateur. À défaut, retombe sur l'ancien calcul (solde LPP actuel de
-  // la fiche client vs la première simulation LPP incluse).
+  // calculateur. À défaut, "avant" doit rester une projection à la retraite
+  // comme "après" (même carrière, mêmes cotisations salariales), juste SANS
+  // le rachat : comparer le solde d'aujourd'hui à un capital projeté dans
+  // 20 ans mélangeait deux effets (croissance naturelle + rachat) dans un
+  // seul delta, ce qui rendait ce dernier incompréhensible.
   const lppPair = spreadPairs.get("lpp");
   const lpp = lppPair?.projected ?? entries.find((e) => e.kind === "lpp");
   if (lpp) {
-    const before = lppPair
-      ? num(lppPair.baseline.summary?.projectedBalance)
-      : num(pension?.lpp_current_balance);
+    let before = num(pension?.lpp_current_balance);
+    const savedRow = extractSavedCompareRows(lpp).find((r) => r.label === "Capital LPP projeté à la retraite");
+    if (lppPair) {
+      before = num(lppPair.baseline.summary?.projectedBalance);
+    } else if (savedRow && typeof savedRow.current === "number") {
+      // Priorité à la valeur "Actuel" du tableau tel qu'affiché dans le
+      // calculateur au moment de la sauvegarde (même salaire assuré, même
+      // carrière que la valeur "Après") — plus fiable qu'un recalcul isolé
+      // dans le générateur PDF, qui ne peut que deviner ces hypothèses.
+      before = savedRow.current;
+    } else {
+      const i = (lpp.inputs ?? {}) as Record<string, unknown>;
+      try {
+        before = projectLPP({
+          currentAge: num(i.currentAge),
+          retirementAge: num(i.retirementAge) || 65,
+          currentBalance: num(i.currentBalance),
+          insuredSalary: num(i.insuredSalary),
+          expectedReturnRate: num(i.expectedReturnRate) || undefined,
+          feeRate: num(i.feeRate) || undefined,
+          salaryGrowthRate: num(i.salaryGrowthRate) || undefined,
+          conversionRate: num(i.conversionRate) || undefined,
+          extraCreditRate: num(i.extraCreditRate) || undefined,
+          insuredSalaryCap: num(i.insuredSalaryCap) || undefined,
+          yearlyBuyback: 0,
+        }).projectedBalance;
+      } catch {
+        before = num(pension?.lpp_current_balance);
+      }
+    }
     const after = num(lpp.summary?.projectedBalance);
     rows.push([
       "Capital LPP projeté à la retraite",
@@ -1207,17 +1392,29 @@ function drawComparisonPage(
       formatDelta(after - before),
     ]);
   }
-  // 3a
+  // 3a — "avant" doit être le montant réellement versé (cotisations
+  // cumulées, sans rendement), pas 0 : sinon le delta affiché est tout le
+  // capital final comme si le versement lui-même était le gain, alors que
+  // le vrai gain de l'optimisation est la croissance (rendement + économie
+  // fiscale), pas l'épargne elle-même.
   const p3a = entries.find((e) => e.kind === "pillar3a");
   if (p3a) {
+    const versed = num(p3a.summary?.totalContributions);
     const proj = num(p3a.summary?.finalBalance);
-    rows.push(["Pilier 3a cumulé à la retraite", formatCHF(0), formatCHF(proj), formatDelta(proj)]);
+    rows.push(["Pilier 3a cumulé à la retraite", formatCHF(versed), formatCHF(proj), formatDelta(proj - versed)]);
   }
-  // Canton compare
+  // Canton compare — avant = charge fiscale du canton de référence, après =
+  // charge fiscale du canton le moins cher, tous deux déjà dans le summary.
+  // Un "-" en avant à côté d'un delta chiffré donnait l'impression que le
+  // tableau était cassé (rien à comparer), alors que les deux montants
+  // existent et sont ceux affichés dans le comparateur.
   const cc = entries.find((e) => e.kind === "canton_compare");
   if (cc) {
-    const sav = num(cc.summary?.maxSavings);
-    rows.push(["Charge fiscale annuelle (déménagement)", "—", `-${formatCHF(sav)}`, formatDelta(-sav)]);
+    const before = num(cc.summary?.referenceTax);
+    const after = num(cc.summary?.cheapestTax);
+    if (before > 0) {
+      rows.push(["Charge fiscale annuelle (déménagement)", formatCHF(before), formatCHF(after), formatDelta(after - before)]);
+    }
   }
   // Director
   const dc = entries.find((e) => e.kind === "director_compensation");
@@ -1228,9 +1425,20 @@ function drawComparisonPage(
       rows.push(["Net annuel dirigeant", formatCHF(cur), formatCHF(reco), formatDelta(reco - cur)]);
     }
   }
+  // Rente vs capital — avant/après opposent les deux options réellement
+  // comparées par le calculateur (rente viagère nette vs capital net), pas
+  // un "-" suivi du seul écart, qui ne montrait aucune des deux options.
+  const ret = entries.find((e) => e.kind === "retirement");
+  if (ret) {
+    const annuity = num(ret.summary?.netAnnuity);
+    const lump = num(ret.summary?.netLumpSum);
+    if (annuity > 0 || lump > 0) {
+      rows.push(["Rente viagère nette vs capital net", formatCHF(annuity), formatCHF(lump), formatDelta(lump - annuity)]);
+    }
+  }
   // Tous gains agrégés
   for (const e of entries) {
-    if (["lpp", "pillar3a", "canton_compare", "director_compensation"].includes(e.kind)) continue;
+    if (["lpp", "pillar3a", "canton_compare", "director_compensation", "retirement"].includes(e.kind)) continue;
     if (e.gain_dismissed) continue;
     const g = extractGain(e);
     if (g.type === "none") continue;
@@ -1358,10 +1566,13 @@ function drawConclusionPage(pdf: ReportPdf, entries: HistoryEntry[]) {
     );
     pdf.spacer(2);
     let n = 1;
-    for (const { gain: g } of gains) {
+    for (const { entry: e, gain: g } of gains) {
       const amount =
         g.type === "annual" ? `${formatCHF(g.amount)} par an` : `${formatCHF(g.amount)}, gain ponctuel`;
-      pdf.paragraph(`${n}. ${g.label}. Gain estimé : ${amount}.${g.details ? ` ${g.details}.` : ""}`);
+      const figures = describeCompareFigures(e);
+      pdf.paragraph(
+        `${n}. ${g.label}. Gain estimé : ${amount}.${g.details ? ` ${g.details}.` : ""}${figures ? ` ${figures}` : ""}`,
+      );
       n++;
     }
   }

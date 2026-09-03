@@ -599,6 +599,17 @@ useEffect(() => {
             totalContributions: projection.totalContributions,
             totalReturns: projection.totalReturns,
             staggeredSavings: stag.savings,
+            // Retranscrit tel quel dans le PDF de synthèse (section "Actuel
+            // vs Projeté") : sans ce champ, la comparaison 3a+3b affichée à
+            // l'écran n'existe nulle part ailleurs que dans ce rendu React.
+            compareRows: compareRows.map(({ label, current, projected, format, betterWhen, hint }) => ({
+              label,
+              current,
+              projected,
+              format,
+              betterWhen,
+              hint,
+            })),
           }}
           defaultTitle={`3a ${form.canton} · ${form.contribution} CHF/an`}
         />

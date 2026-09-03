@@ -278,6 +278,37 @@ function CantonCompareCalc() {
     return [...romands, ...refs];
   }, [base, comparable, mode, projectedLPPCapital, lumpSumStatus]);
 
+  // Mêmes lignes que le comparatif "Résidence vs Zoug" affiché plus bas —
+  // calculées ici séparément pour pouvoir aussi les sauvegarder (voir
+  // SaveSimulationButton) et les retranscrire fidèlement dans le PDF.
+  const zgCompareRows = useMemo<SplitRow[]>(() => {
+    const refRow = data.find((d) => d.code === referenceCanton);
+    const zgRow = data.find((d) => d.code === ZG_CODE);
+    if (!refRow || !zgRow || refRow.code === zgRow.code) return [];
+    return [
+      {
+        label: mode === "lump_sum" ? "Impôt sur prestation en capital" : "Impôt total annuel",
+        current: refRow.total,
+        projected: zgRow.total,
+        betterWhen: "lower",
+      },
+      {
+        label: "Taux effectif",
+        current: refRow.effective / 100,
+        projected: zgRow.effective / 100,
+        format: "pct",
+        betterWhen: "lower",
+      },
+      {
+        label: "Régime fiscal",
+        current: refRow.regimeLabel,
+        projected: zgRow.regimeLabel,
+        format: "text",
+        betterWhen: "neutral",
+      },
+    ];
+  }, [data, referenceCanton, mode]);
+
   // Détecte les régimes hétérogènes (frontalier vs résident ordinaire selon
   // le canton choisi) pour avertir le courtier que la comparaison croise
   // plusieurs régimes fiscaux et pas seulement des barèmes cantonaux.
@@ -611,29 +642,8 @@ function CantonCompareCalc() {
       {(() => {
         const refRow = data.find((d) => d.code === referenceCanton);
         const zgRow = data.find((d) => d.code === ZG_CODE);
-        if (!refRow || !zgRow || refRow.code === zgRow.code) return null;
-        const rows: SplitRow[] = [
-          {
-            label: mode === "lump_sum" ? "Impôt sur prestation en capital" : "Impôt total annuel",
-            current: refRow.total,
-            projected: zgRow.total,
-            betterWhen: "lower",
-          },
-          {
-            label: "Taux effectif",
-            current: refRow.effective / 100,
-            projected: zgRow.effective / 100,
-            format: "pct",
-            betterWhen: "lower",
-          },
-          {
-            label: "Régime fiscal",
-            current: refRow.regimeLabel,
-            projected: zgRow.regimeLabel,
-            format: "text",
-            betterWhen: "neutral",
-          },
-        ];
+        if (!refRow || !zgRow || refRow.code === zgRow.code || zgCompareRows.length === 0) return null;
+        const rows = zgCompareRows;
         const saving = refRow.total - zgRow.total;
         return (
           <SplitCompareLayout
@@ -733,6 +743,17 @@ function CantonCompareCalc() {
             referenceCanton,
             referenceTax,
             maxSavings: Math.max(0, referenceTax - (cheapestRomand?.total ?? 0)),
+            // Retranscrit tel quel dans le PDF de synthèse (section "Actuel
+            // vs Projeté") : le comparatif résidence vs Zoug affiché à
+            // l'écran, avec le même canton de référence que le classement.
+            compareRows: zgCompareRows.map(({ label, current, projected, format, betterWhen, hint }) => ({
+              label,
+              current,
+              projected,
+              format,
+              betterWhen,
+              hint,
+            })),
           }}
           defaultTitle={`Comparateur Suisse romande · réf ${referenceCanton}`}
         />
