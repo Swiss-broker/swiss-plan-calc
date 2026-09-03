@@ -26,8 +26,6 @@ function bool(v: unknown): boolean {
   return v === true || v === "true" || v === 1;
 }
 
-const LIFE_EXPECTANCY_YEARS = 20;
-
 export function extractGain(entry: HistoryEntry): ExtractedGain {
   const summary = (entry.summary ?? {}) as Record<string, unknown>;
   const inputs = (entry.inputs ?? {}) as Record<string, unknown>;
@@ -101,17 +99,13 @@ export function extractGain(entry: HistoryEntry): ExtractedGain {
       };
     }
     case "avs_ai": {
-      const missing = num(summary.missingYears);
-      const theoretical = num(summary.theoreticalAnnualPension);
-      const actual = num(summary.annualPension);
-      const gap = Math.max(0, theoretical - actual);
-      if (missing <= 0 || gap <= 0) return none();
-      return {
-        type: "one_time",
-        amount: Math.round(gap * LIFE_EXPECTANCY_YEARS),
-        label: `Cotisation AVS rétroactive (${missing} an${missing > 1 ? "s" : ""} comblée${missing > 1 ? "s" : ""})`,
-        details: `Rente supplémentaire estimée sur ${LIFE_EXPECTANCY_YEARS} ans de retraite`,
-      };
+      // Volontairement exclu du bloc "Optimisations identifiées" : l'AVS ne
+      // permet pas de racheter des années manquantes au-delà de 5 ans en
+      // arrière (art. 16 LAVS, cf. AVS_2026.retroactiveContributionYears).
+      // L'écart théorique/réel affiché ici n'était donc pas une action
+      // proposable au client, contrairement aux autres gains de cette liste
+      // (rachat LPP, 3a, etc.) qui sont tous de vrais leviers actionnables.
+      return none();
     }
     case "vested_benefits": {
       const reco = num(summary.recommendedFinalBalance);
@@ -208,29 +202,48 @@ function formatInt(n: number): string {
   return Math.round(n).toLocaleString("fr-CH");
 }
 
+export type GainItem = ExtractedGain & { entryId: string; kind: SimulationKind; createdAt: string };
+
 /**
- * Agrège les gains à partir d'une liste de simulations.
- * Pour chaque kind, on ne conserve que la simulation la plus récente.
+ * Sélectionne, pour chaque kind, la simulation la plus récente qui satisfait
+ * `wantDismissed` (true = uniquement les gains archivés, false = uniquement
+ * les actifs). Un kind dont la dernière simulation est archivée ne "retombe"
+ * pas sur une simulation plus ancienne : archiver un gain vaut pour ce kind
+ * tant qu'aucune nouvelle simulation n'est sauvegardée.
  */
-export function aggregateGains(entries: HistoryEntry[]): {
-  items: Array<ExtractedGain & { entryId: string; kind: SimulationKind; createdAt: string }>;
-  totalOneTime: number;
-  totalAnnual: number;
-} {
-  // Grouper par kind, prendre la plus récente
+function selectGains(entries: HistoryEntry[], wantDismissed: boolean): GainItem[] {
   const sorted = [...entries].sort(
     (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
   );
   const seen = new Set<SimulationKind>();
-  const items: Array<ExtractedGain & { entryId: string; kind: SimulationKind; createdAt: string }> = [];
+  const items: GainItem[] = [];
   for (const e of sorted) {
     if (seen.has(e.kind)) continue;
     seen.add(e.kind);
+    if (Boolean(e.gain_dismissed) !== wantDismissed) continue;
     const g = extractGain(e);
     if (g.type === "none") continue;
     items.push({ ...g, entryId: e.id, kind: e.kind, createdAt: e.created_at });
   }
+  return items;
+}
+
+/**
+ * Agrège les gains actifs (non archivés) à partir d'une liste de simulations.
+ * Pour chaque kind, on ne conserve que la simulation la plus récente.
+ */
+export function aggregateGains(entries: HistoryEntry[]): {
+  items: GainItem[];
+  totalOneTime: number;
+  totalAnnual: number;
+} {
+  const items = selectGains(entries, false);
   const totalOneTime = items.filter((i) => i.type === "one_time").reduce((s, i) => s + i.amount, 0);
   const totalAnnual = items.filter((i) => i.type === "annual").reduce((s, i) => s + i.amount, 0);
   return { items, totalOneTime, totalAnnual };
+}
+
+/** Gains archivés (masqués de la synthèse), pour l'affichage "Restaurer". */
+export function listDismissedGains(entries: HistoryEntry[]): GainItem[] {
+  return selectGains(entries, true);
 }

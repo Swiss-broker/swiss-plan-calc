@@ -15,6 +15,9 @@ import {
   ShieldAlert,
   Loader2,
   Star,
+  Archive,
+  ArchiveRestore,
+  ChevronDown,
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -28,7 +31,7 @@ import {
   type HistoryEntry,
   type SimulationKind,
 } from "@/lib/history/types";
-import { aggregateGains } from "@/lib/simulations/extract-gain";
+import { aggregateGains, listDismissedGains, type GainItem } from "@/lib/simulations/extract-gain";
 import { formatCHF } from "@/lib/format";
 import { formatDateShort } from "@/lib/i18n/format";
 import { useT } from "@/contexts/LanguageContext";
@@ -255,7 +258,27 @@ export function SessionSummaryTab({ clientId, clientName }: { clientId: string; 
     },
   });
 
+  // Archiver/restaurer une "optimisation identifiée" : masque (ou remontre)
+  // le gain chiffré dans la synthèse RDV sans toucher à la simulation
+  // sous-jacente, qui reste visible et modifiable dans la liste ci-dessous.
+  const setGainDismissed = useMutation({
+    mutationFn: async ({ id, dismissed }: { id: string; dismissed: boolean }) => {
+      const { error } = await supabase
+        .from("simulation_history")
+        .update({ gain_dismissed: dismissed })
+        .eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["client-simulations", clientId] });
+    },
+    onError: () => {
+      toast.error("Erreur lors de la mise à jour.");
+    },
+  });
+
   const agg = aggregateGains(entries);
+  const dismissedGains = listDismissedGains(entries);
 
   return (
     <div className="space-y-6">
@@ -276,25 +299,12 @@ export function SessionSummaryTab({ clientId, clientName }: { clientId: string; 
             <>
               <ul className="space-y-3">
                 {agg.items.map((g) => (
-                  <li key={g.entryId} className="flex items-start gap-3 rounded-lg border bg-card p-3">
-                    <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-success" />
-                    <div className="flex-1 min-w-0">
-                      <div className="font-medium text-sm">{g.label}</div>
-                      {g.details && (
-                        <div className="text-xs text-muted-foreground">{g.details}</div>
-                      )}
-                      <div className="mt-1 text-sm font-semibold text-primary">
-                        {g.type === "annual"
-                          ? `${formatCHF(g.amount)} / ${t("client.session.per_year")}`
-                          : formatCHF(g.amount)}
-                        <Badge variant="outline" className="ml-2 text-[10px]">
-                          {g.type === "annual"
-                            ? t("client.session.gain.annual")
-                            : t("client.session.gain.one_time")}
-                        </Badge>
-                      </div>
-                    </div>
-                  </li>
+                  <GainListItem
+                    key={g.entryId}
+                    gain={g}
+                    onArchive={() => setGainDismissed.mutate({ id: g.entryId, dismissed: true })}
+                    archiving={setGainDismissed.isPending && setGainDismissed.variables?.id === g.entryId}
+                  />
                 ))}
               </ul>
               <Separator className="my-4" />
@@ -322,6 +332,47 @@ export function SessionSummaryTab({ clientId, clientName }: { clientId: string; 
                 </p>
               </div>
             </>
+          )}
+          {dismissedGains.length > 0 && (
+            <details className="group mt-4">
+              <summary className="flex cursor-pointer list-none items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground">
+                <ChevronDown className="h-3.5 w-3.5 -rotate-90 transition-transform group-open:rotate-0" />
+                {t("client.session.archived_optimizations", { n: dismissedGains.length })}
+              </summary>
+              <ul className="mt-2 space-y-2">
+                {dismissedGains.map((g) => (
+                  <li
+                    key={g.entryId}
+                    className="flex items-start gap-3 rounded-lg border border-dashed bg-muted/30 p-3 opacity-70"
+                  >
+                    <Archive className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm">{g.label}</div>
+                      <div className="text-xs text-muted-foreground">
+                        {g.type === "annual"
+                          ? `${formatCHF(g.amount)} / ${t("client.session.per_year")}`
+                          : formatCHF(g.amount)}
+                      </div>
+                    </div>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="shrink-0 gap-1.5 text-xs"
+                      onClick={() => setGainDismissed.mutate({ id: g.entryId, dismissed: false })}
+                      disabled={setGainDismissed.isPending && setGainDismissed.variables?.id === g.entryId}
+                      title={t("client.session.restore_tooltip")}
+                    >
+                      {setGainDismissed.isPending && setGainDismissed.variables?.id === g.entryId ? (
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      ) : (
+                        <ArchiveRestore className="h-3.5 w-3.5" />
+                      )}
+                      {t("client.session.restore_tooltip")}
+                    </Button>
+                  </li>
+                ))}
+              </ul>
+            </details>
           )}
         </CardContent>
       </Card>
@@ -516,6 +567,49 @@ export function SessionSummaryTab({ clientId, clientName }: { clientId: string; 
         entries={entries}
       />
     </div>
+  );
+}
+
+function GainListItem({
+  gain,
+  onArchive,
+  archiving,
+}: {
+  gain: GainItem;
+  onArchive: () => void;
+  archiving: boolean;
+}) {
+  const t = useT();
+  return (
+    <li className="flex items-start gap-3 rounded-lg border bg-card p-3">
+      <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-success" />
+      <div className="flex-1 min-w-0">
+        <div className="font-medium text-sm">{gain.label}</div>
+        {gain.details && <div className="text-xs text-muted-foreground">{gain.details}</div>}
+        <div className="mt-1 text-sm font-semibold text-primary">
+          {gain.type === "annual"
+            ? `${formatCHF(gain.amount)} / ${t("client.session.per_year")}`
+            : formatCHF(gain.amount)}
+          <Badge variant="outline" className="ml-2 text-[10px]">
+            {gain.type === "annual" ? t("client.session.gain.annual") : t("client.session.gain.one_time")}
+          </Badge>
+        </div>
+      </div>
+      <Button
+        size="sm"
+        variant="ghost"
+        className="shrink-0"
+        onClick={onArchive}
+        disabled={archiving}
+        title={t("client.session.archive_tooltip")}
+      >
+        {archiving ? (
+          <Loader2 className="h-4 w-4 animate-spin" />
+        ) : (
+          <Archive className="h-4 w-4 text-muted-foreground" />
+        )}
+      </Button>
+    </li>
   );
 }
 

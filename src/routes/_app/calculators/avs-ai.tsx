@@ -480,6 +480,11 @@ function AvsAiCalc() {
               <MoneyTile label={t("calc.avs.theoretical_full")} value={projection.primary.theoreticalAnnualPension} />
               <StatTile label={t("calc.avs.scale")} value={`${(projection.primary.reductionRatio * 100).toFixed(1)} %`} hint={t("calc.avs.scale_hint")} />
             </Row>
+            {projection.primary.missingYears > 0 && (
+              <p className="mt-3 rounded-md bg-warning/10 p-2 text-xs text-amber-700 dark:text-amber-300">
+                {t("calc.avs.retroactive_limit_note", { years: AVS_2026.retroactiveContributionYears })}
+              </p>
+            )}
           </CalcCard>
 
           <CalcCard

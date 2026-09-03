@@ -30,6 +30,9 @@ export interface HistoryEntry {
   // choisie explicitement par le courtier (voir simulation_history_baseline_marker).
   // Une seule sauvegarde peut être vraie à la fois par (client_id, kind).
   is_baseline: boolean;
+  // Masque ce gain du bloc "Optimisations identifiées" (fiche client + PDF
+  // synthèse RDV) sans supprimer la simulation. Réversible depuis la fiche.
+  gain_dismissed: boolean;
   created_at: string;
   updated_at: string;
 }

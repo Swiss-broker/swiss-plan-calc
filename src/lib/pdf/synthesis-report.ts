@@ -1231,6 +1231,7 @@ function drawComparisonPage(
   // Tous gains agrégés
   for (const e of entries) {
     if (["lpp", "pillar3a", "canton_compare", "director_compensation"].includes(e.kind)) continue;
+    if (e.gain_dismissed) continue;
     const g = extractGain(e);
     if (g.type === "none") continue;
     rows.push([
@@ -1285,6 +1286,7 @@ function computeTotals(entries: HistoryEntry[]): Totals {
   let annual = 0;
   const details: string[] = [];
   for (const e of entries) {
+    if (e.gain_dismissed) continue;
     const g = extractGain(e);
     if (g.type === "annual") {
       annual += g.amount;
@@ -1335,6 +1337,7 @@ function drawGainHighlight(pdf: ReportPdf, totals: Totals) {
 function drawConclusionPage(pdf: ReportPdf, entries: HistoryEntry[]) {
   pdf.section("Recommandations chiffrées");
   const gains = entries
+    .filter((e) => !e.gain_dismissed)
     .map((e) => ({ entry: e, gain: extractGain(e) }))
     .filter((x) => x.gain.type !== "none")
     .sort((a, b) => b.gain.amount - a.gain.amount);

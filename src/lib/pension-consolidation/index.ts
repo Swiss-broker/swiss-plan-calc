@@ -36,7 +36,7 @@ export interface ConsolidatedItem {
   label: string;
   annual: number;
   monthly: number;
-  pillar: "AVS" | "AI" | "LPP";
+  pillar: "AVS" | "AI" | "LPP" | "3A";
 }
 
 export interface ConsolidatedScenario {
@@ -73,7 +73,7 @@ function getBirthYear(dob: string | null | undefined): number | null {
 function toItem(
   label: string,
   annual: number,
-  pillar: "AVS" | "AI" | "LPP",
+  pillar: "AVS" | "AI" | "LPP" | "3A",
 ): ConsolidatedItem {
   return { label, annual, monthly: Math.round(annual / 12), pillar };
 }
@@ -164,7 +164,7 @@ function buildRetirement(b: ClientBundle): ConsolidatedScenario | null {
   if (p3a && p3a.projectedCapitalAt65 > 0) {
     const annualized = Math.round(p3a.projectedCapitalAt65 / 22);
     pillar2Items.push(
-      toItem("3a (capital projeté ÷ 22 ans)", annualized, "LPP"),
+      toItem("3a (capital projeté ÷ 22 ans)", annualized, "3A"),
     );
   }
 

@@ -10,73 +10,10 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.15"
+    PostgrestVersion: "14.5"
   }
   public: {
     Tables: {
-      admin_messages: {
-        Row: {
-          broker_id: string
-          content: string
-          created_at: string
-          id: string
-          read: boolean
-          sender: string
-          sender_name: string
-        }
-        Insert: {
-          broker_id: string
-          content: string
-          created_at?: string
-          id?: string
-          read?: boolean
-          sender: string
-          sender_name: string
-        }
-        Update: {
-          broker_id?: string
-          content?: string
-          created_at?: string
-          id?: string
-          read?: boolean
-          sender?: string
-          sender_name?: string
-        }
-        Relationships: []
-      }
-      client_errors: {
-        Row: {
-          broker_id: string | null
-          context: Json | null
-          created_at: string
-          id: string
-          message: string
-          stack: string | null
-          url: string | null
-          user_agent: string | null
-        }
-        Insert: {
-          broker_id?: string | null
-          context?: Json | null
-          created_at?: string
-          id?: string
-          message: string
-          stack?: string | null
-          url?: string | null
-          user_agent?: string | null
-        }
-        Update: {
-          broker_id?: string | null
-          context?: Json | null
-          created_at?: string
-          id?: string
-          message?: string
-          stack?: string | null
-          url?: string | null
-          user_agent?: string | null
-        }
-        Relationships: []
-      }
       admin_actions: {
         Row: {
           action: string
@@ -104,6 +41,36 @@ export type Database = {
           id?: string
           target_id?: string | null
           target_type?: string
+        }
+        Relationships: []
+      }
+      admin_messages: {
+        Row: {
+          broker_id: string
+          content: string
+          created_at: string
+          id: string
+          read: boolean
+          sender: string
+          sender_name: string
+        }
+        Insert: {
+          broker_id: string
+          content: string
+          created_at?: string
+          id?: string
+          read?: boolean
+          sender: string
+          sender_name: string
+        }
+        Update: {
+          broker_id?: string
+          content?: string
+          created_at?: string
+          id?: string
+          read?: boolean
+          sender?: string
+          sender_name?: string
         }
         Relationships: []
       }
@@ -210,6 +177,174 @@ export type Database = {
           },
         ]
       }
+      appointment_followup_reminders: {
+        Row: {
+          appointment_id: string
+          id: string
+          offset_days: number
+          sent_at: string
+        }
+        Insert: {
+          appointment_id: string
+          id?: string
+          offset_days: number
+          sent_at?: string
+        }
+        Update: {
+          appointment_id?: string
+          id?: string
+          offset_days?: number
+          sent_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "appointment_followup_reminders_appointment_id_fkey"
+            columns: ["appointment_id"]
+            isOneToOne: false
+            referencedRelation: "appointments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      appointment_reminders: {
+        Row: {
+          appointment_id: string
+          created_at: string
+          id: string
+          notified: boolean
+          remind_before_minutes: number
+        }
+        Insert: {
+          appointment_id: string
+          created_at?: string
+          id?: string
+          notified?: boolean
+          remind_before_minutes: number
+        }
+        Update: {
+          appointment_id?: string
+          created_at?: string
+          id?: string
+          notified?: boolean
+          remind_before_minutes?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "appointment_reminders_appointment_id_fkey"
+            columns: ["appointment_id"]
+            isOneToOne: false
+            referencedRelation: "appointments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      appointment_reports: {
+        Row: {
+          appointment_id: string
+          broker_id: string
+          client_id: string | null
+          content: string
+          created_at: string
+          generated_by: string
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          appointment_id: string
+          broker_id: string
+          client_id?: string | null
+          content?: string
+          created_at?: string
+          generated_by?: string
+          id?: string
+          updated_at?: string
+        }
+        Update: {
+          appointment_id?: string
+          broker_id?: string
+          client_id?: string | null
+          content?: string
+          created_at?: string
+          generated_by?: string
+          id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "appointment_reports_appointment_id_fkey"
+            columns: ["appointment_id"]
+            isOneToOne: true
+            referencedRelation: "appointments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "appointment_reports_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      appointments: {
+        Row: {
+          appointment_type: string | null
+          broker_id: string
+          client_id: string | null
+          completed_at: string | null
+          created_at: string
+          duration_minutes: number
+          id: string
+          location: string | null
+          note: string | null
+          starts_at: string
+          status: string
+          title: string
+          updated_at: string
+          video_link: string | null
+        }
+        Insert: {
+          appointment_type?: string | null
+          broker_id: string
+          client_id?: string | null
+          completed_at?: string | null
+          created_at?: string
+          duration_minutes?: number
+          id?: string
+          location?: string | null
+          note?: string | null
+          starts_at: string
+          status?: string
+          title: string
+          updated_at?: string
+          video_link?: string | null
+        }
+        Update: {
+          appointment_type?: string | null
+          broker_id?: string
+          client_id?: string | null
+          completed_at?: string | null
+          created_at?: string
+          duration_minutes?: number
+          id?: string
+          location?: string | null
+          note?: string | null
+          starts_at?: string
+          status?: string
+          title?: string
+          updated_at?: string
+          video_link?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "appointments_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       broker_connect_accounts: {
         Row: {
           broker_id: string
@@ -244,8 +379,11 @@ export type Database = {
           created_at: string
           email: string
           expires_at: string
+          first_name: string | null
           id: string
           invited_by: string
+          last_name: string | null
+          payer: string
           role: string
           status: string
           stripe_subscription_item_id: string | null
@@ -257,8 +395,11 @@ export type Database = {
           created_at?: string
           email: string
           expires_at?: string
+          first_name?: string | null
           id?: string
           invited_by: string
+          last_name?: string | null
+          payer?: string
           role: string
           status?: string
           stripe_subscription_item_id?: string | null
@@ -270,8 +411,11 @@ export type Database = {
           created_at?: string
           email?: string
           expires_at?: string
+          first_name?: string | null
           id?: string
           invited_by?: string
+          last_name?: string | null
+          payer?: string
           role?: string
           status?: string
           stripe_subscription_item_id?: string | null
@@ -363,93 +507,44 @@ export type Database = {
           },
         ]
       }
-      appointments: {
+      client_document_links: {
         Row: {
-          appointment_type: string | null
           broker_id: string
-          client_id: string | null
+          client_id: string
           created_at: string
-          duration_minutes: number
+          expires_at: string
           id: string
-          location: string | null
-          note: string | null
-          starts_at: string
-          status: string
-          title: string
-          updated_at: string
-          video_link: string | null
+          last_used_at: string | null
+          max_uploads: number
+          revoked: boolean
+          token: string
+          upload_count: number
         }
         Insert: {
-          appointment_type?: string | null
           broker_id: string
-          client_id?: string | null
+          client_id: string
           created_at?: string
-          duration_minutes?: number
+          expires_at: string
           id?: string
-          location?: string | null
-          note?: string | null
-          starts_at: string
-          status?: string
-          title: string
-          updated_at?: string
-          video_link?: string | null
+          last_used_at?: string | null
+          max_uploads?: number
+          revoked?: boolean
+          token: string
+          upload_count?: number
         }
         Update: {
-          appointment_type?: string | null
           broker_id?: string
-          client_id?: string | null
+          client_id?: string
           created_at?: string
-          duration_minutes?: number
+          expires_at?: string
           id?: string
-          location?: string | null
-          note?: string | null
-          starts_at?: string
-          status?: string
-          title?: string
-          updated_at?: string
-          video_link?: string | null
+          last_used_at?: string | null
+          max_uploads?: number
+          revoked?: boolean
+          token?: string
+          upload_count?: number
         }
-        Relationships: [
-          {
-            foreignKeyName: "appointments_client_id_fkey"
-            columns: ["client_id"]
-            isOneToOne: false
-            referencedRelation: "clients"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      appointment_reminders: {
-        Row: {
-          appointment_id: string
-          created_at: string
-          id: string
-          notified: boolean
-          remind_before_minutes: number
-        }
-        Insert: {
-          appointment_id: string
-          created_at?: string
-          id?: string
-          notified?: boolean
-          remind_before_minutes: number
-        }
-        Update: {
-          appointment_id?: string
-          created_at?: string
-          id?: string
-          notified?: boolean
-          remind_before_minutes?: number
-        }
-        Relationships: [
-          {
-            foreignKeyName: "appointment_reminders_appointment_id_fkey"
-            columns: ["appointment_id"]
-            isOneToOne: false
-            referencedRelation: "appointments"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       client_document_requests: {
         Row: {
@@ -524,45 +619,6 @@ export type Database = {
           },
         ]
       }
-      client_document_links: {
-        Row: {
-          broker_id: string
-          client_id: string
-          created_at: string
-          expires_at: string
-          id: string
-          last_used_at: string | null
-          max_uploads: number
-          revoked: boolean
-          token: string
-          upload_count: number
-        }
-        Insert: {
-          broker_id: string
-          client_id: string
-          created_at?: string
-          expires_at: string
-          id?: string
-          last_used_at?: string | null
-          max_uploads?: number
-          revoked?: boolean
-          token: string
-          upload_count?: number
-        }
-        Update: {
-          broker_id?: string
-          client_id?: string
-          created_at?: string
-          expires_at?: string
-          id?: string
-          last_used_at?: string | null
-          max_uploads?: number
-          revoked?: boolean
-          token?: string
-          upload_count?: number
-        }
-        Relationships: []
-      }
       client_documents: {
         Row: {
           broker_id: string
@@ -604,6 +660,136 @@ export type Database = {
           uploaded_by?: Database["public"]["Enums"]["client_document_source"]
         }
         Relationships: []
+      }
+      client_email_log: {
+        Row: {
+          broker_id: string
+          client_id: string
+          id: string
+          sent_at: string
+          subject: string
+          template_key: string | null
+        }
+        Insert: {
+          broker_id: string
+          client_id: string
+          id?: string
+          sent_at?: string
+          subject: string
+          template_key?: string | null
+        }
+        Update: {
+          broker_id?: string
+          client_id?: string
+          id?: string
+          sent_at?: string
+          subject?: string
+          template_key?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_email_log_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      client_errors: {
+        Row: {
+          broker_id: string | null
+          context: Json | null
+          created_at: string
+          id: string
+          message: string
+          stack: string | null
+          url: string | null
+          user_agent: string | null
+        }
+        Insert: {
+          broker_id?: string | null
+          context?: Json | null
+          created_at?: string
+          id?: string
+          message: string
+          stack?: string | null
+          url?: string | null
+          user_agent?: string | null
+        }
+        Update: {
+          broker_id?: string | null
+          context?: Json | null
+          created_at?: string
+          id?: string
+          message?: string
+          stack?: string | null
+          url?: string | null
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_errors_broker_id_fkey"
+            columns: ["broker_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      client_followups: {
+        Row: {
+          appointment_id: string | null
+          broker_id: string
+          client_id: string
+          created_at: string
+          due_date: string | null
+          id: string
+          priority: string
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          appointment_id?: string | null
+          broker_id: string
+          client_id: string
+          created_at?: string
+          due_date?: string | null
+          id?: string
+          priority?: string
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          appointment_id?: string | null
+          broker_id?: string
+          client_id?: string
+          created_at?: string
+          due_date?: string | null
+          id?: string
+          priority?: string
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_followups_appointment_id_fkey"
+            columns: ["appointment_id"]
+            isOneToOne: false
+            referencedRelation: "appointments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_followups_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       client_notes: {
         Row: {
@@ -733,71 +919,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
-      }
-      client_email_log: {
-        Row: {
-          broker_id: string
-          client_id: string
-          id: string
-          sent_at: string
-          subject: string
-          template_key: string | null
-        }
-        Insert: {
-          broker_id: string
-          client_id: string
-          id?: string
-          sent_at?: string
-          subject: string
-          template_key?: string | null
-        }
-        Update: {
-          broker_id?: string
-          client_id?: string
-          id?: string
-          sent_at?: string
-          subject?: string
-          template_key?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "client_email_log_client_id_fkey"
-            columns: ["client_id"]
-            isOneToOne: false
-            referencedRelation: "clients"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      email_templates: {
-        Row: {
-          body: string
-          broker_id: string
-          created_at: string
-          id: string
-          subject: string
-          template_key: string
-          updated_at: string
-        }
-        Insert: {
-          body: string
-          broker_id: string
-          created_at?: string
-          id?: string
-          subject: string
-          template_key: string
-          updated_at?: string
-        }
-        Update: {
-          body?: string
-          broker_id?: string
-          created_at?: string
-          id?: string
-          subject?: string
-          template_key?: string
-          updated_at?: string
-        }
-        Relationships: []
       }
       clients: {
         Row: {
@@ -1017,6 +1138,36 @@ export type Database = {
           },
         ]
       }
+      email_templates: {
+        Row: {
+          body: string
+          broker_id: string
+          created_at: string
+          id: string
+          subject: string
+          template_key: string
+          updated_at: string
+        }
+        Insert: {
+          body: string
+          broker_id: string
+          created_at?: string
+          id?: string
+          subject: string
+          template_key: string
+          updated_at?: string
+        }
+        Update: {
+          body?: string
+          broker_id?: string
+          created_at?: string
+          id?: string
+          subject?: string
+          template_key?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       feedback_messages: {
         Row: {
           content: string
@@ -1085,6 +1236,71 @@ export type Database = {
         }
         Relationships: []
       }
+      plan_events: {
+        Row: {
+          broker_id: string
+          changed_by: string | null
+          created_at: string
+          id: string
+          new_plan: Database["public"]["Enums"]["broker_plan"]
+          previous_plan: Database["public"]["Enums"]["broker_plan"] | null
+          reason: string
+          stripe_event_id: string | null
+        }
+        Insert: {
+          broker_id: string
+          changed_by?: string | null
+          created_at?: string
+          id?: string
+          new_plan: Database["public"]["Enums"]["broker_plan"]
+          previous_plan?: Database["public"]["Enums"]["broker_plan"] | null
+          reason: string
+          stripe_event_id?: string | null
+        }
+        Update: {
+          broker_id?: string
+          changed_by?: string | null
+          created_at?: string
+          id?: string
+          new_plan?: Database["public"]["Enums"]["broker_plan"]
+          previous_plan?: Database["public"]["Enums"]["broker_plan"] | null
+          reason?: string
+          stripe_event_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "plan_events_broker_id_fkey"
+            columns: ["broker_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      plan_quota_events: {
+        Row: {
+          broker_id: string
+          entity_id: string
+          entity_type: string
+          id: string
+          occurred_at: string
+        }
+        Insert: {
+          broker_id: string
+          entity_id: string
+          entity_type: string
+          id?: string
+          occurred_at?: string
+        }
+        Update: {
+          broker_id?: string
+          entity_id?: string
+          entity_type?: string
+          id?: string
+          occurred_at?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           brokerage_name: string | null
@@ -1100,6 +1316,8 @@ export type Database = {
           last_name: string | null
           logo_url: string | null
           manager_id: string | null
+          monthly_target_amount: number | null
+          monthly_target_clients: number | null
           pdf_accent_color: string
           pdf_footer_note: string | null
           pdf_primary_color: string
@@ -1122,6 +1340,8 @@ export type Database = {
           last_name?: string | null
           logo_url?: string | null
           manager_id?: string | null
+          monthly_target_amount?: number | null
+          monthly_target_clients?: number | null
           pdf_accent_color?: string
           pdf_footer_note?: string | null
           pdf_primary_color?: string
@@ -1144,6 +1364,8 @@ export type Database = {
           last_name?: string | null
           logo_url?: string | null
           manager_id?: string | null
+          monthly_target_amount?: number | null
+          monthly_target_clients?: number | null
           pdf_accent_color?: string
           pdf_footer_note?: string | null
           pdf_primary_color?: string
@@ -1234,68 +1456,12 @@ export type Database = {
           },
         ]
       }
-      scenarios: {
-        Row: {
-          broker_id: string
-          client_id: string
-          created_at: string
-          description: string | null
-          id: string
-          inputs: Json
-          is_pinned: boolean
-          kind: Database["public"]["Enums"]["scenario_kind"]
-          name: string
-          tax_year: number
-          updated_at: string
-        }
-        Insert: {
-          broker_id: string
-          client_id: string
-          created_at?: string
-          description?: string | null
-          id?: string
-          inputs?: Json
-          is_pinned?: boolean
-          kind?: Database["public"]["Enums"]["scenario_kind"]
-          name: string
-          tax_year?: number
-          updated_at?: string
-        }
-        Update: {
-          broker_id?: string
-          client_id?: string
-          created_at?: string
-          description?: string | null
-          id?: string
-          inputs?: Json
-          is_pinned?: boolean
-          kind?: Database["public"]["Enums"]["scenario_kind"]
-          name?: string
-          tax_year?: number
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "scenarios_broker_id_fkey"
-            columns: ["broker_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "scenarios_client_id_fkey"
-            columns: ["client_id"]
-            isOneToOne: false
-            referencedRelation: "clients"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       simulation_history: {
         Row: {
           broker_id: string
           client_id: string | null
           created_at: string
+          gain_dismissed: boolean
           id: string
           inputs: Json
           is_baseline: boolean
@@ -1310,6 +1476,7 @@ export type Database = {
           broker_id: string
           client_id?: string | null
           created_at?: string
+          gain_dismissed?: boolean
           id?: string
           inputs?: Json
           is_baseline?: boolean
@@ -1324,6 +1491,7 @@ export type Database = {
           broker_id?: string
           client_id?: string | null
           created_at?: string
+          gain_dismissed?: boolean
           id?: string
           inputs?: Json
           is_baseline?: boolean
@@ -1341,8 +1509,10 @@ export type Database = {
           broker_id: string
           created_at: string
           expires_at: string | null
+          failed_password_attempts: number
           id: string
           last_viewed_at: string | null
+          locked_until: string | null
           max_views: number | null
           password_hash: string | null
           revoked: boolean
@@ -1355,8 +1525,10 @@ export type Database = {
           broker_id: string
           created_at?: string
           expires_at?: string | null
+          failed_password_attempts?: number
           id?: string
           last_viewed_at?: string | null
+          locked_until?: string | null
           max_views?: number | null
           password_hash?: string | null
           revoked?: boolean
@@ -1369,8 +1541,10 @@ export type Database = {
           broker_id?: string
           created_at?: string
           expires_at?: string | null
+          failed_password_attempts?: number
           id?: string
           last_viewed_at?: string | null
+          locked_until?: string | null
           max_views?: number | null
           password_hash?: string | null
           revoked?: boolean
@@ -1380,58 +1554,6 @@ export type Database = {
           view_count?: number
         }
         Relationships: []
-      }
-      simulations: {
-        Row: {
-          broker_id: string
-          client_id: string
-          computed_at: string
-          id: string
-          result: Json
-          scenario_id: string
-          tax_year: number
-        }
-        Insert: {
-          broker_id: string
-          client_id: string
-          computed_at?: string
-          id?: string
-          result?: Json
-          scenario_id: string
-          tax_year: number
-        }
-        Update: {
-          broker_id?: string
-          client_id?: string
-          computed_at?: string
-          id?: string
-          result?: Json
-          scenario_id?: string
-          tax_year?: number
-        }
-        Relationships: [
-          {
-            foreignKeyName: "simulations_broker_id_fkey"
-            columns: ["broker_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "simulations_client_id_fkey"
-            columns: ["client_id"]
-            isOneToOne: false
-            referencedRelation: "clients"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "simulations_scenario_id_fkey"
-            columns: ["scenario_id"]
-            isOneToOne: false
-            referencedRelation: "scenarios"
-            referencedColumns: ["id"]
-          },
-        ]
       }
       tax_year_data: {
         Row: {
@@ -1462,6 +1584,55 @@ export type Database = {
           tax_year?: number
         }
         Relationships: []
+      }
+      team_announcements: {
+        Row: {
+          cabinet_root_id: string
+          created_at: string
+          id: string
+          message: string
+          posted_by: string
+          target_id: string | null
+        }
+        Insert: {
+          cabinet_root_id: string
+          created_at?: string
+          id?: string
+          message: string
+          posted_by: string
+          target_id?: string | null
+        }
+        Update: {
+          cabinet_root_id?: string
+          created_at?: string
+          id?: string
+          message?: string
+          posted_by?: string
+          target_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "team_announcements_cabinet_root_id_fkey"
+            columns: ["cabinet_root_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "team_announcements_posted_by_fkey"
+            columns: ["posted_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "team_announcements_target_id_fkey"
+            columns: ["target_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_feedback: {
         Row: {
@@ -1590,19 +1761,23 @@ export type Database = {
       access_shared_simulation: {
         Args: { _password?: string; _token: string }
         Returns: {
-          broker_display: string | null
-          error_code: string | null
-          expires_at: string | null
-          inputs: Json | null
-          kind: string | null
-          note: string | null
-          remaining_views: number | null
-          shared_at: string | null
-          simulation_created_at: string | null
-          summary: Json | null
-          tags: string[] | null
-          title: string | null
+          broker_display: string
+          error_code: string
+          expires_at: string
+          inputs: Json
+          kind: string
+          note: string
+          remaining_views: number
+          shared_at: string
+          simulation_created_at: string
+          summary: Json
+          tags: string[]
+          title: string
         }[]
+      }
+      can_view_broker_appointments: {
+        Args: { _owner_id: string; _viewer_id: string }
+        Returns: boolean
       }
       get_upload_link_info: {
         Args: { _token: string }
@@ -1618,6 +1793,7 @@ export type Database = {
         Args: { _password: string; _share_id: string }
         Returns: string
       }
+      is_admin: { Args: { _uid: string }; Returns: boolean }
       register_client_upload: {
         Args: {
           _category: Database["public"]["Enums"]["client_document_category"]
@@ -1628,6 +1804,13 @@ export type Database = {
           _token: string
         }
         Returns: string
+      }
+      run_appointment_followup_reminders: { Args: never; Returns: undefined }
+      run_check_stuck_rdv_payments: { Args: never; Returns: undefined }
+      run_document_request_reminders: { Args: never; Returns: undefined }
+      verify_internal_alert_token: {
+        Args: { secret_name: string; token: string }
+        Returns: boolean
       }
     }
     Enums: {
@@ -1650,7 +1833,6 @@ export type Database = {
         | "separated"
       client_document_category:
         | "attestation_lpp"
-        | "libre_passage"
         | "fiche_salaire"
         | "declaration_fiscale"
         | "piece_identite"
@@ -1659,6 +1841,7 @@ export type Database = {
         | "certificat_avs"
         | "documents_bancaires"
         | "autres"
+        | "libre_passage"
       client_document_source: "broker" | "client_link"
       company_legal_form:
         | "sarl"
@@ -1681,7 +1864,12 @@ export type Database = {
         | "resolved"
         | "dismissed"
       gender: "male" | "female" | "other"
-      lpp_plan_type: "mandatory" | "extra_mandatory" | "executive" | "mixed" | "plan_1e"
+      lpp_plan_type:
+        | "mandatory"
+        | "extra_mandatory"
+        | "executive"
+        | "mixed"
+        | "plan_1e"
       permit_type: "none" | "B" | "C" | "L" | "Ci" | "F" | "G" | "swiss"
       scenario_kind:
         | "baseline"
@@ -1741,12 +1929,12 @@ export type Tables<
   DefaultSchemaTableNameOrOptions extends
     | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
         DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -1770,11 +1958,11 @@ export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -1795,11 +1983,11 @@ export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -1820,11 +2008,11 @@ export type Enums<
   DefaultSchemaEnumNameOrOptions extends
     | keyof DefaultSchema["Enums"]
     | { schema: keyof DatabaseWithoutInternals },
-  EnumName extends DefaultSchemaEnumNameOrOptions extends {
+  EnumName extends (DefaultSchemaEnumNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaEnumNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -1837,11 +2025,11 @@ export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
     | keyof DefaultSchema["CompositeTypes"]
     | { schema: keyof DatabaseWithoutInternals },
-  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
+  CompositeTypeName extends (PublicCompositeTypeNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
-    : never = never,
+    : never) = never,
 > = PublicCompositeTypeNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -1874,7 +2062,6 @@ export const Constants = {
       ],
       client_document_category: [
         "attestation_lpp",
-        "libre_passage",
         "fiche_salaire",
         "declaration_fiscale",
         "piece_identite",
@@ -1883,6 +2070,7 @@ export const Constants = {
         "certificat_avs",
         "documents_bancaires",
         "autres",
+        "libre_passage",
       ],
       client_document_source: ["broker", "client_link"],
       company_legal_form: ["sarl", "sa", "cooperative", "association", "other"],
@@ -1897,7 +2085,13 @@ export const Constants = {
       feedback_category: ["bug", "suggestion", "calculation", "ux", "other"],
       feedback_status: ["new", "in_review", "planned", "resolved", "dismissed"],
       gender: ["male", "female", "other"],
-      lpp_plan_type: ["mandatory", "extra_mandatory", "executive", "mixed", "plan_1e"],
+      lpp_plan_type: [
+        "mandatory",
+        "extra_mandatory",
+        "executive",
+        "mixed",
+        "plan_1e",
+      ],
       permit_type: ["none", "B", "C", "L", "Ci", "F", "G", "swiss"],
       scenario_kind: [
         "baseline",
