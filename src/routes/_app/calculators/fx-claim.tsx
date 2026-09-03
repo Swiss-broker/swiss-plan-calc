@@ -60,8 +60,21 @@ const YEARS = Object.keys(AFC_ANNUAL_RATES)
   .map(Number)
   .sort((a, b) => b - a);
 
+const MONTH_NAMES_FR = [
+  "janvier", "février", "mars", "avril", "mai", "juin",
+  "juillet", "août", "septembre", "octobre", "novembre", "décembre",
+];
+
 function newRow(date: string): FxTransaction {
   return { date, amount: 0, currency: "EUR", marketRate: 0, label: "" };
+}
+
+// Ajoute `months` mois à une date "YYYY-MM-DD" en conservant le jour du mois
+// (repose sur JS pour l'ajustement automatique des débordements d'année).
+function addMonths(dateStr: string, months: number): string {
+  const [y, m, d] = dateStr.split("-").map(Number);
+  const date = new Date(y || new Date().getFullYear(), (m || 1) - 1 + months, d || 15);
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
 }
 
 function FxClaimCalc() {
@@ -91,6 +104,8 @@ function FxClaimCalc() {
     { ...newRow(`${2024}-09-15`), amount: 8000, label: "Salaire septembre" },
     { ...newRow(`${2024}-12-15`), amount: 8000, label: "Salaire décembre" },
   ]);
+  const [bulkStartMonth, setBulkStartMonth] = useState<number>(1);
+  const [bulkSalary, setBulkSalary] = useState<number>(8000);
   const [loading, setLoading] = useState(false);
   const [guideOpen, setGuideOpen] = useState(false);
   const currentYear = new Date().getFullYear();
@@ -146,10 +161,35 @@ function FxClaimCalc() {
   const updateRow = (i: number, patch: Partial<FxTransaction>) =>
     setRows((rs) => rs.map((r, idx) => (idx === i ? { ...r, ...patch } : r)));
 
+  // Suggère la date suivante (mois +1 après le dernier versement) et
+  // reprend le montant du dernier versement : le salaire d'un même
+  // employeur ne change presque jamais d'un mois sur l'autre, autant éviter
+  // de tout ressaisir à la main.
   const addRow = () =>
-    setRows((rs) => [...rs, newRow(`${taxYear}-${String(rs.length + 1).padStart(2, "0")}-15`)]);
+    setRows((rs) => {
+      const last = rs[rs.length - 1];
+      if (!last) return [...rs, newRow(`${taxYear}-01-15`)];
+      const nextDate = addMonths(last.date || `${taxYear}-01-15`, 1);
+      const month = Number(nextDate.slice(5, 7)) - 1;
+      return [...rs, { ...newRow(nextDate), amount: last.amount, label: `Salaire ${MONTH_NAMES_FR[month]}` }];
+    });
 
   const removeRow = (i: number) => setRows((rs) => rs.filter((_, idx) => idx !== i));
+
+  // Génère les 12 versements mensuels d'un coup à partir d'un mois de
+  // départ et d'un salaire type, plutôt que d'ajouter les lignes une par
+  // une : le cas le plus courant (salaire mensuel stable sur l'année) n'a
+  // ensuite plus qu'à être ajusté sur les quelques mois qui diffèrent.
+  const generateTwelveMonths = () => {
+    const generated: FxTransaction[] = Array.from({ length: 12 }, (_, i) => {
+      const monthIndex = (bulkStartMonth - 1 + i) % 12;
+      const yearOffset = Math.floor((bulkStartMonth - 1 + i) / 12);
+      const date = `${taxYear + yearOffset}-${String(monthIndex + 1).padStart(2, "0")}-15`;
+      return { ...newRow(date), amount: bulkSalary, label: `Salaire ${MONTH_NAMES_FR[monthIndex]}` };
+    });
+    setRows(generated);
+    toast.success("12 versements mensuels générés — ajustez les montants qui diffèrent.");
+  };
 
   const fillMarketRates = async () => {
     const dates = rows.map((r) => r.date).filter(Boolean);
@@ -301,6 +341,51 @@ function FxClaimCalc() {
             title="Versements"
             description="Saisissez vos versements en CHF (salaire suisse). Le calculateur compare le taux fiscal officiel au taux réel du jour de versement pour estimer un éventuel trop-payé d'impôt en France."
           >
+            <div className="mb-4 flex flex-wrap items-end gap-3 rounded-lg border border-dashed border-border bg-muted/30 p-3">
+              <div className="space-y-1.5">
+                <Label className="text-xs">Mois de départ</Label>
+                <Select value={String(bulkStartMonth)} onValueChange={(v) => setBulkStartMonth(Number(v))}>
+                  <SelectTrigger className="w-[140px]"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {MONTH_NAMES_FR.map((m, i) => (
+                      <SelectItem key={m} value={String(i + 1)}>{m}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs">Salaire mensuel CHF</Label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  className="w-[140px]"
+                  value={bulkSalary || ""}
+                  onChange={(e) => setBulkSalary(Number(e.target.value) || 0)}
+                />
+              </div>
+              <Button type="button" variant="outline" onClick={generateTwelveMonths}>
+                <RefreshCw className="mr-2 h-4 w-4" />
+                Générer 12 mois
+              </Button>
+              <p className="text-xs text-muted-foreground">
+                Remplace les versements ci-dessous par 12 lignes mensuelles, même montant, à ajuster ensuite si un mois diffère.
+              </p>
+            </div>
+            <div className="mb-3 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-primary/30 bg-primary/5 p-3">
+              <p className="text-xs text-foreground">
+                <strong>La colonne « Taux BNS/ECB » ne se remplit pas toute seule</strong> : cliquez sur « Récupérer les taux » pour aller chercher automatiquement le taux réel de chaque date de versement, ou saisissez-le vous-même.
+              </p>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={fillMarketRates}
+                disabled={loading}
+              >
+                <RefreshCw className={`mr-2 h-4 w-4 ${loading ? "animate-spin" : ""}`} />
+                {loading ? "Récupération..." : "Récupérer les taux"}
+              </Button>
+            </div>
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
