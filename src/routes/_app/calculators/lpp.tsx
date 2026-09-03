@@ -129,6 +129,11 @@ function LppCalc() {
     if (!simId || !savedInputs) return;
     if (loadedSimRef.current === simId) return;
     setForm((prev) => ({ ...prev, ...savedInputs }));
+    // Verrouille le salaire assuré chargé (même s'il vaut 0) : sans ce
+    // verrou, l'effet d'auto-calcul plus bas l'écrase juste après avec une
+    // valeur recalculée depuis le salaire brut, ce qui change le résultat
+    // par rapport à ce qui a été réellement sauvegardé (et donc au PDF).
+    setInsuredSalaryManual(true);
     loadedSimRef.current = simId;
   }, [simId, savedInputs]);
 
