@@ -129,28 +129,30 @@ function Pillar3aCalc() {
   // Scénario optimisé : cotisation au plafond légal + 3b cible + retrait
   // fractionné. Permet d'afficher un vrai gain même quand le 3a est déjà au max.
   const isMaxed = form.contribution >= max;
-  // 3b cible, règle auto : si < 3'000 CHF/an → 6'000 ; sinon versement × 1,5
-  // (plafond 10'000). L'utilisateur peut surcharger via le champ ci-dessous.
-  const auto3bTarget = useMemo(() => {
-    if (form.pillar3bYearly < 3_000) return 6_000;
-    return Math.min(10_000, Math.round(form.pillar3bYearly * 1.5));
-  }, [form.pillar3bYearly]);
-  const [target3bOverride, setTarget3bOverride] = useState<number | null>(null);
-  const target3bYearly = target3bOverride ?? auto3bTarget;
 
   const optimizedSavings = useMemo(
     () =>
       pillar3aTaxSavings({
         contribution: max,
-        taxInput: { 
-  canton: form.canton, 
-  status: form.status, 
+        taxInput: {
+  canton: form.canton,
+  status: form.status,
   grossSalary: form.grossSalary,
   pillar3aContributions: 0,
 },
       }),
     [max, form.canton, form.status, form.grossSalary],
   );
+
+  // 3b cible, règle auto : réinvestir dans le 3b exactement l'économie
+  // d'impôt réalisée en maximisant le 3a, plutôt qu'un montant arbitraire —
+  // même principe que l'auto-remplissage de la cotisation 3b "actuelle"
+  // ci-dessous (économie du scénario courant). L'utilisateur peut
+  // surcharger via le champ ci-dessous.
+  const auto3bTarget = useMemo(() => Math.round(optimizedSavings.taxSavings), [optimizedSavings.taxSavings]);
+  const [target3bOverride, setTarget3bOverride] = useState<number | null>(null);
+  const target3bYearly = target3bOverride ?? auto3bTarget;
+
   const optimizedProjection = useMemo(
     () =>
       projectPillar3a({
@@ -459,9 +461,7 @@ useEffect(() => {
           />
           <p className="mt-1 text-[11px] text-muted-foreground">
             Suggéré automatiquement : <strong>{auto3bTarget.toLocaleString("fr-CH")} CHF/an</strong>
-            {form.pillar3bYearly < 3_000
-              ? " (3b actuel < 3 000 → cible de départ 6 000)"
-              : " (versement actuel × 1,5, plafonné à 10 000)"}
+            {" "}(montant de l'économie d'impôt réalisée en maximisant le 3a, réinvesti dans le 3b)
             . Modifiez pour ajuster la projection.
           </p>
         </div>
