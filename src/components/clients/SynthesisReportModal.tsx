@@ -167,6 +167,13 @@ export function SynthesisReportModal({ open, onOpenChange, clientId, entries }: 
                   </Button>
                 )}
               </div>
+              {entries.length > 0 && (
+                <p className="mb-2 text-xs text-muted-foreground">
+                  Chaque simulation reprend les chiffres de sa <strong>dernière sauvegarde</strong> (date affichée
+                  ci-dessous), pas ce qui est actuellement affiché à l'écran dans le calculateur. Si vous avez modifié
+                  une simulation depuis, ouvrez-la et cliquez sur « Sauvegarder » avant de générer ce dossier.
+                </p>
+              )}
               {entries.length === 0 ? (
                 <div className="rounded-lg border border-dashed bg-card p-4 text-sm text-muted-foreground">
                   Aucune simulation à inclure · lancez d'abord un calculateur depuis cette fiche.
@@ -190,6 +197,16 @@ export function SynthesisReportModal({ open, onOpenChange, clientId, entries }: 
                           <div className="flex flex-wrap items-center gap-2">
                             <Badge variant="secondary">{KIND_LABELS[e.kind]}</Badge>
                             <span className="text-sm font-medium">{e.title}</span>
+                          </div>
+                          <div className="mt-0.5 text-xs text-muted-foreground">
+                            Sauvegardé le{" "}
+                            {new Date(e.created_at).toLocaleString("fr-CH", {
+                              day: "2-digit",
+                              month: "2-digit",
+                              year: "numeric",
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })}
                           </div>
                           {g.type !== "none" && (
                             <div className="mt-1 text-xs text-primary">
