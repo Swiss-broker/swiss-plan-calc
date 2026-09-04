@@ -88,6 +88,63 @@ function isRowGood(row: SavedCompareRow, delta: number): boolean {
   return (better === "higher" && delta > 0) || (better === "lower" && delta < 0);
 }
 
+interface DerivedComparison {
+  rows: SavedCompareRow[];
+  currentLabel?: string;
+  currentBadge?: string;
+  projectedLabel?: string;
+  projectedBadge?: string;
+}
+
+// Pour les calculateurs sans SplitCompareLayout à l'écran (donc sans
+// compareRows sauvegardé), reconstruit un comparatif "actuel vs
+// optimisé/alternatif" à partir des mêmes champs de summary déjà utilisés
+// par formatMetrics()/drawSimpleChart() ci-dessous — jamais de nouveau
+// calcul, uniquement une mise en forme différente de valeurs déjà
+// retranscrites. Limité aux cas où la sémantique "actuel vs optimisé" est
+// sans ambiguïté (une vraie option recommandée face à la situation de
+// départ) ; les comparaisons "option A vs option B" (rente vs capital,
+// LAMal vs CMU, placement A vs B) restent volontairement en dehors, tout
+// comme la réclamation de taux de change (ce n'est pas une optimisation
+// actionnable mais un constat de trop-perçu).
+function buildDerivedComparison(entry: HistoryEntry): DerivedComparison | null {
+  const s = entry.summary ?? {};
+  switch (entry.kind) {
+    case "director_compensation": {
+      const cur = num(s.currentDirectorNet);
+      const reco = num(s.recommendedDirectorNet);
+      if (!cur || !reco) return null;
+      return {
+        rows: [{ label: "Net annuel dirigeant", current: cur, projected: reco, betterWhen: "higher" }],
+      };
+    }
+    case "vested_benefits": {
+      const sec = num(s.securityFinalBalance);
+      const reco = num(s.recommendedFinalBalance);
+      if (!sec || !reco) return null;
+      return {
+        rows: [{ label: "Capital de libre passage projeté", current: sec, projected: reco, betterWhen: "higher" }],
+        currentLabel: "Stratégie sécurité",
+        projectedLabel: "Stratégie recommandée",
+        currentBadge: "Prudent",
+        projectedBadge: "Recommandé",
+      };
+    }
+    case "cross_border": {
+      const cur = num(s.currentTax);
+      const alt = num(s.alternativeTax);
+      if (!cur || !alt) return null;
+      return {
+        rows: [{ label: "Charge fiscale annuelle", current: cur, projected: alt, betterWhen: "lower" }],
+        currentLabel: "Régime actuel",
+        projectedLabel: "Régime alternatif",
+      };
+    }
+    default:
+      return null;
+  }
+}
+
 // Complète une ligne de recommandation avec les deux chiffres réels
 // derrière un delta (ex. "160'922" seul ne dit pas ce qui vaut quoi) : soit
 // la première ligne du compareRows sauvegardé, soit un cas spécifique pour
@@ -96,6 +153,11 @@ function describeCompareFigures(entry: HistoryEntry): string | null {
   const rows = extractSavedCompareRows(entry);
   if (rows.length > 0) {
     const r = rows[0];
+    return `${r.label} — actuel : ${formatSplitValue(r.current, r.format)}, projeté : ${formatSplitValue(r.projected, r.format)}.`;
+  }
+  const derived = buildDerivedComparison(entry);
+  if (derived && derived.rows.length > 0) {
+    const r = derived.rows[0];
     return `${r.label} — actuel : ${formatSplitValue(r.current, r.format)}, projeté : ${formatSplitValue(r.projected, r.format)}.`;
   }
   if (entry.kind === "retirement") {
@@ -502,12 +564,15 @@ function drawOverviewPage(
   }
 
   // Tableau de synthèse par catégorie : une ligne par simulation disposant
-  // d'un comparatif "Actuel vs Projeté" sauvegardé (compareRows), avec
-  // exactement l'indicateur clé et les deux valeurs affichées dans le
-  // calculateur correspondant — aucun chiffre recalculé ici.
+  // d'un comparatif "Actuel vs Projeté", sauvegardé (compareRows) ou
+  // reconstitué à partir des mêmes résultats chiffrés (buildDerivedComparison)
+  // — avec exactement l'indicateur clé et les deux valeurs déjà retranscrites,
+  // aucun chiffre recalculé ici.
   const summaryRows: Array<[string, string, string, string, string]> = [];
+  const summaryGoodness: Array<boolean | undefined> = [];
   for (const e of entries) {
-    const rows = extractSavedCompareRows(e);
+    const saved = extractSavedCompareRows(e);
+    const rows = saved.length > 0 ? saved : buildDerivedComparison(e)?.rows ?? [];
     if (rows.length === 0) continue;
     const r = rows[0];
     const hasDelta = typeof r.current === "number" && typeof r.projected === "number";
@@ -519,11 +584,15 @@ function drawOverviewPage(
       formatSplitValue(r.projected, r.format),
       hasDelta ? formatDelta(delta) : "—",
     ]);
+    summaryGoodness.push(hasDelta ? isRowGood(r, delta) : undefined);
   }
   if (summaryRows.length > 0) {
     pdf.spacer(4);
     pdf.section("Résumé par catégorie");
-    pdf.table(["Catégorie", "Indicateur clé", "Actuel", "Projeté", "Écart"], summaryRows, { deltaCol: 4 });
+    pdf.table(["Catégorie", "Indicateur clé", "Actuel", "Projeté", "Écart"], summaryRows, {
+      deltaCol: 4,
+      deltaGoodness: summaryGoodness,
+    });
   }
 
   pdf.spacer(4);
@@ -716,7 +785,9 @@ function drawSimulationPage(pdf: ReportPdf, entry: HistoryEntry, includeCharts: 
   // affiché dans le calculateur (compareRows sauvegardé dans le summary) —
   // pas un recalcul indépendant, une retranscription fidèle du tableau que
   // le courtier a sous les yeux au moment de sauvegarder.
-  const compareRows = extractSavedCompareRows(entry);
+  const savedRows = extractSavedCompareRows(entry);
+  const derivedComparison = savedRows.length === 0 ? buildDerivedComparison(entry) : null;
+  const compareRows = savedRows.length > 0 ? savedRows : derivedComparison?.rows ?? [];
   if (compareRows.length > 0) {
     // Réserve la place du bandeau, du paragraphe ET des cartes qui suivent
     // avant de dessiner quoi que ce soit (même logique que "Résultats clés"
@@ -731,10 +802,16 @@ function drawSimulationPage(pdf: ReportPdf, entry: HistoryEntry, includeCharts: 
     pdf.ensureSpace(15 + 12 + cardH + 12);
     pdf.section("Actuel vs Projeté");
     pdf.paragraph(
-      "Reprend exactement le comparatif affiché dans le calculateur au moment de l'enregistrement de cette simulation, avec les mêmes chiffres.",
+      savedRows.length > 0
+        ? "Reprend exactement le comparatif affiché dans le calculateur au moment de l'enregistrement de cette simulation, avec les mêmes chiffres."
+        : "Comparatif reconstitué à partir des résultats chiffrés de cette simulation, sans aucune valeur recalculée.",
       { muted: true, italic: true },
     );
     pdf.comparisonCards({
+      currentLabel: derivedComparison?.currentLabel,
+      currentBadge: derivedComparison?.currentBadge,
+      projectedLabel: derivedComparison?.projectedLabel,
+      projectedBadge: derivedComparison?.projectedBadge,
       rows: compareRows.map((r) => {
         const hasDelta = typeof r.current === "number" && typeof r.projected === "number";
         const delta = hasDelta ? (r.projected as number) - (r.current as number) : 0;
@@ -1442,6 +1519,10 @@ function drawComparisonPage(
   );
 
   const rows: Array<[string, string, string, string]> = [];
+  // Sens réel de chaque ligne (undefined = pas d'avis, retombe sur le signe
+  // du delta) : une charge fiscale qui baisse est favorable même si son
+  // delta est négatif, donc la simple couleur du signe ne suffit pas.
+  const rowsGoodness: Array<boolean | undefined> = [];
 
   // Capital LPP — utilise la paire actuelle/projetée explicite si le
   // courtier en a marqué une (voir spreadPairs), pour ne jamais afficher un
@@ -1491,6 +1572,7 @@ function drawComparisonPage(
       formatCHF(after),
       formatDelta(after - before),
     ]);
+    rowsGoodness.push(after > before);
   }
   // 3a — "avant" doit être le montant réellement versé (cotisations
   // cumulées, sans rendement), pas 0 : sinon le delta affiché est tout le
@@ -1502,6 +1584,7 @@ function drawComparisonPage(
     const versed = num(p3a.summary?.totalContributions);
     const proj = num(p3a.summary?.finalBalance);
     rows.push(["Pilier 3a cumulé à la retraite", formatCHF(versed), formatCHF(proj), formatDelta(proj - versed)]);
+    rowsGoodness.push(proj > versed);
   }
   // Canton compare — avant = charge fiscale du canton de référence, après =
   // charge fiscale du canton le moins cher, tous deux déjà dans le summary.
@@ -1514,6 +1597,7 @@ function drawComparisonPage(
     const after = num(cc.summary?.cheapestTax);
     if (before > 0) {
       rows.push(["Charge fiscale annuelle (déménagement)", formatCHF(before), formatCHF(after), formatDelta(after - before)]);
+      rowsGoodness.push(after < before);
     }
   }
   // Director
@@ -1523,6 +1607,7 @@ function drawComparisonPage(
     const reco = num(dc.summary?.recommendedDirectorNet);
     if (cur && reco) {
       rows.push(["Net annuel dirigeant", formatCHF(cur), formatCHF(reco), formatDelta(reco - cur)]);
+      rowsGoodness.push(reco > cur);
     }
   }
   // Rente vs capital — avant/après opposent les deux options réellement
@@ -1534,11 +1619,37 @@ function drawComparisonPage(
     const lump = num(ret.summary?.netLumpSum);
     if (annuity > 0 || lump > 0) {
       rows.push(["Rente viagère nette vs capital net", formatCHF(annuity), formatCHF(lump), formatDelta(lump - annuity)]);
+      rowsGoodness.push(undefined); // deux options, pas un "avant/après" : pas de sens à colorer
+    }
+  }
+  // Libre passage et frontaliers — mêmes chiffres que buildDerivedComparison
+  // utilisé sur leur page de simulation respective, pour ne jamais afficher
+  // un écart différent d'une page à l'autre du même dossier.
+  const vb = entries.find((e) => e.kind === "vested_benefits");
+  if (vb) {
+    const derived = buildDerivedComparison(vb);
+    if (derived) {
+      const r = derived.rows[0];
+      if (typeof r.current === "number" && typeof r.projected === "number") {
+        rows.push([r.label, formatCHF(r.current), formatCHF(r.projected), formatDelta(r.projected - r.current)]);
+        rowsGoodness.push(isRowGood(r, r.projected - r.current));
+      }
+    }
+  }
+  const cb = entries.find((e) => e.kind === "cross_border");
+  if (cb) {
+    const derived = buildDerivedComparison(cb);
+    if (derived) {
+      const r = derived.rows[0];
+      if (typeof r.current === "number" && typeof r.projected === "number") {
+        rows.push([r.label, formatCHF(r.current), formatCHF(r.projected), formatDelta(r.projected - r.current)]);
+        rowsGoodness.push(isRowGood(r, r.projected - r.current));
+      }
     }
   }
   // Tous gains agrégés
   for (const e of entries) {
-    if (["lpp", "pillar3a", "canton_compare", "director_compensation", "retirement"].includes(e.kind)) continue;
+    if (["lpp", "pillar3a", "canton_compare", "director_compensation", "retirement", "vested_benefits", "cross_border"].includes(e.kind)) continue;
     if (e.gain_dismissed) continue;
     const g = extractGain(e);
     if (g.type === "none") continue;
@@ -1548,6 +1659,7 @@ function drawComparisonPage(
       g.type === "annual" ? `${formatCHF(g.amount)} / an` : formatCHF(g.amount),
       formatDelta(g.amount),
     ]);
+    rowsGoodness.push(undefined); // toujours un gain identifié positif, le signe suffit
   }
 
   if (rows.length === 0) {
@@ -1556,7 +1668,7 @@ function drawComparisonPage(
       muted: true,
     });
   } else {
-    pdf.table(["Indicateur", "Avant", "Après", "Delta"], rows, { deltaCol: 3 });
+    pdf.table(["Indicateur", "Avant", "Après", "Delta"], rows, { deltaCol: 3, deltaGoodness: rowsGoodness });
     pdf.spacer(2);
     pdf.paragraph(
       "La colonne « Delta » indique le gain net apporté par chaque optimisation, ponctuel pour un rachat ou un retrait, récurrent lorsqu'il s'agit d'une économie annuelle. Ces montants sont ensuite consolidés ci-dessous.",

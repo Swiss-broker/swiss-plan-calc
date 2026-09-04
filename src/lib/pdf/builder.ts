@@ -415,7 +415,16 @@ export class ReportPdf {
   table(
     head: string[],
     body: Array<Array<string | number>>,
-    opts?: { highlightLast?: boolean; deltaCol?: number },
+    opts?: {
+      highlightLast?: boolean;
+      deltaCol?: number;
+      // Sens réel de chaque ligne (true = favorable, false = défavorable),
+      // pour les colonnes où "plus petit" est parfois le bon sens (ex. une
+      // charge fiscale) : sans ça, la coloration par simple signe du texte
+      // afficherait en rouge une baisse d'impôt, qui est pourtant favorable.
+      // Une entrée undefined retombe sur la coloration par signe.
+      deltaGoodness?: Array<boolean | undefined>;
+    },
   ) {
     const safeHead = head.map(sanitizeCell);
     const safeBody = body.map((row) => row.map(sanitizeCell));
@@ -441,8 +450,16 @@ export class ReportPdf {
         // où plutôt qu'un startsWith, qui ratait tout delta négatif chiffré.
         if (opts?.deltaCol !== undefined && data.section === "body" && data.column.index === opts.deltaCol) {
           const raw = String(data.cell.raw ?? "");
-          if (raw.includes("-") || raw.includes("−")) data.cell.styles.textColor = RED;
-          else if (raw.startsWith("+")) data.cell.styles.textColor = GREEN;
+          const explicitGood = opts.deltaGoodness?.[data.row.index];
+          if (explicitGood !== undefined) {
+            if (raw !== "—" && raw.trim() !== "") {
+              data.cell.styles.textColor = explicitGood ? GREEN : RED;
+            }
+          } else if (raw.includes("-") || raw.includes("−")) {
+            data.cell.styles.textColor = RED;
+          } else if (raw.startsWith("+")) {
+            data.cell.styles.textColor = GREEN;
+          }
         }
       },
       didDrawPage: () => this.drawFooter(),
