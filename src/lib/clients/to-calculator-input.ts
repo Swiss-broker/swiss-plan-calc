@@ -460,7 +460,10 @@ export function stripUndefined<T extends Record<string, unknown>>(o: T): Partial
 // SANTÉ FRONTALIERS (CMU vs LAMal)
 // ──────────────────────────────────────────────────────────────────────────
 export function toHealthInsuranceFranceInput(b: ClientBundle) {
-  const main = numOrUndef(b.client.gross_annual_salary);
+  // Revenu brut total (salaire + bonus + autres revenus), même règle que
+  // LPP/AVS/3a/Fiscal global — le salaire de base seul sous-estimait
+  // l'assiette pour tout client avec bonus/13e salaire.
+  const main = getTotalGrossIncomeOrUndef(b.client);
   const childrenCount = parseChildren(b.client.children).length;
   const isCouple =
     b.client.civil_status === "married" ||
@@ -476,7 +479,10 @@ export function toHealthInsuranceFranceInput(b: ClientBundle) {
 // HEURES SUPPLÉMENTAIRES FRONTALIERS
 // ──────────────────────────────────────────────────────────────────────────
 export function toOvertimeInput(b: ClientBundle) {
-  const main = numOrUndef(b.client.gross_annual_salary);
+  // Revenu brut total (salaire + bonus + autres revenus), même règle que
+  // LPP/AVS/3a/Fiscal global — le salaire de base seul sous-estimait
+  // l'assiette pour tout client avec bonus/13e salaire.
+  const main = getTotalGrossIncomeOrUndef(b.client);
   const spouse = numOrUndef(b.client.spouse_gross_annual_salary);
   const childrenCount = parseChildren(b.client.children).length;
   const isCouple =

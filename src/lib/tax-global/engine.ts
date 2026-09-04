@@ -9,8 +9,14 @@ import { computeHealthFrance } from "@/lib/health-france";
 import { detectRegime, toTaxStatus, toFrenchStatus, isCoupleStatus } from "./profile";
 import type { TaxGlobalInput, TaxGlobalResult, Regime } from "./types";
 
-/** Revenu brut cash de référence (valeur locative exclue, c'est un revenu fictif). */
-function computeGrossForRegime(g: TaxGlobalInput, regime: Regime): number {
+/** Revenu brut cash de référence (valeur locative exclue, c'est un revenu fictif).
+ *  Exportée pour que l'écran du calculateur (accordéon "Revenu brut total")
+ *  affiche exactement ce total, régime par régime, au lieu d'une somme
+ *  recalculée à la main qui incluait le salaire du conjoint dès qu'il y a
+ *  couple, sans tenir compte de son inclusion/exclusion selon le régime
+ *  détecté (ex. exclu pour les frontaliers, gating sur spouseEmployed pour
+ *  source/TOU) — deux totaux "revenu brut" différents sur le même écran. */
+export function computeGrossForRegime(g: TaxGlobalInput, regime: Regime): number {
   const couple = isCoupleStatus(g.civilStatus);
   switch (regime) {
     case "resident_ordinary":

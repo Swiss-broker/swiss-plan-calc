@@ -38,7 +38,7 @@ import { useT } from "@/contexts/LanguageContext";
 import { usePrefillFromClient, useHydrateFormFromPrefill } from "@/hooks/usePrefillFromClient";
 import { useLoadSavedSimulation } from "@/hooks/useLoadSavedSimulation";
 
-import { computeTaxGlobal } from "@/lib/tax-global/engine";
+import { computeTaxGlobal, computeGrossForRegime } from "@/lib/tax-global/engine";
 
 import { createDefaultInput } from "@/lib/tax-global/profile";
 import type { TaxGlobalInput } from "@/lib/tax-global/types";
@@ -500,23 +500,28 @@ function TaxGlobalCalc() {
                   </div>
 
                   {/* ── Totaux cumulés ── */}
+                  {/* Revenu brut = computeGrossForRegime(), la MÊME fonction que
+                      le moteur utilise pour le résultat affiché plus bas :
+                      l'inclusion du salaire du conjoint dépend du régime détecté
+                      (exclu pour les frontaliers, conditionné à spouseEmployed
+                      pour source/TOU), pas juste de "couple ou non". Une somme
+                      recalculée à la main ici donnait un total différent de
+                      celui du résultat pour ces régimes. */}
                   <div className="mt-4 rounded-md border border-primary/30 bg-primary/5 p-3">
                     <div className="flex items-center justify-between border-b border-primary/20 pb-2">
                       <span className="text-sm font-semibold">Revenu brut total (CH)</span>
                       <span className="text-base font-bold tabular-nums">
-                        {formatCHF(
-                          form.grossSalary +
-                            form.bonus +
-                            (isCouple ? form.spouseGrossSalary : 0) +
-                            form.otherIncome +
-                            form.rentalIncome,
-                        )}
+                        {formatCHF(computeGrossForRegime(form, result.regime))}
                       </span>
                     </div>
                     <ul className="mt-2 space-y-0.5 text-xs text-muted-foreground">
                       <li className="flex justify-between"><span>Salaire principal</span><span className="tabular-nums">{formatCHF(form.grossSalary)}</span></li>
                       {form.bonus > 0 && <li className="flex justify-between"><span>+ Bonus / 13e</span><span className="tabular-nums">{formatCHF(form.bonus)}</span></li>}
-                      {isCouple && form.spouseGrossSalary > 0 && <li className="flex justify-between"><span>+ Salaire conjoint</span><span className="tabular-nums">{formatCHF(form.spouseGrossSalary)}</span></li>}
+                      {form.spouseGrossSalary > 0 &&
+                        computeGrossForRegime({ ...form, spouseGrossSalary: 0 }, result.regime) !==
+                          computeGrossForRegime(form, result.regime) && (
+                          <li className="flex justify-between"><span>+ Salaire conjoint</span><span className="tabular-nums">{formatCHF(form.spouseGrossSalary)}</span></li>
+                        )}
                       {form.otherIncome > 0 && <li className="flex justify-between"><span>+ Autres revenus</span><span className="tabular-nums">{formatCHF(form.otherIncome)}</span></li>}
                       {form.rentalIncome > 0 && <li className="flex justify-between"><span>+ Revenus locatifs</span><span className="tabular-nums">{formatCHF(form.rentalIncome)}</span></li>}
                       {form.imputedRent > 0 && (
