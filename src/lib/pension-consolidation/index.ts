@@ -13,6 +13,7 @@
 
 import type { ClientBundle } from "@/lib/client-dashboard";
 import { ageFromDob, parseChildren } from "@/lib/clients/types";
+import { getTotalGrossIncome } from "@/lib/clients/income";
 import {
   AVS_2026,
   getReferenceAge,
@@ -96,8 +97,11 @@ function buildRetirement(b: ClientBundle): ConsolidatedScenario | null {
   const retirementYear = birthYear + Math.round(referenceAge);
   const contributionStartYear = birthYear + 21;
 
-  const avgIncome =
-    Number(b.client.gross_annual_salary ?? 0) + Number(b.client.bonus ?? 0);
+  // Revenu total (salaire + bonus + autres revenus), même source que le
+  // reste de l'app (src/lib/clients/income.ts) : une formule locale
+  // n'incluant que salaire+bonus divergerait silencieusement pour un
+  // client ayant d'autres revenus déclarés.
+  const avgIncome = getTotalGrossIncome(b.client);
   if (avgIncome <= 0) return null;
 
   const isCouple =
@@ -202,8 +206,11 @@ function buildDisability(b: ClientBundle, disabilityPct = 100): ConsolidatedScen
   if (!birthYear) return null;
   const age = ageFromDob(b.client.date_of_birth);
   if (age === null) return null;
-  const avgIncome =
-    Number(b.client.gross_annual_salary ?? 0) + Number(b.client.bonus ?? 0);
+  // Revenu total (salaire + bonus + autres revenus), même source que le
+  // reste de l'app (src/lib/clients/income.ts) : une formule locale
+  // n'incluant que salaire+bonus divergerait silencieusement pour un
+  // client ayant d'autres revenus déclarés.
+  const avgIncome = getTotalGrossIncome(b.client);
   if (avgIncome <= 0) return null;
 
   const currentYear = new Date().getFullYear();
@@ -282,8 +289,11 @@ function buildDisability(b: ClientBundle, disabilityPct = 100): ConsolidatedScen
 // ────────────────────────────────────────────────────────────
 
 function buildDeath(b: ClientBundle): ConsolidatedScenario | null {
-  const avgIncome =
-    Number(b.client.gross_annual_salary ?? 0) + Number(b.client.bonus ?? 0);
+  // Revenu total (salaire + bonus + autres revenus), même source que le
+  // reste de l'app (src/lib/clients/income.ts) : une formule locale
+  // n'incluant que salaire+bonus divergerait silencieusement pour un
+  // client ayant d'autres revenus déclarés.
+  const avgIncome = getTotalGrossIncome(b.client);
   if (avgIncome <= 0) return null;
 
   const isCouple =

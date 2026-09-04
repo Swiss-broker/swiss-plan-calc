@@ -19,6 +19,7 @@
 import type { ClientBundle } from "@/lib/clients/to-calculator-input";
 import { sumAccountBalances } from "@/lib/clients/to-calculator-input";
 import { ageFromDob } from "@/lib/clients/types";
+import { getTotalGrossIncome } from "@/lib/clients/income";
 import { projectLPP, computeLppInsuredSalary, type LPPProjectionResult } from "@/lib/lpp";
 import { LPP_2026 } from "@/lib/lpp/parameters-2026";
 import { projectPillar3a, type Pillar3aProjectionResult } from "@/lib/pillar3";
@@ -183,12 +184,17 @@ export function projectClientLPP(b: ClientBundle): ClientLppProjection | null {
       // Si aucun salaire assuré explicite n'est saisi dans la fiche, on
       // applique la même règle légale que le calculateur LPP (art. 8 LPP,
       // brut moins déduction de coordination, plafonné), au lieu d'utiliser
-      // le brut tel quel qui surestimait le capital projeté.
+      // le brut tel quel qui surestimait le capital projeté. Le brut doit
+      // être le revenu TOTAL (salaire + bonus + autres revenus), comme dans
+      // toLppInput() qui préremplit le calculateur LPP lui-même — sinon le
+      // dossier ignore le bonus alors que le calculateur le compte, et les
+      // deux résultats divergent dès l'ouverture, sans que rien n'ait été
+      // modifié.
       insuredSalary:
         insuredSalary > 0
           ? insuredSalary
           : computeLppInsuredSalary(
-              Math.max(0, Number(b.client.gross_annual_salary ?? 0)),
+              getTotalGrossIncome(b.client),
               LPP_2026.maxInsuredSalary,
             ),
       conversionRate,
