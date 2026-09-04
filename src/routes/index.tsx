@@ -394,18 +394,28 @@ function PricingModal({ onClose }: { onClose: () => void }) {
 function Footer() {
   const t = useT();
   return (
-    <footer className="border-t border-border/50 py-10">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <nav className="flex flex-wrap justify-center gap-x-6 gap-y-2 border-b border-border/50 pb-6 text-xs text-muted-foreground sm:justify-start">
-          {LEGAL_PAGES.map((p) => (
-            <Link key={p.path} to={p.path} className="transition-colors hover:text-foreground">
-              {p.title}
-            </Link>
-          ))}
-        </nav>
-        <div className="mt-6 flex flex-col items-center justify-between gap-4 sm:flex-row">
+    <footer className="border-t border-border/50 py-14">
+      <div className="mx-auto grid max-w-7xl grid-cols-1 gap-10 px-4 sm:grid-cols-[2fr_1fr] sm:px-6 lg:px-8">
+        <div className="flex flex-col gap-3">
+          <div className="flex items-center gap-2">
+            <img src={logoIcon} alt="" className="h-7 w-7 shrink-0 rounded-lg object-contain" />
+            <img src={logoFull} alt="SwissBroker Pro" className="h-5 w-auto shrink-0 object-contain" />
+          </div>
           <div className="flex items-center gap-2 text-sm text-muted-foreground"><Building2 className="h-4 w-4" />{t("landing.footer.brand")}</div>
           <div className="flex items-center gap-2 text-xs text-muted-foreground"><Globe2 className="h-3.5 w-3.5" />{t("landing.footer.scope")}</div>
+        </div>
+
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-wide text-foreground">Légal</p>
+          <ul className="mt-3 space-y-2">
+            {LEGAL_PAGES.map((p) => (
+              <li key={p.path}>
+                <Link to={p.path} className="text-sm text-muted-foreground transition-colors hover:text-foreground">
+                  {p.title}
+                </Link>
+              </li>
+            ))}
+          </ul>
         </div>
       </div>
     </footer>
