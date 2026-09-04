@@ -50,7 +50,6 @@ import { GuideMode, GuideToggleButton, type GuideStep } from "@/components/calcu
 import { WikiTip } from "@/components/calculators/WikiTip";
 import { SplitCompareLayout, type SplitRow } from "@/components/calculators/SplitCompareLayout";
 import { useT } from "@/contexts/LanguageContext";
-import { useClientDashboard } from "@/hooks/use-client-dashboard";
 import { CrossCalcImpactBanner } from "@/components/calculators/CrossCalcImpactBanner";
 import { ClientPrefillBadge } from "@/components/calculators/ClientPrefillBadge";
 
@@ -68,10 +67,8 @@ export const Route = createFileRoute("/_app/calculators/lpp")({
 function LppCalc() {
   const t = useT();
   const { clientId, simId } = Route.useSearch();
-  const { client, bundle, prefill } = usePrefillFromClient(clientId, "lpp");
+  const { client, prefill } = usePrefillFromClient(clientId, "lpp");
   const { inputs: savedInputs, isLoading: loadingSaved } = useLoadSavedSimulation(simId);
-  const dashboard = useClientDashboard(bundle);
-  const ficheLppCapital = dashboard?.lpp?.projectedCapitalAt65 ?? 0;
   const [form, setForm] = useState({
     currentAge: 40,
     retirementAge: 65,
@@ -309,30 +306,6 @@ function LppCalc() {
         </div>
       )}
       <FiscalSnapshotBanner clientId={clientId} />
-      {/* Ce calculateur ne modifie JAMAIS le dossier du client : c'est un
-          bac à sable pour tester des scénarios (âge, salaire, rendement,
-          rachat...) à partir des valeurs de la fiche. Pour changer les
-          valeurs réelles du dossier (avoir LPP, salaire assuré...), ça se
-          fait uniquement depuis la fiche du client. Un bouton de
-          synchronisation existait ici auparavant et réécrivait le dossier
-          à chaque clic avec le résultat du scénario en cours — supprimé
-          car ça faisait bouger la référence du client sans que ce soit
-          voulu. */}
-      {clientId && ficheLppCapital > 0 &&
-        Math.abs(projection.projectedBalance - ficheLppCapital) > 1 && (
-          <div className="flex items-start gap-3 rounded-lg border border-primary/30 bg-primary/5 p-3 text-sm">
-            <Info className="mt-0.5 h-4 w-4 flex-shrink-0 text-primary" />
-            <div className="flex-1 text-foreground">
-              <p className="font-medium">Scénario de test — différent du dossier</p>
-              <p className="mt-0.5 text-xs text-muted-foreground">
-                Résultat de ce scénario : <span className="font-semibold tabular-nums text-foreground">{fmtCHF(projection.projectedBalance)}</span> · Valeur du dossier{client ? ` de ${client.first_name} ${client.last_name}` : ""} : <span className="font-semibold tabular-nums text-foreground">{fmtCHF(ficheLppCapital)}</span>.
-              </p>
-              <p className="mt-1.5 text-xs text-muted-foreground">
-                Vous avez changé au moins un paramètre (âge, salaire, rendement, rachat...) pour tester ce scénario : c'est normal. Le dossier du client, lui, ne change jamais depuis ce calculateur — pour le mettre à jour, modifiez la fiche du client directement.
-              </p>
-            </div>
-          </div>
-        )}
       <div className="grid grid-cols-1 gap-6 md:grid-cols-5">
         <div className="md:col-span-3">
           <CalcCard title={t("calc.lpp.projection_card")} description={t("calc.lpp.projection_desc")}>

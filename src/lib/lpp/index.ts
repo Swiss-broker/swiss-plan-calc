@@ -16,6 +16,22 @@ export const LPP_INTEREST_MIN_2026 = 1.25; // taux minimal LPP 2026
  *  plus bas. */
 export const LPP_MIN_COORDINATED_SALARY_2026 = 3_780;
 
+/** Nombre d'années sur lesquelles étaler un rachat planifié
+ *  (client_pension.lpp_planned_buybacks), déduit du nombre d'années
+ *  DISTINCTES présentes dans les rachats enregistrés (une entrée par
+ *  année de versement). Fonction PARTAGÉE entre le préremplissage du
+ *  calculateur LPP (to-calculator-input.ts) et la projection "dossier"
+ *  (client-dashboard/lpp-projection.ts) : avant, les deux avaient chacun
+ *  leur propre règle (l'une comptait les années distinctes, l'autre
+ *  étalait sur TOUTES les années restantes jusqu'à la retraite), donc un
+ *  même rachat enregistré produisait deux capitaux projetés différents
+ *  dès l'ouverture du calculateur, sans qu'aucun paramètre n'ait été
+ *  modifié. */
+export function deriveBuybackYears(planned: Array<{ year: number }>): number {
+  if (planned.length === 0) return 1;
+  return Math.max(1, new Set(planned.map((p) => p.year)).size);
+}
+
 export function computeLppInsuredSalary(
   grossSalary: number,
   insuredSalaryCap = LPP_MAX_INSURED_SALARY_2026,

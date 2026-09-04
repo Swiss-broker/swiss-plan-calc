@@ -13,7 +13,7 @@ import { ageFromDob, parseChildren } from "./types";
 import type { IncomeTaxInput } from "@/lib/tax/income";
 import type { TaxStatusContext, WorkStatusContext } from "@/lib/optimizer";
 import { getTotalGrossIncomeOrUndef, getTotalGrossIncome } from "./income";
-import { estimateRetroactiveLppBalance } from "@/lib/lpp";
+import { estimateRetroactiveLppBalance, deriveBuybackYears } from "@/lib/lpp";
 import { getWorkStatusRules } from "./work-status-rules";
 
 /**
@@ -235,7 +235,7 @@ export function toLppInput(b: ClientBundle) {
     : [];
   const plannedTotal = planned.reduce((s, p) => s + Number(p?.amount ?? 0), 0);
   const plannedYears = planned.length > 0
-    ? Math.max(1, new Set(planned.map((p) => p?.year)).size)
+    ? deriveBuybackYears(planned.map((p) => ({ year: Number(p?.year ?? 0) })))
     : undefined;
 
   // Hypothèses sauvegardées (rendement, frais, croissance, taux conv)

@@ -20,7 +20,7 @@ import type { ClientBundle } from "@/lib/clients/to-calculator-input";
 import { sumAccountBalances } from "@/lib/clients/to-calculator-input";
 import { ageFromDob } from "@/lib/clients/types";
 import { getTotalGrossIncome } from "@/lib/clients/income";
-import { projectLPP, computeLppInsuredSalary, type LPPProjectionResult } from "@/lib/lpp";
+import { projectLPP, computeLppInsuredSalary, deriveBuybackYears, type LPPProjectionResult } from "@/lib/lpp";
 import { LPP_2026 } from "@/lib/lpp/parameters-2026";
 import { projectPillar3a, type Pillar3aProjectionResult } from "@/lib/pillar3";
 import { getWorkStatusRules } from "@/lib/clients/work-status-rules";
@@ -168,11 +168,19 @@ export function projectClientLPP(b: ClientBundle): ClientLppProjection | null {
     };
   }
 
-  // Étalement linéaire des rachats planifiés sur la période restante.
+  // Étalement du rachat planifié sur le même nombre d'années que le
+  // calculateur LPP lui-même (deriveBuybackYears, partagée avec
+  // toLppInput()) : avant, ce module étalait sur TOUTES les années
+  // restantes jusqu'à la retraite quel que soit le rachat enregistré,
+  // alors que le calculateur l'étalait sur le nombre d'années distinctes
+  // du rachat (typiquement 1 à 3 ans) — un même rachat produisait deux
+  // capitaux projetés différents dès l'ouverture du calculateur, sans
+  // qu'aucun paramètre n'ait été modifié.
   const yearsToRetire = Math.max(1, RETIREMENT_AGE_DEFAULT - age);
+  const buybackYears = Math.min(yearsToRetire, deriveBuybackYears(plannedBuybacks));
   const yearlyBuyback =
     plannedBuybacksTotal > 0
-      ? Math.round(plannedBuybacksTotal / yearsToRetire)
+      ? Math.round(plannedBuybacksTotal / buybackYears)
       : 0;
 
   let proj: LPPProjectionResult;
@@ -202,7 +210,7 @@ export function projectClientLPP(b: ClientBundle): ClientLppProjection | null {
       feeRate: assumptions.feeRate,
       salaryGrowthRate: assumptions.salaryGrowthRate,
       yearlyBuyback,
-      buybackYears: yearsToRetire,
+      buybackYears,
     });
   } catch {
     return null;
