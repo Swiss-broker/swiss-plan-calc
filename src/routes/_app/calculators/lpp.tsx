@@ -306,12 +306,12 @@ function LppCalc() {
           <div className="flex items-start gap-3 rounded-lg border border-primary/30 bg-primary/5 p-3 text-sm">
             <Info className="mt-0.5 h-4 w-4 flex-shrink-0 text-primary" />
             <div className="flex-1 text-foreground">
-              <div className="flex items-center gap-1.5">
-                <p className="font-medium">Écart avec le dossier client</p>
-                <HelpDot tip="Les paramètres actuellement saisis dans ce calculateur (âge, rendement, rachat, etc.) donnent un résultat différent de ce qui est enregistré dans le dossier de ce client. Cela arrive dès que vous modifiez une valeur pour tester un scénario. Cliquez sur le bouton pour remplacer la valeur du dossier par ce nouveau résultat, ou continuez simplement à tester sans rien changer au dossier." />
-              </div>
+              <p className="font-medium">Écart avec le dossier client</p>
               <p className="mt-0.5 text-xs text-muted-foreground">
                 Résultat de cette simulation : <span className="font-semibold tabular-nums text-foreground">{fmtCHF(projection.projectedBalance)}</span> · Valeur enregistrée dans le dossier : <span className="font-semibold tabular-nums text-foreground">{fmtCHF(ficheLppCapital)}</span>.
+              </p>
+              <p className="mt-1.5 text-xs text-muted-foreground">
+                Vous avez changé au moins un paramètre par rapport au dossier{client ? ` de ${client.first_name} ${client.last_name}` : ""} (âge, salaire, rendement, rachat...) : c'est normal, ce n'est pas une erreur. Deux choix : cliquez sur « Mettre à jour le dossier client » pour que ce nouveau résultat remplace la valeur du dossier, ou ne cliquez pas et continuez à tester — le dossier ne change pas tant que vous ne cliquez pas sur ce bouton.
               </p>
             </div>
             <Button
