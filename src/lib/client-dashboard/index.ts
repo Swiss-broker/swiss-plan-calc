@@ -41,6 +41,7 @@ import {
 } from "@/lib/clients/work-status-rules";
 import { runOptimizer, type Optimization } from "@/lib/optimizer";
 import { projectAvsPension, getReferenceAge, type Gender } from "@/lib/avs";
+import { getTotalGrossIncome } from "@/lib/clients/income";
 
 export interface ClientBundle {
   client: Client;
@@ -341,9 +342,12 @@ function buildAvs(b: ClientBundle): DashboardAvs | null {
   const referenceAge = getReferenceAge(birthYear, gender);
   const retirementYear = birthYear + Math.round(referenceAge);
 
-  // Approximation revenu moyen carrière = salaire actuel + bonus.
-  const avgIncome =
-    Number(b.client.gross_annual_salary ?? 0) + Number(b.client.bonus ?? 0);
+  // Approximation revenu moyen carrière = revenu brut total (salaire +
+  // bonus + autres revenus), même source que le reste de l'app
+  // (src/lib/clients/income.ts) : une formule locale n'incluant que
+  // salaire+bonus divergerait silencieusement de la carte "Prestations
+  // consolidées" juste en dessous, qui utilise déjà getTotalGrossIncome.
+  const avgIncome = getTotalGrossIncome(b.client);
   if (avgIncome <= 0) return null;
 
   // Début de cotisation : par défaut, à 21 ans (ou première année si déjà passé).

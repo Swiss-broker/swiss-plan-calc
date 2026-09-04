@@ -14,6 +14,7 @@ import type { IncomeTaxInput } from "@/lib/tax/income";
 import type { TaxStatusContext, WorkStatusContext } from "@/lib/optimizer";
 import { getTotalGrossIncomeOrUndef, getTotalGrossIncome } from "./income";
 import { estimateRetroactiveLppBalance } from "@/lib/lpp";
+import { getWorkStatusRules } from "./work-status-rules";
 
 /**
  * Estime la capacité de rachat LPP quand `lpp_max_buyback` est manquant ou = 0
@@ -313,7 +314,12 @@ export function toPillar3aInput(b: ClientBundle) {
     contribution: numOrUndef(b.pension?.pillar_3a_annual_contribution),
     currentBalance: pillar3aSum > 0 ? pillar3aSum : undefined,
     yearsToRetirement: age !== null ? Math.max(1, 65 - age) : undefined,
-    hasLPP: Number(b.pension?.lpp_current_balance ?? 0) > 0 || Number(b.pension?.lpp_insured_salary ?? 0) > 0,
+    // Affiliation LPP légale déterminée par le statut professionnel (art. 2
+    // LPP), pas par "un avoir a-t-il déjà été saisi dans l'onglet
+    // prévoyance ?" : un salarié fraîchement onboardé, avant même que son
+    // avoir LPP soit renseigné, reste légalement affilié et plafonné à
+    // 7'258 CHF — pas à 0.
+    hasLPP: getWorkStatusRules(b.client.work_status).hasLPP,
     pillar3bCurrent: pillar3bSum > 0 ? pillar3bSum : undefined,
   };
 }
