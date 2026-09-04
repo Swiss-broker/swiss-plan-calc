@@ -334,6 +334,18 @@ function LppCalc() {
                 await supabase
                   .from("client_pension")
                   .update({
+                    // Le capital et le salaire assuré doivent être remplacés
+                    // eux aussi : sans ça, le dossier gardait ses anciennes
+                    // valeurs et recalculait sa propre projection avec les
+                    // nouveaux rachats/hypothèses par-dessus, ce qui donnait
+                    // un TROISIÈME chiffre au lieu de reprendre exactement
+                    // le résultat de cette simulation. lpp_conversion_rate
+                    // (colonne dédiée, prioritaire sur lpp_assumptions dans
+                    // le calcul du dossier) doit suivre aussi pour éviter
+                    // qu'un taux de conversion resté figé n'ignore celui-ci.
+                    lpp_current_balance: form.currentBalance,
+                    lpp_insured_salary: form.insuredSalary,
+                    lpp_conversion_rate: form.conversionRate,
                     lpp_planned_buybacks: planned,
                     lpp_assumptions: assumptions,
                   } as never)

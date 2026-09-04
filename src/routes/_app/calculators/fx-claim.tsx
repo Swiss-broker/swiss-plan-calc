@@ -164,7 +164,7 @@ function FxClaimCalc() {
   const guideSteps: GuideStep[] = [
     {
       title: "Bienvenue sur le calculateur Réclamation taux de change",
-      body: "Comparez le taux de change officiel AFC (utilisé par le fisc français) au taux réel du marché, pour identifier un éventuel trop-payé d'impôt à réclamer.",
+      body: "Comparez le taux de change annuel moyen retenu par l'AFC pour les revenus perçus en devise étrangère (pension, dividendes, salaire d'un employeur étranger...) au taux réel du marché à chaque date de versement, pour identifier un éventuel trop-payé d'impôt suisse à réclamer.",
     },
     {
       target: "fx-claim-params",
@@ -298,7 +298,7 @@ function FxClaimCalc() {
         <div data-guide="fx-claim-params">
           <CalcCard
             title="Paramètres généraux"
-            description="Le fisc français applique un taux de change annuel moyen (taux AFC) pour convertir vos revenus CHF en euros. Si le taux réel du jour était plus favorable, vous avez peut-être trop déclaré."
+            description="L'AFC applique un taux de change annuel moyen pour convertir vos revenus perçus en devise étrangère (pension, dividendes, salaire d'un employeur étranger...) en CHF imposables en Suisse. Si le taux réel du jour de versement était plus favorable, vous avez peut-être trop déclaré."
           >
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
               <div className="space-y-1.5">
@@ -374,7 +374,7 @@ function FxClaimCalc() {
         <div data-guide="fx-claim-rows">
           <CalcCard
             title="Versements"
-            description="Saisissez vos versements en CHF (salaire suisse). Le calculateur compare le taux fiscal officiel au taux réel du jour de versement pour estimer un éventuel trop-payé d'impôt en France."
+            description={`Saisissez vos versements en ${currency} (devise d'origine). Le calculateur compare le taux fiscal AFC au taux réel du jour de versement pour estimer un éventuel trop-payé d'impôt suisse.`}
           >
             <div className="mb-4 flex flex-wrap items-end gap-3 rounded-lg border border-dashed border-border bg-muted/30 p-3">
               <div className="space-y-1.5">
@@ -427,16 +427,15 @@ function FxClaimCalc() {
                   <TableRow>
                     <TableHead className="w-[130px]">Date</TableHead>
                     <TableHead>Libellé</TableHead>
-                    <TableHead className="w-[120px]">Montant CHF</TableHead>
+                    <TableHead className="w-[120px]">Montant {currency}</TableHead>
                     <TableHead className="w-[110px]">Taux BNS/ECB</TableHead>
-                    <TableHead className="w-[120px] text-right">Écart en euros</TableHead>
+                    <TableHead className="w-[120px] text-right">Écart CHF</TableHead>
                     <TableHead className="w-[40px]"></TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {rows.map((r, i) => {
                     const deltaChf = r.amount * (afcRate - r.marketRate);
-                    const deltaEur = r.marketRate > 0 ? deltaChf / r.marketRate : 0;
                     return (
                       <TableRow key={i}>
                         <TableCell>
@@ -471,8 +470,8 @@ function FxClaimCalc() {
                             />
                           </div>
                         </TableCell>
-                        <TableCell className={`text-right tabular-nums ${deltaEur > 0 ? "text-success" : deltaEur < 0 ? "text-warning" : ""}`}>
-                          {deltaEur !== 0 ? deltaEur.toLocaleString("fr-CH", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " €" : "—"}
+                        <TableCell className={`text-right tabular-nums ${deltaChf > 0 ? "text-success" : deltaChf < 0 ? "text-warning" : ""}`}>
+                          {deltaChf !== 0 ? deltaChf.toLocaleString("fr-CH", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " CHF" : "—"}
                         </TableCell>
                         <TableCell>
                           <Button
