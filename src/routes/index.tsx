@@ -407,15 +407,19 @@ function Footer() {
 
         <div>
           <p className="text-xs font-semibold uppercase tracking-wide text-foreground">Légal</p>
-          <ul className="mt-3 space-y-2">
-            {LEGAL_PAGES.map((p) => (
-              <li key={p.path}>
-                <Link to={p.path} className="text-sm text-muted-foreground transition-colors hover:text-foreground">
-                  {p.title}
-                </Link>
-              </li>
+          <div className="mt-3 grid grid-cols-2 gap-x-6 gap-y-2">
+            {[LEGAL_PAGES.slice(0, 4), LEGAL_PAGES.slice(4)].map((column, i) => (
+              <ul key={i} className="space-y-2">
+                {column.map((p) => (
+                  <li key={p.path}>
+                    <Link to={p.path} className="text-sm text-muted-foreground transition-colors hover:text-foreground">
+                      {p.title}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
             ))}
-          </ul>
+          </div>
         </div>
       </div>
     </footer>
