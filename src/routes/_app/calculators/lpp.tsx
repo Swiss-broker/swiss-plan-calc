@@ -681,6 +681,11 @@ function LppCalc() {
             totalFees: projection.totalFees,
             totalBuybacks: projection.totalBuybacks,
             totalTaxSavings: buybackPlan.totalTaxSavings,
+            // Trajectoire année par année (âge → capital), pour le graphique
+            // d'évolution du PDF de synthèse. Simple retranscription de
+            // projection.yearly, déjà calculé ci-dessus — aucune valeur
+            // recalculée dans le PDF.
+            yearlyTrajectory: projection.yearly.map((y) => ({ age: y.age, balance: y.balance })),
             // Retranscrit tel quel dans le PDF de synthèse (section "Actuel
             // vs Projeté") : la ligne "Capital LPP projeté à la retraite"
             // compare deux projections à la retraite (avec/sans rachat, même

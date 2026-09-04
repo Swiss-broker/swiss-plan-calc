@@ -604,6 +604,10 @@ useEffect(() => {
             totalContributions: projection.totalContributions,
             totalReturns: projection.totalReturns,
             staggeredSavings: stag.savings,
+            // Trajectoire année par année (année → capital), pour le
+            // graphique d'évolution du PDF de synthèse. Simple retranscription
+            // de projection.yearly, déjà calculé ci-dessus.
+            yearlyTrajectory: projection.yearly.map((y) => ({ year: y.year, balance: y.balance })),
             // Retranscrit tel quel dans le PDF de synthèse (section "Actuel
             // vs Projeté") : sans ce champ, la comparaison 3a+3b affichée à
             // l'écran n'existe nulle part ailleurs que dans ce rendu React.

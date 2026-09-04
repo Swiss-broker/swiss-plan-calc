@@ -859,6 +859,7 @@ function drawSimulationPage(pdf: ReportPdf, entry: HistoryEntry, includeCharts: 
     } else {
       drawSimpleChart(pdf, entry);
     }
+    drawTrajectoryChart(pdf, entry);
   }
 
   // Section 4 · commentaire
@@ -955,7 +956,47 @@ function drawComparisonSpread(
         { label: "Situation projetée", value: projValue.value },
       );
     }
+    drawTrajectoryComparisonChart(pdf, kind, baseline, projected);
   }
+}
+
+// Version "actuel vs projeté" de drawTrajectoryChart : superpose les deux
+// trajectoires (grise = situation actuelle, couleur = projetée) quand les
+// deux sauvegardes en contiennent une, pour visualiser directement où et
+// combien l'écart se creuse au fil des années plutôt que de ne montrer que
+// le capital final.
+function drawTrajectoryComparisonChart(
+  pdf: ReportPdf,
+  kind: SimulationKind,
+  baseline: HistoryEntry,
+  projected: HistoryEntry,
+) {
+  const extract = (entry: HistoryEntry) => {
+    const raw = (entry.summary as { yearlyTrajectory?: unknown } | null | undefined)?.yearlyTrajectory;
+    if (!Array.isArray(raw)) return [];
+    return raw
+      .filter((p): p is Record<string, unknown> => typeof p === "object" && p !== null)
+      .map((p) => ({
+        x: num((p as Record<string, unknown>).age ?? (p as Record<string, unknown>).year),
+        y: num((p as Record<string, unknown>).balance),
+      }))
+      .filter((p) => p.x > 0);
+  };
+  const basePoints = extract(baseline);
+  const projPoints = extract(projected);
+  if (projPoints.length < 2) return;
+
+  const label = kind === "lpp" ? "Trajectoire du capital LPP" : "Trajectoire du capital";
+  const xLabel = kind === "lpp" ? (x: number) => `${x} ans` : (x: number) => `an ${x}`;
+  const series: Array<{ label: string; color: [number, number, number]; points: Array<{ x: number; y: number }> }> = [];
+  if (basePoints.length >= 2) {
+    series.push({ label: "Situation actuelle", color: [148, 163, 184], points: basePoints });
+  }
+  series.push({ label: "Situation projetée", color: pdf.primary, points: projPoints });
+
+  pdf.spacer(2);
+  pdf.section(label);
+  pdf.trajectoryChart({ series, xLabel });
 }
 
 function formatInputs(entry: HistoryEntry): Array<[string, string]> {
@@ -1323,6 +1364,38 @@ function drawSimpleChart(pdf: ReportPdf, entry: HistoryEntry) {
   pdf.spacer(2);
   pdf.section("Comparaison visuelle");
   drawBarPair(pdf, pair.left, pair.right);
+}
+
+// Courbe d'évolution du capital dans le temps (LPP, 3a), à partir de la
+// trajectoire année par année déjà calculée par le moteur du calculateur
+// (yearlyTrajectory dans le summary sauvegardé) — aucune valeur recalculée
+// ici, uniquement une mise en forme graphique de chiffres déjà retranscrits
+// ailleurs sur la page (capital final notamment).
+function drawTrajectoryChart(pdf: ReportPdf, entry: HistoryEntry) {
+  const raw = (entry.summary as { yearlyTrajectory?: unknown } | null | undefined)?.yearlyTrajectory;
+  if (!Array.isArray(raw) || raw.length < 2) return;
+  const points = raw
+    .filter((p): p is Record<string, unknown> => typeof p === "object" && p !== null)
+    .map((p) => {
+      const x = num((p as Record<string, unknown>).age ?? (p as Record<string, unknown>).year);
+      const y = num((p as Record<string, unknown>).balance);
+      return { x, y };
+    })
+    .filter((p) => p.x > 0);
+  if (points.length < 2) return;
+
+  const label = entry.kind === "lpp" ? "Trajectoire du capital LPP" : "Trajectoire du capital";
+  const xLabel =
+    entry.kind === "lpp"
+      ? (x: number) => `${x} ans`
+      : (x: number) => `an ${x}`;
+
+  pdf.spacer(2);
+  pdf.section(label);
+  pdf.trajectoryChart({
+    series: [{ label: "Capital projeté", color: pdf.primary, points }],
+    xLabel,
+  });
 }
 
 function drawBarPair(

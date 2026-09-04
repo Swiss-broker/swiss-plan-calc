@@ -666,6 +666,118 @@ export class ReportPdf {
     return this;
   }
 
+  /** Courbe de trajectoire (ex. capital LPP/3a par âge, jusqu'à la retraite) :
+   *  une ou deux séries tracées en ligne, avec zone teintée sous la courbe
+   *  principale, grille de fond et repère de valeur finale. Contrairement à
+   *  groupedBarChart (comparer QUELQUES chiffres), sert à montrer une
+   *  évolution dans le temps à partir de la série "yearly" déjà calculée par
+   *  le moteur du calculateur (aucune valeur recalculée ici). */
+  trajectoryChart(opts: {
+    series: Array<{ label: string; color: [number, number, number]; points: Array<{ x: number; y: number }> }>;
+    height?: number;
+    xLabel?: (x: number) => string;
+  }) {
+    const { doc, margin, contentWidth } = this;
+    const height = opts.height ?? 48;
+    this.ensureSpace(height + 15);
+    const chartX = margin + 2;
+    const chartW = contentWidth - 4;
+    const chartY = this.cursorY;
+    const chartH = height;
+    const allPoints = opts.series.flatMap((s) => s.points);
+    if (allPoints.length < 2) return this;
+
+    doc.setFillColor(255, 255, 255);
+    doc.setDrawColor(...this.border);
+    doc.setLineWidth(0.3);
+    doc.roundedRect(chartX, chartY, chartW, chartH, 1.5, 1.5, "FD");
+
+    const padL = 20, padR = 6, padT = 8, padB = 10;
+    const plotX = chartX + padL, plotW = chartW - padL - padR;
+    const plotY = chartY + padT, plotH = chartH - padT - padB;
+
+    const xs = allPoints.map((p) => p.x);
+    const minX = Math.min(...xs), maxX = Math.max(...xs);
+    const maxY = niceCeil(Math.max(...allPoints.map((p) => p.y), 1) * 1.08);
+    const xOf = (x: number) => plotX + (maxX > minX ? ((x - minX) / (maxX - minX)) * plotW : 0);
+    const yOf = (y: number) => plotY + plotH - (maxY > 0 ? (y / maxY) * plotH : 0);
+
+    // Grille horizontale + axe des valeurs (CHF)
+    const gridN = 3;
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(6.5);
+    for (let g = 0; g <= gridN; g++) {
+      const v = (maxY / gridN) * g;
+      const gy = yOf(v);
+      doc.setDrawColor(240, 242, 245);
+      doc.setLineWidth(0.15);
+      doc.line(plotX, gy, plotX + plotW, gy);
+      doc.setTextColor(...this.muted);
+      doc.text(formatCHF(v).replace(/^CHF\s*/, ""), plotX - 2, gy + 1.2, { align: "right" });
+    }
+
+    // Axe des x (âge) : première, milieu, dernière valeur seulement, pour
+    // rester lisible même avec 20-40 points.
+    const xTicks = Array.from(new Set([minX, Math.round((minX + maxX) / 2), maxX]));
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(6.5);
+    doc.setTextColor(...this.muted);
+    xTicks.forEach((x) => {
+      const label = opts.xLabel ? opts.xLabel(x) : String(x);
+      doc.text(label, xOf(x), chartY + chartH - 2, { align: "center" });
+    });
+
+    // Zone teintée sous la première série (la principale), puis toutes les
+    // lignes par-dessus, la dernière tracée passant au-dessus des autres.
+    const first = opts.series[0];
+    if (first && first.points.length >= 2) {
+      const areaColor = tint(first.color, 0.85);
+      doc.setFillColor(...areaColor);
+      const baseline = yOf(0);
+      const pts = first.points;
+      // Polygone : suit la courbe, puis referme le long de l'axe des x.
+      const poly: [number, number][] = pts.map((p) => [xOf(p.x), yOf(p.y)]);
+      poly.push([xOf(pts[pts.length - 1].x), baseline]);
+      poly.push([xOf(pts[0].x), baseline]);
+      doc.setDrawColor(...areaColor);
+      doc.setLineWidth(0.1);
+      // jsPDF lines() attend des segments delta [dx,dy] à partir du premier point.
+      const start = poly[0];
+      const deltas = poly.slice(1).map((p, i) => [p[0] - poly[i][0], p[1] - poly[i][1]] as [number, number]);
+      doc.lines(deltas, start[0], start[1], [1, 1], "F", true);
+    }
+
+    opts.series.forEach((s) => {
+      doc.setDrawColor(...s.color);
+      doc.setLineWidth(0.6);
+      for (let i = 1; i < s.points.length; i++) {
+        const a = s.points[i - 1], b = s.points[i];
+        doc.line(xOf(a.x), yOf(a.y), xOf(b.x), yOf(b.y));
+      }
+      const last = s.points[s.points.length - 1];
+      doc.setFillColor(...s.color);
+      doc.circle(xOf(last.x), yOf(last.y), 1, "F");
+    });
+
+    // Légende + valeur finale de la première série, en haut à droite.
+    let lx = chartX + chartW - 2;
+    [...opts.series].reverse().forEach((s) => {
+      const safeLbl = sanitizePdfText(s.label);
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(6.8);
+      const tw = doc.getTextWidth(safeLbl);
+      lx -= tw;
+      doc.setTextColor(...this.muted);
+      doc.text(safeLbl, lx, chartY + 5);
+      doc.setFillColor(...s.color);
+      doc.rect(lx - 8, chartY + 2.2, 4, 3, "F");
+      lx -= 12;
+    });
+
+    this.cursorY = chartY + chartH + 7;
+    return this;
+  }
+
   /** Grille de tuiles : libellé + valeur (CHF) en grand, style "card" moderne.
    *  tone "accent" ressort du lot (fond teinté) — réservé au chiffre qui
    *  doit attirer l'œil en premier (ex. gain identifié), pas à toute la grille. */
