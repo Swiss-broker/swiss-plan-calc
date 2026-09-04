@@ -43,6 +43,13 @@ export function PlanProvider({ children }: { children: ReactNode }) {
       setIsLoading(false);
       return;
     }
+    // Recharge le plan à chaque (re)montage authentifié : sans ce reset,
+    // isLoading restait à `false` (laissé par la branche non-authentifiée
+    // ci-dessus, ou par un rendu précédent) pendant que `plan` valait encore
+    // sa valeur par défaut "trial" — qui n'est pas un plan actif. La porte
+    // de _app.tsx voyait alors isLoading=false + plan="trial" et affichait
+    // furtivement "Abonnement requis" avant que le vrai plan ne soit rechargé.
+    setIsLoading(true);
     // Charge le plan et le rôle cabinet depuis Supabase
     const loadPlan = () => {
       supabase
