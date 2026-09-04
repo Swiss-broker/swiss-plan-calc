@@ -14,6 +14,13 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AppRouteImport } from './routes/_app'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as SharedTokenRouteImport } from './routes/shared.$token'
+import { Route as LegalSousTraitantsRouteImport } from './routes/legal/sous-traitants'
+import { Route as LegalNoticeIaRouteImport } from './routes/legal/notice-ia'
+import { Route as LegalMentionsLegalesRouteImport } from './routes/legal/mentions-legales'
+import { Route as LegalDpaRouteImport } from './routes/legal/dpa'
+import { Route as LegalCookiesRouteImport } from './routes/legal/cookies'
+import { Route as LegalConfidentialiteRouteImport } from './routes/legal/confidentialite'
+import { Route as LegalCgvRouteImport } from './routes/legal/cgv'
 import { Route as ClientUploadTokenRouteImport } from './routes/client-upload.$token'
 import { Route as AuthConfirmRouteImport } from './routes/auth/confirm'
 import { Route as AppWikiRouteImport } from './routes/_app/wiki'
@@ -74,6 +81,41 @@ const IndexRoute = IndexRouteImport.update({
 const SharedTokenRoute = SharedTokenRouteImport.update({
   id: '/shared/$token',
   path: '/shared/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LegalSousTraitantsRoute = LegalSousTraitantsRouteImport.update({
+  id: '/legal/sous-traitants',
+  path: '/legal/sous-traitants',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LegalNoticeIaRoute = LegalNoticeIaRouteImport.update({
+  id: '/legal/notice-ia',
+  path: '/legal/notice-ia',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LegalMentionsLegalesRoute = LegalMentionsLegalesRouteImport.update({
+  id: '/legal/mentions-legales',
+  path: '/legal/mentions-legales',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LegalDpaRoute = LegalDpaRouteImport.update({
+  id: '/legal/dpa',
+  path: '/legal/dpa',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LegalCookiesRoute = LegalCookiesRouteImport.update({
+  id: '/legal/cookies',
+  path: '/legal/cookies',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LegalConfidentialiteRoute = LegalConfidentialiteRouteImport.update({
+  id: '/legal/confidentialite',
+  path: '/legal/confidentialite',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LegalCgvRoute = LegalCgvRouteImport.update({
+  id: '/legal/cgv',
+  path: '/legal/cgv',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ClientUploadTokenRoute = ClientUploadTokenRouteImport.update({
@@ -286,6 +328,13 @@ export interface FileRoutesByFullPath {
   '/wiki': typeof AppWikiRoute
   '/auth/confirm': typeof AuthConfirmRoute
   '/client-upload/$token': typeof ClientUploadTokenRoute
+  '/legal/cgv': typeof LegalCgvRoute
+  '/legal/confidentialite': typeof LegalConfidentialiteRoute
+  '/legal/cookies': typeof LegalCookiesRoute
+  '/legal/dpa': typeof LegalDpaRoute
+  '/legal/mentions-legales': typeof LegalMentionsLegalesRoute
+  '/legal/notice-ia': typeof LegalNoticeIaRoute
+  '/legal/sous-traitants': typeof LegalSousTraitantsRoute
   '/shared/$token': typeof SharedTokenRoute
   '/calculators/avs-ai': typeof AppCalculatorsAvsAiRoute
   '/calculators/canton-compare': typeof AppCalculatorsCantonCompareRoute
@@ -327,6 +376,13 @@ export interface FileRoutesByTo {
   '/wiki': typeof AppWikiRoute
   '/auth/confirm': typeof AuthConfirmRoute
   '/client-upload/$token': typeof ClientUploadTokenRoute
+  '/legal/cgv': typeof LegalCgvRoute
+  '/legal/confidentialite': typeof LegalConfidentialiteRoute
+  '/legal/cookies': typeof LegalCookiesRoute
+  '/legal/dpa': typeof LegalDpaRoute
+  '/legal/mentions-legales': typeof LegalMentionsLegalesRoute
+  '/legal/notice-ia': typeof LegalNoticeIaRoute
+  '/legal/sous-traitants': typeof LegalSousTraitantsRoute
   '/shared/$token': typeof SharedTokenRoute
   '/calculators/avs-ai': typeof AppCalculatorsAvsAiRoute
   '/calculators/canton-compare': typeof AppCalculatorsCantonCompareRoute
@@ -372,6 +428,13 @@ export interface FileRoutesById {
   '/_app/wiki': typeof AppWikiRoute
   '/auth/confirm': typeof AuthConfirmRoute
   '/client-upload/$token': typeof ClientUploadTokenRoute
+  '/legal/cgv': typeof LegalCgvRoute
+  '/legal/confidentialite': typeof LegalConfidentialiteRoute
+  '/legal/cookies': typeof LegalCookiesRoute
+  '/legal/dpa': typeof LegalDpaRoute
+  '/legal/mentions-legales': typeof LegalMentionsLegalesRoute
+  '/legal/notice-ia': typeof LegalNoticeIaRoute
+  '/legal/sous-traitants': typeof LegalSousTraitantsRoute
   '/shared/$token': typeof SharedTokenRoute
   '/_app/calculators/avs-ai': typeof AppCalculatorsAvsAiRoute
   '/_app/calculators/canton-compare': typeof AppCalculatorsCantonCompareRoute
@@ -417,6 +480,13 @@ export interface FileRouteTypes {
     | '/wiki'
     | '/auth/confirm'
     | '/client-upload/$token'
+    | '/legal/cgv'
+    | '/legal/confidentialite'
+    | '/legal/cookies'
+    | '/legal/dpa'
+    | '/legal/mentions-legales'
+    | '/legal/notice-ia'
+    | '/legal/sous-traitants'
     | '/shared/$token'
     | '/calculators/avs-ai'
     | '/calculators/canton-compare'
@@ -458,6 +528,13 @@ export interface FileRouteTypes {
     | '/wiki'
     | '/auth/confirm'
     | '/client-upload/$token'
+    | '/legal/cgv'
+    | '/legal/confidentialite'
+    | '/legal/cookies'
+    | '/legal/dpa'
+    | '/legal/mentions-legales'
+    | '/legal/notice-ia'
+    | '/legal/sous-traitants'
     | '/shared/$token'
     | '/calculators/avs-ai'
     | '/calculators/canton-compare'
@@ -502,6 +579,13 @@ export interface FileRouteTypes {
     | '/_app/wiki'
     | '/auth/confirm'
     | '/client-upload/$token'
+    | '/legal/cgv'
+    | '/legal/confidentialite'
+    | '/legal/cookies'
+    | '/legal/dpa'
+    | '/legal/mentions-legales'
+    | '/legal/notice-ia'
+    | '/legal/sous-traitants'
     | '/shared/$token'
     | '/_app/calculators/avs-ai'
     | '/_app/calculators/canton-compare'
@@ -537,6 +621,13 @@ export interface RootRouteChildren {
   AuthRoute: typeof AuthRouteWithChildren
   ResetPasswordRoute: typeof ResetPasswordRoute
   ClientUploadTokenRoute: typeof ClientUploadTokenRoute
+  LegalCgvRoute: typeof LegalCgvRoute
+  LegalConfidentialiteRoute: typeof LegalConfidentialiteRoute
+  LegalCookiesRoute: typeof LegalCookiesRoute
+  LegalDpaRoute: typeof LegalDpaRoute
+  LegalMentionsLegalesRoute: typeof LegalMentionsLegalesRoute
+  LegalNoticeIaRoute: typeof LegalNoticeIaRoute
+  LegalSousTraitantsRoute: typeof LegalSousTraitantsRoute
   SharedTokenRoute: typeof SharedTokenRoute
 }
 
@@ -575,6 +666,55 @@ declare module '@tanstack/react-router' {
       path: '/shared/$token'
       fullPath: '/shared/$token'
       preLoaderRoute: typeof SharedTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/legal/sous-traitants': {
+      id: '/legal/sous-traitants'
+      path: '/legal/sous-traitants'
+      fullPath: '/legal/sous-traitants'
+      preLoaderRoute: typeof LegalSousTraitantsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/legal/notice-ia': {
+      id: '/legal/notice-ia'
+      path: '/legal/notice-ia'
+      fullPath: '/legal/notice-ia'
+      preLoaderRoute: typeof LegalNoticeIaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/legal/mentions-legales': {
+      id: '/legal/mentions-legales'
+      path: '/legal/mentions-legales'
+      fullPath: '/legal/mentions-legales'
+      preLoaderRoute: typeof LegalMentionsLegalesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/legal/dpa': {
+      id: '/legal/dpa'
+      path: '/legal/dpa'
+      fullPath: '/legal/dpa'
+      preLoaderRoute: typeof LegalDpaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/legal/cookies': {
+      id: '/legal/cookies'
+      path: '/legal/cookies'
+      fullPath: '/legal/cookies'
+      preLoaderRoute: typeof LegalCookiesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/legal/confidentialite': {
+      id: '/legal/confidentialite'
+      path: '/legal/confidentialite'
+      fullPath: '/legal/confidentialite'
+      preLoaderRoute: typeof LegalConfidentialiteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/legal/cgv': {
+      id: '/legal/cgv'
+      path: '/legal/cgv'
+      fullPath: '/legal/cgv'
+      preLoaderRoute: typeof LegalCgvRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/client-upload/$token': {
@@ -955,6 +1095,13 @@ const rootRouteChildren: RootRouteChildren = {
   AuthRoute: AuthRouteWithChildren,
   ResetPasswordRoute: ResetPasswordRoute,
   ClientUploadTokenRoute: ClientUploadTokenRoute,
+  LegalCgvRoute: LegalCgvRoute,
+  LegalConfidentialiteRoute: LegalConfidentialiteRoute,
+  LegalCookiesRoute: LegalCookiesRoute,
+  LegalDpaRoute: LegalDpaRoute,
+  LegalMentionsLegalesRoute: LegalMentionsLegalesRoute,
+  LegalNoticeIaRoute: LegalNoticeIaRoute,
+  LegalSousTraitantsRoute: LegalSousTraitantsRoute,
   SharedTokenRoute: SharedTokenRoute,
 }
 export const routeTree = rootRouteImport
