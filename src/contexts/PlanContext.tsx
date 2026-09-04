@@ -34,21 +34,28 @@ export interface PlanState {
 }
 const PlanContext = createContext<PlanState | null>(null);
 export function PlanProvider({ children }: { children: ReactNode }) {
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, isLoading: authLoading } = useAuth();
   const [plan, setPlan] = useState<BrokerPlan>("trial");
   const [cabinetRole, setCabinetRole] = useState<CabinetRole>(null);
   const [isLoading, setIsLoading] = useState(true);
   useEffect(() => {
+    // Tant que l'authentification elle-même n'a pas encore répondu, on ne
+    // sait rien : ni "connecté", ni "pas connecté". Sans cette garde, ce
+    // *premier* rendu (isAuthenticated=false parce que la session n'a pas
+    // fini de se restaurer, pas parce que l'utilisateur est déconnecté)
+    // faisait passer isLoading à false une fraction de seconde plus tôt que
+    // nécessaire ; puis, dès que l'authentification aboutissait à
+    // isAuthenticated=true, React affichait ce rendu intermédiaire (auth
+    // résolue mais isLoading encore à false, plan encore à sa valeur par
+    // défaut "trial" — pas un plan actif) AVANT que cet effet n'ait eu la
+    // main pour relancer le chargement : la porte de _app.tsx affichait
+    // furtivement "Abonnement requis" à chaque rafraîchissement, même après
+    // avoir remis isLoading à true ici (trop tard, le rendu était déjà peint).
+    if (authLoading) return;
     if (!isAuthenticated || !user) {
       setIsLoading(false);
       return;
     }
-    // Recharge le plan à chaque (re)montage authentifié : sans ce reset,
-    // isLoading restait à `false` (laissé par la branche non-authentifiée
-    // ci-dessus, ou par un rendu précédent) pendant que `plan` valait encore
-    // sa valeur par défaut "trial" — qui n'est pas un plan actif. La porte
-    // de _app.tsx voyait alors isLoading=false + plan="trial" et affichait
-    // furtivement "Abonnement requis" avant que le vrai plan ne soit rechargé.
     setIsLoading(true);
     // Charge le plan et le rôle cabinet depuis Supabase
     const loadPlan = () => {
@@ -80,7 +87,7 @@ export function PlanProvider({ children }: { children: ReactNode }) {
       })
       .subscribe();
     return () => { supabase.removeChannel(channel); };
-  }, [user, isAuthenticated]);
+  }, [user, isAuthenticated, authLoading]);
   const limits = PLAN_LIMITS[plan] ?? PLAN_LIMITS.trial;
   const value: PlanState = {
     plan,

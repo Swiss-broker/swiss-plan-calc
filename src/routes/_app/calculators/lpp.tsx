@@ -309,61 +309,28 @@ function LppCalc() {
         </div>
       )}
       <FiscalSnapshotBanner clientId={clientId} />
+      {/* Ce calculateur ne modifie JAMAIS le dossier du client : c'est un
+          bac à sable pour tester des scénarios (âge, salaire, rendement,
+          rachat...) à partir des valeurs de la fiche. Pour changer les
+          valeurs réelles du dossier (avoir LPP, salaire assuré...), ça se
+          fait uniquement depuis la fiche du client. Un bouton de
+          synchronisation existait ici auparavant et réécrivait le dossier
+          à chaque clic avec le résultat du scénario en cours — supprimé
+          car ça faisait bouger la référence du client sans que ce soit
+          voulu. */}
       {clientId && ficheLppCapital > 0 &&
         Math.abs(projection.projectedBalance - ficheLppCapital) > 1 && (
           <div className="flex items-start gap-3 rounded-lg border border-primary/30 bg-primary/5 p-3 text-sm">
             <Info className="mt-0.5 h-4 w-4 flex-shrink-0 text-primary" />
             <div className="flex-1 text-foreground">
-              <p className="font-medium">Écart avec le dossier client</p>
+              <p className="font-medium">Scénario de test — différent du dossier</p>
               <p className="mt-0.5 text-xs text-muted-foreground">
-                Résultat de cette simulation : <span className="font-semibold tabular-nums text-foreground">{fmtCHF(projection.projectedBalance)}</span> · Valeur enregistrée dans le dossier : <span className="font-semibold tabular-nums text-foreground">{fmtCHF(ficheLppCapital)}</span>.
+                Résultat de ce scénario : <span className="font-semibold tabular-nums text-foreground">{fmtCHF(projection.projectedBalance)}</span> · Valeur du dossier{client ? ` de ${client.first_name} ${client.last_name}` : ""} : <span className="font-semibold tabular-nums text-foreground">{fmtCHF(ficheLppCapital)}</span>.
               </p>
               <p className="mt-1.5 text-xs text-muted-foreground">
-                Vous avez changé au moins un paramètre par rapport au dossier{client ? ` de ${client.first_name} ${client.last_name}` : ""} (âge, salaire, rendement, rachat...) : c'est normal, ce n'est pas une erreur. Deux choix : cliquez sur « Mettre à jour le dossier client » pour que ce nouveau résultat remplace la valeur du dossier, ou ne cliquez pas et continuez à tester — le dossier ne change pas tant que vous ne cliquez pas sur ce bouton.
+                Vous avez changé au moins un paramètre (âge, salaire, rendement, rachat...) pour tester ce scénario : c'est normal. Le dossier du client, lui, ne change jamais depuis ce calculateur — pour le mettre à jour, modifiez la fiche du client directement.
               </p>
             </div>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={async () => {
-                if (!clientId) return;
-                const planned = form.actualBuyback > 0 ? [{
-                  year: new Date().getFullYear(),
-                  amount: form.actualBuyback,
-                  label: `Rachat planifié ${form.buybackYears} an(s)`,
-                }] : [];
-                const assumptions = {
-                  expectedReturnRate: form.expectedReturnRate,
-                  feeRate: form.feeRate,
-                  salaryGrowthRate: form.salaryGrowthRate,
-                  conversionRate: form.conversionRate,
-                };
-                const { supabase } = await import("@/integrations/supabase/client");
-                await supabase
-                  .from("client_pension")
-                  .update({
-                    // Le capital et le salaire assuré doivent être remplacés
-                    // eux aussi : sans ça, le dossier gardait ses anciennes
-                    // valeurs et recalculait sa propre projection avec les
-                    // nouveaux rachats/hypothèses par-dessus, ce qui donnait
-                    // un TROISIÈME chiffre au lieu de reprendre exactement
-                    // le résultat de cette simulation. lpp_conversion_rate
-                    // (colonne dédiée, prioritaire sur lpp_assumptions dans
-                    // le calcul du dossier) doit suivre aussi pour éviter
-                    // qu'un taux de conversion resté figé n'ignore celui-ci.
-                    lpp_current_balance: form.currentBalance,
-                    lpp_insured_salary: form.insuredSalary,
-                    lpp_conversion_rate: form.conversionRate,
-                    lpp_planned_buybacks: planned,
-                    lpp_assumptions: assumptions,
-                  } as never)
-                  .eq("client_id", clientId);
-                window.location.reload();
-              }}
-            >
-          
-              Mettre à jour le dossier client
-            </Button>
           </div>
         )}
       <div className="grid grid-cols-1 gap-6 md:grid-cols-5">
