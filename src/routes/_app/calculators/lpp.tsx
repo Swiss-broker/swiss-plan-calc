@@ -114,11 +114,19 @@ function LppCalc() {
   // (requête réseau), donc on ne peut pas savoir dès le premier rendu si
   // un salaire assuré a été saisi manuellement. On surveille son arrivée :
   // dès que la fiche indique un salaire assuré non nul, on bascule en mode
-  // "Manuel" pour que le calcul automatique ci-dessous ne l'écrase jamais.
+  // "Manuel" ET on pose la valeur ici même, dans le même effet — sans
+  // attendre l'hydratation générique (useHydrateFormFromPrefill, effet
+  // séparé). En ne posant QUE le verrou ici, un ordre de rendu défavorable
+  // pouvait figer insuredSalaryManual=true avant que l'hydratation générique
+  // n'ait effectivement copié la valeur dans le formulaire, verrouillant le
+  // champ à 0 pour de bon (plus aucun effet ne pouvait ensuite le corriger).
+  // En posant la valeur nous-mêmes, le résultat final ne dépend plus de cet
+  // ordre.
   useEffect(() => {
     if (simId) return; // un brouillon rechargé gère déjà sa propre valeur
     if (prefill?.insuredSalary && prefill.insuredSalary > 0) {
       setInsuredSalaryManual(true);
+      setForm((f) => ({ ...f, insuredSalary: prefill.insuredSalary! }));
     }
   }, [prefill?.insuredSalary, simId]);
 
