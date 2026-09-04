@@ -6,6 +6,19 @@ const corsHeaders = {
 
 const ANTHROPIC_API_URL = "https://api.anthropic.com/v1/messages";
 
+// Repli si Anthropic retire le modele principal (deja arrive une fois :
+// claude-sonnet-4-5-20250929 retire, panne totale sans aucun repli — voir
+// ai-chat/index.ts qui a le meme mecanisme pour le chat/"Preparer le RDV").
+// Uniquement applique a l'appel de traduction (texte simple, sans outil) :
+// l'appel de recherche utilise le tool web_search, dont le comportement
+// avec un autre modele n'est pas verifiable depuis ici, donc pas de repli
+// automatique la-dessus pour ne pas remplacer une erreur claire par un
+// echec silencieux different.
+const FALLBACK_MODEL = "claude-haiku-4-5-20251001";
+function isModelUnavailable(status: number, data: { error?: { type?: string } }): boolean {
+  return status === 404 && data?.error?.type === "not_found_error";
+}
+
 // Sources officielles suisses autorisées pour la recherche (jamais d'autres domaines)
 const ALLOWED_DOMAINS = [
   "estv.admin.ch",
@@ -135,6 +148,7 @@ Une fois ta recherche terminée, réponds UNIQUEMENT avec un objet JSON (aucun t
 
     const researchData = await researchRes.json();
     if (!researchRes.ok) {
+      console.error("Erreur Anthropic (recherche):", researchRes.status, JSON.stringify(researchData));
       throw new Error(`Erreur Anthropic (recherche) : ${JSON.stringify(researchData)}`);
     }
 
@@ -156,22 +170,29 @@ Réponds UNIQUEMENT avec un objet JSON (aucun texte avant/après, pas de balises
   "it": {"title": "...", "body_markdown": "..."}
 }`;
 
-    const translateRes = await fetch(ANTHROPIC_API_URL, {
-      method: "POST",
-      headers: {
-        "x-api-key": apiKey,
-        "anthropic-version": "2023-06-01",
-        "content-type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "claude-sonnet-5",
-        max_tokens: 4000,
-        messages: [{ role: "user", content: translatePrompt }],
-      }),
-    });
+    async function callTranslate(model: string) {
+      const res = await fetch(ANTHROPIC_API_URL, {
+        method: "POST",
+        headers: {
+          "x-api-key": apiKey,
+          "anthropic-version": "2023-06-01",
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({
+          model,
+          max_tokens: 4000,
+          messages: [{ role: "user", content: translatePrompt }],
+        }),
+      });
+      return { res, data: await res.json() };
+    }
 
-    const translateData = await translateRes.json();
+    let { res: translateRes, data: translateData } = await callTranslate("claude-sonnet-5");
+    if (!translateRes.ok && isModelUnavailable(translateRes.status, translateData)) {
+      ({ res: translateRes, data: translateData } = await callTranslate(FALLBACK_MODEL));
+    }
     if (!translateRes.ok) {
+      console.error("Erreur Anthropic (traduction):", translateRes.status, JSON.stringify(translateData));
       throw new Error(`Erreur Anthropic (traduction) : ${JSON.stringify(translateData)}`);
     }
 
