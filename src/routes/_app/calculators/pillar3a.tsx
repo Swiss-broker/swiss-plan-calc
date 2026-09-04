@@ -94,11 +94,16 @@ function Pillar3aCalc() {
     () =>
       pillar3aTaxSavings({
         contribution: form.contribution,
-        taxInput: { 
-  canton: form.canton, 
-  status: form.status, 
+        taxInput: {
+  canton: form.canton,
+  status: form.status,
   grossSalary: form.grossSalary,
-  pillar3aContributions: form.contribution,
+  // Base = 0 (pas la cotisation elle-même) : sinon on calcule l'économie
+  // d'un DEUXIÈME versement ajouté par-dessus un premier déjà déduit, ce
+  // qui tombe dans une tranche marginale plus basse et sous-estime
+  // l'économie réelle. Même base que optimizedSavings ci-dessous, pour
+  // que "3b actuel" et "3b cible" restent comparables.
+  pillar3aContributions: 0,
 },
       }),
     [form],
