@@ -1,6 +1,6 @@
 // Générateur PDF "Dossier de synthèse" multi-pages pour un client.
 // V1 : 100 % en français. Le multilingue PDF sera traité dans une phase ultérieure.
-import { ReportPdf, makeFilename, tint, shade, type PdfHeaderInfo } from "./builder";
+import { ReportPdf, makeFilename, tint, shade, COMPARE_RED, COMPARE_GREEN, type PdfHeaderInfo } from "./builder";
 import { formatCHF, formatPct } from "@/lib/format";
 import { CANTONS } from "@/lib/swiss/cantons";
 import {
@@ -59,6 +59,7 @@ interface SavedCompareRow {
   current: number | string | null | undefined;
   projected: number | string | null | undefined;
   format?: "chf" | "pct" | "text" | "chf_per_month";
+  betterWhen?: "higher" | "lower" | "neutral";
 }
 
 function extractSavedCompareRows(entry: HistoryEntry): SavedCompareRow[] {
@@ -72,7 +73,19 @@ function extractSavedCompareRows(entry: HistoryEntry): SavedCompareRow[] {
       current: r.current as number | string | null | undefined,
       projected: r.projected as number | string | null | undefined,
       format: r.format as SavedCompareRow["format"],
+      betterWhen: r.betterWhen as SavedCompareRow["betterWhen"],
     }));
+}
+
+// Sens d'une ligne comparative, identique à la règle déjà utilisée à l'écran
+// (SplitCompareLayout.computeDelta) : ne réinterprète rien, applique juste
+// la même convention "higher/lower is better" déjà choisie par le
+// calculateur pour cette ligne précise.
+function isRowGood(row: SavedCompareRow, delta: number): boolean {
+  if (delta === 0) return true;
+  const better = row.betterWhen ?? "higher";
+  if (better === "neutral") return true;
+  return (better === "higher" && delta > 0) || (better === "lower" && delta < 0);
 }
 
 // Complète une ligne de recommandation avec les deux chiffres réels
@@ -488,6 +501,31 @@ function drawOverviewPage(
     );
   }
 
+  // Tableau de synthèse par catégorie : une ligne par simulation disposant
+  // d'un comparatif "Actuel vs Projeté" sauvegardé (compareRows), avec
+  // exactement l'indicateur clé et les deux valeurs affichées dans le
+  // calculateur correspondant — aucun chiffre recalculé ici.
+  const summaryRows: Array<[string, string, string, string, string]> = [];
+  for (const e of entries) {
+    const rows = extractSavedCompareRows(e);
+    if (rows.length === 0) continue;
+    const r = rows[0];
+    const hasDelta = typeof r.current === "number" && typeof r.projected === "number";
+    const delta = hasDelta ? (r.projected as number) - (r.current as number) : 0;
+    summaryRows.push([
+      KIND_LABELS[e.kind as SimulationKind] || e.kind,
+      r.label,
+      formatSplitValue(r.current, r.format),
+      formatSplitValue(r.projected, r.format),
+      hasDelta ? formatDelta(delta) : "—",
+    ]);
+  }
+  if (summaryRows.length > 0) {
+    pdf.spacer(4);
+    pdf.section("Résumé par catégorie");
+    pdf.table(["Catégorie", "Indicateur clé", "Actuel", "Projeté", "Écart"], summaryRows, { deltaCol: 4 });
+  }
+
   pdf.spacer(4);
   pdf.paragraph(
     "Le détail de chaque sujet, avec votre situation actuelle puis projetée le cas échéant, commence page suivante.",
@@ -680,24 +718,61 @@ function drawSimulationPage(pdf: ReportPdf, entry: HistoryEntry, includeCharts: 
   // le courtier a sous les yeux au moment de sauvegarder.
   const compareRows = extractSavedCompareRows(entry);
   if (compareRows.length > 0) {
+    // Réserve la place du bandeau, du paragraphe ET des cartes qui suivent
+    // avant de dessiner quoi que ce soit (même logique que "Résultats clés"
+    // ci-dessus) : sans ça, le bandeau + paragraphe passaient seuls le test
+    // de place, se dessinaient en bas de page, puis les cartes constataient
+    // qu'elles ne tenaient pas et sautaient seules à la page suivante,
+    // laissant le titre orphelin derrière elles.
+    // Doit rester synchronisé avec le calcul de hauteur dans
+    // ReportPdf.comparisonCards() (builder.ts).
+    const cardH = 12 + compareRows.length * 11.5 + 4;
     pdf.spacer(3);
+    pdf.ensureSpace(15 + 12 + cardH + 12);
     pdf.section("Actuel vs Projeté");
-    pdf.table(
-      ["Indicateur", "Actuel", "Projeté", "Écart"],
-      compareRows.map((r) => [
-        r.label,
-        formatSplitValue(r.current, r.format),
-        formatSplitValue(r.projected, r.format),
-        typeof r.current === "number" && typeof r.projected === "number"
-          ? formatDelta(r.projected - r.current)
-          : "—",
-      ]),
+    pdf.paragraph(
+      "Reprend exactement le comparatif affiché dans le calculateur au moment de l'enregistrement de cette simulation, avec les mêmes chiffres.",
+      { muted: true, italic: true },
     );
+    pdf.comparisonCards({
+      rows: compareRows.map((r) => {
+        const hasDelta = typeof r.current === "number" && typeof r.projected === "number";
+        const delta = hasDelta ? (r.projected as number) - (r.current as number) : 0;
+        return {
+          label: r.label,
+          current: formatSplitValue(r.current, r.format),
+          projected: formatSplitValue(r.projected, r.format),
+          delta: hasDelta && delta !== 0 ? formatDelta(delta) : undefined,
+          deltaGood: hasDelta ? isRowGood(r, delta) : true,
+        };
+      }),
+    });
   }
 
-  // Section 3 · graphique simplifié si pertinent
+  // Section 3 · graphique simplifié si pertinent — reprend les mêmes lignes
+  // que le comparatif ci-dessus quand elles existent (aucune valeur
+  // recalculée), sinon retombe sur la paire de valeurs spécifique au
+  // calculateur (drawSimpleChart).
   if (includeCharts) {
-    drawSimpleChart(pdf, entry);
+    const chartRows = compareRows
+      .filter(
+        (r) =>
+          (r.format === "chf" || !r.format) &&
+          typeof r.current === "number" &&
+          typeof r.projected === "number",
+      )
+      .slice(0, 4);
+    if (chartRows.length > 0) {
+      pdf.spacer(2);
+      pdf.section("Comparaison visuelle");
+      pdf.groupedBarChart({
+        groups: chartRows.map((r) => ({ label: r.label, values: [r.current as number, r.projected as number] })),
+        seriesLabels: ["Actuel", "Projeté"],
+        colors: [COMPARE_RED, COMPARE_GREEN],
+      });
+    } else {
+      drawSimpleChart(pdf, entry);
+    }
   }
 
   // Section 4 · commentaire
@@ -1481,7 +1556,7 @@ function drawComparisonPage(
       muted: true,
     });
   } else {
-    pdf.table(["Indicateur", "Avant", "Après", "Delta"], rows);
+    pdf.table(["Indicateur", "Avant", "Après", "Delta"], rows, { deltaCol: 3 });
     pdf.spacer(2);
     pdf.paragraph(
       "La colonne « Delta » indique le gain net apporté par chaque optimisation, ponctuel pour un rachat ou un retrait, récurrent lorsqu'il s'agit d'une économie annuelle. Ces montants sont ensuite consolidés ci-dessous.",

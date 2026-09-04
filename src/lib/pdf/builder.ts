@@ -149,6 +149,28 @@ export function shade(c: [number, number, number], amount: number): [number, num
   ];
 }
 
+// Arrondit au palier supérieur "lisible" (ex. 187'400 -> 200'000 plutôt que
+// 206'140) pour les graduations d'axe des graphiques natifs ci-dessous.
+const NICE_STEPS = [1, 1.2, 1.5, 2, 2.5, 3, 4, 5, 6, 8, 10];
+function niceCeil(v: number): number {
+  if (v <= 0) return 0;
+  const mag = Math.pow(10, Math.floor(Math.log10(v)));
+  const norm = v / mag;
+  const step = NICE_STEPS.find((s) => s >= norm) ?? 10;
+  return step * mag;
+}
+
+// Couleurs sémantiques "actuel" (rouge) / "projeté" (vert), identiques à la
+// convention déjà utilisée à l'écran (SplitCompareLayout : destructive/success).
+export const COMPARE_RED: [number, number, number] = [220, 38, 38];
+const RED = COMPARE_RED;
+const RED_BG: [number, number, number] = [254, 242, 242];
+const RED_BORDER: [number, number, number] = [252, 165, 165];
+export const COMPARE_GREEN: [number, number, number] = [5, 150, 105];
+const GREEN = COMPARE_GREEN;
+const GREEN_BG: [number, number, number] = [236, 253, 245];
+const GREEN_BORDER: [number, number, number] = [110, 231, 183];
+
 export class ReportPdf {
   private footerDrawnPages = new Set<number>();
   doc: jsPDF;
@@ -390,7 +412,11 @@ export class ReportPdf {
     return this;
   }
 
-  table(head: string[], body: Array<Array<string | number>>, opts?: { highlightLast?: boolean }) {
+  table(
+    head: string[],
+    body: Array<Array<string | number>>,
+    opts?: { highlightLast?: boolean; deltaCol?: number },
+  ) {
     const safeHead = head.map(sanitizeCell);
     const safeBody = body.map((row) => row.map(sanitizeCell));
     autoTable(this.doc, {
@@ -407,10 +433,219 @@ export class ReportPdf {
           data.cell.styles.fontStyle = "bold";
           data.cell.styles.fillColor = tint(this.primary, 0.82);
         }
+        // Colore une colonne d'écart (+X en vert, -X en rouge) selon le seul
+        // signe déjà présent dans le texte formaté en amont (formatDelta) :
+        // aucune interprétation "bon/mauvais" refaite ici. Le signe n'est pas
+        // forcément en tête de chaîne : formatCHF() écrit "CHF -11'818" (le
+        // préfixe CHF précède le signe), donc on cherche un "-"/"−" n'importe
+        // où plutôt qu'un startsWith, qui ratait tout delta négatif chiffré.
+        if (opts?.deltaCol !== undefined && data.section === "body" && data.column.index === opts.deltaCol) {
+          const raw = String(data.cell.raw ?? "");
+          if (raw.includes("-") || raw.includes("−")) data.cell.styles.textColor = RED;
+          else if (raw.startsWith("+")) data.cell.styles.textColor = GREEN;
+        }
       },
       didDrawPage: () => this.drawFooter(),
     });
     this.cursorY = (this.doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 4;
+    return this;
+  }
+
+  /** Paire de cartes "Situation actuelle" (rouge) / "Situation projetée"
+   *  (verte), ligne par ligne avec pastille d'écart — reprend exactement les
+   *  couleurs et la structure du comparatif affiché à l'écran dans les
+   *  calculateurs (SplitCompareLayout). Ne recalcule rien : les valeurs déjà
+   *  formatées (current/projected/delta) sont fournies par l'appelant à
+   *  partir des données réellement sauvegardées. */
+  comparisonCards(opts: {
+    currentLabel?: string;
+    currentBadge?: string;
+    currentNote?: string;
+    projectedLabel?: string;
+    projectedBadge?: string;
+    projectedNote?: string;
+    rows: Array<{ label: string; current: string; projected: string; delta?: string; deltaGood?: boolean }>;
+  }) {
+    const { doc, margin, contentWidth } = this;
+    const currentLabel = sanitizePdfText(opts.currentLabel ?? "Situation actuelle");
+    const currentBadge = sanitizePdfText(opts.currentBadge ?? "Actuel");
+    const currentNote = opts.currentNote ? sanitizePdfText(opts.currentNote) : undefined;
+    const projectedLabel = sanitizePdfText(opts.projectedLabel ?? "Situation projetée");
+    const projectedBadge = sanitizePdfText(opts.projectedBadge ?? "Optimisé");
+    const projectedNote = opts.projectedNote ? sanitizePdfText(opts.projectedNote) : undefined;
+    const rows = opts.rows;
+
+    const gap = 6;
+    const cardW = (contentWidth - gap) / 2;
+    // Libellé au-dessus, valeur + pastille en dessous : avec des cartes de
+    // ~90mm de large, un libellé long et une valeur à 6 chiffres + pastille
+    // ne tiennent jamais sur la même ligne sans se chevaucher.
+    const rowH = 11.5;
+    const headH = currentNote || projectedNote ? 16 : 12;
+    const cardH = headH + rows.length * rowH + 4;
+    this.ensureSpace(cardH + 12);
+
+    const leftX = margin;
+    const rightX = margin + cardW + gap;
+    const top = this.cursorY;
+
+    doc.setFillColor(...RED_BG);
+    doc.setDrawColor(...RED_BORDER);
+    doc.setLineWidth(0.4);
+    doc.roundedRect(leftX, top, cardW, cardH, 2, 2, "FD");
+    doc.setFillColor(...GREEN_BG);
+    doc.setDrawColor(...GREEN_BORDER);
+    doc.roundedRect(rightX, top, cardW, cardH, 2, 2, "FD");
+
+    const cardHead = (x: number, dotColor: [number, number, number], label: string, badge: string, note?: string) => {
+      doc.setFillColor(...dotColor);
+      doc.circle(x + 5, top + 6.5, 1.3, "F");
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(9.5);
+      doc.setTextColor(...this.ink);
+      doc.text(label, x + 8.5, top + 7.5);
+      const isRed = dotColor === RED;
+      doc.setFillColor(...(isRed ? RED_BORDER : GREEN_BORDER));
+      const badgeW = doc.getTextWidth(badge) + 6;
+      doc.roundedRect(x + cardW - badgeW - 4, top + 3.5, badgeW, 6, 1.5, 1.5, "F");
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(7.5);
+      doc.setTextColor(...(isRed ? ([153, 27, 27] as [number, number, number]) : ([4, 120, 87] as [number, number, number])));
+      doc.text(badge, x + cardW - badgeW / 2 - 4, top + 7.4, { align: "center" });
+      if (note) {
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(7.5);
+        doc.setTextColor(...this.muted);
+        doc.text(note, x + 8.5, top + 12);
+      }
+    };
+    cardHead(leftX, RED, currentLabel, currentBadge, currentNote);
+    cardHead(rightX, GREEN, projectedLabel, projectedBadge, projectedNote);
+
+    rows.forEach((r, i) => {
+      const labelY = top + headH + i * rowH + 4;
+      const valueY = labelY + 4.8;
+      if (i > 0) {
+        doc.setDrawColor(...this.border);
+        doc.setLineWidth(0.2);
+        doc.line(leftX + 4, labelY - 6.5, leftX + cardW - 4, labelY - 6.5);
+        doc.line(rightX + 4, labelY - 6.5, rightX + cardW - 4, labelY - 6.5);
+      }
+      const label = sanitizePdfText(r.label);
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(7.5);
+      doc.setTextColor(...this.muted);
+      doc.text(label, leftX + 4, labelY);
+      doc.text(label, rightX + 4, labelY);
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(9.5);
+      doc.setTextColor(...this.ink);
+      doc.text(sanitizePdfText(r.current), leftX + cardW - 4, valueY, { align: "right" });
+      const deltaTxt = r.delta ? sanitizePdfText(r.delta) : undefined;
+      doc.setFontSize(9.5);
+      doc.text(
+        sanitizePdfText(r.projected),
+        rightX + cardW - 4 - (deltaTxt ? doc.getTextWidth(deltaTxt) + 8 : 0),
+        valueY,
+        { align: "right" },
+      );
+      if (deltaTxt) {
+        const bg: [number, number, number] = r.deltaGood ? [209, 250, 229] : [254, 226, 226];
+        const fg: [number, number, number] = r.deltaGood ? [4, 120, 87] : [153, 27, 27];
+        doc.setFillColor(...bg);
+        const w = doc.getTextWidth(deltaTxt) + 4;
+        doc.roundedRect(rightX + cardW - 4 - w, valueY - 3.3, w, 4.6, 1, 1, "F");
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(6.8);
+        doc.setTextColor(...fg);
+        doc.text(deltaTxt, rightX + cardW - 4 - w / 2, valueY - 0.2, { align: "center" });
+      }
+    });
+    this.cursorY = top + cardH + 6;
+    return this;
+  }
+
+  /** Graphique en barres groupées natif (vectoriel, sans canvas) — sert à
+   *  visualiser des paires de valeurs déjà calculées (ex. les mêmes lignes
+   *  qu'un comparisonCards), jamais des données inventées pour l'occasion. */
+  groupedBarChart(opts: {
+    groups: Array<{ label: string; values: number[] }>;
+    seriesLabels: string[];
+    colors: [number, number, number][];
+    height?: number;
+  }) {
+    const { doc, margin, contentWidth } = this;
+    const height = opts.height ?? 40;
+    this.ensureSpace(height + 15);
+    const chartX = margin + 2;
+    const chartW = contentWidth - 4;
+    const chartY = this.cursorY;
+    const chartH = height;
+    doc.setFillColor(255, 255, 255);
+    doc.setDrawColor(...this.border);
+    doc.setLineWidth(0.3);
+    doc.roundedRect(chartX, chartY, chartW, chartH, 1.5, 1.5, "FD");
+
+    const padL = 20, padR = 6, padT = 8, padB = 10;
+    const plotX = chartX + padL, plotW = chartW - padL - padR;
+    const plotY = chartY + padT, plotH = chartH - padT - padB;
+    const maxRaw = Math.max(...opts.groups.flatMap((g) => g.values), 1);
+    const maxV = niceCeil(maxRaw * 1.1);
+
+    const gridN = 3;
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(6.5);
+    for (let g = 0; g <= gridN; g++) {
+      const v = (maxV / gridN) * g;
+      const gy = plotY + plotH - (v / maxV) * plotH;
+      doc.setDrawColor(240, 242, 245);
+      doc.setLineWidth(0.15);
+      doc.line(plotX, gy, plotX + plotW, gy);
+      doc.setTextColor(...this.muted);
+      doc.text(formatCHF(v).replace(/^CHF\s*/, ""), plotX - 2, gy + 1.2, { align: "right" });
+    }
+
+    const groupW = plotW / Math.max(1, opts.groups.length);
+    const barGap = 1.5;
+    const nSeries = opts.seriesLabels.length;
+    const barW = (groupW - 8 - barGap * (nSeries - 1)) / nSeries;
+
+    opts.groups.forEach((grp, gi) => {
+      const gx = plotX + gi * groupW + 4;
+      grp.values.forEach((v, si) => {
+        const bh = maxV > 0 ? (v / maxV) * plotH : 0;
+        const bx = gx + si * (barW + barGap);
+        const by = plotY + plotH - bh;
+        doc.setFillColor(...opts.colors[si % opts.colors.length]);
+        doc.rect(bx, by, Math.max(0, barW), bh, "F");
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(6);
+        doc.setTextColor(...this.ink);
+        doc.text(formatCHF(v).replace(/^CHF\s*/, ""), bx + barW / 2, by - 1.2, { align: "center" });
+      });
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(7);
+      doc.setTextColor(...this.muted);
+      const labelLines = doc.splitTextToSize(sanitizePdfText(grp.label), groupW) as string[];
+      doc.text(labelLines.slice(0, 1), gx + (groupW - 8) / 2, chartY + chartH - 2, { align: "center" });
+    });
+
+    let lx = chartX + chartW - 2;
+    [...opts.seriesLabels].reverse().forEach((lbl, i) => {
+      const color = [...opts.colors].reverse()[i % opts.colors.length];
+      const safeLbl = sanitizePdfText(lbl);
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(6.8);
+      const tw = doc.getTextWidth(safeLbl);
+      lx -= tw;
+      doc.setTextColor(...this.muted);
+      doc.text(safeLbl, lx, chartY + 5);
+      doc.setFillColor(...color);
+      doc.rect(lx - 8, chartY + 2.2, 4, 3, "F");
+      lx -= 12;
+    });
+
+    this.cursorY = chartY + chartH + 7;
     return this;
   }
 
