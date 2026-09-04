@@ -419,20 +419,29 @@ function drawCoverPage(
   customNote: string | undefined,
   header: Partial<PdfHeaderInfo> | undefined,
 ) {
-  const { doc, pageWidth, pageHeight, margin, primary, ink, muted } = pdf;
+  const { doc, pageWidth, pageHeight, margin, primary } = pdf;
+
+  // Fond plein teal sur toute la page (identité visuelle du cabinet),
+  // au lieu d'une page blanche avec un simple bandeau en tête.
+  doc.setFillColor(...primary);
+  doc.rect(0, 0, pageWidth, pageHeight, "F");
+
+  const white: [number, number, number] = [255, 255, 255];
+  const washed = tint(primary, 0.65); // texte secondaire clair, lisible sur fond teal
+  const panelFill = shade(primary, 0.12); // léger contraste avec le fond, sans casser l'aplat
 
   // Repère avant le titre : identifie immédiatement la nature du document.
   pdf.cursorY = 58;
   doc.setFont("helvetica", "bold");
   doc.setFontSize(10);
-  doc.setTextColor(...primary);
+  doc.setTextColor(...washed);
   doc.text("DOSSIER DE SYNTHÈSE", pageWidth / 2, pdf.cursorY, { align: "center" });
   pdf.cursorY += 10;
 
   // Grand titre central
   doc.setFont("helvetica", "bold");
   doc.setFontSize(26);
-  doc.setTextColor(...ink);
+  doc.setTextColor(...white);
   const titleLines = doc.splitTextToSize(
     "Votre situation et vos options",
     pageWidth - margin * 2,
@@ -442,7 +451,7 @@ function drawCoverPage(
 
   doc.setFont("helvetica", "normal");
   doc.setFontSize(14);
-  doc.setTextColor(...muted);
+  doc.setTextColor(...washed);
   doc.text(fullName, pageWidth / 2, pdf.cursorY, { align: "center" });
   pdf.cursorY += 18;
 
@@ -462,8 +471,8 @@ function drawCoverPage(
     ],
   ];
   const blockH = lines.length * 9 + 12;
-  doc.setFillColor(...tint(primary, 0.95));
-  doc.setDrawColor(...primary);
+  doc.setFillColor(...panelFill);
+  doc.setDrawColor(...washed);
   doc.setLineWidth(0.4);
   doc.roundedRect(blockX, blockY, blockW, blockH, 2, 2, "FD");
 
@@ -471,11 +480,11 @@ function drawCoverPage(
   lines.forEach(([k, v]) => {
     doc.setFont("helvetica", "normal");
     doc.setFontSize(9);
-    doc.setTextColor(...muted);
+    doc.setTextColor(...washed);
     doc.text(k.toUpperCase(), blockX + 5, lineY);
     doc.setFont("helvetica", "bold");
     doc.setFontSize(11);
-    doc.setTextColor(...ink);
+    doc.setTextColor(...white);
     doc.text(v, blockX + blockW - 5, lineY, { align: "right" });
     lineY += 9;
   });
@@ -485,7 +494,7 @@ function drawCoverPage(
   if (customNote && customNote.trim()) {
     doc.setFont("helvetica", "italic");
     doc.setFontSize(11);
-    doc.setTextColor(...ink);
+    doc.setTextColor(...white);
     const noteLines = doc.splitTextToSize(customNote.trim(), pageWidth - margin * 2 - 20) as string[];
     doc.text(noteLines, pageWidth / 2, pdf.cursorY, { align: "center" });
     pdf.cursorY += noteLines.length * 5 + 4;
@@ -495,7 +504,7 @@ function drawCoverPage(
   // au client, "usage interne" n'avait pas de sens ici.
   doc.setFont("helvetica", "italic");
   doc.setFontSize(9);
-  doc.setTextColor(...muted);
+  doc.setTextColor(...washed);
   doc.text(`Document confidentiel, préparé exclusivement pour ${fullName}.`, pageWidth / 2, pageHeight - 25, {
     align: "center",
   });

@@ -49,10 +49,15 @@ export function SynthesisReportModal({ open, onOpenChange, clientId, entries }: 
   const [company, setCompany] = useState<Company | null>(null);
   const [loadingClient, setLoadingClient] = useState(false);
 
-  // Charge les données client à l'ouverture
+  // Charge les données client à l'ouverture. Ne pré-coche rien : un client
+  // suivi depuis longtemps accumule des simulations de calculateurs très
+  // différents (LPP, fiscal, comparateurs...), et générer un dossier avec
+  // "tout" coché par défaut produit un PDF qui mélange des sujets sans
+  // rapport entre eux au lieu de la synthèse ciblée attendue. Le courtier
+  // choisit explicitement ce qui entre dans ce dossier-ci.
   useEffect(() => {
     if (!open) return;
-    setSelected(new Set(entries.map((e) => e.id)));
+    setSelected(new Set());
     setLoadingClient(true);
     (async () => {
       try {
