@@ -18,12 +18,10 @@ import {
   computeFortune,
   getClientTaxContext,
   toIncomeTaxInput,
+  toTaxGlobalInput,
+  stripUndefined,
 } from "@/lib/clients/to-calculator-input";
-import {
-  computeIncomeTax,
-  estimateSocialContributions,
-  type IncomeTaxInput,
-} from "@/lib/tax/income";
+import type { IncomeTaxInput } from "@/lib/tax/income";
 import {
   annuityVsLumpSum,
   capitalWithdrawalTax,
@@ -33,7 +31,6 @@ import {
   projectClientLPP,
   projectClient3a,
 } from "./lpp-projection";
-import { computeSourceTax } from "@/lib/tax/source";
 import { CANTON_SCALES } from "@/lib/tax/cantons";
 import {
   effectivePillar3aCap,
@@ -42,6 +39,9 @@ import {
 import { runOptimizer, type Optimization } from "@/lib/optimizer";
 import { projectAvsPension, getReferenceAge, type Gender } from "@/lib/avs";
 import { getTotalGrossIncome } from "@/lib/clients/income";
+import { computeTaxGlobal } from "@/lib/tax-global/engine";
+import { createDefaultInput } from "@/lib/tax-global/profile";
+import type { TaxGlobalInput } from "@/lib/tax-global/types";
 
 export interface ClientBundle {
   client: Client;
@@ -148,7 +148,11 @@ export interface ClientDashboard {
 // Implémentation
 // ────────────────────────────────────────────────────────────────────────────
 
-function safeIncomeTaxInput(b: ClientBundle): IncomeTaxInput | null {
+// Réservé à runOptimizer(), qui attend spécifiquement un IncomeTaxInput
+// (résident ordinaire) — l'optimiseur de suggestions n'est pas dans le
+// périmètre de cette refonte, qui porte sur les CHIFFRES AFFICHÉS
+// (tax/cantonCompare/pillar3a/retirement), voir buildTaxGlobalInput ci-dessous.
+function buildOptimizerTaxInput(b: ClientBundle): IncomeTaxInput | null {
   if (!b.client.canton) return null;
   if (!CANTON_SCALES[b.client.canton]) return null;
 
@@ -177,33 +181,42 @@ function safeIncomeTaxInput(b: ClientBundle): IncomeTaxInput | null {
   };
 }
 
-function buildTax(b: ClientBundle, taxInput: IncomeTaxInput | null): DashboardTax | null {
-  if (!taxInput) return null;
+// Source unique pour TOUS les chiffres fiscaux affichés dans la fiche
+// client (charge fiscale, comparateur cantonal, taux marginal pour
+// rente-vs-capital, économie 3a) : le MÊME moteur multi-régimes que le
+// calculateur Fiscal Global (computeTaxGlobal), avec les MÊMES données de
+// fiche (toTaxGlobalInput, déjà utilisé pour préremplir ce calculateur) et
+// les mêmes valeurs par défaut pour ce qui n'est pas dans la fiche
+// (createDefaultInput) — exactement ce que verrait le courtier en ouvrant
+// Fiscal Global pour ce client sans rien changer. Avant cette refonte, ce
+// module appelait directement computeIncomeTax (résident suisse ordinaire)
+// pour TOUS les clients, y compris frontaliers et imposés à la source :
+// deux chiffres différents pour la même personne selon l'écran ouvert.
+function buildTaxGlobalInput(b: ClientBundle): TaxGlobalInput | null {
+  if (!b.client.canton) return null;
+  if (!CANTON_SCALES[b.client.canton]) return null;
+
+  const partial = toTaxGlobalInput(b);
+  const grossSalary = partial.grossSalary ?? 0;
+  if (grossSalary <= 0 && (partial.otherIncome ?? 0) <= 0) return null;
+
+  return {
+    ...createDefaultInput(),
+    ...stripUndefined(partial as unknown as Record<string, unknown>),
+  } as TaxGlobalInput;
+}
+
+function buildTax(input: TaxGlobalInput | null): DashboardTax | null {
+  if (!input) return null;
   try {
-    const r = computeIncomeTax(taxInput);
-    let monthlySource: number | null = null;
-    if (b.client.tax_status === "source_taxed" && b.client.gross_annual_salary) {
-      try {
-        const monthlyGross = Math.round(Number(b.client.gross_annual_salary) / 12);
-        const src = computeSourceTax({
-          canton: b.client.canton ?? "VD",
-          scale: (b.client.source_tax_scale as "A" | "B" | "C" | "H" | null) ?? "A",
-          children: parseChildren(b.client.children).length,
-          monthlyGross,
-          church:
-            b.client.confession && b.client.confession !== "none" ? true : undefined,
-        });
-        monthlySource = Math.round(src.monthlyTax);
-      } catch {
-        monthlySource = null;
-      }
-    }
+    const r = computeTaxGlobal(input);
+    const monthlySource = r.source ? Math.round(r.source.monthlyTax) : null;
     return {
-      annualBurden: Math.round(r.totalTax),
+      annualBurden: Math.round(r.totalTaxCHF),
       monthlySourceTax: monthlySource,
       marginalRate: r.marginalRate,
       effectiveRate: r.effectiveRate,
-      grossIncome: Math.round(r.grossIncome),
+      grossIncome: Math.round(r.grossIncomeCHF),
     };
   } catch {
     return null;
@@ -225,7 +238,7 @@ function buildLPP(b: ClientBundle, _age: number | null): DashboardLPP | null {
 function buildPillar3a(
   b: ClientBundle,
   _age: number | null,
-  taxInput: IncomeTaxInput | null,
+  taxInput: TaxGlobalInput | null,
 ): DashboardPillar3a | null {
   const rules = getWorkStatusRules(b.client.work_status);
   const cap = effectivePillar3aCap(
@@ -243,12 +256,14 @@ function buildPillar3a(
   let savings = 0;
   if (current > 0 && taxInput) {
     try {
-      const baseline = computeIncomeTax({ ...taxInput, pillar3aContributions: 0 });
-      const scenario = computeIncomeTax({
-        ...taxInput,
-        pillar3aContributions: current,
-      });
-      savings = Math.round(baseline.totalTax - scenario.totalTax);
+      // Régime-aware : un rachat/versement 3a n'est pas déductible de la
+      // même façon pour un frontalier accord 1983 (imposition exclusive en
+      // France, déduction ignorée) que pour un résident ordinaire — voir
+      // computeTaxGlobal(). computeIncomeTax() seul appliquait toujours la
+      // règle "résident" quel que soit le régime réel du client.
+      const baseline = computeTaxGlobal({ ...taxInput, pillar3aContributions: 0 });
+      const scenario = computeTaxGlobal({ ...taxInput, pillar3aContributions: current });
+      savings = Math.round(baseline.totalTaxCHF - scenario.totalTaxCHF);
     } catch {
       savings = 0;
     }
@@ -266,7 +281,7 @@ function buildPillar3a(
 function buildRetirement(
   b: ClientBundle,
   lpp: DashboardLPP | null,
-  taxInput: IncomeTaxInput | null,
+  tax: DashboardTax | null,
 ): DashboardRetirement | null {
   if (!lpp || lpp.projectedCapitalAt65 <= 0 || !b.client.canton) return null;
   const status =
@@ -286,7 +301,10 @@ function buildRetirement(
     const result = annuityVsLumpSum({
       capital: lpp.projectedCapitalAt65,
       yearsAlive: LIFE_EXPECTANCY_AT_65,
-      rentMarginalRate: taxInput ? computeIncomeTax(taxInput).marginalRate : 25,
+      // Réutilise le taux marginal déjà calculé par buildTax() (régime-aware)
+      // au lieu de le recalculer avec computeIncomeTax() seul, qui ignorait
+      // le régime fiscal réel du client (frontalier, source...).
+      rentMarginalRate: tax ? tax.marginalRate : 25,
       lumpSumTax,
     });
     return {
@@ -301,7 +319,7 @@ function buildRetirement(
 
 function buildCantonCompare(
   b: ClientBundle,
-  taxInput: IncomeTaxInput | null,
+  taxInput: TaxGlobalInput | null,
 ): DashboardCantonCompare | null {
   if (!taxInput || !b.client.canton) return null;
   const rows: DashboardCantonRow[] = [];
@@ -309,15 +327,20 @@ function buildCantonCompare(
 
   for (const code of Object.keys(CANTON_SCALES)) {
     try {
-      const r = computeIncomeTax({ ...taxInput, canton: code });
+      // computeTaxGlobal() redétecte le régime pour CHAQUE canton candidat
+      // (ex. GE => frontalier genevois, un autre canton frontière => accord
+      // 1983) : pour un frontalier, "comparer les cantons" doit comparer les
+      // VRAIS régimes applicables selon le canton de travail, pas appliquer
+      // partout la formule résident ordinaire.
+      const r = computeTaxGlobal({ ...taxInput, canton: code });
       rows.push({
         code,
         name: CANTON_SCALES[code]?.capital ?? code,
-        total: Math.round(r.totalTax),
+        total: Math.round(r.totalTaxCHF),
         effectiveRate: r.effectiveRate,
         delta: 0,
       });
-      if (code === b.client.canton) currentTotal = Math.round(r.totalTax);
+      if (code === b.client.canton) currentTotal = Math.round(r.totalTaxCHF);
     } catch {
       // ignore canton incomplet
     }
@@ -409,21 +432,24 @@ export function computeClientDashboard(b: ClientBundle): ClientDashboard {
     age !== null ? Math.max(0, RETIREMENT_AGE_DEFAULT - age) : null;
   const fortune = computeFortune(b.assets);
 
-  const taxInput = safeIncomeTaxInput(b);
-  const tax = buildTax(b, taxInput);
+  const taxInput = buildTaxGlobalInput(b);
+  const tax = buildTax(taxInput);
   const lpp = buildLPP(b, age);
   const pillar3a = buildPillar3a(b, age, taxInput);
-  const retirement = buildRetirement(b, lpp, taxInput);
+  const retirement = buildRetirement(b, lpp, tax);
   const cantonCompare = buildCantonCompare(b, taxInput);
   const avs = buildAvs(b);
 
-  // Suggestions = optimizer existant (réutilisation pure).
+  // Suggestions = optimizer existant (réutilisation pure). Reste sur
+  // computeIncomeTax/IncomeTaxInput (buildOptimizerTaxInput) : hors périmètre
+  // de cette refonte, qui porte sur les chiffres affichés ci-dessus.
+  const optimizerTaxInput = buildOptimizerTaxInput(b);
   let suggestions: Optimization[] = [];
-  if (taxInput) {
+  if (optimizerTaxInput) {
     try {
       const ctx = getClientTaxContext(b.client);
       suggestions = runOptimizer({
-        taxInput,
+        taxInput: optimizerTaxInput,
         lppBuybackCapacity: Number(b.pension?.lpp_max_buyback ?? 0),
         pillar3aCurrent: Number(b.pension?.pillar_3a_annual_contribution ?? 0),
         pillar3aBalance: 0,
