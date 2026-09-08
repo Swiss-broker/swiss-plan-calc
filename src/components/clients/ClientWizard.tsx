@@ -51,6 +51,7 @@ import { computeLppInsuredSalary, LPP_COORDINATION_DEDUCTION_2026, LPP_MAX_INSUR
 import { CountryCombobox } from "@/components/ui/country-combobox";
 import { CommuneAutocomplete } from "@/components/ui/commune-autocomplete";
 import { useT } from "@/contexts/LanguageContext";
+import { AFC_ANNUAL_RATES } from "@/lib/fx/sources";
 
 const STEP_IDS = [1, 2, 3, 4, 5] as const;
 const STEP_KEYS = {
@@ -132,6 +133,13 @@ interface FormState {
   gross_annual_salary: string;
   bonus: string;
   other_income: string;
+  // Devise de saisie des revenus du client (salaire + bonus + autres
+  // revenus) : gross_annual_salary/bonus/other_income restent TOUJOURS
+  // stockés en CHF (c'est ce que lisent tous les calculateurs) — currency
+  // + rate ne servent qu'à afficher/ré-éditer en EUR sans perdre le taux
+  // utilisé. Utile pour les clients frontaliers qui pensent en euros.
+  income_currency: "CHF" | "EUR";
+  income_conversion_rate: string;
   // Family
   civil_status: CivilStatus;
   spouse_first_name: string;
@@ -139,6 +147,7 @@ interface FormState {
   spouse_date_of_birth: string;
   spouse_gross_annual_salary: string;
   spouse_salary_currency: "CHF" | "EUR";
+  spouse_income_conversion_rate: string;
   spouse_salary_is_fictif: boolean;
   spouse_work_location: "switzerland" | "france" | "none";
   children: Child[];
@@ -191,12 +200,15 @@ function initialForm(initial?: WizardInitialData): FormState {
     gross_annual_salary: c?.gross_annual_salary?.toString() ?? "",
     bonus: c?.bonus?.toString() ?? "",
     other_income: c?.other_income?.toString() ?? "",
+    income_currency: (c?.income_currency as "CHF" | "EUR" | null) ?? "CHF",
+    income_conversion_rate: c?.income_conversion_rate?.toString() ?? "",
     civil_status: c?.civil_status ?? "single",
     spouse_first_name: c?.spouse_first_name ?? "",
     spouse_last_name: c?.spouse_last_name ?? "",
     spouse_date_of_birth: c?.spouse_date_of_birth ?? "",
     spouse_gross_annual_salary: c?.spouse_gross_annual_salary?.toString() ?? "",
-    spouse_salary_currency: "CHF",
+    spouse_salary_currency: (c?.spouse_income_currency as "CHF" | "EUR" | null) ?? "CHF",
+    spouse_income_conversion_rate: c?.spouse_income_conversion_rate?.toString() ?? "",
     spouse_salary_is_fictif: c?.spouse_salary_is_fictif ?? true,
     spouse_work_location: (c?.spouse_work_location as "switzerland" | "france" | "none") ?? "none",
     children: parseChildrenSafe(c?.children),
@@ -263,6 +275,38 @@ function num(v: string): number | null {
   if (!v.trim()) return null;
   const n = Number(v.replace(/[\s']/g, "").replace(",", "."));
   return Number.isFinite(n) ? n : null;
+}
+
+// Champs revenu (salaire, bonus, autres revenus) : la valeur en mémoire
+// (`form.gross_annual_salary`, etc.) reste TOUJOURS en CHF — c'est ce que
+// lisent tous les calculateurs, donc rien d'autre ne doit changer. Ces
+// deux fonctions ne font que la conversion d'AFFICHAGE : si la devise de
+// saisie est EUR, on montre CHF ÷ taux dans le champ, et on reconvertit en
+// CHF (× taux) ce que le courtier tape avant de le stocker. Avant ce
+// correctif (côté conjoint uniquement), le champ affichait directement la
+// valeur CHF fraîchement convertie SOUS l'étiquette "EUR" — un chiffre
+// affiché qui ne correspondait plus à ce qui avait été saisi.
+function chfToDisplay(chfStr: string, currency: "CHF" | "EUR", rate: string): string {
+  if (currency !== "EUR") return chfStr;
+  const chf = num(chfStr);
+  const r = num(rate);
+  if (chf === null || !r) return chfStr;
+  return String(Math.round(chf / r));
+}
+function displayToChf(displayStr: string, currency: "CHF" | "EUR", rate: string): string {
+  if (currency !== "EUR") return displayStr;
+  const disp = num(displayStr);
+  const r = num(rate);
+  if (disp === null || !r) return displayStr;
+  return String(Math.round(disp * r));
+}
+/** Taux AFC officiel EUR->CHF de l'année en cours, utilisé comme valeur
+ *  par défaut à l'activation de la saisie en EUR (le courtier peut le
+ *  forcer manuellement, comme dans le calculateur "Réclamation taux de
+ *  change"). */
+function defaultEurRate(): number {
+  const year = new Date().getFullYear();
+  return AFC_ANNUAL_RATES[year]?.EUR ?? AFC_ANNUAL_RATES[Math.max(...Object.keys(AFC_ANNUAL_RATES).map(Number))]?.EUR ?? 0.95;
 }
 
 export interface ClientWizardProps {
@@ -396,11 +440,19 @@ export function ClientWizard({ initial, mode, clientId }: ClientWizardProps) {
         gross_annual_salary: num(form.gross_annual_salary),
         bonus: num(form.bonus),
         other_income: num(form.other_income),
+        // gross_annual_salary/bonus/other_income restent en CHF (voir plus
+        // haut) : ces deux champs ne servent qu'à ré-afficher le montant en
+        // EUR tel que saisi, jamais lus par les calculateurs.
+        income_currency: form.income_currency,
+        income_conversion_rate: form.income_currency === "EUR" ? num(form.income_conversion_rate) : null,
         civil_status: form.civil_status,
         spouse_first_name: isMarried ? form.spouse_first_name || null : null,
         spouse_last_name: isMarried ? form.spouse_last_name || null : null,
         spouse_date_of_birth: isMarried ? form.spouse_date_of_birth || null : null,
         spouse_gross_annual_salary: isMarried ? num(form.spouse_gross_annual_salary) : null,
+        spouse_income_currency: isMarried ? form.spouse_salary_currency : "CHF",
+        spouse_income_conversion_rate:
+          isMarried && form.spouse_salary_currency === "EUR" ? num(form.spouse_income_conversion_rate) : null,
         spouse_salary_is_fictif: isMarried ? form.spouse_salary_is_fictif : true,
         spouse_work_location: isMarried ? form.spouse_work_location : "none",
         activity_sector: form.activity_sector || null,
@@ -1064,12 +1116,47 @@ function StepActivity({ form, update }: StepProps) {
         </Field>
       )}
       {(rules.hasSalary || rules.isSelfEmployed || rules.isRetired) && (
+        <Field
+          label={t("wizard.field.income_currency")}
+          hint={t("wizard.field.income_currency.hint")}
+        >
+          <div className="flex gap-2">
+            <Select
+              value={form.income_currency}
+              onValueChange={(v) => {
+                const currency = v as "CHF" | "EUR";
+                update("income_currency", currency);
+                if (currency === "EUR" && !form.income_conversion_rate) {
+                  update("income_conversion_rate", String(defaultEurRate()));
+                }
+              }}
+            >
+              <SelectTrigger className="w-24">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="CHF">CHF</SelectItem>
+                <SelectItem value="EUR">EUR</SelectItem>
+              </SelectContent>
+            </Select>
+            {form.income_currency === "EUR" && (
+              <NumField
+                value={form.income_conversion_rate}
+                onChange={(v) => update("income_conversion_rate", v)}
+                suffix="CHF/EUR"
+                className="flex-1"
+              />
+            )}
+          </div>
+        </Field>
+      )}
+      {(rules.hasSalary || rules.isSelfEmployed || rules.isRetired) && (
         <Field label={salaryLabel} htmlFor="sal">
           <NumField
             id="sal"
-            value={form.gross_annual_salary}
-            onChange={(v) => update("gross_annual_salary", v)}
-            suffix="CHF"
+            value={chfToDisplay(form.gross_annual_salary, form.income_currency, form.income_conversion_rate)}
+            onChange={(v) => update("gross_annual_salary", displayToChf(v, form.income_currency, form.income_conversion_rate))}
+            suffix={form.income_currency}
           />
         </Field>
       )}
@@ -1077,9 +1164,9 @@ function StepActivity({ form, update }: StepProps) {
         <Field label={t("wizard.field.bonus")} htmlFor="bn">
           <NumField
             id="bn"
-            value={form.bonus}
-            onChange={(v) => update("bonus", v)}
-            suffix="CHF"
+            value={chfToDisplay(form.bonus, form.income_currency, form.income_conversion_rate)}
+            onChange={(v) => update("bonus", displayToChf(v, form.income_currency, form.income_conversion_rate))}
+            suffix={form.income_currency}
           />
         </Field>
       )}
@@ -1096,9 +1183,9 @@ function StepActivity({ form, update }: StepProps) {
       <Field label={otherIncomeLabel} htmlFor="oi">
         <NumField
           id="oi"
-          value={form.other_income}
-          onChange={(v) => update("other_income", v)}
-          suffix="CHF"
+          value={chfToDisplay(form.other_income, form.income_currency, form.income_conversion_rate)}
+          onChange={(v) => update("other_income", displayToChf(v, form.income_currency, form.income_conversion_rate))}
+          suffix={form.income_currency}
         />
       </Field>
     </div>
@@ -1180,13 +1267,19 @@ function StepFamily({
                 hint={form.spouse_salary_is_fictif
                   ? `Revenu fictif provisoire 2026 : CHF ${Math.min(num(form.gross_annual_salary) ?? 0, 70500).toLocaleString("fr-CH")} — à corriger avec le salaire réel pour DRIS`
                   : form.spouse_salary_currency === "EUR"
-                    ? `≈ CHF ${Math.round((num(form.spouse_gross_annual_salary) ?? 0) * 0.95).toLocaleString("fr-CH")} (taux 0.95)`
+                    ? `= CHF ${(num(form.spouse_gross_annual_salary) ?? 0).toLocaleString("fr-CH")} (taux ${form.spouse_income_conversion_rate || defaultEurRate()})`
                     : undefined}
               >
                 <div className="flex gap-2">
                   <Select
                     value={form.spouse_salary_currency}
-                    onValueChange={(v) => update("spouse_salary_currency", v as "CHF" | "EUR")}
+                    onValueChange={(v) => {
+                      const currency = v as "CHF" | "EUR";
+                      update("spouse_salary_currency", currency);
+                      if (currency === "EUR" && !form.spouse_income_conversion_rate) {
+                        update("spouse_income_conversion_rate", String(defaultEurRate()));
+                      }
+                    }}
                   >
                     <SelectTrigger className="w-24">
                       <SelectValue />
@@ -1196,15 +1289,18 @@ function StepFamily({
                       <SelectItem value="EUR">EUR</SelectItem>
                     </SelectContent>
                   </Select>
+                  {form.spouse_salary_currency === "EUR" && (
+                    <NumField
+                      value={form.spouse_income_conversion_rate}
+                      onChange={(v) => update("spouse_income_conversion_rate", v)}
+                      suffix="CHF/EUR"
+                      className="w-28"
+                    />
+                  )}
                   <NumField
-                    value={form.spouse_gross_annual_salary}
+                    value={chfToDisplay(form.spouse_gross_annual_salary, form.spouse_salary_currency, form.spouse_income_conversion_rate)}
                     onChange={(v) => {
-                      // Convertit en CHF si EUR avant de stocker
-                      const raw = num(v) ?? 0;
-                      const inChf = form.spouse_salary_currency === "EUR"
-                        ? String(Math.round(raw * 0.95))
-                        : v;
-                      update("spouse_gross_annual_salary", inChf);
+                      update("spouse_gross_annual_salary", displayToChf(v, form.spouse_salary_currency, form.spouse_income_conversion_rate));
                       update("spouse_salary_is_fictif", false);
                     }}
                     suffix={form.spouse_salary_currency}
