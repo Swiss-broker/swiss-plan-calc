@@ -5,6 +5,8 @@ import ReactMarkdown from "react-markdown";
 import type { Client, ClientPension, ClientAssets } from "@/lib/clients/types";
 import { supabase } from "@/integrations/supabase/client";
 import { logClientError } from "@/lib/error-logging";
+import { getWorkStatusRules, effectivePillar3aCap } from "@/lib/clients/work-status-rules";
+import { WORK_STATUS_LABELS } from "@/lib/swiss/enums";
 
 interface Props {
   client: Client;
@@ -20,11 +22,16 @@ export function AiAnalysis({ client, pension, assets }: Props) {
   const buildPrompt = () => {
     const p = pension;
     const a = assets;
+    const rules = getWorkStatusRules(client.work_status);
+    const pillar3aCap = effectivePillar3aCap(client.work_status, Number(client.gross_annual_salary ?? 0));
+    const pillar3aCurrent = Number(p?.pillar_3a_annual_contribution ?? 0);
+    const pillar3aRemaining = Math.max(0, pillar3aCap - pillar3aCurrent);
     return `Tu es un expert en prévoyance et fiscalité suisse. Analyse la situation de ce client et donne un briefing structuré pour préparer le rendez-vous courtier.
 
 CLIENT : ${client.first_name} ${client.last_name}
 - Canton : ${client.canton ?? "non renseigné"}
 - Statut fiscal : ${client.tax_status ?? "non renseigné"}
+- Statut professionnel : ${WORK_STATUS_LABELS[client.work_status] ?? "non renseigné"} (${rules.hasLPP ? "affilié LPP" : "non affilié LPP"})
 - Situation civile : ${client.civil_status ?? "non renseigné"}
 - Permis : ${client.permit ?? "non renseigné"}
 - Âge : ${client.date_of_birth ? new Date().getFullYear() - new Date(client.date_of_birth).getFullYear() : "non renseigné"} ans
@@ -37,7 +44,9 @@ REVENUS
 PRÉVOYANCE
 - Avoir LPP : ${p ? Number(p.lpp_current_balance).toLocaleString("fr-CH") + " CHF" : "non renseigné"}
 - Capacité de rachat LPP : ${p ? Number(p.lpp_max_buyback).toLocaleString("fr-CH") + " CHF" : "non renseigné"}
-- Versement 3a annuel : ${p ? Number(p.pillar_3a_annual_contribution).toLocaleString("fr-CH") + " CHF" : "non renseigné"}
+- Versement 3a annuel : ${p ? pillar3aCurrent.toLocaleString("fr-CH") + " CHF" : "non renseigné"}
+- Plafond 3a légal 2026 applicable à ce profil : ${pillar3aCap.toLocaleString("fr-CH")} CHF
+- Marge 3a restante disponible cette année : ${pillar3aRemaining.toLocaleString("fr-CH")} CHF
 
 PATRIMOINE
 - Fortune nette : ${a ? (Number(a.bank_accounts ?? 0) + Number(a.securities ?? 0) + Number(a.real_estate_value ?? 0) - Number(a.mortgage_debt ?? 0)).toLocaleString("fr-CH") + " CHF" : "non renseigné"}
@@ -47,7 +56,9 @@ Génère un briefing structuré en 3 sections :
 2. CALCULATEURS À LANCER (dans l'ordre de priorité)
 3. POINTS DE VIGILANCE (alertes spécifiques à ce profil)
 
-Sois concis, actionnable, sans emojis ni astérisques. Texte brut uniquement, tirets simples pour les listes.`;
+Sois concis, actionnable, sans emojis ni astérisques. Texte brut uniquement, tirets simples pour les listes.
+
+IMPORTANT : pour tout plafond, seuil ou montant légal (3a, LPP, AVS...), utilise EXCLUSIVEMENT les chiffres fournis ci-dessus. N'invente et ne suppose jamais un plafond légal qui ne t'a pas été donné explicitement — si une donnée te manque pour chiffrer une recommandation, dis-le clairement au lieu d'estimer.`;
   };
 
   const launch = async () => {
@@ -56,7 +67,7 @@ Sois concis, actionnable, sans emojis ni astérisques. Texte brut uniquement, ti
     try {
       const { data, error } = await supabase.functions.invoke("ai-chat", {
         body: {
-          system: "Tu es un expert en prévoyance et fiscalité suisse. Tu réponds en français, sans emojis, sans astérisques, en texte brut structuré.",
+          system: "Tu es un expert en prévoyance et fiscalité suisse. Tu réponds en français, sans emojis, sans astérisques, en texte brut structuré. Pour tout plafond ou seuil légal (3a, LPP, AVS...), tu utilises exclusivement les chiffres fournis dans les données du client — tu n'inventes et ne devines jamais un montant légal qui ne t'a pas été communiqué.",
           messages: [{ role: "user", content: buildPrompt() }],
         },
       });
