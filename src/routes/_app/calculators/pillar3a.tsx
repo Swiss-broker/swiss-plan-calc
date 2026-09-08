@@ -59,7 +59,11 @@ function Pillar3aCalc() {
     canton: "VD",
     status: "single" as IncomeTaxInput["status"],
     grossSalary: 0,
-    contribution: 7258,
+    // 0 par défaut (pas le plafond légal) : sinon, sans client lié ou avec
+    // une fiche sans cotisation 3a enregistrée, isMaxed vaut déjà true au
+    // chargement et tout le comparateur actuel/projeté affiche un gain nul,
+    // ce qui donne l'impression que le calculateur ne "bouge pas".
+    contribution: 0,
     currentBalance: 0,
     yearsToRetirement: 0,
     expectedReturn: 2.5,
