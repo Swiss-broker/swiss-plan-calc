@@ -11,6 +11,12 @@ function num(v: unknown): number {
   return 0;
 }
 
+const VESTED_STRATEGY_LABELS: Record<string, string> = {
+  security: "Sécurité",
+  balanced: "Équilibré",
+  dynamic: "Dynamique",
+};
+
 /**
  * Extrait des KPIs comparables (toujours dans le même ordre par kind).
  */
@@ -78,7 +84,10 @@ export function extractKpis(kind: SimulationKind, summary: SummaryShape): Histor
       ];
     case "vested_benefits":
       return [
-        { label: "Stratégie recommandée", value: String(summary.recommendedStrategy ?? "—") },
+        {
+          label: "Stratégie recommandée",
+          value: VESTED_STRATEGY_LABELS[String(summary.recommendedStrategy ?? "")] ?? String(summary.recommendedStrategy ?? "—"),
+        },
         { label: "Capital final (recommandé)", value: num(summary.recommendedFinalBalance), unit: "CHF" },
         { label: "Écart vs sécurité", value: num(summary.gainVsSecurity), unit: "CHF" },
         { label: "Années jusqu'à la retraite", value: num(summary.yearsToRetirement) },
@@ -129,7 +138,7 @@ export function extractKpis(kind: SimulationKind, summary: SummaryShape): Histor
       ];
     case "fx_claim":
       return [
-        { label: "Écart en faveur du client", value: num(summary.totalDeltaChf), unit: "CHF" },
+        { label: "Écart en votre faveur", value: num(summary.totalDeltaChf), unit: "CHF" },
         { label: "Économie d'impôt estimée", value: num(summary.estimatedTaxRefund), unit: "CHF" },
         { label: "CHF retenu (AFC)", value: num(summary.totalChfAfc), unit: "CHF" },
         { label: "CHF réel (marché)", value: num(summary.totalChfMarket), unit: "CHF" },

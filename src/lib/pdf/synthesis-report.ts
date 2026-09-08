@@ -612,7 +612,17 @@ function drawOverviewPage(
   // aucun chiffre recalculé ici.
   const summaryRows: Array<[string, string, string, string, string]> = [];
   const summaryGoodness: Array<boolean | undefined> = [];
+  // Une ligne par catégorie, pas par sauvegarde : un calculateur relancé
+  // plusieurs fois pour le même client (ex. LPP rejoué après un rachat)
+  // ne doit apparaître qu'une fois ici, avec sa sauvegarde la plus récente
+  // — sinon la même catégorie se répète avec des chiffres identiques.
+  const latestByKind = new Map<SimulationKind, HistoryEntry>();
   for (const e of entries) {
+    const k = e.kind as SimulationKind;
+    const existing = latestByKind.get(k);
+    if (!existing || e.created_at > existing.created_at) latestByKind.set(k, e);
+  }
+  for (const e of latestByKind.values()) {
     const saved = extractSavedCompareRows(e);
     const rows = saved.length > 0 ? saved : buildDerivedComparison(e)?.rows ?? [];
     if (rows.length === 0) continue;
@@ -1185,7 +1195,11 @@ function formatInputs(entry: HistoryEntry): Array<[string, string]> {
       if (num(i.chfToEurRate)) rows.push(["Taux CHF→EUR", String(i.chfToEurRate)]);
       break;
     case "overtime":
-      pushStr(rows, "Statut fiscal", str(i.taxStatus));
+      pushStr(
+        rows,
+        "Statut fiscal",
+        i.taxStatus ? (TAX_STATUS_LABELS[String(i.taxStatus) as keyof typeof TAX_STATUS_LABELS] ?? str(i.taxStatus)) : undefined,
+      );
       pushStr(rows, "Canton de travail", i.workCanton ? cantonName(String(i.workCanton)) : undefined);
       pushIfChf(rows, "Salaire de base", i.baseAnnualSalaryCHF);
       pushIfChf(rows, "Heures sup brutes", i.overtimeAmountCHF);

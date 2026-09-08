@@ -112,7 +112,13 @@ export function extractGain(entry: HistoryEntry): ExtractedGain {
       const sec = num(summary.securityFinalBalance);
       const amount = Math.max(0, reco - sec);
       if (amount <= 0) return none();
-      const strat = s(summary.recommendedStrategy) ?? "recommandée";
+      const strategyLabels: Record<string, string> = {
+        security: "Sécurité",
+        balanced: "Équilibré",
+        dynamic: "Dynamique",
+      };
+      const stratRaw = s(summary.recommendedStrategy);
+      const strat = (stratRaw && strategyLabels[stratRaw]) || "recommandée";
       return {
         type: "one_time",
         amount: Math.round(amount),
