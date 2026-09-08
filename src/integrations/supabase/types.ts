@@ -1165,6 +1165,59 @@ export type Database = {
           },
         ]
       }
+      demo_requests: {
+        Row: {
+          assigned_to: string | null
+          company_name: string | null
+          created_at: string
+          demo_date: string | null
+          email: string
+          follow_up_date: string | null
+          id: string
+          name: string
+          notes: Json
+          phone: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          assigned_to?: string | null
+          company_name?: string | null
+          created_at?: string
+          demo_date?: string | null
+          email: string
+          follow_up_date?: string | null
+          id?: string
+          name: string
+          notes?: Json
+          phone?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          assigned_to?: string | null
+          company_name?: string | null
+          created_at?: string
+          demo_date?: string | null
+          email?: string
+          follow_up_date?: string | null
+          id?: string
+          name?: string
+          notes?: Json
+          phone?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "demo_requests_assigned_to_fkey"
+            columns: ["assigned_to"]
+            isOneToOne: false
+            referencedRelation: "admin_users"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
       email_templates: {
         Row: {
           body: string
