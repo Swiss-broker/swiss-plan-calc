@@ -635,6 +635,10 @@ function LppCalc() {
                 projectionNoBuyback.projectedBalance
               : 0,
           deltaLabel: "Capital final",
+          footnote:
+            actualBuybackCapped <= 0
+              ? "Ce bandeau reste à 0 tant qu'aucun montant n'est saisi dans « Rachat effectif » ci-dessus : c'est ce montant qui déclenche la comparaison."
+              : undefined,
         }}
       />
 
