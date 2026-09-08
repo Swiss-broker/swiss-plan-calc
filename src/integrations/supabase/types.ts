@@ -800,6 +800,50 @@ export type Database = {
           },
         ]
       }
+      client_invites: {
+        Row: {
+          created_at: string
+          demo_request_id: string
+          email: string
+          expires_at: string
+          id: string
+          plan: string
+          revoked: boolean
+          token: string
+          used_at: string | null
+        }
+        Insert: {
+          created_at?: string
+          demo_request_id: string
+          email: string
+          expires_at?: string
+          id?: string
+          plan: string
+          revoked?: boolean
+          token: string
+          used_at?: string | null
+        }
+        Update: {
+          created_at?: string
+          demo_request_id?: string
+          email?: string
+          expires_at?: string
+          id?: string
+          plan?: string
+          revoked?: boolean
+          token?: string
+          used_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_invites_demo_request_id_fkey"
+            columns: ["demo_request_id"]
+            isOneToOne: false
+            referencedRelation: "demo_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       client_notes: {
         Row: {
           body: string
