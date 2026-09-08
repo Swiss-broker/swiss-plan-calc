@@ -457,50 +457,6 @@ function LppCalc() {
         </div>
       </div>
 
-      <CalcCard title={t("calc.lpp.evolution_card")} description={t("calc.lpp.evolution_desc")}>
-        <div className="h-72 w-full chart-rise">
-          <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={projection.yearly}>
-              <CartesianGrid stroke="var(--border)" strokeOpacity={0.5} />
-              <XAxis dataKey="age" tick={{ fontSize: 12 }} />
-              <YAxis tick={{ fontSize: 12 }} tickFormatter={(v) => `${Math.round(v / 1000)}k`} />
-              <Tooltip
-                contentStyle={{
-                  background: "var(--card)",
-                  border: "1px solid var(--border)",
-                  borderRadius: 8,
-                }}
-                formatter={(v: number) => formatCHF(v)}
-              />
-              <RLine type="monotone" dataKey="balance" stroke="var(--primary)" strokeWidth={2.5} dot={false} name={t("calc.lpp.chart.balance")} />
-              <RLine type="monotone" dataKey="balanceNoYield" stroke="var(--muted-foreground)" strokeWidth={1.5} strokeDasharray="4 4" dot={false} name={t("calc.lpp.chart.no_yield")} />
-              <RLine type="monotone" dataKey="interest" stroke="var(--chart-3)" strokeWidth={1.5} dot={false} name={t("calc.lpp.chart.interest")} />
-              <RLine type="monotone" dataKey="fees" stroke="var(--destructive)" strokeWidth={1.5} dot={false} name={t("calc.lpp.chart.fees")} />
-            </LineChart>
-          </ResponsiveContainer>
-        </div>
-      </CalcCard>
-
-      <SplitCompareLayout
-        title="Actuel (sans rachat) vs Projeté (avec rachat)"
-        description="Impact du plan de rachat sur le capital final et la fiscalité, à hypothèses de salaire et rendement identiques."
-        currentSubtitle="Aucun rachat planifié"
-        projectedSubtitle={`Rachat de ${formatCHF(actualBuybackCapped)} sur ${form.buybackYears} an(s)`}
-        rows={compareRows}
-        summary={{
-          retirementGain: projection.projectedBalance - projectionNoBuyback.projectedBalance,
-          retirementGainLabel: "Capital LPP en plus à la retraite",
-          annualSaving:
-            buybackPlan.totalTaxSavings / Math.max(1, form.buybackYears),
-          deltaPercent:
-            projectionNoBuyback.projectedBalance > 0
-              ? (projection.projectedBalance - projectionNoBuyback.projectedBalance) /
-                projectionNoBuyback.projectedBalance
-              : 0,
-          deltaLabel: "Capital final",
-        }}
-      />
-
       <div className="grid grid-cols-1 gap-6 md:grid-cols-5">
 
         <div className="md:col-span-3">
@@ -636,6 +592,50 @@ function LppCalc() {
       <CertificatePensionsCard
         form={form}
         onChange={(patch) => setForm((f) => ({ ...f, ...patch }))}
+      />
+
+      <CalcCard title={t("calc.lpp.evolution_card")} description={t("calc.lpp.evolution_desc")}>
+        <div className="h-72 w-full chart-rise">
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart data={projection.yearly}>
+              <CartesianGrid stroke="var(--border)" strokeOpacity={0.5} />
+              <XAxis dataKey="age" tick={{ fontSize: 12 }} />
+              <YAxis tick={{ fontSize: 12 }} tickFormatter={(v) => `${Math.round(v / 1000)}k`} />
+              <Tooltip
+                contentStyle={{
+                  background: "var(--card)",
+                  border: "1px solid var(--border)",
+                  borderRadius: 8,
+                }}
+                formatter={(v: number) => formatCHF(v)}
+              />
+              <RLine type="monotone" dataKey="balance" stroke="var(--primary)" strokeWidth={2.5} dot={false} name={t("calc.lpp.chart.balance")} />
+              <RLine type="monotone" dataKey="balanceNoYield" stroke="var(--muted-foreground)" strokeWidth={1.5} strokeDasharray="4 4" dot={false} name={t("calc.lpp.chart.no_yield")} />
+              <RLine type="monotone" dataKey="interest" stroke="var(--chart-3)" strokeWidth={1.5} dot={false} name={t("calc.lpp.chart.interest")} />
+              <RLine type="monotone" dataKey="fees" stroke="var(--destructive)" strokeWidth={1.5} dot={false} name={t("calc.lpp.chart.fees")} />
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+      </CalcCard>
+
+      <SplitCompareLayout
+        title="Actuel (sans rachat) vs Projeté (avec rachat)"
+        description="Impact du plan de rachat sur le capital final et la fiscalité, à hypothèses de salaire et rendement identiques."
+        currentSubtitle="Aucun rachat planifié"
+        projectedSubtitle={`Rachat de ${formatCHF(actualBuybackCapped)} sur ${form.buybackYears} an(s)`}
+        rows={compareRows}
+        summary={{
+          retirementGain: projection.projectedBalance - projectionNoBuyback.projectedBalance,
+          retirementGainLabel: "Capital LPP en plus à la retraite",
+          annualSaving:
+            buybackPlan.totalTaxSavings / Math.max(1, form.buybackYears),
+          deltaPercent:
+            projectionNoBuyback.projectedBalance > 0
+              ? (projection.projectedBalance - projectionNoBuyback.projectedBalance) /
+                projectionNoBuyback.projectedBalance
+              : 0,
+          deltaLabel: "Capital final",
+        }}
       />
 
       <div className="flex flex-wrap justify-end gap-2">
