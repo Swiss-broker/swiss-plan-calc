@@ -87,7 +87,15 @@ export function PlanProvider({ children }: { children: ReactNode }) {
       })
       .subscribe();
     return () => { supabase.removeChannel(channel); };
-  }, [user, isAuthenticated, authLoading]);
+    // user?.id (pas l'objet user) : Supabase émet un nouvel objet session/user
+    // à chaque rafraîchissement automatique du token (typiquement quand
+    // l'onglet reprend le focus), sans que l'utilisateur ait changé. Dépendre
+    // de l'objet entier relançait cet effet à chaque refocus -> isLoading
+    // repassait à true -> _app.tsx réaffichait le loader plein écran et
+    // démontait TOUTE l'app (formulaires en cours, analyse IA lancée, etc.
+    // perdus) alors que rien n'avait changé côté utilisateur.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id, isAuthenticated, authLoading]);
   const limits = PLAN_LIMITS[plan] ?? PLAN_LIMITS.trial;
   const value: PlanState = {
     plan,

@@ -30,7 +30,12 @@ export function GuideProvider({ children }: { children: ReactNode }) {
         setGuidesSeen(data?.guides_seen ?? []);
         setIsLoading(false);
       });
-  }, [user, isAuthenticated]);
+    // user?.id (pas l'objet user) : Supabase émet un nouvel objet user à
+    // chaque rafraîchissement automatique du token (typiquement au refocus
+    // de l'onglet) même sans changement d'utilisateur — voir le même
+    // correctif dans PlanContext.tsx.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id, isAuthenticated]);
 
   const hasSeenGuide = (guideId: string) => guidesSeen.includes(guideId);
 
