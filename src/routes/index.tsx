@@ -74,11 +74,6 @@ function Header() {
         <div className="flex shrink-0 items-center gap-1 sm:gap-2">
           <PublicLanguageSwitcher />
           <Link to="/auth"><Button variant="ghost" size="sm" className="px-2 sm:px-3">{t("landing.cta.signin")}</Button></Link>
-          <a href={CALCOM_URL} target="_blank" rel="noopener noreferrer">
-            <Button size="sm" className="shadow-elegant">
-              <span className="hidden sm:inline">Réserver une démo</span><span className="sm:hidden">Démo</span>
-            </Button>
-          </a>
         </div>
       </div>
     </motion.header>
