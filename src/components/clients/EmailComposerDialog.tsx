@@ -40,6 +40,17 @@ import { DOCUMENT_CATEGORIES, type DocumentCategory } from "@/lib/documents/cate
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const supabase = _supabase as any;
 
+// Mêmes valeurs par défaut que le bouton "Générer un lien" de l'onglet
+// Documents (DocumentsTab.tsx).
+const LINK_EXPIRES_IN_DAYS = 14;
+const LINK_MAX_UPLOADS = 30;
+
+function randomToken(): string {
+  const arr = new Uint8Array(24);
+  crypto.getRandomValues(arr);
+  return Array.from(arr, (b) => b.toString(36).padStart(2, "0")).join("").slice(0, 32);
+}
+
 export function EmailComposerDialog({
   clientId,
   open,
@@ -116,13 +127,49 @@ export function EmailComposerDialog({
     },
   });
 
+  const activeLink = contextQuery.data?.links.find(
+    (l) => !l.revoked && new Date(l.expires_at) > new Date() && l.upload_count < l.max_uploads,
+  );
+
+  // Les modèles "demande_documents"/"relance_j2"/"documents_manquants"
+  // s'appuient tous sur {{lien_depot}} : sans lien actif, ce token se
+  // résolvait silencieusement en chaîne vide, et le courtier envoyait un
+  // e-mail avec une ligne vide à la place du lien (le lien ne se crée
+  // normalement que via le bouton dédié de l'onglet Documents — un
+  // courtier qui n'y est jamais passé se retrouvait avec ce trou). On en
+  // crée un automatiquement ici dès qu'on en a besoin, avec les mêmes
+  // valeurs par défaut que ce bouton.
+  const ensureLink = useMutation({
+    mutationFn: async () => {
+      if (!user) throw new Error("Auth required");
+      const token = randomToken();
+      const expires_at = new Date(Date.now() + LINK_EXPIRES_IN_DAYS * 24 * 3600 * 1000).toISOString();
+      const { error } = await supabase.from("client_document_links").insert({
+        client_id: clientId,
+        broker_id: user.id,
+        token,
+        expires_at,
+        max_uploads: LINK_MAX_UPLOADS,
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["email-compose-context", clientId, user?.id] });
+      qc.invalidateQueries({ queryKey: ["client-upload-links", clientId] });
+    },
+  });
+
+  useEffect(() => {
+    if (!open || !contextQuery.data || activeLink) return;
+    if (ensureLink.isPending || ensureLink.isSuccess) return;
+    ensureLink.mutate();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, contextQuery.data, activeLink]);
+
   const vars = useMemo(() => {
     const data = contextQuery.data;
     if (!data) return {};
     const brokerName = [data.profile?.first_name, data.profile?.last_name].filter(Boolean).join(" ").trim();
-    const activeLink = data.links.find(
-      (l) => !l.revoked && new Date(l.expires_at) > new Date() && l.upload_count < l.max_uploads,
-    );
     const missing =
       categoriesOverride && categoriesOverride.length > 0
         ? DOCUMENT_CATEGORIES.filter((cat) => categoriesOverride.includes(cat.value))
