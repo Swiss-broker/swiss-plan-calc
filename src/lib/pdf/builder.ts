@@ -361,11 +361,86 @@ export class ReportPdf {
     const { doc, margin, contentWidth } = this;
     doc.setFont("helvetica", opts?.italic ? "italic" : "normal");
     doc.setFontSize(10);
-    doc.setTextColor(...(opts?.muted ? this.muted : this.ink));
     const lines = doc.splitTextToSize(text, contentWidth) as string[];
     this.ensureSpace(lines.length * 4.5 + 2);
+    // ensureSpace() peut avoir déclenché un saut de page : drawHeader() y
+    // laisse la police du document en gras sans la restaurer, donc on la
+    // réaffirme ici juste avant de dessiner. Sans ça, un paragraphe pouvait
+    // ressortir en gras ou non selon l'endroit exact où tombait la coupure
+    // de page, un bug intermittent et invisible en relecture du code seul.
+    doc.setFont("helvetica", opts?.italic ? "italic" : "normal");
+    doc.setFontSize(10);
+    doc.setTextColor(...(opts?.muted ? this.muted : this.ink));
     doc.text(lines, margin, this.cursorY);
     this.cursorY += lines.length * 4.6 + 3;
+    return this;
+  }
+
+  /** Paragraphe avec emphase inline : `**mot important**` s'affiche en gras,
+   *  le reste en normal, dans le même flux de texte (contrairement à
+   *  paragraph() qui ne peut styler que le bloc entier). Sert à faire
+   *  ressortir un chiffre ou un terme clé au milieu d'une phrase, sans
+   *  transformer toute la phrase en gras. */
+  richParagraph(text: string, opts?: { muted?: boolean }) {
+    const { doc, margin, contentWidth } = this;
+    const color = opts?.muted ? this.muted : this.ink;
+    const fontSize = 10;
+    const lineHeight = 4.6;
+
+    // Découpe en segments gras/normal, puis en mots (espaces conservés en
+    // tokens séparés pour un contrôle précis de la largeur de ligne).
+    const segments = text.split(/(\*\*[^*]+\*\*)/g).filter((s) => s !== "");
+    type Token = { text: string; bold: boolean };
+    const tokens: Token[] = [];
+    for (const seg of segments) {
+      const isBold = /^\*\*[^*]+\*\*$/.test(seg);
+      const clean = sanitizePdfText(isBold ? seg.slice(2, -2) : seg);
+      const parts = clean.split(/(\s+)/).filter((s) => s !== "");
+      for (const p of parts) tokens.push({ text: p, bold: isBold });
+    }
+
+    // Passe 1 : mesure et regroupe les tokens en lignes qui tiennent dans
+    // contentWidth (mêmes calculs de largeur que ce qui sera dessiné).
+    const lines: Token[][] = [];
+    let current: Token[] = [];
+    let currentWidth = 0;
+    for (const tok of tokens) {
+      if (/^\s+$/.test(tok.text)) {
+        if (current.length === 0) continue; // pas d'espace en début de ligne
+        doc.setFont("helvetica", "normal");
+        currentWidth += doc.getTextWidth(tok.text);
+        current.push(tok);
+        continue;
+      }
+      doc.setFont("helvetica", tok.bold ? "bold" : "normal");
+      const w = doc.getTextWidth(tok.text);
+      if (currentWidth + w > contentWidth && current.length > 0) {
+        while (current.length && /^\s+$/.test(current[current.length - 1].text)) current.pop();
+        lines.push(current);
+        current = [];
+        currentWidth = 0;
+      }
+      current.push(tok);
+      currentWidth += w;
+    }
+    if (current.length) {
+      while (current.length && /^\s+$/.test(current[current.length - 1].text)) current.pop();
+      lines.push(current);
+    }
+
+    this.ensureSpace(lines.length * lineHeight + 2);
+    doc.setFontSize(fontSize);
+    doc.setTextColor(...color);
+    for (const line of lines) {
+      let x = margin;
+      for (const tok of line) {
+        doc.setFont("helvetica", tok.bold ? "bold" : "normal");
+        doc.text(tok.text, x, this.cursorY);
+        x += doc.getTextWidth(tok.text);
+      }
+      this.cursorY += lineHeight;
+    }
+    this.cursorY += 3;
     return this;
   }
 
@@ -387,6 +462,10 @@ export class ReportPdf {
     doc.setDrawColor(...colors.border);
     doc.setLineWidth(0.4);
     doc.roundedRect(margin, this.cursorY, contentWidth, h, 1.5, 1.5, "FD");
+    // ensureSpace() peut avoir déclenché un saut de page et laissé la
+    // police en gras (voir paragraph()) : on la réaffirme avant de dessiner.
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(10);
     doc.setTextColor(...this.ink);
     doc.text(lines, margin + 4, this.cursorY + 5);
     this.cursorY += h + 4;
@@ -409,6 +488,65 @@ export class ReportPdf {
       didDrawPage: () => this.drawFooter(),
     });
     this.cursorY = (this.doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 4;
+    return this;
+  }
+
+  /** Deux mini-tableaux "clé -> valeur" côte à côte (situation actuelle à
+   *  gauche, optimisée/projetée à droite), au lieu de les empiler l'un sous
+   *  l'autre : comparaison lisible en un coup d'oeil, sans avoir à faire
+   *  défiler la page pour retenir les chiffres de gauche en lisant ceux de
+   *  droite. La première ligne de chaque colonne est mise en avant (total). */
+  sideBySideCompare(
+    left: { label: string; rows: Array<[string, string]> },
+    right: { label: string; rows: Array<[string, string]> },
+  ) {
+    const { doc, margin, contentWidth, primary, accent } = this;
+    const gap = 5;
+    const colWidth = (contentWidth - gap) / 2;
+    const rightX = margin + colWidth + gap;
+    const rowCount = Math.max(left.rows.length, right.rows.length);
+    this.ensureSpace(10 + rowCount * 7 + 6);
+    const startY = this.cursorY;
+
+    const drawBanner = (x: number, text: string, color: [number, number, number], textColor: [number, number, number]) => {
+      doc.setFillColor(...color);
+      doc.rect(x, startY, colWidth, 7, "F");
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(9.5);
+      doc.setTextColor(...textColor);
+      doc.text(sanitizePdfText(text), x + 4, startY + 4.8);
+    };
+    drawBanner(margin, left.label, shade(primary, 0.55), [255, 255, 255]);
+    drawBanner(rightX, right.label, accent, [255, 255, 255]);
+    this.cursorY = startY + 10;
+
+    const tableY = this.cursorY;
+    const drawCol = (x: number, rows: Array<[string, string]>, emphasisColor: [number, number, number]) => {
+      autoTable(doc, {
+        startY: tableY,
+        margin: { left: x },
+        tableWidth: colWidth,
+        head: [],
+        body: rows.map(([k, v]) => [sanitizeCell(k), sanitizeCell(v)]) as RowInput[],
+        theme: "plain",
+        styles: { fontSize: 10, cellPadding: { top: 1.5, bottom: 1.5, left: 0, right: 0 } },
+        columnStyles: {
+          0: { textColor: this.muted, cellWidth: colWidth * 0.6 },
+          1: { halign: "right", fontStyle: "bold", textColor: this.ink },
+        },
+        didParseCell: (data) => {
+          if (data.row.index === 0) {
+            data.cell.styles.fontSize = 11.5;
+            if (data.column.index === 1) data.cell.styles.textColor = emphasisColor;
+          }
+        },
+      });
+      return (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY;
+    };
+    const leftEnd = drawCol(margin, left.rows, shade(primary, 0.4));
+    const rightEnd = drawCol(rightX, right.rows, shade(accent, 0.15));
+
+    this.cursorY = Math.max(leftEnd, rightEnd) + 4;
     return this;
   }
 

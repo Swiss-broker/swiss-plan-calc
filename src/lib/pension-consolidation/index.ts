@@ -183,7 +183,7 @@ function buildRetirement(b: ClientBundle): ConsolidatedScenario | null {
   if (p3a) notes.push("3a annualisé sur 22 ans à titre indicatif (capital en pratique).");
   if (lpp && lpp.plannedBuybacksTotal > 0) {
     notes.push(
-      `Rachat LPP planifié (${Math.round(lpp.plannedBuybacksTotal).toLocaleString("fr-CH")} CHF) réparti par défaut sur toutes les années restantes jusqu'à la retraite — une simulation LPP dédiée peut tester un étalement plus court (ex. 3 ans) et affichera alors un capital différent, ce qui est normal.`,
+      `Rachat LPP planifié (${Math.round(lpp.plannedBuybacksTotal).toLocaleString("fr-CH")} CHF) réparti par défaut sur toutes les années restantes jusqu'à la retraite. Une simulation LPP dédiée peut tester un étalement plus court (par exemple 3 ans) et affichera alors un capital différent, ce qui est normal.`,
     );
   }
 

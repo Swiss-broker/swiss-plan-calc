@@ -28,6 +28,12 @@ import { projectLPP } from "@/lib/lpp";
 const cantonName = (code?: string | null) =>
   (code && CANTONS.find((c) => c.code === code)?.name) || code || "—";
 
+// Formule d'adresse pour ouvrir le dossier : "Monsieur"/"Madame" + nom de
+// famille quand le genre est connu (usage courtier standard), sinon le
+// prénom seul plutôt qu'un titre incertain.
+const salutation = (c: Client) =>
+  c.gender === "male" ? `Monsieur ${c.last_name}` : c.gender === "female" ? `Madame ${c.last_name}` : c.first_name;
+
 const dateFR = (iso?: string | null) => {
   if (!iso) return "—";
   const d = new Date(iso);
@@ -158,12 +164,12 @@ function describeCompareFigures(entry: HistoryEntry): string | null {
   const rows = extractSavedCompareRows(entry);
   if (rows.length > 0) {
     const r = rows[0];
-    return `${r.label} — actuel : ${formatSplitValue(r.current, r.format)}, projeté : ${formatSplitValue(r.projected, r.format)}.`;
+    return `${r.label}. Actuel : ${formatSplitValue(r.current, r.format)}, projeté : ${formatSplitValue(r.projected, r.format)}.`;
   }
   const derived = buildDerivedComparison(entry);
   if (derived && derived.rows.length > 0) {
     const r = derived.rows[0];
-    return `${r.label} — actuel : ${formatSplitValue(r.current, r.format)}, projeté : ${formatSplitValue(r.projected, r.format)}.`;
+    return `${r.label}. Actuel : ${formatSplitValue(r.current, r.format)}, projeté : ${formatSplitValue(r.projected, r.format)}.`;
   }
   if (entry.kind === "retirement") {
     const annuity = num(entry.summary?.netAnnuity);
@@ -287,7 +293,7 @@ export function exportSynthesisReportPdf(args: SynthesisReportArgs): void {
   // repart avec l'essentiel même s'il ne relit jamais les pages suivantes.
   pdf.newPage();
   toc.push({ title: "Vue d'ensemble", page: pdf.doc.getCurrentPageInfo().pageNumber });
-  drawOverviewPage(pdf, pension, assets, entries);
+  drawOverviewPage(pdf, client, pension, assets, entries);
 
   // ---------- PROFIL CLIENT ----------
   pdf.newPage();
@@ -541,13 +547,14 @@ function drawCoverPage(
 // ============================================================================
 function drawOverviewPage(
   pdf: ReportPdf,
+  client: Client,
   pension: ClientPension | null,
   assets: ClientAssets | null,
   entries: HistoryEntry[],
 ) {
   pdf.section("Votre situation en un coup d'oeil");
-  pdf.paragraph(
-    "Ce dossier détaille, sujet par sujet, votre situation actuelle et l'impact des pistes évoquées aujourd'hui. Voici d'abord l'essentiel.",
+  pdf.richParagraph(
+    `${salutation(client)}, voici ce que nous avons pu établir à partir de votre dossier. Ce document détaille, sujet par sujet, **votre situation actuelle et ce que les pistes évoquées aujourd'hui pourraient vous apporter**. Commençons par l'essentiel.`,
   );
 
   const tiles: Array<{ label: string; value: number | string; tone?: "primary" | "success" | "warning" | "accent" }> = [];
@@ -725,8 +732,8 @@ function drawConsolidatedBenefitsPage(
   assets: ClientAssets | null,
 ) {
   pdf.section("Prestations consolidées");
-  pdf.paragraph(
-    "Ce chiffre réunit tout ce que votre dossier finance à la retraite (1er pilier AVS/AI, 2e pilier LPP et 3e pilier), calculé à partir des données actuelles de votre fiche. C'est la référence officielle du cabinet : les simulations détaillées qui suivent explorent chacune un scénario particulier (un montant de rachat étalé sur quelques années, une hypothèse de capital saisie pour un test, etc.) et peuvent donc s'en écarter ponctuellement — ce n'est pas une erreur, juste un scénario différent de cette vue d'ensemble.",
+  pdf.richParagraph(
+    "Ce chiffre réunit **tout ce que votre dossier finance à la retraite** : 1er pilier AVS/AI, 2e pilier LPP et 3e pilier, calculé à partir des données actuelles de votre situation. C'est notre référence officielle. Les simulations détaillées qui suivent explorent chacune un scénario particulier, comme un montant de rachat étalé sur quelques années ou une hypothèse de capital testée ponctuellement, et peuvent donc légèrement s'en écarter : ce n'est pas une erreur, simplement un scénario différent de cette vue d'ensemble.",
   );
 
   const bundle = { client, pension, assets };
@@ -744,10 +751,10 @@ function drawConsolidatedBenefitsPage(
 
   const assumptions = getOptimizationAssumptions(bundle);
   pdf.spacer(2);
-  pdf.paragraph(
-    `Situation optimisée : versement 3e pilier porté de ${formatCHF(assumptions.pillar3aCurrent)} à ${formatCHF(assumptions.pillar3aOptimized)} par an` +
+  pdf.richParagraph(
+    `Dans le scénario optimisé, votre versement 3e pilier passerait de ${formatCHF(assumptions.pillar3aCurrent)} à **${formatCHF(assumptions.pillar3aOptimized)} par an**` +
       (assumptions.lppBuybackAmount > 0
-        ? `, et rachat LPP de ${formatCHF(assumptions.lppBuybackAmount)} utilisant la capacité restante.`
+        ? `, avec un rachat LPP de **${formatCHF(assumptions.lppBuybackAmount)}** correspondant à votre capacité restante.`
         : "."),
     { muted: true },
   );
@@ -759,33 +766,37 @@ function drawConsolidatedBenefitsPage(
 
     pdf.spacer(4);
     pdf.section(PENSION_EVENT_LABELS[event]);
-
     pdf.spacer(2);
-    pdf.situationBanner();
-    pdf.kvTable([
-      ["Total mensuel consolidé", `${formatCHF(cur.combinedMonthly)} / mois`],
-      ["Total annuel consolidé", formatCHF(cur.combinedAnnual)],
-      ["1er pilier (AVS/AI)", formatCHF(cur.pillar1.totalAnnual)],
-      ["2e pilier + 3a", formatCHF(cur.pillar2.totalAnnual)],
-    ]);
 
-    pdf.spacer(3);
-    pdf.projectionBanner();
-    pdf.kvTable([
-      ["Total mensuel consolidé", `${formatCHF(opt.combinedMonthly)} / mois`],
-      ["Total annuel consolidé", formatCHF(opt.combinedAnnual)],
-      ["1er pilier (AVS/AI)", formatCHF(opt.pillar1.totalAnnual)],
-      ["2e pilier + 3a", formatCHF(opt.pillar2.totalAnnual)],
-    ]);
+    pdf.sideBySideCompare(
+      {
+        label: "Votre situation actuelle",
+        rows: [
+          ["Total annuel consolidé", formatCHF(cur.combinedAnnual)],
+          ["Total mensuel", `${formatCHF(cur.combinedMonthly)} / mois`],
+          ["1er pilier (AVS/AI)", formatCHF(cur.pillar1.totalAnnual)],
+          ["2e pilier + 3a", formatCHF(cur.pillar2.totalAnnual)],
+        ],
+      },
+      {
+        label: "Votre situation optimisée",
+        rows: [
+          ["Total annuel consolidé", formatCHF(opt.combinedAnnual)],
+          ["Total mensuel", `${formatCHF(opt.combinedMonthly)} / mois`],
+          ["1er pilier (AVS/AI)", formatCHF(opt.pillar1.totalAnnual)],
+          ["2e pilier + 3a", formatCHF(opt.pillar2.totalAnnual)],
+        ],
+      },
+    );
 
     const annualGain = opt.combinedAnnual - cur.combinedAnnual;
     if (annualGain > 0) {
       const gainLabel =
         event === "retirement"
-          ? "Rente annuelle supplémentaire"
+          ? "Votre rente annuelle supplémentaire"
           : event === "disability"
-            ? "Couverture AI annuelle en plus"
-            : "Couverture survivants en plus";
+            ? "Votre couverture AI annuelle en plus"
+            : "Votre couverture survivants en plus";
       pdf.callout(`${gainLabel} : ${formatCHF(annualGain)} par an.`, "accent");
     }
 
@@ -969,25 +980,20 @@ function drawComparisonSpread(
   const baseKpis = extractKpis(kind, baseline.summary ?? {});
   const projKpis = extractKpis(kind, projected.summary ?? {});
 
-  // ---- Situation actuelle ----
   pdf.spacer(3);
-  pdf.situationBanner();
-  if (baseKpis.length) {
-    pdf.kvTable(baseKpis.map((k) => [k.label, formatKpiValue(k.value, k.unit)] as [string, string]));
-  }
-  const baseComment = buildComment(baseline);
-  if (baseComment) pdf.paragraph(baseComment, { muted: true });
-  pdf.paragraph(`Basé sur la sauvegarde du ${dateFR(baseline.created_at)}.`, { italic: true, muted: true });
-
-  // ---- Situation projetée ----
-  pdf.spacer(4);
-  pdf.projectionBanner();
-  if (projKpis.length) {
-    pdf.kvTable(
-      projKpis.map((k, i) => {
-        const delta = baseKpis[i] ? kpiDelta(baseKpis[i], k) : "";
-        return [k.label, `${formatKpiValue(k.value, k.unit)}${delta}`] as [string, string];
-      }),
+  if (baseKpis.length || projKpis.length) {
+    pdf.sideBySideCompare(
+      {
+        label: "Votre situation actuelle",
+        rows: baseKpis.map((k) => [k.label, formatKpiValue(k.value, k.unit)] as [string, string]),
+      },
+      {
+        label: "Votre situation projetée",
+        rows: projKpis.map((k, i) => {
+          const delta = baseKpis[i] ? kpiDelta(baseKpis[i], k) : "";
+          return [k.label, `${formatKpiValue(k.value, k.unit)}${delta}`] as [string, string];
+        }),
+      },
     );
   }
 
@@ -996,10 +1002,13 @@ function drawComparisonSpread(
     const amountTxt = gain.type === "annual" ? `${formatCHF(gain.amount)} par an` : formatCHF(gain.amount);
     pdf.callout(`Ce que vous gagnez : ${amountTxt}.${gain.details ? ` ${gain.details}` : ""}`, "accent");
   }
+
+  const baseComment = buildComment(baseline);
+  if (baseComment) pdf.paragraph(baseComment, { muted: true });
   const projComment = buildComment(projected);
   if (projComment) pdf.paragraph(projComment);
   pdf.paragraph(
-    `Basé sur la sauvegarde du ${dateFR(projected.created_at)}, comparée automatiquement à votre situation actuelle.`,
+    `Situation actuelle enregistrée le ${dateFR(baseline.created_at)}. Situation projetée enregistrée le ${dateFR(projected.created_at)}, comparée automatiquement à votre situation actuelle.`,
     { italic: true, muted: true },
   );
 
@@ -1315,7 +1324,7 @@ function formatMetrics(
     case "fx_claim": {
       if (has(s.totalChfAfc)) out.push({ label: "CHF retenu (AFC)", value: num(s.totalChfAfc), tone: "warning" });
       if (has(s.totalChfMarket)) out.push({ label: "CHF réel (marché)", value: num(s.totalChfMarket), tone: "primary" });
-      if (has(s.totalDeltaChf)) out.push({ label: "Écart en faveur du client", value: num(s.totalDeltaChf), tone: "success" });
+      if (has(s.totalDeltaChf)) out.push({ label: "Écart en votre faveur", value: num(s.totalDeltaChf), tone: "success" });
       if (has(s.estimatedTaxRefund)) out.push({ label: "Économie d'impôt estimée", value: num(s.estimatedTaxRefund), tone: "success" });
       break;
     }
@@ -1502,7 +1511,7 @@ function buildComment(entry: HistoryEntry): string | null {
         const rate = ((sav / Math.max(1, cap)) * 100).toFixed(1).replace(".", ",");
         return `Un rachat de ${formatCHF(cap)}, étalé sur ${years} an${years > 1 ? "s" : ""}, vous ferait économiser ${formatCHF(sav)} d'impôts au total, soit un retour fiscal moyen de ${rate} % du montant racheté. Concrètement, chaque franc versé dans votre 2e pilier réduit d'autant votre revenu imposable l'année du versement, tout en renforçant votre capital de prévoyance qui sera converti en rente ou retiré à la retraite. Point de vigilance : un rachat LPP bloque tout retrait en capital pendant les 3 années qui suivent (art. 79b al. 3 LPP), à anticiper si un achat immobilier ou un départ à l'étranger est envisagé sur cet horizon.`;
       }
-      return `Votre capital LPP projeté à la retraite s'élève à ${formatCHF(proj)}, sur la base des paramètres saisis (âge, salaire assuré, rendement attendu). Aucun rachat n'a été simulé ici, ou celui-ci ne génère pas d'économie fiscale supplémentaire dans ce scénario ; une capacité de rachat existe peut-être encore, à vérifier sur le certificat de prévoyance du client.`;
+      return `Votre capital LPP projeté à la retraite s'élève à ${formatCHF(proj)}, sur la base des paramètres saisis (âge, salaire assuré, rendement attendu). Aucun rachat n'a été simulé ici, ou celui-ci ne génère pas d'économie fiscale supplémentaire dans ce scénario ; une capacité de rachat existe peut-être encore, à vérifier sur votre certificat de prévoyance.`;
     }
     case "pillar3a": {
       const sav = num(s.taxSavings);
@@ -1603,7 +1612,7 @@ function buildComment(entry: HistoryEntry): string | null {
       const txt =
         deltaChf > 0
           ? `Le taux de change réel du marché vous était plus favorable que le taux AFC retenu par le fisc sur la période analysée, pour un écart cumulé de ${formatCHF(deltaChf)} et une économie d'impôt estimée de ${formatCHF(refund)}.`
-          : "Sur la période analysée, le taux AFC retenu par le fisc n'était pas défavorable au client : aucun trop-payé identifié.";
+          : "Sur la période analysée, le taux AFC retenu par le fisc ne vous était pas défavorable, donc aucun trop-payé n'a été identifié.";
       return `${txt} Une réclamation n'est admise que si chaque date de versement peut être justifiée (fiches de salaire, relevés bancaires).${entry.note ? ` ${entry.note.trim()}` : ""}`;
     }
     case "avs_ai": {
@@ -1825,7 +1834,7 @@ function drawComparisonPage(
   if (totals.oneTime > 0 || totals.annual > 0) {
     pdf.spacer(3);
     pdf.paragraph(
-      "Ce total combine les gains ponctuels (rachats, retraits optimisés) et les économies récurrentes projetées sur 10 ans, à situation constante. Il s'agit d'un ordre de grandeur destiné à objectiver la conversation avec le client, pas d'un engagement contractuel : chaque optimisation nécessite une mise en oeuvre concrète et un suivi dans le temps.",
+      "Ce total combine les gains ponctuels (rachats, retraits optimisés) et les économies récurrentes projetées sur 10 ans, à situation constante. Il s'agit d'un ordre de grandeur destiné à éclairer nos échanges, pas d'un engagement contractuel : chaque optimisation nécessite une mise en oeuvre concrète et un suivi dans le temps.",
       { muted: true, italic: true },
     );
   }
@@ -1910,12 +1919,12 @@ function drawConclusionPage(pdf: ReportPdf, entries: HistoryEntry[]) {
     });
   } else if (gains.length === 0) {
     pdf.paragraph(
-      "Les simulations réalisées documentent la situation du client mais n'ont pas fait ressortir de gain chiffrable direct. Elles restent néanmoins utiles pour objectiver les choix à venir.",
+      "Les simulations réalisées documentent votre situation mais n'ont pas fait ressortir de gain chiffrable direct. Elles restent néanmoins utiles pour éclairer les choix à venir.",
       { italic: true, muted: true },
     );
   } else {
     pdf.paragraph(
-      `${gains.length} optimisation${gains.length > 1 ? "s ont" : " a"} été identifiée${gains.length > 1 ? "s" : ""} sur la base des simulations réalisées avec ce client, classées ci-dessous par ordre d'impact financier décroissant.`,
+      `${gains.length} optimisation${gains.length > 1 ? "s ont" : " a"} été identifiée${gains.length > 1 ? "s" : ""} sur la base des simulations réalisées avec vous, classées ci-dessous par ordre d'impact financier décroissant.`,
     );
     pdf.spacer(2);
     let n = 1;
