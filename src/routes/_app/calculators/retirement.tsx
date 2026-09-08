@@ -30,7 +30,6 @@ import { ClientLinkBanner } from "@/components/calculators/ClientLinkBanner";
 import { ClientPrefillBadge } from "@/components/calculators/ClientPrefillBadge";
 import { GuideMode, GuideToggleButton, type GuideStep } from "@/components/calculators/GuideMode";
 import { WikiTip } from "@/components/calculators/WikiTip";
-import { ConsolidatedBenefitsCard } from "@/components/clients/ConsolidatedBenefitsCard";
 import { CrossCalcImpactBanner } from "@/components/calculators/CrossCalcImpactBanner";
 
 const searchSchema = z.object({
@@ -335,8 +334,6 @@ const projectedCapital = dashboard?.lpp?.projectedCapitalAt65;
           Cette comparaison repose sur les hypothèses ci-dessus (espérance de vie, rendement, fiscalité). Une modification de ces paramètres peut changer la recommandation.
         </p>
       </div>
-
-      {bundle && <ConsolidatedBenefitsCard bundle={bundle} />}
 
       <div className="flex flex-wrap justify-end gap-2" data-guide="retirement-save">
         <Button type="button" variant="outline" className="gap-2" onClick={handleExportPdf}>

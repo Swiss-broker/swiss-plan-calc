@@ -20,6 +20,7 @@ import {
   Wallet,
   Landmark,
   FolderOpen,
+  HeartHandshake,
 } from "lucide-react";
 import { DocumentsTab } from "@/components/clients/DocumentsTab";
 import { supabase } from "@/integrations/supabase/client";
@@ -85,6 +86,7 @@ const CLIENT_TABS = [
   "optimizations",
   "fiscal",
   "pension",
+  "consolidated",
   "patrimoine",
   "family",
   "notes",
@@ -435,6 +437,10 @@ function ClientDetailPage() {
           </TabsTrigger>
           <TabsTrigger value="fiscal">Fiscalité</TabsTrigger>
           <TabsTrigger value="pension">Prévoyance</TabsTrigger>
+          <TabsTrigger value="consolidated" className="gap-1">
+            <HeartHandshake className="h-3.5 w-3.5" />
+            Prestations consolidées
+          </TabsTrigger>
           <TabsTrigger value="patrimoine">Patrimoine</TabsTrigger>
           <TabsTrigger value="family">Famille</TabsTrigger>
           <TabsTrigger value="notes">Notes</TabsTrigger>
@@ -548,7 +554,6 @@ function ClientDetailPage() {
           {dashboard?.hasEnoughData && (
             <DashboardPension dashboard={dashboard} clientId={clientId} />
           )}
-          {bundle && <ConsolidatedBenefitsCard bundle={bundle} />}
           <div className="grid gap-4 lg:grid-cols-2">
             <Card title="2e pilier (LPP)">
               <Row label="Plan" value={pension ? LPP_PLAN_LABELS[pension.lpp_plan] : "—"} />
@@ -627,6 +632,16 @@ function ClientDetailPage() {
                 </Button>
               </div>
             </Card>
+          )}
+        </TabsContent>
+
+        <TabsContent value="consolidated" className="mt-4 space-y-6">
+          {bundle ? (
+            <ConsolidatedBenefitsCard bundle={bundle} />
+          ) : (
+            <p className="text-sm text-muted-foreground">
+              Données insuffisantes pour calculer les prestations consolidées (date de naissance, salaire ou avoirs manquants).
+            </p>
           )}
         </TabsContent>
 
