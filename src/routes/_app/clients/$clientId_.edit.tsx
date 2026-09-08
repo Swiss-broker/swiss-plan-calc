@@ -85,6 +85,10 @@ function EditClientPage() {
               securities: Number(data.assets.securities),
               real_estate_value: Number(data.assets.real_estate_value),
               mortgage_debt: Number(data.assets.mortgage_debt),
+              assets_currency: (data.assets.assets_currency as "CHF" | "EUR" | null) ?? "CHF",
+              assets_conversion_rate: data.assets.assets_conversion_rate
+                ? Number(data.assets.assets_conversion_rate)
+                : undefined,
             }
           : undefined,
       }}

@@ -1461,6 +1461,7 @@ export const fr: Record<string, string> = {
   "wizard.field.salary.retired": "Rentes annuelles totales (AVS + LPP)",
   "wizard.field.income_currency": "Devise de saisie du revenu",
   "wizard.field.income_currency.hint": "Pour un client frontalier qui donne ses chiffres en euros : passez sur EUR, le montant est automatiquement converti et stocké en CHF (taux AFC officiel par défaut, modifiable).",
+  "wizard.field.currency": "Devise de saisie",
   "wizard.field.bonus": "Bonus / 13e",
   "wizard.field.other_income": "Autres revenus",
   "wizard.field.other_income.retired": "Autres revenus (loyers, dividendes…)",

@@ -101,6 +101,8 @@ export interface WizardInitialData {
     securities: number;
     real_estate_value: number;
     mortgage_debt: number;
+    assets_currency?: "CHF" | "EUR";
+    assets_conversion_rate?: number;
   };
 }
 
@@ -154,6 +156,8 @@ interface FormState {
   // Nouveaux champs v2
   activity_sector: string;
   mortgage_interest_france: string;
+  mortgage_interest_currency: "CHF" | "EUR";
+  mortgage_interest_conversion_rate: string;
   // Pension & assets (optional shortcuts)
   lpp_current_balance: string;
   lpp_insured_salary: string;
@@ -168,6 +172,8 @@ interface FormState {
   securities: string;
   real_estate_value: string;
   mortgage_debt: string;
+  assets_currency: "CHF" | "EUR";
+  assets_conversion_rate: string;
 }
 
 function initialForm(initial?: WizardInitialData): FormState {
@@ -214,6 +220,8 @@ function initialForm(initial?: WizardInitialData): FormState {
     children: parseChildrenSafe(c?.children),
     activity_sector: c?.activity_sector ?? "",
     mortgage_interest_france: c?.mortgage_interest_france?.toString() ?? "",
+    mortgage_interest_currency: (c?.mortgage_interest_currency as "CHF" | "EUR" | null) ?? "CHF",
+    mortgage_interest_conversion_rate: c?.mortgage_interest_conversion_rate?.toString() ?? "",
     lpp_current_balance: p?.lpp_current_balance?.toString() ?? "",
     lpp_insured_salary: p?.lpp_insured_salary?.toString() ?? "",
     lpp_max_buyback: p?.lpp_max_buyback?.toString() ?? "",
@@ -227,6 +235,8 @@ function initialForm(initial?: WizardInitialData): FormState {
     securities: a?.securities?.toString() ?? "",
     real_estate_value: a?.real_estate_value?.toString() ?? "",
     mortgage_debt: a?.mortgage_debt?.toString() ?? "",
+    assets_currency: a?.assets_currency ?? "CHF",
+    assets_conversion_rate: a?.assets_conversion_rate?.toString() ?? "",
   };
 }
 
@@ -457,6 +467,9 @@ export function ClientWizard({ initial, mode, clientId }: ClientWizardProps) {
         spouse_work_location: isMarried ? form.spouse_work_location : "none",
         activity_sector: form.activity_sector || null,
         mortgage_interest_france: num(form.mortgage_interest_france) ?? 0,
+        mortgage_interest_currency: form.mortgage_interest_currency,
+        mortgage_interest_conversion_rate:
+          form.mortgage_interest_currency === "EUR" ? num(form.mortgage_interest_conversion_rate) : null,
         children: form.children.filter(
           (c) => (c.first_name && c.first_name.trim() !== "") || (c.date_of_birth && c.date_of_birth.trim() !== ""),
         ) as unknown as import("@/integrations/supabase/types").Json,
@@ -526,6 +539,8 @@ export function ClientWizard({ initial, mode, clientId }: ClientWizardProps) {
         securities: num(form.securities) ?? 0,
         real_estate_value: num(form.real_estate_value) ?? 0,
         mortgage_debt: num(form.mortgage_debt) ?? 0,
+        assets_currency: form.assets_currency,
+        assets_conversion_rate: form.assets_currency === "EUR" ? num(form.assets_conversion_rate) : null,
       };
       const { data: existingAssets } = await supabase
         .from("client_assets")
@@ -1001,16 +1016,54 @@ function StepFiscal({ form, update, errors }: StepProps) {
       </Field>
 
       <Field
-        label="Intérêts hypothécaires résidence France (CHF)"
+        label="Intérêts hypothécaires résidence France"
         htmlFor="mort_fr"
-        hint="Déductible côté France pour frontaliers accord 1983 — réduit l'assiette imposable française"
+        hint="Déductible côté France pour frontaliers accord 1983 — réduit l'assiette imposable française. Saisie possible en euros, convertie et stockée en CHF."
       >
-        <NumField
-          id="mort_fr"
-          value={form.mortgage_interest_france}
-          onChange={(v) => update("mortgage_interest_france", v)}
-          suffix="CHF"
-        />
+        <div className="flex gap-2">
+          <Select
+            value={form.mortgage_interest_currency}
+            onValueChange={(v) => {
+              const currency = v as "CHF" | "EUR";
+              update("mortgage_interest_currency", currency);
+              if (currency === "EUR" && !form.mortgage_interest_conversion_rate) {
+                update("mortgage_interest_conversion_rate", String(defaultEurRate()));
+              }
+            }}
+          >
+            <SelectTrigger className="w-24">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="CHF">CHF</SelectItem>
+              <SelectItem value="EUR">EUR</SelectItem>
+            </SelectContent>
+          </Select>
+          <NumField
+            id="mort_fr"
+            value={chfToDisplay(
+              form.mortgage_interest_france,
+              form.mortgage_interest_currency,
+              form.mortgage_interest_conversion_rate,
+            )}
+            onChange={(v) =>
+              update(
+                "mortgage_interest_france",
+                displayToChf(v, form.mortgage_interest_currency, form.mortgage_interest_conversion_rate),
+              )
+            }
+            suffix={form.mortgage_interest_currency}
+            className="flex-1"
+          />
+          {form.mortgage_interest_currency === "EUR" && (
+            <NumField
+              value={form.mortgage_interest_conversion_rate}
+              onChange={(v) => update("mortgage_interest_conversion_rate", v)}
+              suffix="CHF/EUR"
+              className="w-28"
+            />
+          )}
+        </div>
       </Field>
       <Field
         label={t("wizard.field.arrival_year_ch")}
@@ -1544,33 +1597,74 @@ function StepPatrimoine({
       <Separator />
       <div>
         <h3 className="text-sm font-semibold">{t("wizard.assets.title")}</h3>
+        <Field
+          label={t("wizard.field.currency")}
+          hint="S'applique aux 4 montants ci-dessous. Saisie possible en euros, convertie et stockée en CHF."
+        >
+          <div className="flex gap-2">
+            <Select
+              value={form.assets_currency}
+              onValueChange={(v) => {
+                const currency = v as "CHF" | "EUR";
+                update("assets_currency", currency);
+                if (currency === "EUR" && !form.assets_conversion_rate) {
+                  update("assets_conversion_rate", String(defaultEurRate()));
+                }
+              }}
+            >
+              <SelectTrigger className="w-24">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="CHF">CHF</SelectItem>
+                <SelectItem value="EUR">EUR</SelectItem>
+              </SelectContent>
+            </Select>
+            {form.assets_currency === "EUR" && (
+              <NumField
+                value={form.assets_conversion_rate}
+                onChange={(v) => update("assets_conversion_rate", v)}
+                suffix="CHF/EUR"
+                className="w-28"
+              />
+            )}
+          </div>
+        </Field>
         <div className="mt-3 grid gap-4 sm:grid-cols-2">
           <Field label={t("wizard.assets.bank")}>
             <NumField
-              value={form.bank_accounts}
-              onChange={(v) => update("bank_accounts", v)}
-              suffix="CHF"
+              value={chfToDisplay(form.bank_accounts, form.assets_currency, form.assets_conversion_rate)}
+              onChange={(v) =>
+                update("bank_accounts", displayToChf(v, form.assets_currency, form.assets_conversion_rate))
+              }
+              suffix={form.assets_currency}
             />
           </Field>
           <Field label={t("wizard.assets.securities")}>
             <NumField
-              value={form.securities}
-              onChange={(v) => update("securities", v)}
-              suffix="CHF"
+              value={chfToDisplay(form.securities, form.assets_currency, form.assets_conversion_rate)}
+              onChange={(v) =>
+                update("securities", displayToChf(v, form.assets_currency, form.assets_conversion_rate))
+              }
+              suffix={form.assets_currency}
             />
           </Field>
           <Field label={t("wizard.assets.realestate")}>
             <NumField
-              value={form.real_estate_value}
-              onChange={(v) => update("real_estate_value", v)}
-              suffix="CHF"
+              value={chfToDisplay(form.real_estate_value, form.assets_currency, form.assets_conversion_rate)}
+              onChange={(v) =>
+                update("real_estate_value", displayToChf(v, form.assets_currency, form.assets_conversion_rate))
+              }
+              suffix={form.assets_currency}
             />
           </Field>
           <Field label={t("wizard.assets.mortgage")}>
             <NumField
-              value={form.mortgage_debt}
-              onChange={(v) => update("mortgage_debt", v)}
-              suffix="CHF"
+              value={chfToDisplay(form.mortgage_debt, form.assets_currency, form.assets_conversion_rate)}
+              onChange={(v) =>
+                update("mortgage_debt", displayToChf(v, form.assets_currency, form.assets_conversion_rate))
+              }
+              suffix={form.assets_currency}
             />
           </Field>
         </div>

@@ -440,6 +440,8 @@ export type Database = {
       }
       client_assets: {
         Row: {
+          assets_conversion_rate: number | null
+          assets_currency: string
           bank_accounts: number
           broker_id: string
           client_id: string
@@ -457,6 +459,8 @@ export type Database = {
           vehicles: number
         }
         Insert: {
+          assets_conversion_rate?: number | null
+          assets_currency?: string
           bank_accounts?: number
           broker_id: string
           client_id: string
@@ -474,6 +478,8 @@ export type Database = {
           vehicles?: number
         }
         Update: {
+          assets_conversion_rate?: number | null
+          assets_currency?: string
           bank_accounts?: number
           broker_id?: string
           client_id?: string
@@ -949,6 +955,8 @@ export type Database = {
           income_conversion_rate: number | null
           income_currency: string
           last_name: string
+          mortgage_interest_conversion_rate: number | null
+          mortgage_interest_currency: string
           mortgage_interest_france: number | null
           nationality: string | null
           other_income: number | null
@@ -998,6 +1006,8 @@ export type Database = {
           income_conversion_rate?: number | null
           income_currency?: string
           last_name: string
+          mortgage_interest_conversion_rate?: number | null
+          mortgage_interest_currency?: string
           mortgage_interest_france?: number | null
           nationality?: string | null
           other_income?: number | null
@@ -1047,6 +1057,8 @@ export type Database = {
           income_conversion_rate?: number | null
           income_currency?: string
           last_name?: string
+          mortgage_interest_conversion_rate?: number | null
+          mortgage_interest_currency?: string
           mortgage_interest_france?: number | null
           nationality?: string | null
           other_income?: number | null
