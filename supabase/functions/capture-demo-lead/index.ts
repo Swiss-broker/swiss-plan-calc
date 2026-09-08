@@ -134,16 +134,26 @@ export async function handleCaptureDemoLeadRequest(req: Request, env: Env): Prom
       return jsonResponse({ error: "ATTENDEE_EMAIL_MISSING" }, 400);
     }
 
-    // Emplacement du téléphone non confirmé par une source officielle
-    // (dépend des questions configurées sur le type d'événement Cal.com,
-    // champ optionnel côté formulaire) : on teste les emplacements les
-    // plus plausibles sans jamais bloquer la capture du lead si absent.
+    // Clé confirmée (issue calcom/cal.com #23375, qui cite explicitement
+    // "responses.attendeePhoneNumber.value" dans un vrai payload webhook,
+    // recoupé avec la doc d'aide Cal.com : la location "Attendee phone
+    // number" est traitée en interne comme la question de réservation
+    // "attendeePhoneNumber") : { value: "+41..." } sous payload.responses.
+    // Ce champ est obligatoire pour ce type de location, donc attendu à
+    // chaque réservation ; les autres emplacements ne sont qu'un filet de
+    // sécurité pour une éventuelle variation de version de l'API Cal.com.
     const phone: string | null =
-      attendee?.phoneNumber ||
       extractResponseValue(responses.attendeePhoneNumber) ||
       extractResponseValue(responses.phone) ||
       extractResponseValue(responses.smsReminderNumber) ||
+      attendee?.phoneNumber ||
       null;
+    if (!phone) {
+      // Ne bloque pas l'insertion : ce cas ne devrait normalement jamais
+      // se produire puisque le téléphone est le canal de contact du RDV,
+      // mais mieux vaut un lead incomplet qu'un lead perdu.
+      console.warn("Téléphone absent du payload Cal.com alors qu'il est attendu:", rawBody);
+    }
 
     const demoDate: string | null = typeof payload.startTime === "string" ? payload.startTime : null;
 
