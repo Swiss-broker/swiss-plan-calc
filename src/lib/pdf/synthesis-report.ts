@@ -17,7 +17,12 @@ import { extractGain, type ExtractedGain } from "@/lib/simulations/extract-gain"
 import type { HistoryEntry, HistoryKpi, SimulationKind } from "@/lib/history/types";
 import { KIND_LABELS } from "@/lib/history/types";
 import { extractKpis } from "@/lib/history/registry";
-import { consolidatePensionBenefits, PENSION_EVENT_LABELS, type ConsolidatedScenario } from "@/lib/pension-consolidation";
+import {
+  consolidatePensionBenefits,
+  consolidateOptimizedBenefits,
+  getOptimizationAssumptions,
+  PENSION_EVENT_LABELS,
+} from "@/lib/pension-consolidation";
 import { projectLPP } from "@/lib/lpp";
 
 const cantonName = (code?: string | null) =>
@@ -225,6 +230,19 @@ const EXPLAIN_FR: Partial<Record<SimulationKind, string>> = {
   fx_claim: "Le fisc français convertit vos revenus suisses en euros avec un taux de change annuel moyen (taux AFC). Si le taux réel du jour de chaque versement vous était plus favorable, l'écart peut représenter un trop-payé d'impôt réclamable. Ce calculateur compare les deux taux, versement par versement.",
 };
 
+// Ordre de lecture demandé par le cabinet pour les simulations du dossier
+// PDF : 1er pilier, puis 2e, puis 3e, puis fiscalité globale, puis le
+// reste dans son ordre d'origine (index élevé = pas de priorité).
+const KIND_ORDER: Partial<Record<SimulationKind, number>> = {
+  avs_ai: 0,
+  lpp: 1,
+  pillar3a: 2,
+  tax_global: 3,
+};
+function kindOrderIndex(kind: SimulationKind): number {
+  return KIND_ORDER[kind] ?? 10;
+}
+
 function explainKind(kind: SimulationKind): string {
   return (
     EXPLAIN_FR[kind] ??
@@ -316,8 +334,16 @@ export function exportSynthesisReportPdf(args: SynthesisReportArgs): void {
     spreadPairs.set(kind, { baseline, projected });
   }
 
+  // Ordre de présentation demandé par le cabinet : 1er pilier, puis 2e,
+  // puis 3e, puis fiscalité globale, puis le reste dans l'ordre où les
+  // simulations ont été sélectionnées (au lieu de l'ordre de sélection
+  // brut, qui ne suit aucune logique de lecture pour le client).
+  const orderedEntries = [...entries].sort(
+    (a, b) => kindOrderIndex(a.kind as SimulationKind) - kindOrderIndex(b.kind as SimulationKind),
+  );
+
   const drawnPairKinds = new Set<SimulationKind>();
-  for (const entry of entries) {
+  for (const entry of orderedEntries) {
     const kind = entry.kind as SimulationKind;
     const pair = spreadPairs.get(kind);
     if (pair) {
@@ -341,12 +367,12 @@ export function exportSynthesisReportPdf(args: SynthesisReportArgs): void {
   // ---------- AVANT/APRÈS ----------
   pdf.newPage();
   toc.push({ title: "Comparatif avant / après", page: pdf.doc.getCurrentPageInfo().pageNumber });
-  drawComparisonPage(pdf, entries, pension, assets, spreadPairs);
+  drawComparisonPage(pdf, orderedEntries, pension, assets, spreadPairs);
 
   // ---------- CONCLUSION ----------
   pdf.newPage();
   toc.push({ title: "Conclusion & recommandations", page: pdf.doc.getCurrentPageInfo().pageNumber });
-  drawConclusionPage(pdf, entries);
+  drawConclusionPage(pdf, orderedEntries);
 
   // ---------- Remplissage de la TOC sur la page placeholder ----------
   pdf.doc.setPage(tocPage);
@@ -703,10 +729,11 @@ function drawConsolidatedBenefitsPage(
     "Ce chiffre réunit tout ce que votre dossier finance à la retraite (1er pilier AVS/AI, 2e pilier LPP et 3e pilier), calculé à partir des données actuelles de votre fiche. C'est la référence officielle du cabinet : les simulations détaillées qui suivent explorent chacune un scénario particulier (un montant de rachat étalé sur quelques années, une hypothèse de capital saisie pour un test, etc.) et peuvent donc s'en écarter ponctuellement — ce n'est pas une erreur, juste un scénario différent de cette vue d'ensemble.",
   );
 
-  const benefits = consolidatePensionBenefits({ client, pension, assets });
-  const retirement = benefits.retirement;
+  const bundle = { client, pension, assets };
+  const current = consolidatePensionBenefits(bundle);
+  const optimized = consolidateOptimizedBenefits(bundle);
 
-  if (!retirement) {
+  if (!current.retirement) {
     pdf.spacer(2);
     pdf.paragraph(
       "Données insuffisantes pour calculer une consolidation (date de naissance, salaire ou avoirs manquants dans la fiche).",
@@ -715,43 +742,75 @@ function drawConsolidatedBenefitsPage(
     return;
   }
 
+  const assumptions = getOptimizationAssumptions(bundle);
   pdf.spacer(2);
-  pdf.metricsGrid([
-    { label: "Rente mensuelle consolidée", value: retirement.combinedMonthly, tone: "primary" },
-    { label: "Rente annuelle consolidée", value: retirement.combinedAnnual, tone: "success" },
-    { label: "1er pilier (AVS/AI)", value: retirement.pillar1.totalAnnual },
-    { label: "2e pilier + 3a", value: retirement.pillar2.totalAnnual },
-  ]);
+  pdf.paragraph(
+    `Situation optimisée : versement 3e pilier porté de ${formatCHF(assumptions.pillar3aCurrent)} à ${formatCHF(assumptions.pillar3aOptimized)} par an` +
+      (assumptions.lppBuybackAmount > 0
+        ? `, et rachat LPP de ${formatCHF(assumptions.lppBuybackAmount)} utilisant la capacité restante.`
+        : "."),
+    { muted: true },
+  );
 
-  const detailRows = [...retirement.pillar1.items, ...retirement.pillar2.items].map((it) => [
-    it.label,
-    it.pillar,
-    formatCHF(it.annual),
-    formatCHF(it.monthly),
-  ]);
-  if (detailRows.length > 0) {
-    pdf.spacer(3);
-    pdf.table(["Prestation", "Pilier", "Annuel", "Mensuel"], detailRows);
-  }
-  if (retirement.notes.length > 0) {
-    pdf.spacer(2);
-    for (const note of retirement.notes) {
-      pdf.paragraph(`• ${note}`, { muted: true, italic: true });
-    }
-  }
-
-  // Comparaison rapide vieillesse / invalidité / décès, mêmes données,
-  // mêmes hypothèses : c'est la "consolidation des rentes" au sens large.
-  const eventRows: Array<[string, string, string]> = [];
   for (const event of ["retirement", "disability", "death"] as const) {
-    const scenario: ConsolidatedScenario | null = benefits[event];
-    if (!scenario) continue;
-    eventRows.push([PENSION_EVENT_LABELS[event], formatCHF(scenario.combinedAnnual), formatCHF(scenario.combinedMonthly)]);
-  }
-  if (eventRows.length > 1) {
+    const cur = current[event];
+    const opt = optimized[event];
+    if (!cur || !opt) continue;
+
     pdf.spacer(4);
-    pdf.paragraph("Comparaison par événement (vieillesse, invalidité, décès) :", { muted: true });
-    pdf.table(["Événement", "Rente annuelle", "Rente mensuelle"], eventRows);
+    pdf.section(PENSION_EVENT_LABELS[event]);
+
+    pdf.spacer(2);
+    pdf.situationBanner();
+    pdf.kvTable([
+      ["Total mensuel consolidé", `${formatCHF(cur.combinedMonthly)} / mois`],
+      ["Total annuel consolidé", formatCHF(cur.combinedAnnual)],
+      ["1er pilier (AVS/AI)", formatCHF(cur.pillar1.totalAnnual)],
+      ["2e pilier + 3a", formatCHF(cur.pillar2.totalAnnual)],
+    ]);
+
+    pdf.spacer(3);
+    pdf.projectionBanner();
+    pdf.kvTable([
+      ["Total mensuel consolidé", `${formatCHF(opt.combinedMonthly)} / mois`],
+      ["Total annuel consolidé", formatCHF(opt.combinedAnnual)],
+      ["1er pilier (AVS/AI)", formatCHF(opt.pillar1.totalAnnual)],
+      ["2e pilier + 3a", formatCHF(opt.pillar2.totalAnnual)],
+    ]);
+
+    const annualGain = opt.combinedAnnual - cur.combinedAnnual;
+    if (annualGain > 0) {
+      const gainLabel =
+        event === "retirement"
+          ? "Rente annuelle supplémentaire"
+          : event === "disability"
+            ? "Couverture AI annuelle en plus"
+            : "Couverture survivants en plus";
+      pdf.callout(`${gainLabel} : ${formatCHF(annualGain)} par an.`, "accent");
+    }
+
+    const detailRows = [...cur.pillar1.items, ...cur.pillar2.items].map((it) => [
+      it.label,
+      it.pillar,
+      formatCHF(it.annual),
+      formatCHF(it.monthly),
+    ]);
+    if (detailRows.length > 0) {
+      pdf.spacer(3);
+      pdf.paragraph("Détail situation actuelle :", { muted: true });
+      pdf.table(["Prestation", "Pilier", "Annuel", "Mensuel"], detailRows);
+    }
+
+    // dédoublonné : actuel et optimisé partagent souvent la même remarque
+    // (ex. "3a annualisé à titre indicatif"), qui n'a pas besoin d'être
+    // répétée deux fois de suite.
+    const notes = [...new Set([...cur.notes, ...opt.notes])];
+    if (notes.length > 0) {
+      pdf.spacer(2);
+      for (const note of notes) {
+        pdf.paragraph(`• ${note}`, { muted: true, italic: true });
+      }
+    }
   }
 }
 
