@@ -76,8 +76,32 @@ import { SessionSummaryTab } from "@/components/clients/SessionSummaryTab";
 import { NextAppointmentCard } from "@/components/appointments/NextAppointmentCard";
 import { EmailsTab } from "@/components/clients/EmailsTab";
 import { FollowUpTab } from "@/components/clients/FollowUpTab";
+import { zodValidator, fallback } from "@tanstack/zod-adapter";
+import { z } from "zod";
+
+const CLIENT_TABS = [
+  "overview",
+  "session",
+  "optimizations",
+  "fiscal",
+  "pension",
+  "patrimoine",
+  "family",
+  "notes",
+  "ai",
+  "documents",
+  "emails",
+  "followup",
+] as const;
+type ClientTab = (typeof CLIENT_TABS)[number];
+
+const searchSchema = z.object({
+  tab: fallback(z.enum(CLIENT_TABS).optional(), undefined),
+});
+
 export const Route = createFileRoute("/_app/clients/$clientId")({
   head: () => ({ meta: [{ title: "Fiche client · SwissBroker Pro" }] }),
+  validateSearch: zodValidator(searchSchema),
   component: ClientDetailPage,
 });
 
@@ -85,8 +109,9 @@ function ClientDetailPage() {
   const t = useT();
   const { setActiveClient, setActiveBundle } = useActiveClient();
   const { clientId } = Route.useParams();
+  const { tab } = Route.useSearch();
   const { user } = useAuth();
-  const navigate = useNavigate();
+  const navigate = useNavigate({ from: Route.fullPath });
   const qc = useQueryClient();
 
   const { data, isLoading, error } = useQuery({
@@ -383,7 +408,16 @@ function ClientDetailPage() {
         <ClientCalculatorBar client={client} />
       </div>
 
-      <Tabs defaultValue="overview" className="mt-8">
+      <Tabs
+        value={tab ?? "overview"}
+        onValueChange={(v) =>
+          navigate({
+            search: (prev: z.infer<typeof searchSchema>) => ({ ...prev, tab: v as ClientTab }),
+            replace: true,
+          })
+        }
+        className="mt-8"
+      >
         <TabsList className="flex h-auto w-full flex-wrap justify-start gap-1 bg-muted p-1">
           <TabsTrigger value="overview">Synthèse</TabsTrigger>
           <TabsTrigger value="session" className="gap-1">

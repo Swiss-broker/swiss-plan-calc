@@ -1020,47 +1020,49 @@ function StepFiscal({ form, update, errors }: StepProps) {
         htmlFor="mort_fr"
         hint="Déductible côté France pour frontaliers accord 1983 — réduit l'assiette imposable française. Saisie possible en euros, convertie et stockée en CHF."
       >
-        <div className="flex gap-2">
-          <Select
-            value={form.mortgage_interest_currency}
-            onValueChange={(v) => {
-              const currency = v as "CHF" | "EUR";
-              update("mortgage_interest_currency", currency);
-              if (currency === "EUR" && !form.mortgage_interest_conversion_rate) {
-                update("mortgage_interest_conversion_rate", String(defaultEurRate()));
+        <div className="flex flex-col gap-2">
+          <div className="flex gap-2">
+            <Select
+              value={form.mortgage_interest_currency}
+              onValueChange={(v) => {
+                const currency = v as "CHF" | "EUR";
+                update("mortgage_interest_currency", currency);
+                if (currency === "EUR" && !form.mortgage_interest_conversion_rate) {
+                  update("mortgage_interest_conversion_rate", String(defaultEurRate()));
+                }
+              }}
+            >
+              <SelectTrigger className="w-24 shrink-0">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="CHF">CHF</SelectItem>
+                <SelectItem value="EUR">EUR</SelectItem>
+              </SelectContent>
+            </Select>
+            <NumField
+              id="mort_fr"
+              value={chfToDisplay(
+                form.mortgage_interest_france,
+                form.mortgage_interest_currency,
+                form.mortgage_interest_conversion_rate,
+              )}
+              onChange={(v) =>
+                update(
+                  "mortgage_interest_france",
+                  displayToChf(v, form.mortgage_interest_currency, form.mortgage_interest_conversion_rate),
+                )
               }
-            }}
-          >
-            <SelectTrigger className="w-24">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="CHF">CHF</SelectItem>
-              <SelectItem value="EUR">EUR</SelectItem>
-            </SelectContent>
-          </Select>
-          <NumField
-            id="mort_fr"
-            value={chfToDisplay(
-              form.mortgage_interest_france,
-              form.mortgage_interest_currency,
-              form.mortgage_interest_conversion_rate,
-            )}
-            onChange={(v) =>
-              update(
-                "mortgage_interest_france",
-                displayToChf(v, form.mortgage_interest_currency, form.mortgage_interest_conversion_rate),
-              )
-            }
-            suffix={form.mortgage_interest_currency}
-            className="flex-1"
-          />
+              suffix={form.mortgage_interest_currency}
+              className="flex-1"
+            />
+          </div>
           {form.mortgage_interest_currency === "EUR" && (
             <NumField
               value={form.mortgage_interest_conversion_rate}
               onChange={(v) => update("mortgage_interest_conversion_rate", v)}
               suffix="CHF/EUR"
-              className="w-28"
+              className="w-full"
             />
           )}
         </div>
@@ -1323,42 +1325,44 @@ function StepFamily({
                     ? `= CHF ${(num(form.spouse_gross_annual_salary) ?? 0).toLocaleString("fr-CH")} (taux ${form.spouse_income_conversion_rate || defaultEurRate()})`
                     : undefined}
               >
-                <div className="flex gap-2">
-                  <Select
-                    value={form.spouse_salary_currency}
-                    onValueChange={(v) => {
-                      const currency = v as "CHF" | "EUR";
-                      update("spouse_salary_currency", currency);
-                      if (currency === "EUR" && !form.spouse_income_conversion_rate) {
-                        update("spouse_income_conversion_rate", String(defaultEurRate()));
-                      }
-                    }}
-                  >
-                    <SelectTrigger className="w-24">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="CHF">CHF</SelectItem>
-                      <SelectItem value="EUR">EUR</SelectItem>
-                    </SelectContent>
-                  </Select>
+                <div className="flex flex-col gap-2">
+                  <div className="flex gap-2">
+                    <Select
+                      value={form.spouse_salary_currency}
+                      onValueChange={(v) => {
+                        const currency = v as "CHF" | "EUR";
+                        update("spouse_salary_currency", currency);
+                        if (currency === "EUR" && !form.spouse_income_conversion_rate) {
+                          update("spouse_income_conversion_rate", String(defaultEurRate()));
+                        }
+                      }}
+                    >
+                      <SelectTrigger className="w-24 shrink-0">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="CHF">CHF</SelectItem>
+                        <SelectItem value="EUR">EUR</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <NumField
+                      value={chfToDisplay(form.spouse_gross_annual_salary, form.spouse_salary_currency, form.spouse_income_conversion_rate)}
+                      onChange={(v) => {
+                        update("spouse_gross_annual_salary", displayToChf(v, form.spouse_salary_currency, form.spouse_income_conversion_rate));
+                        update("spouse_salary_is_fictif", false);
+                      }}
+                      suffix={form.spouse_salary_currency}
+                      className="flex-1"
+                    />
+                  </div>
                   {form.spouse_salary_currency === "EUR" && (
                     <NumField
                       value={form.spouse_income_conversion_rate}
                       onChange={(v) => update("spouse_income_conversion_rate", v)}
                       suffix="CHF/EUR"
-                      className="w-28"
+                      className="w-full"
                     />
                   )}
-                  <NumField
-                    value={chfToDisplay(form.spouse_gross_annual_salary, form.spouse_salary_currency, form.spouse_income_conversion_rate)}
-                    onChange={(v) => {
-                      update("spouse_gross_annual_salary", displayToChf(v, form.spouse_salary_currency, form.spouse_income_conversion_rate));
-                      update("spouse_salary_is_fictif", false);
-                    }}
-                    suffix={form.spouse_salary_currency}
-                    className="flex-1"
-                  />
                 </div>
               </Field>
               <Field label={t("wizard.field.spouse_salary_mode")}>
@@ -1625,7 +1629,7 @@ function StepPatrimoine({
                 value={form.assets_conversion_rate}
                 onChange={(v) => update("assets_conversion_rate", v)}
                 suffix="CHF/EUR"
-                className="w-28"
+                className="flex-1"
               />
             )}
           </div>
