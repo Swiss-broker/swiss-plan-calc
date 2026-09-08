@@ -121,6 +121,7 @@ export type Database = {
           display_name: string
           email: string
           id: string
+          role: string
           settings: Json
           user_id: string
         }
@@ -129,6 +130,7 @@ export type Database = {
           display_name: string
           email: string
           id?: string
+          role?: string
           settings?: Json
           user_id: string
         }
@@ -137,6 +139,7 @@ export type Database = {
           display_name?: string
           email?: string
           id?: string
+          role?: string
           settings?: Json
           user_id?: string
         }
@@ -1944,6 +1947,7 @@ export type Database = {
         Returns: boolean
       }
       is_admin: { Args: { _uid: string }; Returns: boolean }
+      is_staff: { Args: { _uid: string }; Returns: boolean }
       register_client_upload: {
         Args: {
           _category: Database["public"]["Enums"]["client_document_category"]
