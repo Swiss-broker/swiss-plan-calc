@@ -65,3 +65,6 @@ verify_jwt = false
 
 [functions.send-client-email]
 verify_jwt = true
+
+[functions.capture-demo-lead]
+verify_jwt = false
