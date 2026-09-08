@@ -126,9 +126,6 @@ function Hero() {
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.6, delay: 0.7 }}
             className="mt-8 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs text-white/60">
             <span className="inline-flex items-center gap-1.5"><CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" />Barèmes officiels AFC 2026</span>
-            <span className="inline-flex items-center gap-1.5"><CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" />
-              <a href={CALCOM_URL} target="_blank" rel="noopener noreferrer" className="font-semibold text-emerald-300 underline-offset-2 hover:underline">Réserver une démo →</a>
-            </span>
           </motion.div>
         </div>
 
