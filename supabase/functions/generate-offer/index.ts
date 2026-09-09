@@ -149,9 +149,14 @@ export async function handleGenerateOfferRequest(req: Request, env: Env): Promis
     // (duration=repeating), ou 'forever' (tant que l'abonnement existe).
     let couponId: string | null = null;
     if (discountPercent !== null) {
+      // Le champ name du coupon Stripe est limité à 40 caractères : on
+      // tronque le nom du lead si besoin plutôt que de laisser Stripe
+      // rejeter la requête (constaté en test avec un nom de lead réel).
+      const couponPrefix = `Offre ${discountPercent}% — `;
+      const maxLeadNameLen = Math.max(0, 40 - couponPrefix.length);
       const couponBody: Record<string, string> = {
         percent_off: String(discountPercent),
-        name: `Offre commerciale ${discountPercent}% — lead ${lead.name}`,
+        name: `${couponPrefix}${String(lead.name).slice(0, maxLeadNameLen)}`,
       };
       if (discount_duration in REPEATING_MONTHS) {
         couponBody.duration = "repeating";
