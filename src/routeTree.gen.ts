@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
+import { Route as PaiementConfirmeRouteImport } from './routes/paiement-confirme'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AppRouteImport } from './routes/_app'
 import { Route as IndexRouteImport } from './routes/index'
@@ -62,6 +63,11 @@ import { Route as AppClientsClientIdEditRouteImport } from './routes/_app/client
 const ResetPasswordRoute = ResetPasswordRouteImport.update({
   id: '/reset-password',
   path: '/reset-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PaiementConfirmeRoute = PaiementConfirmeRouteImport.update({
+  id: '/paiement-confirme',
+  path: '/paiement-confirme',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthRoute = AuthRouteImport.update({
@@ -316,6 +322,7 @@ const AppClientsClientIdEditRoute = AppClientsClientIdEditRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRouteWithChildren
+  '/paiement-confirme': typeof PaiementConfirmeRoute
   '/reset-password': typeof ResetPasswordRoute
   '/account': typeof AppAccountRoute
   '/calculators': typeof AppCalculatorsRouteWithChildren
@@ -366,6 +373,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRouteWithChildren
+  '/paiement-confirme': typeof PaiementConfirmeRoute
   '/reset-password': typeof ResetPasswordRoute
   '/account': typeof AppAccountRoute
   '/calendar': typeof AppCalendarRoute
@@ -416,6 +424,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_app': typeof AppRouteWithChildren
   '/auth': typeof AuthRouteWithChildren
+  '/paiement-confirme': typeof PaiementConfirmeRoute
   '/reset-password': typeof ResetPasswordRoute
   '/_app/account': typeof AppAccountRoute
   '/_app/calculators': typeof AppCalculatorsRouteWithChildren
@@ -468,6 +477,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/auth'
+    | '/paiement-confirme'
     | '/reset-password'
     | '/account'
     | '/calculators'
@@ -518,6 +528,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/auth'
+    | '/paiement-confirme'
     | '/reset-password'
     | '/account'
     | '/calendar'
@@ -567,6 +578,7 @@ export interface FileRouteTypes {
     | '/'
     | '/_app'
     | '/auth'
+    | '/paiement-confirme'
     | '/reset-password'
     | '/_app/account'
     | '/_app/calculators'
@@ -619,6 +631,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AppRoute: typeof AppRouteWithChildren
   AuthRoute: typeof AuthRouteWithChildren
+  PaiementConfirmeRoute: typeof PaiementConfirmeRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
   ClientUploadTokenRoute: typeof ClientUploadTokenRoute
   LegalCgvRoute: typeof LegalCgvRoute
@@ -638,6 +651,13 @@ declare module '@tanstack/react-router' {
       path: '/reset-password'
       fullPath: '/reset-password'
       preLoaderRoute: typeof ResetPasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/paiement-confirme': {
+      id: '/paiement-confirme'
+      path: '/paiement-confirme'
+      fullPath: '/paiement-confirme'
+      preLoaderRoute: typeof PaiementConfirmeRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/auth': {
@@ -1093,6 +1113,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AppRoute: AppRouteWithChildren,
   AuthRoute: AuthRouteWithChildren,
+  PaiementConfirmeRoute: PaiementConfirmeRoute,
   ResetPasswordRoute: ResetPasswordRoute,
   ClientUploadTokenRoute: ClientUploadTokenRoute,
   LegalCgvRoute: LegalCgvRoute,

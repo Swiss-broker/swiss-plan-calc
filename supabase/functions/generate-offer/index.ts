@@ -178,13 +178,22 @@ export async function handleGenerateOfferRequest(req: Request, env: Env): Promis
 
     // Checkout Session : demo_request_id passé en metadata, indispensable
     // pour que le futur webhook de conversion retrouve quel lead a payé.
+    // adaptive_pricing désactivé : tous les clients sont suisses, le Price
+    // Stripe est en CHF, et sans ça Stripe peut convertir l'affichage vers
+    // une autre devise (ex. EUR) selon la localisation détectée côté
+    // navigateur — ce paramètre ne touche que cette session, pas le
+    // réglage global du compte Stripe (stripe-checkout n'est pas affecté).
     const params: Record<string, string> = {
       "payment_method_types[0]": "card",
       mode: "subscription",
       "line_items[0][price]": priceId,
       "line_items[0][quantity]": "1",
+      "adaptive_pricing[enabled]": "false",
       customer_email: lead.email,
-      success_url: `${siteUrl}/auth?paiement=ok`,
+      // Page neutre temporaire (Prompt 10) : le client n'a pas encore de
+      // compte à ce stade, /auth ou un espace existant n'a pas de sens
+      // ici. Remplacée par la vraie page d'onboarding au Prompt 11.
+      success_url: `${siteUrl}/paiement-confirme`,
       cancel_url: `${siteUrl}/`,
       "metadata[demo_request_id]": demo_request_id,
       "metadata[plan]": plan,
