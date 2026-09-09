@@ -68,3 +68,6 @@ verify_jwt = true
 
 [functions.capture-demo-lead]
 verify_jwt = false
+
+[functions.generate-offer]
+verify_jwt = true
