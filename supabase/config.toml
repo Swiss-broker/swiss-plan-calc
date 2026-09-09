@@ -74,3 +74,9 @@ verify_jwt = true
 
 [functions.handle-conversion]
 verify_jwt = false
+
+[functions.verify-onboarding-token]
+verify_jwt = false
+
+[functions.complete-onboarding]
+verify_jwt = false

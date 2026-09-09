@@ -15,6 +15,7 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AppRouteImport } from './routes/_app'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as SharedTokenRouteImport } from './routes/shared.$token'
+import { Route as OnboardingTokenRouteImport } from './routes/onboarding.$token'
 import { Route as LegalSousTraitantsRouteImport } from './routes/legal/sous-traitants'
 import { Route as LegalNoticeIaRouteImport } from './routes/legal/notice-ia'
 import { Route as LegalMentionsLegalesRouteImport } from './routes/legal/mentions-legales'
@@ -87,6 +88,11 @@ const IndexRoute = IndexRouteImport.update({
 const SharedTokenRoute = SharedTokenRouteImport.update({
   id: '/shared/$token',
   path: '/shared/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OnboardingTokenRoute = OnboardingTokenRouteImport.update({
+  id: '/onboarding/$token',
+  path: '/onboarding/$token',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LegalSousTraitantsRoute = LegalSousTraitantsRouteImport.update({
@@ -342,6 +348,7 @@ export interface FileRoutesByFullPath {
   '/legal/mentions-legales': typeof LegalMentionsLegalesRoute
   '/legal/notice-ia': typeof LegalNoticeIaRoute
   '/legal/sous-traitants': typeof LegalSousTraitantsRoute
+  '/onboarding/$token': typeof OnboardingTokenRoute
   '/shared/$token': typeof SharedTokenRoute
   '/calculators/avs-ai': typeof AppCalculatorsAvsAiRoute
   '/calculators/canton-compare': typeof AppCalculatorsCantonCompareRoute
@@ -391,6 +398,7 @@ export interface FileRoutesByTo {
   '/legal/mentions-legales': typeof LegalMentionsLegalesRoute
   '/legal/notice-ia': typeof LegalNoticeIaRoute
   '/legal/sous-traitants': typeof LegalSousTraitantsRoute
+  '/onboarding/$token': typeof OnboardingTokenRoute
   '/shared/$token': typeof SharedTokenRoute
   '/calculators/avs-ai': typeof AppCalculatorsAvsAiRoute
   '/calculators/canton-compare': typeof AppCalculatorsCantonCompareRoute
@@ -444,6 +452,7 @@ export interface FileRoutesById {
   '/legal/mentions-legales': typeof LegalMentionsLegalesRoute
   '/legal/notice-ia': typeof LegalNoticeIaRoute
   '/legal/sous-traitants': typeof LegalSousTraitantsRoute
+  '/onboarding/$token': typeof OnboardingTokenRoute
   '/shared/$token': typeof SharedTokenRoute
   '/_app/calculators/avs-ai': typeof AppCalculatorsAvsAiRoute
   '/_app/calculators/canton-compare': typeof AppCalculatorsCantonCompareRoute
@@ -497,6 +506,7 @@ export interface FileRouteTypes {
     | '/legal/mentions-legales'
     | '/legal/notice-ia'
     | '/legal/sous-traitants'
+    | '/onboarding/$token'
     | '/shared/$token'
     | '/calculators/avs-ai'
     | '/calculators/canton-compare'
@@ -546,6 +556,7 @@ export interface FileRouteTypes {
     | '/legal/mentions-legales'
     | '/legal/notice-ia'
     | '/legal/sous-traitants'
+    | '/onboarding/$token'
     | '/shared/$token'
     | '/calculators/avs-ai'
     | '/calculators/canton-compare'
@@ -598,6 +609,7 @@ export interface FileRouteTypes {
     | '/legal/mentions-legales'
     | '/legal/notice-ia'
     | '/legal/sous-traitants'
+    | '/onboarding/$token'
     | '/shared/$token'
     | '/_app/calculators/avs-ai'
     | '/_app/calculators/canton-compare'
@@ -641,6 +653,7 @@ export interface RootRouteChildren {
   LegalMentionsLegalesRoute: typeof LegalMentionsLegalesRoute
   LegalNoticeIaRoute: typeof LegalNoticeIaRoute
   LegalSousTraitantsRoute: typeof LegalSousTraitantsRoute
+  OnboardingTokenRoute: typeof OnboardingTokenRoute
   SharedTokenRoute: typeof SharedTokenRoute
 }
 
@@ -686,6 +699,13 @@ declare module '@tanstack/react-router' {
       path: '/shared/$token'
       fullPath: '/shared/$token'
       preLoaderRoute: typeof SharedTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/onboarding/$token': {
+      id: '/onboarding/$token'
+      path: '/onboarding/$token'
+      fullPath: '/onboarding/$token'
+      preLoaderRoute: typeof OnboardingTokenRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/legal/sous-traitants': {
@@ -1123,6 +1143,7 @@ const rootRouteChildren: RootRouteChildren = {
   LegalMentionsLegalesRoute: LegalMentionsLegalesRoute,
   LegalNoticeIaRoute: LegalNoticeIaRoute,
   LegalSousTraitantsRoute: LegalSousTraitantsRoute,
+  OnboardingTokenRoute: OnboardingTokenRoute,
   SharedTokenRoute: SharedTokenRoute,
 }
 export const routeTree = rootRouteImport
