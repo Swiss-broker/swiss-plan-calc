@@ -30,6 +30,9 @@ verify_jwt = true
 [functions.demo-rdv-invoice]
 verify_jwt = true
 
+[functions.admin-invite-commercial]
+verify_jwt = true
+
 [functions.fx-rates]
 verify_jwt = false
 
