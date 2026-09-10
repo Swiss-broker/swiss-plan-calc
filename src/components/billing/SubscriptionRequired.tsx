@@ -6,7 +6,7 @@
 // message que SignupClosedNotice (src/routes/auth.tsx), vers la prise de
 // rendez-vous démo.
 import { useState } from "react";
-import { Loader2, LogOut } from "lucide-react";
+import { Loader2, ArrowLeft } from "lucide-react";
 import { SelfServeClosedNotice } from "./SelfServeClosedNotice";
 
 export function SubscriptionRequired({
@@ -17,6 +17,18 @@ export function SubscriptionRequired({
   onSignOut: () => Promise<void>;
 }) {
   const [signingOut, setSigningOut] = useState(false);
+
+  // Navigation "dure" (window.location) plutôt que le routeur SPA : le seul
+  // mécanisme existant pour rediriger après déconnexion est un effet
+  // réactif dans _app.tsx (navigate() déclenché quand isAuthenticated
+  // repasse à false) — indirect et non garanti au clic. Un vrai
+  // rechargement de page ignore cet état React et atterrit toujours sur
+  // "/", quel que soit le timing de la déconnexion.
+  const handleReturnToSite = async () => {
+    setSigningOut(true);
+    await onSignOut();
+    window.location.href = "/";
+  };
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-hero flex items-center justify-center px-4 py-12">
@@ -35,15 +47,12 @@ export function SubscriptionRequired({
         <div className="mt-6 text-center">
           <button
             type="button"
-            onClick={async () => {
-              setSigningOut(true);
-              await onSignOut();
-            }}
+            onClick={handleReturnToSite}
             disabled={signingOut}
             className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground underline"
           >
-            {signingOut ? <Loader2 className="h-3 w-3 animate-spin" /> : <LogOut className="h-3 w-3" />}
-            Se déconnecter
+            {signingOut ? <Loader2 className="h-3 w-3 animate-spin" /> : <ArrowLeft className="h-3 w-3" />}
+            Retour au site
           </button>
         </div>
       </div>
