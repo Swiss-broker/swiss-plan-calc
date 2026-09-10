@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { supabase as supabaseClient } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { usePlan } from "@/contexts/PlanContext";
 import { Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -48,6 +49,7 @@ export function SessionSummaryTab({ clientId, clientName }: { clientId: string; 
   const [invoiceLink, setInvoiceLink] = useState<string | null>(null);
   const [sendingEmail, setSendingEmail] = useState(false);
   const { user } = useAuth();
+  const { plan } = usePlan();
 
   const onGenerateInvoice = async () => {
     if (!user) return;
@@ -57,15 +59,18 @@ export function SessionSummaryTab({ clientId, clientName }: { clientId: string; 
     }
     setInvoiceLoading(true);
     try {
-      const { data, error } = await supabaseClient.functions.invoke("stripe-rdv-invoice", {
-        body: {
-          brokerId: user.id,
-          clientId,
-          amountChf: invoiceAmount,
-          description: invoiceDesc || `Conseil en prévoyance - ${clientName}`,
-          returnUrl: window.location.origin,
+      const { data, error } = await supabaseClient.functions.invoke(
+        plan === "demo" ? "demo-rdv-invoice" : "stripe-rdv-invoice",
+        {
+          body: {
+            brokerId: user.id,
+            clientId,
+            amountChf: invoiceAmount,
+            description: invoiceDesc || `Conseil en prévoyance - ${clientName}`,
+            returnUrl: window.location.origin,
+          },
         },
-      });
+      );
       if (error || !data?.paymentLink) {
         // Le message generique de supabase-js ("non-2xx status code") ne contient
         // jamais le vrai message d'erreur. Il faut lire le corps de la reponse HTTP
