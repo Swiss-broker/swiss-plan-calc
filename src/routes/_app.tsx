@@ -30,6 +30,7 @@ import { LanguageSwitcher } from "@/components/common/LanguageSwitcher";
 import { cn } from "@/lib/utils";
 import { ACTIVE_PLANS } from "@/lib/billing/plans";
 import { SubscriptionRequired } from "@/components/billing/SubscriptionRequired";
+import { DemoModeBadge } from "@/components/common/DemoModeBadge";
 // Logo réel du cabinet, remplace l'icône "S" et le texte générés en CSS.
 import logoIcon from "@/assets/logo-icon.png";
 import logoFull from "@/assets/logo-full.png";
@@ -73,6 +74,7 @@ function AppShell() {
 
   return (
     <div className="flex min-h-screen bg-background">
+      {plan === "demo" && <DemoModeBadge />}
       <DesktopSidebar onSignOut={signOut} email={user?.email ?? ""} />
       <div className="flex min-w-0 flex-1 flex-col">
         <MobileHeader onSignOut={signOut} email={user?.email ?? ""} />
