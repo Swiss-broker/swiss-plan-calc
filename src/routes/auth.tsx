@@ -51,6 +51,8 @@ const signinSchema = z.object({
 type SignupValues = z.infer<typeof signupSchema>;
 type SigninValues = z.infer<typeof signinSchema>;
 
+const CALCOM_URL = "https://cal.com/swissbroker/30min";
+
 function AuthPage() {
   const t = useT();
   const search = Route.useSearch();
@@ -236,13 +238,22 @@ const [otpState, setOtpState] = useState<{ email: string; plan: BillablePlan; in
             </div>
             <h1 className="text-2xl font-bold tracking-tight">
               {mode === "signup"
-                ? `Créer un compte ${PLAN_LABELS[selectedPlan as BillablePlan] ?? "courtier"}`
+                ? search.invite
+                  ? `Créer un compte ${PLAN_LABELS[selectedPlan as BillablePlan] ?? "courtier"}`
+                  : "Réservez une démo"
                 : t("auth.signin.title")}
             </h1>
           </div>
 
           {mode === "signup" ? (
-            <SignupForm plan={selectedPlan} inviteToken={search.invite} onOtpRequired={setOtpState} />
+            // Invitation cabinet valide (?invite=token) : parcours de création
+            // de compte conservé, ce n'est pas le self-serve générique fermé
+            // ci-dessous. Sans ce paramètre, impossible de créer un compte ici.
+            search.invite ? (
+              <SignupForm plan={selectedPlan} inviteToken={search.invite} onOtpRequired={setOtpState} />
+            ) : (
+              <SignupClosedNotice plan={selectedPlan as BillablePlan} />
+            )
           ) : (
             <SigninForm />
           )}
@@ -270,6 +281,11 @@ const [otpState, setOtpState] = useState<{ email: string; plan: BillablePlan; in
   );
 }
 
+// Conservé uniquement pour le parcours d'invitation cabinet
+// (?invite=token, généré par cabinet-add-seat) : un courtier invité à
+// rejoindre un cabinet existant doit toujours pouvoir créer son compte.
+// Ce n'est PAS le parcours self-serve générique — celui-ci est fermé (voir
+// SignupClosedNotice ci-dessous), seul ce cas précis reste ouvert.
 function SignupForm({
   plan,
   inviteToken,
@@ -364,6 +380,33 @@ function SignupForm({
         {t("auth.signup.submit")}
       </Button>
     </form>
+  );
+}
+
+// L'inscription en libre-service générique est fermée : ce parcours ne
+// crée plus de compte pour un visiteur qui n'a pas d'invitation cabinet
+// (voir la garde sur search.invite dans AuthPage). Tout visiteur arrivant
+// ici, par l'URL ou par le lien "Pas de compte ?", est redirigé vers la
+// prise de rendez-vous démo, seul point d'entrée commercial désormais.
+function SignupClosedNotice({ plan }: { plan: BillablePlan }) {
+  const planLabel = PLAN_LABELS[plan];
+  return (
+    <div className="space-y-5 text-center">
+      <p className="text-sm text-muted-foreground">
+        {planLabel
+          ? `La création de compte en libre-service n'est plus disponible pour le plan ${planLabel}.`
+          : "La création de compte en libre-service n'est plus disponible."}{" "}
+        Réservez une démo avec notre équipe pour découvrir SwissBroker Pro et obtenir votre accès.
+      </p>
+      <a
+        href={CALCOM_URL}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="inline-flex h-11 w-full items-center justify-center rounded-xl bg-primary px-4 text-sm font-semibold text-primary-foreground shadow-elegant transition-all hover:bg-primary/90"
+      >
+        Réserver une démo
+      </a>
+    </div>
   );
 }
 

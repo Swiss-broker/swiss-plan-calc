@@ -10,7 +10,7 @@ import {
 import { useT } from "@/contexts/LanguageContext";
 import { PublicLanguageSwitcher } from "@/components/common/PublicLanguageSwitcher";
 import { t as tStatic } from "@/lib/i18n";
-import { Link, useNavigate } from "@tanstack/react-router";
+import { Link } from "@tanstack/react-router";
 import { LEGAL_PAGES } from "@/lib/legal/pages";
 // Logo réel du cabinet, remplace l'icône "S" et le texte générés en CSS.
 import logoIcon from "@/assets/logo-icon.png";
@@ -306,19 +306,6 @@ function CTASection() {
         </motion.div>
       </div>
     </section>
-  );
-}
-
-function PlanButton({ plan, highlight }: { plan: string; highlight: boolean }) {
-  const navigate = useNavigate();
-  return (
-    <button type="button"
-      onClick={() => navigate({ to: "/auth", search: { mode: "signup", plan: plan as "starter" | "pro" | "cabinet" } })}
-      className={`flex w-full items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition-all ${
-        highlight ? "bg-primary text-primary-foreground shadow-elegant hover:bg-primary/90" : "border border-border bg-background hover:border-primary hover:bg-primary/5 hover:text-primary"
-      }`}>
-      Démarrer mon essai gratuit
-    </button>
   );
 }
 

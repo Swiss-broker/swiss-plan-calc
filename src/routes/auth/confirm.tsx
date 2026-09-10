@@ -1,145 +1,39 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
-import { z } from "zod";
-import { Loader2 } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { PRICE_IDS, type BillablePlan } from "@/lib/billing/plans";
+import { createFileRoute } from "@tanstack/react-router";
 
-const confirmSearchSchema = z.object({
-  plan: z.enum(["starter", "pro", "cabinet"]).optional(),
-  email: z.string().optional(),
-});
+const CALCOM_URL = "https://cal.com/swissbroker/30min";
 
 export const Route = createFileRoute("/auth/confirm")({
-  validateSearch: (s) => confirmSearchSchema.parse(s),
   component: ConfirmPage,
 });
 
+// Ancienne page de confirmation OTP du self-serve générique, fermée en
+// même temps que SignupForm (voir src/routes/auth.tsx) : cette page ne
+// peut de toute façon plus recevoir de code OTP valide, puisque plus rien
+// dans l'app n'appelle supabase.auth.signUp() en dehors du parcours
+// d'invitation cabinet (qui, lui, ne passe jamais par cette page — voir
+// l'écran OTP intégré à auth.tsx). Aucun contexte valide n'existe donc
+// plus ici : le message est inconditionnel.
 function ConfirmPage() {
-  const search = Route.useSearch();
-  const navigate = useNavigate();
-  const plan = search.plan ?? "pro";
-  const emailFromSearch = search.email ?? "";
-
-  const [email, setEmail] = useState(emailFromSearch);
-  const [token, setToken] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    setError(null);
-
-    // Vérifie le code OTP avec Supabase
-    const { data, error: otpError } = await supabase.auth.verifyOtp({
-      email,
-      token,
-      type: "signup",
-    });
-
-    if (otpError || !data.session) {
-      setLoading(false);
-      setError("Code incorrect ou expiré. Vérifiez le code reçu par email.");
-      return;
-    }
-
-    // Code valide — on lance Stripe
-    const priceId = PRICE_IDS[plan as BillablePlan];
-    if (!priceId) {
-      navigate({ to: "/dashboard" });
-      return;
-    }
-
-    try {
-      const { data: stripeData, error: fnError } = await supabase.functions.invoke("stripe-checkout", {
-        body: {
-          priceId,
-          brokerId: data.session.user.id,
-          brokerEmail: data.session.user.email,
-          plan,
-        },
-      });
-      if (fnError || !stripeData?.url) throw new Error("Erreur Stripe");
-      window.location.href = stripeData.url;
-    } catch {
-      setError("Erreur lors de la redirection vers le paiement. Contactez le support.");
-      setLoading(false);
-    }
-  };
-
   return (
     <div className="relative min-h-screen overflow-hidden bg-hero flex items-center justify-center px-4">
       <div className="absolute inset-0 grid-bg opacity-40" aria-hidden />
-      <div className="relative w-full max-w-md rounded-2xl border border-border bg-card p-8 shadow-elegant">
-        <div className="text-center mb-6">
-          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
-            <span className="text-3xl">📧</span>
-          </div>
-          <h1 className="text-2xl font-bold tracking-tight">Vérifiez vos emails</h1>
-          <p className="mt-2 text-sm text-muted-foreground">
-            Saisissez le code à 6 chiffres reçu par email pour continuer.
-          </p>
+      <div className="relative w-full max-w-md rounded-2xl border border-border bg-card p-8 shadow-elegant text-center">
+        <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-primary shadow-elegant">
+          <span className="text-xl font-bold text-primary-foreground">S</span>
         </div>
-
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-1.5">
-            <Label htmlFor="email">Votre email</Label>
-            <Input
-              id="email"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="votre@email.com"
-              required
-            />
-          </div>
-
-          <div className="space-y-1.5">
-            <Label htmlFor="token">Code de confirmation</Label>
-            <Input
-              id="token"
-              type="text"
-              inputMode="numeric"
-              maxLength={6}
-              value={token}
-              onChange={(e) => setToken(e.target.value.replace(/\D/g, ""))}
-              placeholder="123456"
-              className="text-center text-2xl tracking-widest font-bold"
-              required
-            />
-          </div>
-
-          {error && (
-            <p className="text-sm text-destructive text-center">{error}</p>
-          )}
-
-          <Button type="submit" className="h-11 w-full shadow-elegant" disabled={loading || token.length !== 6}>
-            {loading && <Loader2 className="h-4 w-4 animate-spin" />}
-            Confirmer et accéder au paiement
-          </Button>
-        </form>
-
-        <div className="mt-6 space-y-3">
-          <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground text-center">
-            Vous ne trouvez pas l'email ?
-          </p>
-          <div className="rounded-lg border border-border bg-muted/40 p-3">
-            <p className="text-xs text-muted-foreground text-center">
-              Vérifiez vos <strong>courriers indésirables</strong>.<br />
-              Expéditeur : <strong>noreply@swissbrokerpro.ch</strong>
-            </p>
-          </div>
-        </div>
-
-        <div className="mt-4 text-center">
-          <a href="/auth?mode=signup" className="text-xs text-muted-foreground hover:text-foreground underline">
-            Recommencer l'inscription
-          </a>
-        </div>
+        <h1 className="text-2xl font-bold tracking-tight">Réservez une démo</h1>
+        <p className="mt-3 text-sm text-muted-foreground">
+          La création de compte en libre-service n'est plus disponible. Réservez une démo avec notre équipe pour
+          découvrir SwissBroker Pro et obtenir votre accès.
+        </p>
+        <a
+          href={CALCOM_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="mt-5 inline-flex h-11 w-full items-center justify-center rounded-xl bg-primary px-4 text-sm font-semibold text-primary-foreground shadow-elegant transition-all hover:bg-primary/90"
+        >
+          Réserver une démo
+        </a>
       </div>
     </div>
   );
