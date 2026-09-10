@@ -67,7 +67,7 @@ function AppShell() {
   // constatée en production. "internal" (comptes fondateurs/associés)
   // court-circuite toujours cette porte en premier, explicitement, plutôt
   // que de dépendre implicitement du contenu futur d'ACTIVE_PLANS.
-  if (plan !== "internal" && !ACTIVE_PLANS.has(plan)) {
+  if (plan !== "internal" && plan !== "demo" && !ACTIVE_PLANS.has(plan)) {
     return <SubscriptionRequired email={user?.email ?? ""} onSignOut={signOut} />;
   }
 

@@ -25,4 +25,4 @@ export const PLAN_LABELS: Record<BillablePlan, string> = {
 // doit jamais suffire à lui seul pour accéder à l'application, sans quoi
 // n'importe qui peut créer un compte et utiliser le produit gratuitement
 // sans jamais payer. Voir _app.tsx pour l'application de cette règle.
-export const ACTIVE_PLANS: ReadonlySet<BrokerPlan> = new Set(["starter", "pro", "cabinet", "internal"]);
+export const ACTIVE_PLANS: ReadonlySet<BrokerPlan> = new Set(["starter", "pro", "cabinet", "internal", "demo"]);

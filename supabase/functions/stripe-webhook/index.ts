@@ -150,7 +150,11 @@ Deno.serve(async (req) => {
       // l'email de la fondatrice a fait passer son compte de 'internal' à
       // 'pro' puis 'starter' via ce webhook, sans action volontaire (voir
       // plan_events, evt_1UDqnkRzqfEoHxSufubDPQS0 / evt_1UDrR2RzqfEoHxSunTpWjXI8).
-      if (profile.plan === "internal") return;
+      // Même garde que pour 'internal' : un compte démo (commercial
+      // @swissbrokerpro.ch) ne doit jamais être rétrogradé par un
+      // événement Stripe, pour les mêmes raisons (voir incident du
+      // 09.09.2026 cité ci-dessus).
+      if (profile.plan === "internal" || profile.plan === "demo") return;
 
       await fetch(
         `${supabaseUrl}/rest/v1/profiles?email=eq.${encodeURIComponent(email)}`,
@@ -300,10 +304,10 @@ Deno.serve(async (req) => {
             const managerId =
               pendingInvite.role === "director" ? pendingInvite.cabinet_root_id : pendingInvite.invited_by;
 
-            // plan=neq.internal : un compte interne ne doit jamais être
-            // rattaché de force à un cabinet via ce mécanisme (même garde
-            // que updatePlan ci-dessus).
-            await fetch(`${supabaseUrl}/rest/v1/profiles?email=eq.${encodeURIComponent(email)}&plan=neq.internal`, {
+            // plan=not.in.(internal,demo) : ni un compte interne ni un
+            // compte démo ne doit être rattaché de force à un cabinet via
+            // ce mécanisme (même garde que updatePlan ci-dessus).
+            await fetch(`${supabaseUrl}/rest/v1/profiles?email=eq.${encodeURIComponent(email)}&plan=not.in.(internal,demo)`, {
               method: "PATCH",
               headers: {
                 "apikey": supabaseKey,
@@ -409,11 +413,11 @@ Deno.serve(async (req) => {
           // ou nouvel abonnement individuel) garde un role/rattachement perime
           // vers un cabinet dont l'abonnement racine n'existe plus. Meme
           // nettoyage que cabinet-remove-member pour un retrait manuel.
-          // plan=neq.internal : même garde que ci-dessus — un membre interne
-          // ne doit jamais être coupé en cascade par la résiliation de son
-          // directeur.
+          // plan=not.in.(internal,demo) : même garde que ci-dessus — un
+          // membre interne ou démo ne doit jamais être coupé en cascade par
+          // la résiliation de son directeur.
           await fetch(
-            `${supabaseUrl}/rest/v1/profiles?manager_id=eq.${ownerId}&plan=neq.internal`,
+            `${supabaseUrl}/rest/v1/profiles?manager_id=eq.${ownerId}&plan=not.in.(internal,demo)`,
             {
               method: "PATCH",
               headers: {

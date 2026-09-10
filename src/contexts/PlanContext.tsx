@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-export type BrokerPlan = "trial" | "starter" | "pro" | "cabinet" | "expired" | "free" | "internal";
+export type BrokerPlan = "trial" | "starter" | "pro" | "cabinet" | "expired" | "free" | "internal" | "demo";
 export type CabinetRole = "root_director" | "director" | "courtier" | null;
 export interface PlanLimits {
   maxClients: number | null;     // null = illimité
@@ -17,6 +17,7 @@ export const PLAN_LIMITS: Record<BrokerPlan, PlanLimits> = {
   expired:  { maxClients: 0,    maxCompanies: 0,    maxPdfPerMonth: 0,    maxAiPerDay: 0    },
   free:     { maxClients: 0,    maxCompanies: 0,    maxPdfPerMonth: 0,    maxAiPerDay: 0    },
   internal: { maxClients: null, maxCompanies: null, maxPdfPerMonth: null, maxAiPerDay: null },
+  demo:     { maxClients: null, maxCompanies: null, maxPdfPerMonth: null, maxAiPerDay: null },
 };
 export interface PlanState {
   plan: BrokerPlan;

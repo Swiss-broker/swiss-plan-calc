@@ -55,6 +55,11 @@ const PLAN_CONFIG: Record<string, { label: string; color: string; features: stri
     color: "bg-slate-100 text-slate-800 border-slate-200",
     features: ["Accès illimité à toutes les fonctionnalités"],
   },
+  demo: {
+    label: "Mode démo",
+    color: "bg-indigo-100 text-indigo-800 border-indigo-200",
+    features: ["Accès illimité à toutes les fonctionnalités", "Facturation RDV simulée — aucun paiement réel"],
+  },
   expired: {
     label: "Abonnement expiré",
     color: "bg-red-100 text-red-800 border-red-200",
