@@ -143,6 +143,14 @@ Deno.serve(async (req) => {
       const profiles = await profileRes.json();
       const profile = profiles[0];
       if (!profile) return;
+      // Un compte interne (fondatrice, associé) ne doit jamais être
+      // rétrogradé par un événement Stripe, même si son email correspond
+      // par coïncidence (ou héritage d'un ancien test) à un customer Stripe
+      // réel — cas réel constaté le 09.09.2026 : un test self-serve avec
+      // l'email de la fondatrice a fait passer son compte de 'internal' à
+      // 'pro' puis 'starter' via ce webhook, sans action volontaire (voir
+      // plan_events, evt_1UDqnkRzqfEoHxSufubDPQS0 / evt_1UDrR2RzqfEoHxSunTpWjXI8).
+      if (profile.plan === "internal") return;
 
       await fetch(
         `${supabaseUrl}/rest/v1/profiles?email=eq.${encodeURIComponent(email)}`,
@@ -292,7 +300,10 @@ Deno.serve(async (req) => {
             const managerId =
               pendingInvite.role === "director" ? pendingInvite.cabinet_root_id : pendingInvite.invited_by;
 
-            await fetch(`${supabaseUrl}/rest/v1/profiles?email=eq.${encodeURIComponent(email)}`, {
+            // plan=neq.internal : un compte interne ne doit jamais être
+            // rattaché de force à un cabinet via ce mécanisme (même garde
+            // que updatePlan ci-dessus).
+            await fetch(`${supabaseUrl}/rest/v1/profiles?email=eq.${encodeURIComponent(email)}&plan=neq.internal`, {
               method: "PATCH",
               headers: {
                 "apikey": supabaseKey,
@@ -398,8 +409,11 @@ Deno.serve(async (req) => {
           // ou nouvel abonnement individuel) garde un role/rattachement perime
           // vers un cabinet dont l'abonnement racine n'existe plus. Meme
           // nettoyage que cabinet-remove-member pour un retrait manuel.
+          // plan=neq.internal : même garde que ci-dessus — un membre interne
+          // ne doit jamais être coupé en cascade par la résiliation de son
+          // directeur.
           await fetch(
-            `${supabaseUrl}/rest/v1/profiles?manager_id=eq.${ownerId}`,
+            `${supabaseUrl}/rest/v1/profiles?manager_id=eq.${ownerId}&plan=neq.internal`,
             {
               method: "PATCH",
               headers: {

@@ -14,6 +14,7 @@ import { useT } from "@/contexts/LanguageContext";
 import { PublicLanguageSwitcher } from "@/components/common/PublicLanguageSwitcher";
 import { t as translate } from "@/lib/i18n";
 import { PRICE_IDS, PLAN_LABELS, type BillablePlan } from "@/lib/billing/plans";
+import { SelfServeClosedNotice } from "@/components/billing/SelfServeClosedNotice";
 
 const authSearchSchema = z.object({
   mode: z.enum(["signin", "signup"]).optional(),
@@ -50,8 +51,6 @@ const signinSchema = z.object({
 
 type SignupValues = z.infer<typeof signupSchema>;
 type SigninValues = z.infer<typeof signinSchema>;
-
-const CALCOM_URL = "https://cal.com/swissbroker/30min";
 
 function AuthPage() {
   const t = useT();
@@ -391,22 +390,13 @@ function SignupForm({
 function SignupClosedNotice({ plan }: { plan: BillablePlan }) {
   const planLabel = PLAN_LABELS[plan];
   return (
-    <div className="space-y-5 text-center">
-      <p className="text-sm text-muted-foreground">
-        {planLabel
+    <SelfServeClosedNotice
+      message={
+        planLabel
           ? `La création de compte en libre-service n'est plus disponible pour le plan ${planLabel}.`
-          : "La création de compte en libre-service n'est plus disponible."}{" "}
-        Réservez une démo avec notre équipe pour découvrir SwissBroker Pro et obtenir votre accès.
-      </p>
-      <a
-        href={CALCOM_URL}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="inline-flex h-11 w-full items-center justify-center rounded-xl bg-primary px-4 text-sm font-semibold text-primary-foreground shadow-elegant transition-all hover:bg-primary/90"
-      >
-        Réserver une démo
-      </a>
-    </div>
+          : undefined
+      }
+    />
   );
 }
 

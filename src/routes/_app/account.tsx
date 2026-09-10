@@ -31,9 +31,9 @@ type TabId = typeof TABS[number]["id"];
 
 const PLAN_CONFIG: Record<string, { label: string; color: string; features: string[] }> = {
   trial: {
-    label: "Essai gratuit (3 jours)",
+    label: "Compte non activé",
     color: "bg-amber-100 text-amber-800 border-amber-200",
-    features: ["Accès complet Pro pendant 3 jours", "Carte bancaire enregistrée", "Aucun débit avant J+3"],
+    features: ["Contactez notre équipe pour activer votre compte"],
   },
   starter: {
     label: "Starter — 490 CHF/mois",

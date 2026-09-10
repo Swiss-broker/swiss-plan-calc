@@ -61,9 +61,11 @@ function AppShell() {
   // src/lib/billing/plans.ts). Sans ce contrôle, n'importe qui peut créer
   // un compte, vérifier son email, et utiliser toute l'application
   // (calculateurs, IA, PDF) gratuitement sans jamais payer — faille
-  // constatée en production.
-  if (!ACTIVE_PLANS.has(plan)) {
-    return <SubscriptionRequired email={user?.email ?? ""} userId={user?.id ?? ""} onSignOut={signOut} />;
+  // constatée en production. "internal" (comptes fondateurs/associés)
+  // court-circuite toujours cette porte en premier, explicitement, plutôt
+  // que de dépendre implicitement du contenu futur d'ACTIVE_PLANS.
+  if (plan !== "internal" && !ACTIVE_PLANS.has(plan)) {
+    return <SubscriptionRequired email={user?.email ?? ""} onSignOut={signOut} />;
   }
 
   return (
