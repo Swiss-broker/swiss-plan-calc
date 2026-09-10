@@ -39,6 +39,8 @@ const PENSION_FIELDS = [
   "lpp_plan", "pillar_3a_annual_contribution", "pillar_3a_opening_date",
 ] as const;
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 export type Env = { supabaseUrl: string; supabaseKey: string };
 
 function jsonResponse(body: unknown) {
@@ -194,6 +196,65 @@ export async function handleAdminClientsDataRequest(req: Request, env: Env): Pro
       if (!pensionRes.ok) throw new Error("Échec de la mise à jour de la prévoyance.");
 
       return jsonResponse({ ok: true });
+    }
+
+    if (action === "count_all") {
+      // Overview.tsx : comptage global, tous courtiers confondus.
+      const res = await fetch(`${supabaseUrl}/rest/v1/clients?select=id`, {
+        method: "HEAD",
+        headers: { ...svcHeaders, Prefer: "count=exact" },
+      });
+      const range = res.headers.get("content-range"); // format "*/123"
+      const count = range ? parseInt(range.split("/")[1] ?? "0", 10) : 0;
+      return jsonResponse({ count });
+    }
+
+    if (action === "counts_by_broker") {
+      // Brokers.tsx (un par courtier) et CabinetDetail.tsx (un par membre) :
+      // une seule requête groupée plutôt qu'une requête par id.
+      const brokerIds = Array.isArray(body?.brokerIds)
+        ? body.brokerIds.filter((x: unknown) => typeof x === "string" && UUID_RE.test(x))
+        : [];
+      if (brokerIds.length === 0) return jsonResponse({ counts: {} });
+
+      const res = await fetch(
+        `${supabaseUrl}/rest/v1/clients?broker_id=in.(${brokerIds.join(",")})&select=broker_id`,
+        { headers: svcHeaders },
+      );
+      const rows = await res.json();
+      const counts: Record<string, number> = {};
+      for (const bid of brokerIds) counts[bid] = 0;
+      (rows as any[]).forEach((r) => { counts[r.broker_id] = (counts[r.broker_id] ?? 0) + 1; });
+      return jsonResponse({ counts });
+    }
+
+    if (action === "by_broker") {
+      // BrokerDetail.tsx : liste des clients d'un courtier donné.
+      const brokerId = body?.brokerId;
+      if (!brokerId || typeof brokerId !== "string" || !UUID_RE.test(brokerId)) {
+        throw new Error("brokerId manquant ou invalide.");
+      }
+      const res = await fetch(
+        `${supabaseUrl}/rest/v1/clients?broker_id=eq.${brokerId}&select=id,first_name,last_name,email,created_at&order=created_at.desc`,
+        { headers: svcHeaders },
+      );
+      const clientsForBroker = await res.json();
+      return jsonResponse({ clients: clientsForBroker });
+    }
+
+    if (action === "names_by_ids") {
+      // Payments.tsx : résolution des noms de clients sur les factures RDV.
+      const clientIds = Array.isArray(body?.clientIds)
+        ? body.clientIds.filter((x: unknown) => typeof x === "string" && UUID_RE.test(x))
+        : [];
+      if (clientIds.length === 0) return jsonResponse({ clients: [] });
+
+      const res = await fetch(
+        `${supabaseUrl}/rest/v1/clients?id=in.(${clientIds.join(",")})&select=id,first_name,last_name`,
+        { headers: svcHeaders },
+      );
+      const namedClients = await res.json();
+      return jsonResponse({ clients: namedClients });
     }
 
     throw new Error("Action inconnue.");
