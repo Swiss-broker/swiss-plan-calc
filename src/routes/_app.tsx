@@ -23,6 +23,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger, SheetTitle, SheetHeader } from "@/components/ui/sheet";
 import { useAuth } from "@/contexts/AuthContext";
+import { useIdleLogout } from "@/hooks/useIdleLogout";
 import { usePlan } from "@/contexts/PlanContext";
 import { useT } from "@/contexts/LanguageContext";
 import { LanguageSwitcher } from "@/components/common/LanguageSwitcher";
@@ -47,6 +48,8 @@ function AppShell() {
       navigate({ to: "/auth" });
     }
   }, [isAuthenticated, isLoading, navigate]);
+
+  useIdleLogout(isAuthenticated);
 
   if (isLoading || !isAuthenticated || planLoading) {
     return (
