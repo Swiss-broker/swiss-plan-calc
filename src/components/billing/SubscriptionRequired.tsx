@@ -28,7 +28,9 @@ export function SubscriptionRequired({
         <h1 className="text-2xl font-bold tracking-tight">Réservez une démo</h1>
         <p className="mt-1 mb-5 text-xs text-muted-foreground">{email}</p>
 
-        <SelfServeClosedNotice />
+        {/* Contrairement à auth.tsx, cette personne a déjà un compte — la
+            phrase par défaut sur la création de compte n'a pas de sens ici. */}
+        <SelfServeClosedNotice message="" />
 
         <div className="mt-6 text-center">
           <button
