@@ -80,3 +80,6 @@ verify_jwt = false
 
 [functions.complete-onboarding]
 verify_jwt = false
+
+[functions.send-lead-email]
+verify_jwt = true
