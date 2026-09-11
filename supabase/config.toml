@@ -42,6 +42,12 @@ verify_jwt = true
 [functions.admin-companies-data]
 verify_jwt = true
 
+[functions.admin-simulations-data]
+verify_jwt = true
+
+[functions.admin-invoices-data]
+verify_jwt = true
+
 [functions.fx-rates]
 verify_jwt = false
 
