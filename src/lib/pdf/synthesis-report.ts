@@ -719,7 +719,7 @@ function drawOverviewPage(
       r.label,
       formatSplitValue(r.current, r.format),
       formatSplitValue(r.projected, r.format),
-      hasDelta ? formatDelta(delta) : "—",
+      hasDelta ? formatDelta(delta, r.format) : "—",
     ]);
     summaryGoodness.push(hasDelta ? isRowGood(r, delta) : undefined);
   }
@@ -993,7 +993,7 @@ function drawSimulationPage(pdf: ReportPdf, entry: HistoryEntry, includeCharts: 
           label: r.label,
           current: formatSplitValue(r.current, r.format),
           projected: formatSplitValue(r.projected, r.format),
-          delta: hasDelta && delta !== 0 ? formatDelta(delta) : undefined,
+          delta: hasDelta && delta !== 0 ? formatDelta(delta, r.format) : undefined,
           deltaGood: hasDelta ? isRowGood(r, delta) : true,
         };
       }),
@@ -1900,7 +1900,7 @@ function drawComparisonPage(
     if (derived) {
       const r = derived.rows[0];
       if (typeof r.current === "number" && typeof r.projected === "number") {
-        rows.push([r.label, formatCHF(r.current), formatCHF(r.projected), formatDelta(r.projected - r.current)]);
+        rows.push([r.label, formatCHF(r.current), formatCHF(r.projected), formatDelta(r.projected - r.current, r.format)]);
         rowsGoodness.push(isRowGood(r, r.projected - r.current));
       }
     }
@@ -1911,7 +1911,7 @@ function drawComparisonPage(
     if (derived) {
       const r = derived.rows[0];
       if (typeof r.current === "number" && typeof r.projected === "number") {
-        rows.push([r.label, formatCHF(r.current), formatCHF(r.projected), formatDelta(r.projected - r.current)]);
+        rows.push([r.label, formatCHF(r.current), formatCHF(r.projected), formatDelta(r.projected - r.current, r.format)]);
         rowsGoodness.push(isRowGood(r, r.projected - r.current));
       }
     }
@@ -1959,10 +1959,12 @@ function drawComparisonPage(
   }
 }
 
-function formatDelta(v: number): string {
+function formatDelta(v: number, format?: SavedCompareRow["format"]): string {
   if (!v) return "—";
-  const s = v > 0 ? "+" : "";
-  return `${s}${formatCHF(v)}`;
+  const sign = v > 0 ? "+" : "";
+  if (format === "pct") return `${sign}${formatPct(v)}`;
+  if (format === "chf_per_month") return `${sign}${formatCHF(v)} / mois`;
+  return `${sign}${formatCHF(v)}`;
 }
 
 interface Totals {

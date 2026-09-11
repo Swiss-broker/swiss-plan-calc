@@ -294,8 +294,8 @@ export function TaxGlobalCompareCard({ form, result, clientId }: Props) {
     {
       id: "effectiveRate",
       label: "Taux effectif",
-      current: baselineResult.effectiveRate / 100,
-      projected: result.effectiveRate / 100,
+      current: baselineResult.effectiveRate,
+      projected: result.effectiveRate,
       format: "pct",
       betterWhen: "lower",
       breakdown: buildBreakdown("effectiveRate"),
@@ -303,8 +303,8 @@ export function TaxGlobalCompareCard({ form, result, clientId }: Props) {
     {
       id: "marginalRate",
       label: "Taux marginal",
-      current: baselineResult.marginalRate / 100,
-      projected: result.marginalRate / 100,
+      current: baselineResult.marginalRate,
+      projected: result.marginalRate,
       format: "pct",
       betterWhen: "lower",
       breakdown: buildBreakdown("marginalRate"),

@@ -294,8 +294,8 @@ function CantonCompareCalc() {
       },
       {
         label: "Taux effectif",
-        current: refRow.effective / 100,
-        projected: zgRow.effective / 100,
+        current: refRow.effective,
+        projected: zgRow.effective,
         format: "pct",
         betterWhen: "lower",
       },
