@@ -39,6 +39,9 @@ verify_jwt = true
 [functions.admin-clients-data]
 verify_jwt = true
 
+[functions.admin-companies-data]
+verify_jwt = true
+
 [functions.fx-rates]
 verify_jwt = false
 
