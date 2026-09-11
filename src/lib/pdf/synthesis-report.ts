@@ -73,19 +73,51 @@ interface SavedCompareRow {
   betterWhen?: "higher" | "lower" | "neutral";
 }
 
-function extractSavedCompareRows(entry: HistoryEntry): SavedCompareRow[] {
-  const raw = (entry.summary as { compareRows?: unknown } | null | undefined)?.compareRows;
-  if (!Array.isArray(raw)) return [];
-  return raw
-    .filter((r): r is Record<string, unknown> => typeof r === "object" && r !== null)
-    .filter((r) => typeof r.label === "string")
-    .map((r) => ({
-      label: r.label as string,
-      current: r.current as number | string | null | undefined,
-      projected: r.projected as number | string | null | undefined,
-      format: r.format as SavedCompareRow["format"],
-      betterWhen: r.betterWhen as SavedCompareRow["betterWhen"],
-    }));
+// Libellés personnalisés du widget SplitCompareLayout (ex. "Canton de
+// résidence · VD" / "Canton optimisé · Zoug" pour canton-compare) —
+// sauvegardés par le calculateur à côté de compareRows quand l'écran
+// affiche autre chose que le générique "Situation actuelle / projetée"
+// par défaut. Sans eux, le PDF ne peut pas savoir à quoi "projeté"
+// compare réellement (voir canton-compare.tsx).
+interface SavedCompareData {
+  rows: SavedCompareRow[];
+  currentLabel?: string;
+  currentBadge?: string;
+  projectedLabel?: string;
+  projectedBadge?: string;
+}
+
+function extractSavedCompareRows(entry: HistoryEntry): SavedCompareData {
+  const summary = entry.summary as
+    | {
+        compareRows?: unknown;
+        compareCurrentLabel?: unknown;
+        compareCurrentBadge?: unknown;
+        compareProjectedLabel?: unknown;
+        compareProjectedBadge?: unknown;
+      }
+    | null
+    | undefined;
+  const raw = summary?.compareRows;
+  const rows = Array.isArray(raw)
+    ? raw
+        .filter((r): r is Record<string, unknown> => typeof r === "object" && r !== null)
+        .filter((r) => typeof r.label === "string")
+        .map((r) => ({
+          label: r.label as string,
+          current: r.current as number | string | null | undefined,
+          projected: r.projected as number | string | null | undefined,
+          format: r.format as SavedCompareRow["format"],
+          betterWhen: r.betterWhen as SavedCompareRow["betterWhen"],
+        }))
+    : [];
+  return {
+    rows,
+    currentLabel: typeof summary?.compareCurrentLabel === "string" ? summary.compareCurrentLabel : undefined,
+    currentBadge: typeof summary?.compareCurrentBadge === "string" ? summary.compareCurrentBadge : undefined,
+    projectedLabel: typeof summary?.compareProjectedLabel === "string" ? summary.compareProjectedLabel : undefined,
+    projectedBadge: typeof summary?.compareProjectedBadge === "string" ? summary.compareProjectedBadge : undefined,
+  };
 }
 
 // Sens d'une ligne comparative, identique à la règle déjà utilisée à l'écran
@@ -156,14 +188,41 @@ function buildDerivedComparison(entry: HistoryEntry): DerivedComparison | null {
   }
 }
 
+// Ligne "Actuel vs Projeté" à utiliser pour canton_compare partout où l'on
+// a besoin d'un résumé en une seule ligne (page 3, page 22) : le canton le
+// moins cher de Suisse romande (celui réellement annoncé dans les
+// "Résultats clés" de sa propre page), cohérent avec le gain effectivement
+// compté ailleurs dans le document (extractGain → maxSavings) — jamais le
+// comparatif secondaire "vs Zoug" sauvegardé dans compareRows, qui reste
+// affiché uniquement sur la page de détail du calculateur, clairement
+// étiqueté comme tel (voir compareCurrentLabel/compareProjectedLabel).
+function cantonCompareSummaryRow(entry: HistoryEntry): SavedCompareRow | null {
+  const s = entry.summary as Record<string, unknown> | null | undefined;
+  const refTax = num(s?.referenceTax);
+  const cheapTax = num(s?.cheapestTax);
+  const cheapCanton = str(s?.cheapestCanton);
+  if (refTax <= 0 || !cheapCanton) return null;
+  return {
+    label: `Impôt total annuel (vs ${cantonName(cheapCanton)})`,
+    current: refTax,
+    projected: cheapTax,
+    format: "chf",
+    betterWhen: "lower",
+  };
+}
+
 // Complète une ligne de recommandation avec les deux chiffres réels
 // derrière un delta (ex. "160'922" seul ne dit pas ce qui vaut quoi) : soit
 // la première ligne du compareRows sauvegardé, soit un cas spécifique pour
 // les calculateurs sans SplitCompareLayout (ex. rente vs capital).
 function describeCompareFigures(entry: HistoryEntry): string | null {
-  const rows = extractSavedCompareRows(entry);
-  if (rows.length > 0) {
-    const r = rows[0];
+  if (entry.kind === "canton_compare") {
+    const r = cantonCompareSummaryRow(entry);
+    return r ? `${r.label}. Actuel : ${formatSplitValue(r.current, r.format)}, projeté : ${formatSplitValue(r.projected, r.format)}.` : null;
+  }
+  const saved = extractSavedCompareRows(entry);
+  if (saved.rows.length > 0) {
+    const r = saved.rows[0];
     return `${r.label}. Actuel : ${formatSplitValue(r.current, r.format)}, projeté : ${formatSplitValue(r.projected, r.format)}.`;
   }
   const derived = buildDerivedComparison(entry);
@@ -482,7 +541,16 @@ function drawCoverPage(
   pdf.cursorY += titleLines.length * 11 + 6;
 
   doc.setFont("helvetica", "normal");
-  doc.setFontSize(14);
+  // Réduit la taille de police si le nom est trop long pour tenir sur une
+  // ligne dans la largeur de page disponible, plutôt que de le tronquer ou
+  // de le retourner sur deux lignes (même principe que drawBarPair).
+  const nameMaxWidth = pageWidth - margin * 2 - 20;
+  let nameFontSize = 14;
+  doc.setFontSize(nameFontSize);
+  while (nameFontSize > 9 && doc.getTextWidth(fullName) > nameMaxWidth) {
+    nameFontSize -= 0.5;
+    doc.setFontSize(nameFontSize);
+  }
   doc.setTextColor(...washed);
   doc.text(fullName, pageWidth / 2, pdf.cursorY, { align: "center" });
   pdf.cursorY += 18;
@@ -535,11 +603,16 @@ function drawCoverPage(
   // Mention bas de page — corrige une incohérence : le document est remis
   // au client, "usage interne" n'avait pas de sens ici.
   doc.setFont("helvetica", "italic");
-  doc.setFontSize(9);
+  const footerText = `Document confidentiel, préparé exclusivement pour ${fullName}.`;
+  const footerMaxWidth = pageWidth - margin * 2 - 20;
+  let footerFontSize = 9;
+  doc.setFontSize(footerFontSize);
+  while (footerFontSize > 7 && doc.getTextWidth(footerText) > footerMaxWidth) {
+    footerFontSize -= 0.5;
+    doc.setFontSize(footerFontSize);
+  }
   doc.setTextColor(...washed);
-  doc.text(`Document confidentiel, préparé exclusivement pour ${fullName}.`, pageWidth / 2, pageHeight - 25, {
-    align: "center",
-  });
+  doc.text(footerText, pageWidth / 2, pageHeight - 25, { align: "center" });
 }
 
 // ============================================================================
@@ -623,8 +696,20 @@ function drawOverviewPage(
     if (!existing || e.created_at > existing.created_at) latestByKind.set(k, e);
   }
   for (const e of latestByKind.values()) {
-    const saved = extractSavedCompareRows(e);
-    const rows = saved.length > 0 ? saved : buildDerivedComparison(e)?.rows ?? [];
+    let rows: SavedCompareRow[];
+    if (e.kind === "canton_compare") {
+      // Aligne ce résumé sur la même comparaison que la "Synthèse globale"
+      // (canton le moins cher de Suisse romande, celui réellement annoncé
+      // dans les "Résultats clés" de la page dédiée) plutôt que sur le
+      // comparatif secondaire "vs Zoug" sauvegardé dans compareRows —
+      // sinon ce tableau et celui de la synthèse globale affichent deux
+      // écarts différents pour le même indicateur.
+      const row = cantonCompareSummaryRow(e);
+      rows = row ? [row] : [];
+    } else {
+      const saved = extractSavedCompareRows(e);
+      rows = saved.rows.length > 0 ? saved.rows : buildDerivedComparison(e)?.rows ?? [];
+    }
     if (rows.length === 0) continue;
     const r = rows[0];
     const hasDelta = typeof r.current === "number" && typeof r.projected === "number";
@@ -875,8 +960,8 @@ function drawSimulationPage(pdf: ReportPdf, entry: HistoryEntry, includeCharts: 
   // pas un recalcul indépendant, une retranscription fidèle du tableau que
   // le courtier a sous les yeux au moment de sauvegarder.
   const savedRows = extractSavedCompareRows(entry);
-  const derivedComparison = savedRows.length === 0 ? buildDerivedComparison(entry) : null;
-  const compareRows = savedRows.length > 0 ? savedRows : derivedComparison?.rows ?? [];
+  const derivedComparison = savedRows.rows.length === 0 ? buildDerivedComparison(entry) : null;
+  const compareRows = savedRows.rows.length > 0 ? savedRows.rows : derivedComparison?.rows ?? [];
   if (compareRows.length > 0) {
     // Réserve la place du bandeau, du paragraphe ET des cartes qui suivent
     // avant de dessiner quoi que ce soit (même logique que "Résultats clés"
@@ -891,16 +976,16 @@ function drawSimulationPage(pdf: ReportPdf, entry: HistoryEntry, includeCharts: 
     pdf.ensureSpace(15 + 12 + cardH + 12);
     pdf.section("Actuel vs Projeté");
     pdf.paragraph(
-      savedRows.length > 0
+      savedRows.rows.length > 0
         ? "Reprend exactement le comparatif affiché dans le calculateur au moment de l'enregistrement de cette simulation, avec les mêmes chiffres."
         : "Comparatif reconstitué à partir des résultats chiffrés de cette simulation, sans aucune valeur recalculée.",
       { muted: true, italic: true },
     );
     pdf.comparisonCards({
-      currentLabel: derivedComparison?.currentLabel,
-      currentBadge: derivedComparison?.currentBadge,
-      projectedLabel: derivedComparison?.projectedLabel,
-      projectedBadge: derivedComparison?.projectedBadge,
+      currentLabel: savedRows.currentLabel ?? derivedComparison?.currentLabel,
+      currentBadge: savedRows.currentBadge ?? derivedComparison?.currentBadge,
+      projectedLabel: savedRows.projectedLabel ?? derivedComparison?.projectedLabel,
+      projectedBadge: savedRows.projectedBadge ?? derivedComparison?.projectedBadge,
       rows: compareRows.map((r) => {
         const hasDelta = typeof r.current === "number" && typeof r.projected === "number";
         const delta = hasDelta ? (r.projected as number) - (r.current as number) : 0;
@@ -1487,8 +1572,21 @@ function drawBarPair(
 ) {
   const { doc, margin, contentWidth } = pdf;
   const max = Math.max(a.value, b.value, 1);
-  const labelW = 40;
   const valueW = 35;
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(9.5);
+  // labelW s'élargit selon le texte le plus long des deux lignes (ex. un
+  // nom d'investissement personnalisé par le courtier, potentiellement
+  // long — voir "Situation actuelle · Alexandre" dans un vrai dossier).
+  // Plancher = largeur d'origine (40mm), plafond = 85mm pour ne jamais
+  // réduire la zone de barre à presque rien si un libellé est démesurément
+  // long ; au-delà de ce plafond le texte peut encore déborder très
+  // légèrement, mais c'est un cas extrême, pas le débordement systématique
+  // d'aujourd'hui.
+  const MIN_LABEL_W = 40;
+  const MAX_LABEL_W = 85;
+  const longestLabelW = Math.max(doc.getTextWidth(a.label), doc.getTextWidth(b.label));
+  const labelW = Math.min(MAX_LABEL_W, Math.max(MIN_LABEL_W, longestLabelW + 4));
   const barAreaW = contentWidth - labelW - valueW - 8;
   const rowH = 9;
   const startY = pdf.cursorY;
@@ -1700,7 +1798,7 @@ function drawComparisonPage(
   const lpp = lppPair?.projected ?? entries.find((e) => e.kind === "lpp");
   if (lpp) {
     let before = num(pension?.lpp_current_balance);
-    const savedRow = extractSavedCompareRows(lpp).find((r) => r.label === "Capital LPP projeté à la retraite");
+    const savedRow = extractSavedCompareRows(lpp).rows.find((r) => r.label === "Capital LPP projeté à la retraite");
     if (lppPair) {
       before = num(lppPair.baseline.summary?.projectedBalance);
     } else if (savedRow && typeof savedRow.current === "number") {
@@ -1738,17 +1836,24 @@ function drawComparisonPage(
     ]);
     rowsGoodness.push(after > before);
   }
-  // 3a — "avant" doit être le montant réellement versé (cotisations
-  // cumulées, sans rendement), pas 0 : sinon le delta affiché est tout le
-  // capital final comme si le versement lui-même était le gain, alors que
-  // le vrai gain de l'optimisation est la croissance (rendement + économie
-  // fiscale), pas l'épargne elle-même.
+  // 3a — "avant" = capital 3a actuel, "après" = capital 3a optimisé au même
+  // horizon — ligne "Capital 3a à la retraite (X ans)" du compareRows
+  // sauvegardé, celle qui donne déjà le delta correctement affiché sur la
+  // page de détail. Ne compare plus les cotisations versées
+  // (totalContributions) au capital actuel NON optimisé (finalBalance), qui
+  // mélangeait deux métriques différentes (voir rapport d'audit).
   const p3a = entries.find((e) => e.kind === "pillar3a");
   if (p3a) {
-    const versed = num(p3a.summary?.totalContributions);
-    const proj = num(p3a.summary?.finalBalance);
-    rows.push(["Pilier 3a cumulé à la retraite", formatCHF(versed), formatCHF(proj), formatDelta(proj - versed)]);
-    rowsGoodness.push(proj > versed);
+    const capitalRow = extractSavedCompareRows(p3a).rows.find((r) => r.label.startsWith("Capital 3a à la retraite"));
+    if (capitalRow && typeof capitalRow.current === "number" && typeof capitalRow.projected === "number") {
+      rows.push([
+        "Pilier 3a cumulé à la retraite",
+        formatCHF(capitalRow.current),
+        formatCHF(capitalRow.projected),
+        formatDelta(capitalRow.projected - capitalRow.current),
+      ]);
+      rowsGoodness.push(capitalRow.projected > capitalRow.current);
+    }
   }
   // Canton compare — avant = charge fiscale du canton de référence, après =
   // charge fiscale du canton le moins cher, tous deux déjà dans le summary.

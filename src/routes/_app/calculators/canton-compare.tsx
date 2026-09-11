@@ -746,6 +746,12 @@ function CantonCompareCalc() {
             // Retranscrit tel quel dans le PDF de synthèse (section "Actuel
             // vs Projeté") : le comparatif résidence vs Zoug affiché à
             // l'écran, avec le même canton de référence que le classement.
+            // Les libellés ci-dessous sont indispensables : sans eux, le PDF
+            // ne peut pas savoir que ce comparatif teste Zoug et non le
+            // canton le moins cher de Romandie déjà annoncé dans les
+            // "Résultats clés" juste au-dessus.
+            compareCurrentLabel: `Canton de résidence · ${referenceCanton}`,
+            compareProjectedLabel: "Canton optimisé · Zoug",
             compareRows: zgCompareRows.map(({ label, current, projected, format, betterWhen, hint }) => ({
               label,
               current,
