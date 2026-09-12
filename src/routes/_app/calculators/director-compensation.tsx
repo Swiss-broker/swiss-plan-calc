@@ -248,13 +248,17 @@ function DirectorCompensationCalc() {
     () => [...presetResults, customResult],
     [presetResults, customResult],
   );
-  const recommendation = useMemo(
-    () => recommendBestStrategy(strategiesForCompare),
-    [strategiesForCompare],
-  );
   const tableResults = useMemo(
     () => (currentResult ? [currentResult, ...strategiesForCompare] : strategiesForCompare),
     [currentResult, strategiesForCompare],
+  );
+  // La situation actuelle doit concourir à égalité avec les stratégies
+  // testées : sinon on peut recommander une option en réalité moins bonne
+  // que ce que le dirigeant fait déjà (le "gain" affiché était alors un
+  // delta négatif ramené à 0 silencieusement à la sauvegarde).
+  const recommendation = useMemo(
+    () => recommendBestStrategy(tableResults),
+    [tableResults],
   );
 
   const availableProfit = Math.max(0, inputs.totalProfit - (inputs.reserveTarget ?? 0));
@@ -983,7 +987,12 @@ function RecommendationCard({
           </div>
         </div>
       )}
-      {current && (
+      {current && best === current && (
+        <p className="mt-4 text-sm text-muted-foreground">
+          Votre répartition actuelle est déjà la plus avantageuse parmi les stratégies testées : aucun changement n'est nécessaire.
+        </p>
+      )}
+      {current && best !== current && (
         <div className="mt-5 rounded-xl border border-primary/30 bg-card/60 p-4">
           <div className="text-xs font-semibold uppercase tracking-wider text-primary">
             {t("calc.dir.reco.client.title", { name: clientName ?? t("calc.dir.reco.this_director") })}

@@ -259,13 +259,18 @@ export function computeStrategyFromAbsolute(
 ): CompensationResult {
   const warnings: string[] = [];
   const totalProfit = Math.max(0, inputs.totalProfit);
+  // Même base que computeStrategy : la réserve cible est déduite du bénéfice
+  // disponible AVANT l'impôt société, pour que "situation actuelle" et
+  // stratégies testées soient comparables à armes égales.
+  const reserveTarget = Math.max(0, inputs.reserveTarget ?? 0);
+  const availableProfit = reserveTarget >= totalProfit ? 0 : totalProfit - reserveTarget;
   const grossSalary = Math.max(0, abs.grossSalary);
   const dividendsTargeted = Math.max(0, abs.dividends);
 
   const employerCharges = computeEmployerCharges(grossSalary, inputs);
   const totalSalaryCost = grossSalary + employerCharges.total;
 
-  const profitBeforeCorporateTax = Math.max(0, totalProfit - totalSalaryCost);
+  const profitBeforeCorporateTax = Math.max(0, availableProfit - totalSalaryCost);
   const corporateTax = profitBeforeCorporateTax * CORPORATE_TAX_RATE[inputs.companyCanton];
   const netProfitAfterTax = profitBeforeCorporateTax - corporateTax;
 
@@ -281,9 +286,9 @@ export function computeStrategyFromAbsolute(
     );
   }
   const retainedActual =
-    abs.retained != null
+    (abs.retained != null
       ? Math.max(0, abs.retained)
-      : Math.max(0, netProfitAfterTax - dividendsPaid);
+      : Math.max(0, netProfitAfterTax - dividendsPaid)) + reserveTarget;
 
   const employeeCharges = computeEmployeeCharges(grossSalary, inputs);
   const netSalary = grossSalary - employeeCharges.total;

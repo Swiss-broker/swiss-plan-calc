@@ -39,6 +39,7 @@ import { usePrefillFromClient, useHydrateFormFromPrefill } from "@/hooks/usePref
 import { useLoadSavedSimulation } from "@/hooks/useLoadSavedSimulation";
 
 import { computeTaxGlobal, computeGrossForRegime } from "@/lib/tax-global/engine";
+import { buildScenarios } from "@/lib/tax-global/scenarios";
 
 import { createDefaultInput } from "@/lib/tax-global/profile";
 import type { TaxGlobalInput } from "@/lib/tax-global/types";
@@ -88,6 +89,12 @@ function TaxGlobalCalc() {
     setForm((f) => ({ ...f, [k]: v }));
 
   const result = useMemo(() => computeTaxGlobal(form), [form]);
+  const scenarios = useMemo(() => buildScenarios(form), [form]);
+  const bestScenario = useMemo(() => {
+    const savings = scenarios.filter((s) => s.id !== "baseline" && s.deltaVsBaseline < 0);
+    if (savings.length === 0) return null;
+    return savings.reduce((a, b) => (b.deltaVsBaseline < a.deltaVsBaseline ? b : a));
+  }, [scenarios]);
   const brokerHeader = useBrokerPdfHeader();
   const handleExportPdf = () => {
     exportTaxGlobalPdf({ header: brokerHeader, input: form, result });
@@ -933,6 +940,49 @@ function TaxGlobalCalc() {
             </CalcCard>
           )}
 
+          {/* Pistes d'optimisation — scénarios "et si" testés automatiquement */}
+          {scenarios.length > 1 && (
+            <CalcCard title="Pistes d'optimisation">
+              <p className="text-xs text-muted-foreground">
+                Quelques leviers courants, testés automatiquement à partir de votre situation actuelle (référence : {formatCHF(result.totalTaxCHF)} d'impôt total).
+              </p>
+              <ul className="mt-3 space-y-2">
+                {scenarios
+                  .filter((s) => s.id !== "baseline")
+                  .map((s) => (
+                    <li
+                      key={s.id}
+                      className={`flex items-center justify-between gap-3 rounded-md border p-2.5 text-sm ${
+                        s.id === bestScenario?.id ? "border-success/40 bg-success/5" : "border-border"
+                      }`}
+                    >
+                      <div>
+                        <div className="font-medium">
+                          {s.id === bestScenario?.id && "★ "}
+                          {s.label}
+                        </div>
+                        <div className="text-xs text-muted-foreground">{s.description}</div>
+                      </div>
+                      <span
+                        className={`shrink-0 tabular-nums font-semibold ${
+                          s.deltaVsBaseline < 0
+                            ? "text-success"
+                            : s.deltaVsBaseline > 0
+                              ? "text-destructive"
+                              : "text-muted-foreground"
+                        }`}
+                      >
+                        {s.deltaVsBaseline === 0 ? "—" : `${s.deltaVsBaseline < 0 ? "-" : "+"}${formatCHF(Math.abs(s.deltaVsBaseline))}`}
+                      </span>
+                    </li>
+                  ))}
+              </ul>
+              <p className="mt-3 text-[11px] text-muted-foreground">
+                Écart sur l'impôt total annuel, à situation constante par ailleurs. Simulation indicative, pas un engagement contractuel.
+              </p>
+            </CalcCard>
+          )}
+
         </div>
       </div>
 
@@ -961,6 +1011,8 @@ function TaxGlobalCalc() {
             swissShareCHF: result.swissShareCHF,
             foreignShareCHF: result.foreignShareCHF,
             socialChargesCHF: result.socialChargesCHF,
+            bestScenarioSavings: bestScenario ? Math.round(-bestScenario.deltaVsBaseline) : 0,
+            bestScenarioLabel: bestScenario ? bestScenario.label : undefined,
           }}
           defaultTitle={`Fiscal global ${form.canton} · ${result.regimeLabel}`}
         />
