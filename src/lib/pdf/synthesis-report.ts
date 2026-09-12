@@ -65,7 +65,7 @@ const has = (v: unknown): boolean => {
 // summary.compareRows par SaveSimulationButton pour les calculateurs qui
 // affichent ce comparatif — voir src/components/calculators/SplitCompareLayout.tsx.
 // Absent sur les simulations sauvegardées avant l'ajout de ce champ.
-interface SavedCompareRow {
+export interface SavedCompareRow {
   label: string;
   current: number | string | null | undefined;
   projected: number | string | null | undefined;
@@ -79,7 +79,7 @@ interface SavedCompareRow {
 // affiche autre chose que le générique "Situation actuelle / projetée"
 // par défaut. Sans eux, le PDF ne peut pas savoir à quoi "projeté"
 // compare réellement (voir canton-compare.tsx).
-interface SavedCompareData {
+export interface SavedCompareData {
   rows: SavedCompareRow[];
   currentLabel?: string;
   currentBadge?: string;
@@ -87,7 +87,7 @@ interface SavedCompareData {
   projectedBadge?: string;
 }
 
-function extractSavedCompareRows(entry: HistoryEntry): SavedCompareData {
+export function extractSavedCompareRows(entry: HistoryEntry): SavedCompareData {
   const summary = entry.summary as
     | {
         compareRows?: unknown;
@@ -131,7 +131,7 @@ function isRowGood(row: SavedCompareRow, delta: number): boolean {
   return (better === "higher" && delta > 0) || (better === "lower" && delta < 0);
 }
 
-interface DerivedComparison {
+export interface DerivedComparison {
   rows: SavedCompareRow[];
   currentLabel?: string;
   currentBadge?: string;
@@ -150,7 +150,7 @@ interface DerivedComparison {
 // LAMal vs CMU, placement A vs B) restent volontairement en dehors, tout
 // comme la réclamation de taux de change (ce n'est pas une optimisation
 // actionnable mais un constat de trop-perçu).
-function buildDerivedComparison(entry: HistoryEntry): DerivedComparison | null {
+export function buildDerivedComparison(entry: HistoryEntry): DerivedComparison | null {
   const s = entry.summary ?? {};
   switch (entry.kind) {
     case "director_compensation": {
@@ -196,7 +196,7 @@ function buildDerivedComparison(entry: HistoryEntry): DerivedComparison | null {
 // comparatif secondaire "vs Zoug" sauvegardé dans compareRows, qui reste
 // affiché uniquement sur la page de détail du calculateur, clairement
 // étiqueté comme tel (voir compareCurrentLabel/compareProjectedLabel).
-function cantonCompareSummaryRow(entry: HistoryEntry): SavedCompareRow | null {
+export function cantonCompareSummaryRow(entry: HistoryEntry): SavedCompareRow | null {
   const s = entry.summary as Record<string, unknown> | null | undefined;
   const refTax = num(s?.referenceTax);
   const cheapTax = num(s?.cheapestTax);
@@ -215,7 +215,7 @@ function cantonCompareSummaryRow(entry: HistoryEntry): SavedCompareRow | null {
 // derrière un delta (ex. "160'922" seul ne dit pas ce qui vaut quoi) : soit
 // la première ligne du compareRows sauvegardé, soit un cas spécifique pour
 // les calculateurs sans SplitCompareLayout (ex. rente vs capital).
-function describeCompareFigures(entry: HistoryEntry): string | null {
+export function describeCompareFigures(entry: HistoryEntry): string | null {
   if (entry.kind === "canton_compare") {
     const r = cantonCompareSummaryRow(entry);
     return r ? `${r.label}. Actuel : ${formatSplitValue(r.current, r.format)}, projeté : ${formatSplitValue(r.projected, r.format)}.` : null;
@@ -1319,7 +1319,7 @@ function pushStr(rows: Array<[string, string]>, label: string, v: string | undef
   if (v) rows.push([label, v]);
 }
 
-function formatMetrics(
+export function formatMetrics(
   entry: HistoryEntry,
 ): Array<{ label: string; value: number | string; tone?: "primary" | "success" | "warning" }> {
   const s = entry.summary ?? {};
@@ -1959,7 +1959,7 @@ function drawComparisonPage(
   }
 }
 
-function formatDelta(v: number, format?: SavedCompareRow["format"]): string {
+export function formatDelta(v: number, format?: SavedCompareRow["format"]): string {
   if (!v) return "—";
   const sign = v > 0 ? "+" : "";
   if (format === "pct") return `${sign}${formatPct(v)}`;
@@ -1967,12 +1967,12 @@ function formatDelta(v: number, format?: SavedCompareRow["format"]): string {
   return `${sign}${formatCHF(v)}`;
 }
 
-interface Totals {
+export interface Totals {
   oneTime: number;
   annual: number;
   details: string[];
 }
-function computeTotals(entries: HistoryEntry[]): Totals {
+export function computeTotals(entries: HistoryEntry[]): Totals {
   let oneTime = 0;
   let annual = 0;
   const details: string[] = [];
