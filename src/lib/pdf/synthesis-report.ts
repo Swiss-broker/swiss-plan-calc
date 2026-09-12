@@ -13,7 +13,7 @@ import {
 } from "@/lib/swiss/enums";
 import { LEGAL_FORM_LABELS, type Company } from "@/lib/companies/types";
 import { ageFromDob, parseChildren, type Client, type ClientPension, type ClientAssets } from "@/lib/clients/types";
-import { extractGain, type ExtractedGain } from "@/lib/simulations/extract-gain";
+import { extractGain, pickLatestNonDismissed, type ExtractedGain } from "@/lib/simulations/extract-gain";
 import type { HistoryEntry, HistoryKpi, SimulationKind } from "@/lib/history/types";
 import { KIND_LABELS } from "@/lib/history/types";
 import { extractKpis } from "@/lib/history/registry";
@@ -689,13 +689,13 @@ function drawOverviewPage(
   // plusieurs fois pour le même client (ex. LPP rejoué après un rachat)
   // ne doit apparaître qu'une fois ici, avec sa sauvegarde la plus récente
   // — sinon la même catégorie se répète avec des chiffres identiques.
-  const latestByKind = new Map<SimulationKind, HistoryEntry>();
-  for (const e of entries) {
-    const k = e.kind as SimulationKind;
-    const existing = latestByKind.get(k);
-    if (!existing || e.created_at > existing.created_at) latestByKind.set(k, e);
-  }
-  for (const e of latestByKind.values()) {
+  // Un kind par ligne, et seulement s'il a une simulation active (non
+  // archivée) — cohérent avec Recommandations chiffrées / Gain total, qui
+  // appliquent déjà cette même règle (voir pickLatestNonDismissed).
+  const kindsPresent = new Set<SimulationKind>(entries.map((e) => e.kind as SimulationKind));
+  for (const k of kindsPresent) {
+    const e = pickLatestNonDismissed(entries, k);
+    if (!e) continue;
     let rows: SavedCompareRow[];
     if (e.kind === "canton_compare") {
       // Aligne ce résumé sur la même comparaison que la "Synthèse globale"
@@ -1795,7 +1795,7 @@ function drawComparisonPage(
   // 20 ans mélangeait deux effets (croissance naturelle + rachat) dans un
   // seul delta, ce qui rendait ce dernier incompréhensible.
   const lppPair = spreadPairs.get("lpp");
-  const lpp = lppPair?.projected ?? entries.find((e) => e.kind === "lpp");
+  const lpp = lppPair?.projected ?? pickLatestNonDismissed(entries, "lpp");
   if (lpp) {
     let before = num(pension?.lpp_current_balance);
     const savedRow = extractSavedCompareRows(lpp).rows.find((r) => r.label === "Capital LPP projeté à la retraite");
@@ -1842,7 +1842,7 @@ function drawComparisonPage(
   // page de détail. Ne compare plus les cotisations versées
   // (totalContributions) au capital actuel NON optimisé (finalBalance), qui
   // mélangeait deux métriques différentes (voir rapport d'audit).
-  const p3a = entries.find((e) => e.kind === "pillar3a");
+  const p3a = pickLatestNonDismissed(entries, "pillar3a");
   if (p3a) {
     const capitalRow = extractSavedCompareRows(p3a).rows.find((r) => r.label.startsWith("Capital 3a à la retraite"));
     if (capitalRow && typeof capitalRow.current === "number" && typeof capitalRow.projected === "number") {
@@ -1860,7 +1860,7 @@ function drawComparisonPage(
   // Un "-" en avant à côté d'un delta chiffré donnait l'impression que le
   // tableau était cassé (rien à comparer), alors que les deux montants
   // existent et sont ceux affichés dans le comparateur.
-  const cc = entries.find((e) => e.kind === "canton_compare");
+  const cc = pickLatestNonDismissed(entries, "canton_compare");
   if (cc) {
     const before = num(cc.summary?.referenceTax);
     const after = num(cc.summary?.cheapestTax);
@@ -1870,7 +1870,7 @@ function drawComparisonPage(
     }
   }
   // Director
-  const dc = entries.find((e) => e.kind === "director_compensation");
+  const dc = pickLatestNonDismissed(entries, "director_compensation");
   if (dc) {
     const cur = num(dc.summary?.currentDirectorNet);
     const reco = num(dc.summary?.recommendedDirectorNet);
@@ -1882,7 +1882,7 @@ function drawComparisonPage(
   // Rente vs capital — avant/après opposent les deux options réellement
   // comparées par le calculateur (rente viagère nette vs capital net), pas
   // un "-" suivi du seul écart, qui ne montrait aucune des deux options.
-  const ret = entries.find((e) => e.kind === "retirement");
+  const ret = pickLatestNonDismissed(entries, "retirement");
   if (ret) {
     const annuity = num(ret.summary?.netAnnuity);
     const lump = num(ret.summary?.netLumpSum);
@@ -1894,7 +1894,7 @@ function drawComparisonPage(
   // Libre passage et frontaliers — mêmes chiffres que buildDerivedComparison
   // utilisé sur leur page de simulation respective, pour ne jamais afficher
   // un écart différent d'une page à l'autre du même dossier.
-  const vb = entries.find((e) => e.kind === "vested_benefits");
+  const vb = pickLatestNonDismissed(entries, "vested_benefits");
   if (vb) {
     const derived = buildDerivedComparison(vb);
     if (derived) {
@@ -1905,7 +1905,7 @@ function drawComparisonPage(
       }
     }
   }
-  const cb = entries.find((e) => e.kind === "cross_border");
+  const cb = pickLatestNonDismissed(entries, "cross_border");
   if (cb) {
     const derived = buildDerivedComparison(cb);
     if (derived) {

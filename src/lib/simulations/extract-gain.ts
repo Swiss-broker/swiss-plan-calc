@@ -221,6 +221,22 @@ function formatInt(n: number): string {
 export type GainItem = ExtractedGain & { entryId: string; kind: SimulationKind; createdAt: string };
 
 /**
+ * Pour chaque kind présent, la simulation la plus récente (toutes dates
+ * confondues, archivée ou non) — un seul candidat par kind. Utilisé par
+ * selectGains ci-dessous.
+ */
+function latestPerKind(entries: HistoryEntry[]): Map<SimulationKind, HistoryEntry> {
+  const sorted = [...entries].sort(
+    (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+  );
+  const latest = new Map<SimulationKind, HistoryEntry>();
+  for (const e of sorted) {
+    if (!latest.has(e.kind)) latest.set(e.kind, e);
+  }
+  return latest;
+}
+
+/**
  * Sélectionne, pour chaque kind, la simulation la plus récente qui satisfait
  * `wantDismissed` (true = uniquement les gains archivés, false = uniquement
  * les actifs). Un kind dont la dernière simulation est archivée ne "retombe"
@@ -228,20 +244,41 @@ export type GainItem = ExtractedGain & { entryId: string; kind: SimulationKind; 
  * tant qu'aucune nouvelle simulation n'est sauvegardée.
  */
 function selectGains(entries: HistoryEntry[], wantDismissed: boolean): GainItem[] {
-  const sorted = [...entries].sort(
-    (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
-  );
-  const seen = new Set<SimulationKind>();
   const items: GainItem[] = [];
-  for (const e of sorted) {
-    if (seen.has(e.kind)) continue;
-    seen.add(e.kind);
+  for (const e of latestPerKind(entries).values()) {
     if (Boolean(e.gain_dismissed) !== wantDismissed) continue;
     const g = extractGain(e);
     if (g.type === "none") continue;
     items.push({ ...g, entryId: e.id, kind: e.kind, createdAt: e.created_at });
   }
   return items;
+}
+
+/**
+ * Simulation la plus récente d'un kind donné, parmi celles qui ne sont PAS
+ * archivées (gain_dismissed) — une éventuelle simulation archivée plus
+ * récente du même kind n'empêche pas de retomber sur une plus ancienne
+ * encore active. Si aucune simulation active de ce kind n'existe, retourne
+ * undefined.
+ *
+ * Volontairement distinct de selectGains (qui ne regarde que la toute
+ * dernière simulation, dismissed ou non, et ne retombe jamais sur une plus
+ * ancienne) : "Recommandations chiffrées" et "Gain total identifié" dans ce
+ * PDF (computeTotals / drawConclusionPage, plus bas) ne passent pas par
+ * selectGains — ils retiennent simplement toute simulation active, sans
+ * dédoublonnage par kind. pickLatestNonDismissed reproduit ce même critère
+ * ("active" = non archivée) en ne gardant que la plus récente pour donner
+ * une ligne unique par catégorie dans "Résumé par catégorie" et "Synthèse
+ * globale", qui doivent donc afficher la même simulation que ces deux
+ * sections.
+ */
+export function pickLatestNonDismissed(entries: HistoryEntry[], kind: SimulationKind): HistoryEntry | undefined {
+  let best: HistoryEntry | undefined;
+  for (const e of entries) {
+    if (e.kind !== kind || e.gain_dismissed) continue;
+    if (!best || new Date(e.created_at).getTime() > new Date(best.created_at).getTime()) best = e;
+  }
+  return best;
 }
 
 /**
