@@ -15,6 +15,7 @@ dist-ssr
 .tanstack/**
 .nitro
 *.local
+*.tsbuildinfo
 
 # Supabase CLI local state (regenerated per machine by `supabase link`/`supabase start`)
 supabase/.temp/
