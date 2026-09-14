@@ -5,7 +5,7 @@ import { motion, useInView, useMotionValue, useSpring } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import {
   ArrowRight, CheckCircle2, Building2, Globe2,
-  Clock, Shield, Sparkles, TrendingUp, Calculator,
+  Clock, Shield, Sparkles, TrendingUp, Calculator, PiggyBank,
 } from "lucide-react";
 import { useT } from "@/contexts/LanguageContext";
 import { PublicLanguageSwitcher } from "@/components/common/PublicLanguageSwitcher";
@@ -156,6 +156,7 @@ function Features() {
     { icon: Calculator, title: t("landing.feature.proj.title"), desc: t("landing.feature.proj.desc"), gradient: "from-blue-500/20 to-cyan-500/20" },
     { icon: Sparkles, title: t("landing.feature.opt.title"), desc: t("landing.feature.opt.desc"), gradient: "from-violet-500/20 to-purple-500/20" },
     { icon: Shield, title: t("landing.feature.priv.title"), desc: t("landing.feature.priv.desc"), gradient: "from-amber-500/20 to-orange-500/20" },
+    { icon: PiggyBank, title: t("landing.feature.rebate.title"), desc: t("landing.feature.rebate.desc"), gradient: "from-rose-500/20 to-pink-500/20" },
   ];
   return (
     <section id="features" ref={ref} className="py-20 bg-gradient-to-b from-muted/50 to-background">
@@ -165,7 +166,7 @@ function Features() {
           <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">{t("landing.features.title")}</h2>
           <p className="mt-3 text-muted-foreground">{t("landing.features.subtitle")}</p>
         </motion.div>
-        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
           {items.map((it, i) => (
             <motion.div key={it.title}
               initial={{ opacity: 0, y: 50 }} animate={inView ? { opacity: 1, y: 0 } : {}}

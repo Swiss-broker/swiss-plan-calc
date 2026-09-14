@@ -1155,6 +1155,8 @@ export const en: Record<string, string> = {
   "landing.feature.opt.desc": "Quantified, contextual recommendations based on the client's situation (BVG buyback, 3a fragmentation, relocation…).",
   "landing.feature.priv.title": "Private files",
   "landing.feature.priv.desc": "Each broker has their private workspace. Encrypted data, no sharing, compliant with Swiss practices.",
+  "landing.feature.rebate.title": "Rebate insurance",
+  "landing.feature.rebate.desc": "A broker advantage included in your subscription, terms explained in detail during your demo.",
   "landing.modules.title": "Everything that gets calculated in Switzerland",
   "landing.modules.subtitle": "An exhaustive calculation engine. Figures are based on official scales and updated every tax year.",
   "landing.module.tax.tag": "Tax",

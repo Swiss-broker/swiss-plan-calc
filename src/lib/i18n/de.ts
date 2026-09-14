@@ -1157,6 +1157,8 @@ export const de: Record<string, string> = {
   "landing.feature.opt.desc": "Bezifferte und kontextuelle Empfehlungen je nach Kundensituation (BVG-Einkauf, 3a-Splitting, Wohnsitzwechsel …).",
   "landing.feature.priv.title": "Private Dossiers",
   "landing.feature.priv.desc": "Jeder Broker hat seinen privaten Bereich. Verschlüsselte Daten, kein Teilen, konform mit Schweizer Praxis.",
+  "landing.feature.rebate.title": "Rückvergütungsversicherung",
+  "landing.feature.rebate.desc": "Ein Broker-Vorteil, der in Ihrem Abonnement inbegriffen ist, Details werden bei Ihrer Demo erläutert.",
   "landing.modules.title": "Alles, was sich in der Schweiz berechnen lässt",
   "landing.modules.subtitle": "Eine umfassende Berechnungs-Engine. Die Zahlen basieren auf den offiziellen Tarifen und werden jedes Steuerjahr aktualisiert.",
   "landing.module.tax.tag": "Steuern",

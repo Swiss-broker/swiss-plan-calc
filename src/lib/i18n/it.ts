@@ -1155,6 +1155,8 @@ export const it: Record<string, string> = {
   "landing.feature.opt.desc": "Raccomandazioni quantificate e contestuali in base alla situazione del cliente (riscatto LPP, frammentazione 3a, trasloco…).",
   "landing.feature.priv.title": "Dossier privati",
   "landing.feature.priv.desc": "Ogni broker ha il suo spazio privato. Dati cifrati, nessuna condivisione, conforme alla pratica svizzera.",
+  "landing.feature.rebate.title": "Assicurazione con retrocessione",
+  "landing.feature.rebate.desc": "Un vantaggio per il broker incluso nel vostro abbonamento, condizioni spiegate in dettaglio durante la demo.",
   "landing.modules.title": "Tutto ciò che si calcola in Svizzera",
   "landing.modules.subtitle": "Un motore di calcolo esaustivo. Le cifre si basano sulle tariffe ufficiali e vengono aggiornate ogni anno fiscale.",
   "landing.module.tax.tag": "Fiscalità",
