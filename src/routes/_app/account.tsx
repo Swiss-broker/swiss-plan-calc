@@ -265,16 +265,21 @@ function AccountPage() {
             <Label htmlFor="phone">{t("form.phone")}</Label>
             <Input id="phone" value={profile.phone} onChange={(e) => setProfile((p) => ({ ...p, phone: e.target.value }))} />
           </div>
-          <div className="flex items-center justify-between pt-2">
-            <button
-              type="button"
-              onClick={onResetPassword}
-              disabled={sendingReset}
-              className="text-sm text-primary hover:underline flex items-center gap-1"
-            >
-              {sendingReset && <Loader2 className="h-3 w-3 animate-spin" />}
-              Réinitialiser mon mot de passe
-            </button>
+          {/* Sécurité */}
+          <div className="space-y-3 rounded-xl border border-dashed border-border bg-muted/30 p-4">
+            <div>
+              <h2 className="text-sm font-semibold">Sécurité</h2>
+              <p className="text-xs text-muted-foreground">
+                Vous recevrez un email avec un lien pour définir un nouveau mot de passe.
+              </p>
+            </div>
+            <Button type="button" variant="outline" onClick={onResetPassword} disabled={sendingReset} className="gap-2">
+              {sendingReset && <Loader2 className="h-4 w-4 animate-spin" />}
+              Changer mon mot de passe
+            </Button>
+          </div>
+
+          <div className="flex justify-end pt-2">
             <Button
               onClick={() => onSave({ first_name: profile.first_name.trim() || null, last_name: profile.last_name.trim() || null, phone: profile.phone.trim() || null } as Parameters<typeof onSave>[0])}
               disabled={saving}
