@@ -188,6 +188,7 @@ function TeamPage() {
           cabinetRootId={
             requester.cabinet_role === "root_director" ? requester.id : (data.teamData[0]?.director.id ?? requester.id)
           }
+          estimatedOccupiedSeats={totals.memberCount + pendingInvites.length}
           onClose={() => setInviteOpen(false)}
           onSuccess={() => {
             setInviteOpen(false);
@@ -892,15 +893,20 @@ function PendingInviteRow({
   );
 }
 
+const FREE_SEATS_INCLUDED = 3; // doit rester synchronisé avec cabinet-add-seat — estimation d'affichage seulement, la décision de facturation est toujours tranchée côté serveur
+
 function InviteForm({
   cabinetRootId,
+  estimatedOccupiedSeats,
   onClose,
   onSuccess,
 }: {
   cabinetRootId: string;
+  estimatedOccupiedSeats: number;
   onClose: () => void;
   onSuccess: () => void;
 }) {
+  const seatIsFree = estimatedOccupiedSeats < FREE_SEATS_INCLUDED;
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
@@ -919,7 +925,7 @@ function InviteForm({
           inviteeFirstName: firstName.trim() || undefined,
           inviteeLastName: lastName.trim() || undefined,
           role,
-          payer,
+          payer: seatIsFree ? "cabinet" : payer,
         },
       });
       if (data?.checkoutUrl) {
@@ -954,12 +960,12 @@ function InviteForm({
       toast.error("L'email est requis.");
       return;
     }
-    if (payer === "cabinet") {
+    if (!seatIsFree && payer === "cabinet") {
       // Un vrai débit va se produire, on demande confirmation avant.
       setConfirmOpen(true);
       return;
     }
-    // Le courtier paiera lui-même, aucun débit ici, on envoie directement.
+    // Siège gratuit, ou la personne paie elle-même : aucun débit ici, on envoie directement.
     sendInvite();
   };
 
@@ -1017,23 +1023,41 @@ function InviteForm({
             </SelectContent>
           </Select>
         </div>
-        <div className="space-y-1.5 sm:col-span-2">
-          <Label className="text-xs">Qui règle ce siège ? (290 CHF/mois)</Label>
-          <Select value={payer} onValueChange={(v) => setPayer(v as "cabinet" | "self")}>
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="cabinet">Le cabinet, accès débloqué immédiatement</SelectItem>
-              <SelectItem value="self">La personne elle-même, elle paie à son inscription</SelectItem>
-            </SelectContent>
-          </Select>
-          <p className="text-[11px] text-muted-foreground">
-            {payer === "cabinet"
-              ? "290 CHF/mois seront débités de votre carte dès l'envoi de l'invitation."
-              : "Aucun débit pour vous. La personne devra régler son propre abonnement pour créer son compte."}
-          </p>
-        </div>
+        {seatIsFree ? (
+          <div className="space-y-1.5 sm:col-span-2">
+            <Label className="text-xs">Qui règle ce siège ?</Label>
+            <div className="rounded-md border border-border bg-muted/40 px-3 py-2 text-sm">
+              Le cabinet, accès débloqué immédiatement
+            </div>
+            <p className="text-[11px] text-muted-foreground">
+              Ce siège est inclus dans votre abonnement Cabinet, aucun débit.
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-2 sm:col-span-2 rounded-lg border border-warning/40 bg-warning/10 p-3">
+            <p className="text-xs font-medium text-foreground">
+              Vous avez atteint le quota de {FREE_SEATS_INCLUDED} sièges inclus dans votre abonnement. Que
+              souhaitez-vous faire ?
+            </p>
+            <div className="space-y-1.5">
+              <Label className="text-xs">Qui règle ce siège ? (290 CHF/mois)</Label>
+              <Select value={payer} onValueChange={(v) => setPayer(v as "cabinet" | "self")}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="cabinet">Le cabinet, accès débloqué immédiatement</SelectItem>
+                  <SelectItem value="self">La personne elle-même, elle paie à son inscription</SelectItem>
+                </SelectContent>
+              </Select>
+              <p className="text-[11px] text-muted-foreground">
+                {payer === "cabinet"
+                  ? "290 CHF/mois seront débités de votre carte dès l'envoi de l'invitation."
+                  : "Aucun débit pour vous. La personne devra régler son propre abonnement pour créer son compte."}
+              </p>
+            </div>
+          </div>
+        )}
       </div>
       <div className="flex gap-2">
         <Button onClick={onSubmit} disabled={loading} className="gap-2">

@@ -35,6 +35,7 @@ function getCallerFromJwt(req: Request): { id: string; email: string | null } | 
 }
 
 const SEAT_PRICE_ID = "price_1U17fiRzqfEoHxSu8CIqtbtA";
+const FREE_SEATS_INCLUDED = 3; // titulaire + 2 collaborateurs, inclus dans les 1'290 CHF/mois de base
 
 async function sendBrevoEmail(
   brevoKey: string | undefined,
@@ -124,70 +125,96 @@ export async function handleCabinetAddSeatRequest(req: Request, env: Env): Promi
     }
 
     let seatItemId: string | null = null;
+    let billed = false;
 
     // ── Cas "le cabinet paie" (et que ce n'est pas un compte interne) ──
     if (payer === "cabinet" && !isInternal) {
-      const customerRes = await fetch(
-        `https://api.stripe.com/v1/customers?email=${encodeURIComponent(inviterEmail)}&limit=1`,
-        { headers: { Authorization: `Bearer ${stripeKey}` } },
-      );
-      const customerData = await customerRes.json();
-      let customer = customerData.data?.[0];
-      if (!customer) {
-        const createCustomerRes = await fetch("https://api.stripe.com/v1/customers", {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${stripeKey}`,
-            "Content-Type": "application/x-www-form-urlencoded",
-          },
-          body: new URLSearchParams({ email: inviterEmail }).toString(),
-        });
-        customer = await createCustomerRes.json();
-        if (!createCustomerRes.ok)
-          throw new Error(customer.error?.message ?? "Erreur création client Stripe.");
-      }
+      // Le titulaire compte lui-même comme 1 des FREE_SEATS_INCLUDED sièges
+      // inclus (son propre profil a cabinet_root_id = son id, posé par
+      // stripe-webhook à l'activation) : il ne reste donc que
+      // FREE_SEATS_INCLUDED - 1 sièges gratuits à distribuer après lui. On
+      // compte aussi les invitations "pending" déjà envoyées : sans ça,
+      // plusieurs invitations envoyées d'un coup seraient toutes comptées
+      // comme gratuites.
+      const [membersRes, pendingInvitesRes] = await Promise.all([
+        fetch(
+          `${supabaseUrl}/rest/v1/profiles?cabinet_root_id=eq.${cabinetRootId}&select=id`,
+          { headers: { apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}` } },
+        ),
+        fetch(
+          `${supabaseUrl}/rest/v1/cabinet_invites?cabinet_root_id=eq.${cabinetRootId}&status=eq.pending&select=id`,
+          { headers: { apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}` } },
+        ),
+      ]);
+      const members = await membersRes.json();
+      const pendingInvites = await pendingInvitesRes.json();
+      const occupiedSeats =
+        (Array.isArray(members) ? members.length : 0) + (Array.isArray(pendingInvites) ? pendingInvites.length : 0);
 
-      const subRes = await fetch(
-        `https://api.stripe.com/v1/subscriptions?customer=${customer.id}&status=active&limit=1`,
-        { headers: { Authorization: `Bearer ${stripeKey}` } },
-      );
-      const subData = await subRes.json();
-      const subscription = subData.data?.[0];
+      if (occupiedSeats >= FREE_SEATS_INCLUDED) {
+        billed = true;
+        const customerRes = await fetch(
+          `https://api.stripe.com/v1/customers?email=${encodeURIComponent(inviterEmail)}&limit=1`,
+          { headers: { Authorization: `Bearer ${stripeKey}` } },
+        );
+        const customerData = await customerRes.json();
+        let customer = customerData.data?.[0];
+        if (!customer) {
+          const createCustomerRes = await fetch("https://api.stripe.com/v1/customers", {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${stripeKey}`,
+              "Content-Type": "application/x-www-form-urlencoded",
+            },
+            body: new URLSearchParams({ email: inviterEmail }).toString(),
+          });
+          customer = await createCustomerRes.json();
+          if (!createCustomerRes.ok)
+            throw new Error(customer.error?.message ?? "Erreur création client Stripe.");
+        }
 
-      if (subscription) {
-        const itemRes = await fetch("https://api.stripe.com/v1/subscription_items", {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${stripeKey}`,
-            "Content-Type": "application/x-www-form-urlencoded",
-          },
-          body: new URLSearchParams({
-            subscription: subscription.id,
-            price: SEAT_PRICE_ID,
-            quantity: "1",
-            proration_behavior: "always_invoice",
-          }).toString(),
-        });
-        const item = await itemRes.json();
-        if (!itemRes.ok) throw new Error(item.error?.message ?? "Erreur lors de l'ajout du siège.");
-        seatItemId = item.id;
-      } else {
-        const createSubRes = await fetch("https://api.stripe.com/v1/subscriptions", {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${stripeKey}`,
-            "Content-Type": "application/x-www-form-urlencoded",
-          },
-          body: new URLSearchParams({
-            customer: customer.id,
-            "items[0][price]": SEAT_PRICE_ID,
-            "items[0][quantity]": "1",
-          }).toString(),
-        });
-        const newSub = await createSubRes.json();
-        if (!createSubRes.ok)
-          throw new Error(newSub.error?.message ?? "Erreur création abonnement.");
-        seatItemId = newSub.items?.data?.[0]?.id ?? newSub.id;
+        const subRes = await fetch(
+          `https://api.stripe.com/v1/subscriptions?customer=${customer.id}&status=active&limit=1`,
+          { headers: { Authorization: `Bearer ${stripeKey}` } },
+        );
+        const subData = await subRes.json();
+        const subscription = subData.data?.[0];
+
+        if (subscription) {
+          const itemRes = await fetch("https://api.stripe.com/v1/subscription_items", {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${stripeKey}`,
+              "Content-Type": "application/x-www-form-urlencoded",
+            },
+            body: new URLSearchParams({
+              subscription: subscription.id,
+              price: SEAT_PRICE_ID,
+              quantity: "1",
+              proration_behavior: "always_invoice",
+            }).toString(),
+          });
+          const item = await itemRes.json();
+          if (!itemRes.ok) throw new Error(item.error?.message ?? "Erreur lors de l'ajout du siège.");
+          seatItemId = item.id;
+        } else {
+          const createSubRes = await fetch("https://api.stripe.com/v1/subscriptions", {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${stripeKey}`,
+              "Content-Type": "application/x-www-form-urlencoded",
+            },
+            body: new URLSearchParams({
+              customer: customer.id,
+              "items[0][price]": SEAT_PRICE_ID,
+              "items[0][quantity]": "1",
+            }).toString(),
+          });
+          const newSub = await createSubRes.json();
+          if (!createSubRes.ok)
+            throw new Error(newSub.error?.message ?? "Erreur création abonnement.");
+          seatItemId = newSub.items?.data?.[0]?.id ?? newSub.id;
+        }
       }
     }
 
@@ -255,7 +282,7 @@ export async function handleCabinetAddSeatRequest(req: Request, env: Env): Promi
         `,
       );
 
-      return new Response(JSON.stringify({ sent: true, attachedExisting: true }), {
+      return new Response(JSON.stringify({ sent: true, attachedExisting: true, billed }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
@@ -321,7 +348,7 @@ export async function handleCabinetAddSeatRequest(req: Request, env: Env): Promi
       `,
     );
 
-    return new Response(JSON.stringify({ sent: true, inviteId: insertBody[0]?.id }), {
+    return new Response(JSON.stringify({ sent: true, inviteId: insertBody[0]?.id, billed }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (err) {

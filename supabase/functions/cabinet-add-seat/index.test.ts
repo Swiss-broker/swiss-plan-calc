@@ -48,6 +48,12 @@ const profiles: Record<
 let stripeCustomerSearches: string[] = [];
 let insertedInvites: unknown[] = [];
 let brevoSent: { to: string }[] = [];
+// Sièges déjà occupés / invitations en attente par cabinet, pour simuler le
+// comptage FREE_SEATS_INCLUDED côté cabinet-add-seat. Par défaut, cabinet-A
+// est déjà au quota (3 membres) pour ne pas changer le sens des tests
+// existants, qui vérifient qu'une facturation a bien lieu.
+let cabinetMembersByRoot: Record<string, unknown[]> = {};
+let cabinetPendingInvitesByRoot: Record<string, unknown[]> = {};
 
 function mockFetch(input: string | URL | Request, init?: RequestInit): Promise<Response> {
   const url = String(input);
@@ -63,6 +69,16 @@ function mockFetch(input: string | URL | Request, init?: RequestInit): Promise<R
     const id = decodeURIComponent(url.match(/id=eq\.([^&]+)/)?.[1] ?? "");
     const p = profiles[id];
     return Promise.resolve(new Response(JSON.stringify(p ? [p] : []), { status: 200 }));
+  }
+
+  if (url.includes("/rest/v1/profiles?cabinet_root_id=eq.") && url.includes("select=id")) {
+    const root = decodeURIComponent(url.match(/cabinet_root_id=eq\.([^&]+)/)?.[1] ?? "");
+    return Promise.resolve(new Response(JSON.stringify(cabinetMembersByRoot[root] ?? []), { status: 200 }));
+  }
+
+  if (url.includes("/rest/v1/cabinet_invites?cabinet_root_id=eq.") && url.includes("status=eq.pending")) {
+    const root = decodeURIComponent(url.match(/cabinet_root_id=eq\.([^&]+)/)?.[1] ?? "");
+    return Promise.resolve(new Response(JSON.stringify(cabinetPendingInvitesByRoot[root] ?? []), { status: 200 }));
   }
 
   if (url.startsWith("https://api.stripe.com/v1/customers") && method === "GET") {
@@ -100,6 +116,10 @@ beforeEach(() => {
   stripeCustomerSearches = [];
   insertedInvites = [];
   brevoSent = [];
+  // Quota déjà atteint par défaut (3 membres, aucune invitation en attente) :
+  // les tests existants vérifient qu'un siège est alors bien facturé.
+  cabinetMembersByRoot = { "cabinet-A": [{ id: "m1" }, { id: "m2" }, { id: "m3" }] };
+  cabinetPendingInvitesByRoot = {};
   vi.stubGlobal("fetch", vi.fn(mockFetch));
 });
 
@@ -180,5 +200,42 @@ describe("cabinet-add-seat — identité dérivée du JWT", () => {
     expect(String(body.error)).toContain("autorité");
     expect(stripeCustomerSearches).toHaveLength(0);
     expect(insertedInvites).toHaveLength(0);
+  });
+});
+
+describe("cabinet-add-seat — franchise des 3 premiers sièges (titulaire inclus)", () => {
+  it("moins de 3 sièges occupés (titulaire seul) -> siège gratuit, aucune facturation Stripe", async () => {
+    cabinetMembersByRoot["cabinet-A"] = [{ id: "root-director" }]; // le titulaire seul
+    cabinetPendingInvitesByRoot["cabinet-A"] = [];
+
+    const req = reqWithAuth("director-A", "alice@cabinet-a.ch", {
+      cabinetRootId: "cabinet-A",
+      inviteeEmail: "nouveau@client.ch",
+      role: "courtier",
+      payer: "cabinet",
+    });
+    const res = await handleCabinetAddSeatRequest(req, ENV);
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.billed).toBe(false);
+    expect(stripeCustomerSearches).toHaveLength(0);
+    expect(insertedInvites[0]).toMatchObject({ stripe_subscription_item_id: null });
+  });
+
+  it("2 membres + 1 invitation en attente = 3 sièges occupés -> le suivant est facturé", async () => {
+    cabinetMembersByRoot["cabinet-A"] = [{ id: "root-director" }, { id: "collab-1" }];
+    cabinetPendingInvitesByRoot["cabinet-A"] = [{ id: "invite-pending-1" }];
+
+    const req = reqWithAuth("director-A", "alice@cabinet-a.ch", {
+      cabinetRootId: "cabinet-A",
+      inviteeEmail: "nouveau@client.ch",
+      role: "courtier",
+      payer: "cabinet",
+    });
+    const res = await handleCabinetAddSeatRequest(req, ENV);
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.billed).toBe(true);
+    expect(stripeCustomerSearches).toContain("alice@cabinet-a.ch");
   });
 });
