@@ -34,6 +34,7 @@ const clients: Record<string, { broker_id: string; email: string | null; first_n
 };
 
 let brevoSent: { to: string; subject: string }[] = [];
+let brevoHtmlSent: string[] = [];
 let loggedEmails: unknown[] = [];
 
 function mockFetch(input: string | URL | Request, init?: RequestInit): Promise<Response> {
@@ -42,6 +43,7 @@ function mockFetch(input: string | URL | Request, init?: RequestInit): Promise<R
   if (url.startsWith("https://api.brevo.com")) {
     const body = JSON.parse(String(init?.body ?? "{}"));
     brevoSent.push({ to: body.to?.[0]?.email, subject: body.subject });
+    brevoHtmlSent.push(body.htmlContent ?? "");
     return Promise.resolve(new Response(JSON.stringify({}), { status: 200 }));
   }
 
@@ -63,6 +65,7 @@ function mockFetch(input: string | URL | Request, init?: RequestInit): Promise<R
 
 beforeEach(() => {
   brevoSent = [];
+  brevoHtmlSent = [];
   loggedEmails = [];
   vi.stubGlobal("fetch", vi.fn(mockFetch));
 });
@@ -108,5 +111,16 @@ describe("send-client-email", () => {
     const res = await handleSendClientEmailRequest(req, ENV);
     expect(res.status).toBe(500);
     expect(brevoSent).toHaveLength(0);
+  });
+
+  it("une URL dans le message devient un lien cliquable dans le HTML envoyé", async () => {
+    const req = reqWithAuth("broker-A", {
+      clientId: "client-A", subject: "Bonjour",
+      body: "Voici le lien : https://checkout.stripe.com/c/pay/cs_test_123. Merci.",
+    });
+    const res = await handleSendClientEmailRequest(req, ENV);
+    expect(res.status).toBe(200);
+    expect(brevoHtmlSent[0]).toContain('<a href="https://checkout.stripe.com/c/pay/cs_test_123"');
+    expect(brevoHtmlSent[0]).toContain(">https://checkout.stripe.com/c/pay/cs_test_123</a>. Merci.");
   });
 });

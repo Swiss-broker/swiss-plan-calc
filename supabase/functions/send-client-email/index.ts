@@ -54,12 +54,29 @@ function escapeHtml(s: string): string {
   return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 
+// Transforme toute URL http(s) présente dans un texte déjà échappé en vrai
+// lien cliquable. Opère APRÈS escapeHtml : un "&" dans une query string
+// devient "&amp;" des deux côtés (texte visible et attribut href), ce qui
+// est la forme correcte en HTML — le navigateur le redécode normalement à
+// la navigation. La ponctuation de fin de phrase collée à l'URL (point,
+// virgule, parenthèse fermante...) est retirée du lien lui-même, sinon
+// "voir : https://exemple.ch/x." rendrait le point final cliquable.
+function linkifyUrls(escapedText: string): string {
+  return escapedText.replace(/(https?:\/\/[^\s<]+)/g, (match) => {
+    const trailingMatch = match.match(/[.,;:!?)\]}]+$/);
+    const trailing = trailingMatch ? trailingMatch[0] : "";
+    const url = trailing ? match.slice(0, -trailing.length) : match;
+    if (!url) return match;
+    return `<a href="${url}" style="color:#0f766e; text-decoration:underline;">${url}</a>${trailing}`;
+  });
+}
+
 // Modèle plein texte (édité librement par le courtier) -> HTML simple et
 // sobre, cohérent avec les autres e-mails déjà envoyés par l'app.
 function textToHtml(body: string): string {
   const paragraphs = body
     .split(/\n{2,}/)
-    .map((p) => `<p style="margin:0 0 16px;">${escapeHtml(p).replace(/\n/g, "<br />")}</p>`)
+    .map((p) => `<p style="margin:0 0 16px;">${linkifyUrls(escapeHtml(p)).replace(/\n/g, "<br />")}</p>`)
     .join("");
   return `<div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; color:#1f2937; line-height:1.5;">${paragraphs}</div>`;
 }
