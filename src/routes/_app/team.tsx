@@ -116,7 +116,7 @@ function TeamPage() {
 
   const guideSteps: GuideStep[] = [
     { title: "Bienvenue sur votre page Équipe", body: "Retrouvez ici toute la gestion de votre cabinet : membres, invitations, activité et communication." },
-    { target: "team-invite-btn", title: "Inviter quelqu'un", body: "Ajoutez un directeur ou un courtier à votre équipe. Choisissez qui règle le siège (290 CHF/mois) : le cabinet ou la personne elle-même." },
+    { target: "team-invite-btn", title: "Inviter quelqu'un", body: "Ajoutez un directeur ou un courtier à votre équipe. Les 3 premiers sièges de votre cabinet (vous compris) sont inclus ; à partir du 4e, choisissez qui règle le siège (290 CHF/mois) : le cabinet ou la personne elle-même." },
     { target: "team-announcements", title: "Annonces", body: "Postez un message à toute l'équipe, ou ciblez une personne précise." },
     { target: "team-stats", title: "Chiffres clés", body: "Nombre de membres, clients traités, chiffre d'affaires du mois et évolution en un coup d'œil." },
     { target: "team-podium", title: "Classement du mois", body: "Les 3 membres qui ont traité le plus de clients ce mois-ci." },

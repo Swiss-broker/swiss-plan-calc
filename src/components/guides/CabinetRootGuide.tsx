@@ -15,7 +15,7 @@ const steps: Step[] = [
     target: '[data-nav="/team"]',
     title: "Constituer votre équipe",
     content:
-      "Depuis l'onglet Équipe, vous pouvez ajouter des directeurs ou des courtiers. Chaque ajout est facturé 290 CHF par mois.",
+      "Depuis l'onglet Équipe, vous pouvez ajouter des directeurs ou des courtiers. Les 3 premiers sièges (vous compris) sont inclus dans l'abonnement ; à partir du 4e membre, chaque ajout est facturé 290 CHF par mois.",
     showProgress: true,
   },
   {

@@ -48,7 +48,7 @@ const PLAN_CONFIG: Record<string, { label: string; color: string; features: stri
   cabinet: {
     label: "Cabinet — 1'290 CHF/mois",
     color: "bg-purple-100 text-purple-800 border-purple-200",
-    features: ["Clients illimités", "Sociétés illimitées", "Tous les calculateurs", "Exports PDF illimités", "IA illimitée", "Gestion multi-courtiers", "Support dédié"],
+    features: ["Clients illimités", "Sociétés illimitées", "Tous les calculateurs", "Exports PDF illimités", "IA illimitée", "3 sièges inclus (titulaire + 2 collaborateurs), +290 CHF/mois par siège supplémentaire", "Support dédié"],
   },
   internal: {
     label: "Accès interne",
