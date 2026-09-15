@@ -241,6 +241,7 @@ export async function handleGenerateOfferRequest(req: Request, env: Env): Promis
             discount_percent: discountPercent,
             coupon_id: couponId,
             checkout_session_id: session.id,
+            checkout_url: session.url,
             caller_role: callerRole,
           },
         }),
