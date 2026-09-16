@@ -34,7 +34,7 @@ function getCallerFromJwt(req: Request): { id: string; email: string | null } | 
   }
 }
 
-const SEAT_PRICE_ID = "price_1U17fiRzqfEoHxSu8CIqtbtA";
+const SEAT_PRICE_ID = "price_1UGI6r2NreTKQaO7GFMN2Tl2";
 const FREE_SEATS_INCLUDED = 3; // titulaire + 2 collaborateurs, inclus dans les 1'290 CHF/mois de base
 
 async function sendBrevoEmail(
