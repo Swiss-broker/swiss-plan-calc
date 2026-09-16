@@ -147,6 +147,7 @@ export async function handleSendLeadEmailRequest(req: Request, env: Env): Promis
         commercial_id: callerId,
         template_key: typeof templateKey === "string" ? templateKey : null,
         subject: subject.trim(),
+        body: body.trim(),
       }),
     });
     if (!logRes.ok) {
