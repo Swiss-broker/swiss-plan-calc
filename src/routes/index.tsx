@@ -196,8 +196,8 @@ function Features() {
     <section id="features" ref={ref} className="py-20 bg-gradient-to-b from-muted/50 to-background">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <motion.div initial={{ opacity: 0, y: 30 }} animate={inView ? { opacity: 1, y: 0 } : {}} transition={{ duration: 0.6 }}
-          className="mx-auto max-w-2xl text-center mb-14">
-          <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">{t("landing.features.title")}</h2>
+          className="mx-auto max-w-5xl text-center mb-14">
+          <h2 className="text-balance text-3xl font-bold tracking-tight text-emerald-800 sm:text-4xl">{t("landing.features.title")}</h2>
           <p className="mt-3 text-muted-foreground">{t("landing.features.subtitle")}</p>
         </motion.div>
         <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
@@ -237,7 +237,7 @@ function Modules() {
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <motion.div initial={{ opacity: 0, y: 30 }} animate={inView ? { opacity: 1, y: 0 } : {}} transition={{ duration: 0.6 }}
           className="mx-auto max-w-2xl text-center mb-14">
-          <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">{t("landing.modules.title")}</h2>
+          <h2 className="text-3xl font-bold tracking-tight text-emerald-800 sm:text-4xl">{t("landing.modules.title")}</h2>
           <p className="mt-3 text-muted-foreground">{t("landing.modules.subtitle")}</p>
         </motion.div>
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
