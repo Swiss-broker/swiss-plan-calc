@@ -5,7 +5,7 @@ import { motion, useInView, useMotionValue, useSpring } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import {
   ArrowRight, CheckCircle2, Building2, Globe2,
-  Clock, Shield, Sparkles, TrendingUp, Calculator, PiggyBank,
+  Clock, Shield, Sparkles, TrendingUp, Calculator,
 } from "lucide-react";
 import { useT } from "@/contexts/LanguageContext";
 import { PublicLanguageSwitcher } from "@/components/common/PublicLanguageSwitcher";
@@ -44,6 +44,7 @@ function Landing() {
     <div className="min-h-screen bg-background overflow-x-hidden">
       <Header />
       <Hero />
+      <Commissions />
       <Features />
       <Modules />
       <Optimization />
@@ -147,6 +148,43 @@ function Hero() {
   );
 }
 
+function Commissions() {
+  const ref = useRef(null);
+  const inView = useInView(ref, { once: true, margin: "-80px" });
+  const t = useT();
+  const items = [
+    { num: t("landing.commissions.item1.num"), label: t("landing.commissions.item1.label"), desc: t("landing.commissions.item1.desc") },
+    { num: t("landing.commissions.item2.num"), label: t("landing.commissions.item2.label"), desc: t("landing.commissions.item2.desc") },
+    { num: t("landing.commissions.item3.num"), label: t("landing.commissions.item3.label"), desc: t("landing.commissions.item3.desc") },
+    { num: t("landing.commissions.item4.num"), label: t("landing.commissions.item4.label"), desc: t("landing.commissions.item4.desc") },
+  ];
+  return (
+    <section ref={ref} className="py-20 bg-background border-b border-border">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <motion.div initial={{ opacity: 0, y: 30 }} animate={inView ? { opacity: 1, y: 0 } : {}} transition={{ duration: 0.6 }}
+          className="mx-auto max-w-2xl text-center mb-14">
+          <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">{t("landing.commissions.title")}</h2>
+          <p className="mt-3 text-muted-foreground">{t("landing.commissions.subtitle")}</p>
+        </motion.div>
+        <div className="grid gap-4" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))" }}>
+          {items.map((it, i) => (
+            <motion.div key={it.label}
+              initial={{ opacity: 0, y: 30 }} animate={inView ? { opacity: 1, y: 0 } : {}}
+              transition={{ duration: 0.5, delay: i * 0.1 }}
+              className="rounded-2xl border border-border bg-gradient-to-br from-emerald-500/[0.06] to-transparent p-6 shadow-card">
+              <div className="whitespace-nowrap text-xl font-extrabold tracking-tight text-emerald-600 dark:text-emerald-300 tabular-nums sm:text-2xl">
+                {it.num}
+              </div>
+              <p className="mt-2 text-sm font-semibold">{it.label}</p>
+              <p className="mt-1 text-sm text-muted-foreground leading-relaxed">{it.desc}</p>
+            </motion.div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
 function Features() {
   const ref = useRef(null);
   const inView = useInView(ref, { once: true, margin: "-80px" });
@@ -156,7 +194,6 @@ function Features() {
     { icon: Calculator, title: t("landing.feature.proj.title"), desc: t("landing.feature.proj.desc"), gradient: "from-blue-500/20 to-cyan-500/20" },
     { icon: Sparkles, title: t("landing.feature.opt.title"), desc: t("landing.feature.opt.desc"), gradient: "from-violet-500/20 to-purple-500/20" },
     { icon: Shield, title: t("landing.feature.priv.title"), desc: t("landing.feature.priv.desc"), gradient: "from-amber-500/20 to-orange-500/20" },
-    { icon: PiggyBank, title: t("landing.feature.rebate.title"), desc: t("landing.feature.rebate.desc"), gradient: "from-rose-500/20 to-pink-500/20" },
   ];
   return (
     <section id="features" ref={ref} className="py-20 bg-gradient-to-b from-muted/50 to-background">
