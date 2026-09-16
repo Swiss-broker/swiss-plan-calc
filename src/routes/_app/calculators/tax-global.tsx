@@ -28,6 +28,7 @@ import { Badge } from "@/components/ui/badge";
 import { Pillar3bInfoTile } from "@/components/optimizer/OptimizationsPanel";
 import { SaveSimulationButton } from "@/components/calculators/SaveSimulationButton";
 import { useBrokerPdfHeader } from "@/hooks/useBrokerPdfHeader";
+import { ExportPdfButton } from "@/components/calculators/ExportPdfButton";
 import { exportTaxGlobalPdf } from "@/lib/pdf/reports";
 import { TaxGlobalExplanation } from "@/components/calculators/TaxGlobalExplanation";
 import { TaxGlobalCompareCard } from "@/components/calculators/TaxGlobalCompareCard";
@@ -994,10 +995,7 @@ function TaxGlobalCalc() {
 
 
       <div className="flex flex-wrap justify-end gap-2">
-        <Button type="button" variant="outline" className="gap-2" onClick={handleExportPdf}>
-          <Download className="h-4 w-4" />
-          Télécharger le rapport PDF
-        </Button>
+        <ExportPdfButton clientId={clientId} onExport={handleExportPdf} />
         <SaveSimulationButton
           kind="tax_global"
           inputs={form as unknown as Record<string, unknown>}

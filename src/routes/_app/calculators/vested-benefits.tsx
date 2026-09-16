@@ -32,6 +32,7 @@ import {
 import { formatCHF } from "@/lib/format";
 import { SaveSimulationButton } from "@/components/calculators/SaveSimulationButton";
 import { useBrokerPdfHeader } from "@/hooks/useBrokerPdfHeader";
+import { ExportPdfButton } from "@/components/calculators/ExportPdfButton";
 import { exportVestedBenefitsPdf } from "@/lib/pdf/reports";
 
 import { zodValidator, fallback } from "@tanstack/zod-adapter";
@@ -312,10 +313,7 @@ function VestedBenefitsCalc() {
       </CalcCard>
 
       <div className="flex flex-wrap justify-end gap-2">
-        <Button type="button" variant="outline" className="gap-2" onClick={handleExportPdf}>
-          <Download className="h-4 w-4" />
-          Télécharger le rapport PDF
-        </Button>
+        <ExportPdfButton clientId={clientId} onExport={handleExportPdf} />
         <SaveSimulationButton
           kind="vested_benefits"
           inputs={form}

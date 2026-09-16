@@ -38,6 +38,7 @@ import { SplitCompareLayout, type SplitRow } from "@/components/calculators/Spli
 import { formatCHF } from "@/lib/format";
 import { SaveSimulationButton } from "@/components/calculators/SaveSimulationButton";
 import { useBrokerPdfHeader } from "@/hooks/useBrokerPdfHeader";
+import { ExportPdfButton } from "@/components/calculators/ExportPdfButton";
 import { exportCantonComparePdf } from "@/lib/pdf/reports";
 import { useT } from "@/contexts/LanguageContext";
 import { useClientDashboard } from "@/hooks/use-client-dashboard";
@@ -730,10 +731,7 @@ function CantonCompareCalc() {
       </CalcCard>
 
       <div className="flex flex-wrap justify-end gap-2" data-guide="canton-save">
-        <Button type="button" variant="outline" className="gap-2" onClick={handleExportPdf}>
-          <Download className="h-4 w-4" />
-          Télécharger le rapport PDF
-        </Button>
+        <ExportPdfButton clientId={clientId} onExport={handleExportPdf} />
         <SaveSimulationButton
           kind="canton_compare"
           inputs={{ ...base, referenceCanton }}

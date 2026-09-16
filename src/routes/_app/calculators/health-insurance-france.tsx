@@ -22,6 +22,7 @@ import {
 import { CalcCard, MoneyTile, Row, HelpDot } from "@/components/calculators/CalcUI";
 import { SaveSimulationButton } from "@/components/calculators/SaveSimulationButton";
 import { useBrokerPdfHeader } from "@/hooks/useBrokerPdfHeader";
+import { ExportPdfButton } from "@/components/calculators/ExportPdfButton";
 import { exportHealthFrancePdf } from "@/lib/pdf/reports";
 import { ClientLinkBanner } from "@/components/calculators/ClientLinkBanner";
 import { usePrefillFromClient, useHydrateFormFromPrefill } from "@/hooks/usePrefillFromClient";
@@ -279,10 +280,7 @@ function HealthInsuranceFranceCalc() {
         </CalcCard>
 
         <div className="flex justify-end" data-guide="health-fr-save">
-          <Button type="button" variant="outline" className="gap-2" onClick={handleExportPdf}>
-            <Download className="h-4 w-4" />
-            Télécharger le rapport PDF
-          </Button>
+          <ExportPdfButton clientId={clientId} onExport={handleExportPdf} />
           <SaveSimulationButton
             kind="health_insurance_france"
             inputs={form}

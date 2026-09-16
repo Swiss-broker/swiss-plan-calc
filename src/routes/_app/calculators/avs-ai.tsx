@@ -30,6 +30,7 @@ import { GuideMode, GuideToggleButton, type GuideStep } from "@/components/calcu
 import { WikiTip } from "@/components/calculators/WikiTip";
 import { SaveSimulationButton } from "@/components/calculators/SaveSimulationButton";
 import { useBrokerPdfHeader } from "@/hooks/useBrokerPdfHeader";
+import { ExportPdfButton } from "@/components/calculators/ExportPdfButton";
 import { exportAvsAiPdf } from "@/lib/pdf/reports";
 import { Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -590,10 +591,7 @@ function AvsAiCalc() {
         </div>
       </CalcCard>
       <div className="flex flex-wrap justify-end gap-2">
-        <Button type="button" variant="outline" className="gap-2" onClick={handleExportPdf}>
-          <Download className="h-4 w-4" />
-          Télécharger le rapport PDF
-        </Button>
+        <ExportPdfButton clientId={clientId} onExport={handleExportPdf} />
         <SaveSimulationButton
           kind="avs_ai"
           inputs={form}

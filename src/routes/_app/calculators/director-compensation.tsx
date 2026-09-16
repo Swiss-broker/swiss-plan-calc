@@ -38,6 +38,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { CalcCard, MoneyTile, Row } from "@/components/calculators/CalcUI";
 import { SaveSimulationButton } from "@/components/calculators/SaveSimulationButton";
 import { useBrokerPdfHeader } from "@/hooks/useBrokerPdfHeader";
+import { ExportPdfButton } from "@/components/calculators/ExportPdfButton";
 import { exportDirectorCompensationPdf } from "@/lib/pdf/reports";
 import { GuideMode, GuideToggleButton, type GuideStep } from "@/components/calculators/GuideMode";
 import { WikiTip } from "@/components/calculators/WikiTip";
@@ -539,10 +540,7 @@ function DirectorCompensationCalc() {
 
         <LegalDisclaimer />
         <div className="flex flex-wrap justify-end gap-2">
-          <Button type="button" variant="outline" className="gap-2" onClick={handleExportPdf}>
-            <Download className="h-4 w-4" />
-            Télécharger le rapport PDF
-          </Button>
+          <ExportPdfButton clientId={clientId} onExport={handleExportPdf} />
           <SaveSimulationButton
             kind="director_compensation"
             inputs={{ ...inputs, hasCurrent, current, custom }}

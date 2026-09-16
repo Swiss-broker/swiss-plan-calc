@@ -24,6 +24,7 @@ import type { IncomeTaxInput } from "@/lib/tax/income";
 import { SaveSimulationButton } from "@/components/calculators/SaveSimulationButton";
 import { useAuth } from "@/contexts/AuthContext";
 import { useBrokerPdfHeader } from "@/hooks/useBrokerPdfHeader";
+import { ExportPdfButton } from "@/components/calculators/ExportPdfButton";
 import { exportPillar3aPdf } from "@/lib/pdf/reports";
 import { zodValidator, fallback } from "@tanstack/zod-adapter";
 import { z } from "zod";
@@ -593,10 +594,7 @@ useEffect(() => {
       </CalcCard>
 
       <div className="flex flex-wrap justify-end gap-2" data-guide="p3a-save">
-        <Button type="button" variant="outline" className="gap-2" onClick={handleExportPdf}>
-          <Download className="h-4 w-4" />
-          Télécharger le rapport PDF
-        </Button>
+        <ExportPdfButton clientId={clientId} onExport={handleExportPdf} />
         <SaveSimulationButton
           kind="pillar3a"
           inputs={form}

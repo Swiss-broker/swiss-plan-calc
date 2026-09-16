@@ -18,6 +18,7 @@ import { CalcCard, MoneyTile, Row } from "@/components/calculators/CalcUI";
 import { SaveSimulationButton } from "@/components/calculators/SaveSimulationButton";
 import { useAuth } from "@/contexts/AuthContext";
 import { useBrokerPdfHeader } from "@/hooks/useBrokerPdfHeader";
+import { ExportPdfButton } from "@/components/calculators/ExportPdfButton";
 import { exportRetirementPdf } from "@/lib/pdf/reports";
 import { useT } from "@/contexts/LanguageContext";
 
@@ -336,10 +337,7 @@ const projectedCapital = dashboard?.lpp?.projectedCapitalAt65;
       </div>
 
       <div className="flex flex-wrap justify-end gap-2" data-guide="retirement-save">
-        <Button type="button" variant="outline" className="gap-2" onClick={handleExportPdf}>
-          <Download className="h-4 w-4" />
-          Télécharger le rapport PDF
-        </Button>
+        <ExportPdfButton clientId={clientId} onExport={handleExportPdf} />
         <SaveSimulationButton
           kind="retirement"
           inputs={form}
