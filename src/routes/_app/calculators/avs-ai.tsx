@@ -30,8 +30,6 @@ import { GuideMode, GuideToggleButton, type GuideStep } from "@/components/calcu
 import { WikiTip } from "@/components/calculators/WikiTip";
 import { SaveSimulationButton } from "@/components/calculators/SaveSimulationButton";
 import { useBrokerPdfHeader } from "@/hooks/useBrokerPdfHeader";
-import { ExportPdfButton } from "@/components/calculators/ExportPdfButton";
-import { exportAvsAiPdf } from "@/lib/pdf/reports";
 import { Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useT } from "@/contexts/LanguageContext";
@@ -209,24 +207,6 @@ function AvsAiCalc() {
   );
 
   const brokerHeader = useBrokerPdfHeader();
-  const handleExportPdf = () => {
-    exportAvsAiPdf({
-      header: brokerHeader,
-      input: {
-        birthYear: form.birthYear,
-        gender: form.gender,
-        contributionStartYear: form.contributionStartYear,
-        retirementYear: form.retirementYear,
-        averageAnnualIncome: form.averageAnnualIncome,
-        isCouple: form.isCouple,
-        spouseBirthYear: form.spouseBirthYear,
-        spouseAverageAnnualIncome: form.spouseAverageAnnualIncome,
-      },
-      projection,
-      aiProjection,
-    });
-  };
-
   const [guideOpen, setGuideOpen] = useState(false);
   const guideSteps: GuideStep[] = [
     { title: t("calc.avs.step.welcome.t"), body: t("calc.avs.step.welcome.b") },
@@ -591,7 +571,6 @@ function AvsAiCalc() {
         </div>
       </CalcCard>
       <div className="flex flex-wrap justify-end gap-2">
-        <ExportPdfButton clientId={clientId} onExport={handleExportPdf} />
         <SaveSimulationButton
           kind="avs_ai"
           inputs={form}

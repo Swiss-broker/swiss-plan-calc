@@ -23,8 +23,6 @@ import {
 import { CalcCard, MoneyTile, Row } from "@/components/calculators/CalcUI";
 import { SaveSimulationButton } from "@/components/calculators/SaveSimulationButton";
 import { useBrokerPdfHeader } from "@/hooks/useBrokerPdfHeader";
-import { ExportPdfButton } from "@/components/calculators/ExportPdfButton";
-import { exportOvertimePdf } from "@/lib/pdf/reports";
 import { ClientLinkBanner } from "@/components/calculators/ClientLinkBanner";
 import { CANTONS, CANTON_BY_CODE } from "@/lib/swiss/cantons";
 import {
@@ -90,9 +88,6 @@ function OvertimeCalc() {
 
   const result = useMemo(() => computeOvertime(form), [form]);
   const brokerHeader = useBrokerPdfHeader();
-  const handleExportPdf = () => {
-    exportOvertimePdf({ header: brokerHeader, input: form, result });
-  };
   const [detailOpen, setDetailOpen] = useState(true);
   const [guideOpen, setGuideOpen] = useState(false);
 
@@ -405,7 +400,6 @@ function OvertimeCalc() {
         </div>
 
         <div className="flex justify-end" data-guide="overtime-save">
-          <ExportPdfButton clientId={clientId} onExport={handleExportPdf} />
           <SaveSimulationButton
             kind="overtime"
             inputs={form}

@@ -38,8 +38,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { CalcCard, MoneyTile, Row } from "@/components/calculators/CalcUI";
 import { SaveSimulationButton } from "@/components/calculators/SaveSimulationButton";
 import { useBrokerPdfHeader } from "@/hooks/useBrokerPdfHeader";
-import { ExportPdfButton } from "@/components/calculators/ExportPdfButton";
-import { exportDirectorCompensationPdf } from "@/lib/pdf/reports";
 import { GuideMode, GuideToggleButton, type GuideStep } from "@/components/calculators/GuideMode";
 import { WikiTip } from "@/components/calculators/WikiTip";
 import { useT } from "@/contexts/LanguageContext";
@@ -263,18 +261,6 @@ function DirectorCompensationCalc() {
   );
 
   const availableProfit = Math.max(0, inputs.totalProfit - (inputs.reserveTarget ?? 0));
-
-  const handleExportPdf = () => {
-    exportDirectorCompensationPdf({
-      header: brokerHeader,
-      inputs,
-      results: strategiesForCompare,
-      recommended: recommendation.best,
-      current: currentResult,
-      clientName: linkedClient ? `${linkedClient.first_name} ${linkedClient.last_name}` : null,
-      companyName: linkedCompany?.legal_name ?? null,
-    });
-  };
 
   const [guideOpen, setGuideOpen] = useState(false);
   const guideSteps: GuideStep[] = [
@@ -540,7 +526,6 @@ function DirectorCompensationCalc() {
 
         <LegalDisclaimer />
         <div className="flex flex-wrap justify-end gap-2">
-          <ExportPdfButton clientId={clientId} onExport={handleExportPdf} />
           <SaveSimulationButton
             kind="director_compensation"
             inputs={{ ...inputs, hasCurrent, current, custom }}

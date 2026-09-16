@@ -39,8 +39,6 @@ import type { IncomeTaxInput } from "@/lib/tax/income";
 import { SaveSimulationButton } from "@/components/calculators/SaveSimulationButton";
 import { useAuth } from "@/contexts/AuthContext";
 import { useBrokerPdfHeader } from "@/hooks/useBrokerPdfHeader";
-import { ExportPdfButton } from "@/components/calculators/ExportPdfButton";
-import { exportLppPdf } from "@/lib/pdf/reports";
 import { zodValidator, fallback } from "@tanstack/zod-adapter";
 import { z } from "zod";
 import { usePrefillFromClient, useHydrateFormFromPrefill } from "@/hooks/usePrefillFromClient";
@@ -258,25 +256,6 @@ function LppCalc() {
 
   const { user } = useAuth();
   const brokerHeader = useBrokerPdfHeader();
-
-  const handleExportPdf = () => {
-    exportLppPdf({
-      header: brokerHeader,
-      input: {
-        currentAge: form.currentAge,
-        retirementAge: form.retirementAge,
-        insuredSalary: form.insuredSalary,
-        expectedReturnRate: form.expectedReturnRate,
-        feeRate: form.feeRate,
-        canton: form.canton,
-        grossSalary: form.grossSalary,
-        buybackCapacity: form.buybackCapacity,
-        buybackYears: form.buybackYears,
-      },
-      projection,
-      buybackPlan,
-    });
-  };
 
   const [guideOpen, setGuideOpen] = useState(false);
   const guideSteps: GuideStep[] = [
@@ -644,7 +623,6 @@ function LppCalc() {
       />
 
       <div className="flex flex-wrap justify-end gap-2">
-        <ExportPdfButton clientId={clientId} onExport={handleExportPdf} />
         <SaveSimulationButton
           kind="lpp"
           inputs={form}

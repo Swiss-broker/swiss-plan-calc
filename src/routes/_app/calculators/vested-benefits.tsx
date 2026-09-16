@@ -32,8 +32,6 @@ import {
 import { formatCHF } from "@/lib/format";
 import { SaveSimulationButton } from "@/components/calculators/SaveSimulationButton";
 import { useBrokerPdfHeader } from "@/hooks/useBrokerPdfHeader";
-import { ExportPdfButton } from "@/components/calculators/ExportPdfButton";
-import { exportVestedBenefitsPdf } from "@/lib/pdf/reports";
 
 import { zodValidator, fallback } from "@tanstack/zod-adapter";
 import { z } from "zod";
@@ -95,19 +93,6 @@ function VestedBenefitsCalc() {
 
   const recommended = recommendVestedStrategy(form.yearsToRetirement);
   const brokerHeader = useBrokerPdfHeader();
-  const handleExportPdf = () => {
-    exportVestedBenefitsPdf({
-      header: brokerHeader,
-      input: {
-        initialBalance: form.initialBalance,
-        yearsToRetirement: form.yearsToRetirement,
-        withdrawalCanton: form.withdrawalCanton,
-      },
-      projections,
-      recommended,
-    });
-  };
-
   const strategyLabel = (id: VestedStrategy) => {
     const map: Record<VestedStrategy, string> = {
       security: t("calc.vested.strategy.security"),
@@ -313,7 +298,6 @@ function VestedBenefitsCalc() {
       </CalcCard>
 
       <div className="flex flex-wrap justify-end gap-2">
-        <ExportPdfButton clientId={clientId} onExport={handleExportPdf} />
         <SaveSimulationButton
           kind="vested_benefits"
           inputs={form}

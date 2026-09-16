@@ -31,8 +31,6 @@ import {
 } from "@/components/ui/select";
 import { SaveSimulationButton } from "@/components/calculators/SaveSimulationButton";
 import { useBrokerPdfHeader } from "@/hooks/useBrokerPdfHeader";
-import { ExportPdfButton } from "@/components/calculators/ExportPdfButton";
-import { exportInvestmentComparePdf } from "@/lib/pdf/reports";
 import { GuideMode, GuideToggleButton, type GuideStep } from "@/components/calculators/GuideMode";
 import { useT } from "@/contexts/LanguageContext";
 import { formatCHF, formatPct } from "@/lib/format";
@@ -123,9 +121,6 @@ function InvestmentCompareCalc() {
 
   const comparison = useMemo(() => compareInvestments(a, b), [a, b]);
   const brokerHeader = useBrokerPdfHeader();
-  const handleExportPdf = () => {
-    exportInvestmentComparePdf({ header: brokerHeader, comparison });
-  };
 
   const reset = () => {
     setA({ ...DEFAULT_A, name: t("calc.invcompare.default_a") });
@@ -281,7 +276,6 @@ function InvestmentCompareCalc() {
       </CalcCard>
 
       <div className="flex flex-wrap justify-end gap-2">
-        <ExportPdfButton clientId={clientId} onExport={handleExportPdf} />
         <SaveSimulationButton
           kind={"investment_compare" as never}
           inputs={{ a, b } as Record<string, unknown>}

@@ -28,8 +28,6 @@ import { Badge } from "@/components/ui/badge";
 import { Pillar3bInfoTile } from "@/components/optimizer/OptimizationsPanel";
 import { SaveSimulationButton } from "@/components/calculators/SaveSimulationButton";
 import { useBrokerPdfHeader } from "@/hooks/useBrokerPdfHeader";
-import { ExportPdfButton } from "@/components/calculators/ExportPdfButton";
-import { exportTaxGlobalPdf } from "@/lib/pdf/reports";
 import { TaxGlobalExplanation } from "@/components/calculators/TaxGlobalExplanation";
 import { TaxGlobalCompareCard } from "@/components/calculators/TaxGlobalCompareCard";
 import { GuideMode, GuideToggleButton, type GuideStep } from "@/components/calculators/GuideMode";
@@ -97,11 +95,6 @@ function TaxGlobalCalc() {
     return savings.reduce((a, b) => (b.deltaVsBaseline < a.deltaVsBaseline ? b : a));
   }, [scenarios]);
   const brokerHeader = useBrokerPdfHeader();
-  const handleExportPdf = () => {
-    exportTaxGlobalPdf({ header: brokerHeader, input: form, result });
-  };
-
-
   // ── Conversion devise pour revenus étrangers ──
   const [fxCurrency, setFxCurrency] = useState<FxCurrency>("CHF");
   const [fxAmount, setFxAmount] = useState<number>(0);
@@ -995,7 +988,6 @@ function TaxGlobalCalc() {
 
 
       <div className="flex flex-wrap justify-end gap-2">
-        <ExportPdfButton clientId={clientId} onExport={handleExportPdf} />
         <SaveSimulationButton
           kind="tax_global"
           inputs={form as unknown as Record<string, unknown>}

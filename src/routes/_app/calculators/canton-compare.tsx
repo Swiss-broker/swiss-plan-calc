@@ -38,8 +38,6 @@ import { SplitCompareLayout, type SplitRow } from "@/components/calculators/Spli
 import { formatCHF } from "@/lib/format";
 import { SaveSimulationButton } from "@/components/calculators/SaveSimulationButton";
 import { useBrokerPdfHeader } from "@/hooks/useBrokerPdfHeader";
-import { ExportPdfButton } from "@/components/calculators/ExportPdfButton";
-import { exportCantonComparePdf } from "@/lib/pdf/reports";
 import { useT } from "@/contexts/LanguageContext";
 import { useClientDashboard } from "@/hooks/use-client-dashboard";
 import { useQuery } from "@tanstack/react-query";
@@ -348,21 +346,6 @@ function CantonCompareCalc() {
   const hasReferences = data.some((d) => REFERENCE_CODES.has(d.code));
 
   const brokerHeader = useBrokerPdfHeader();
-
-  const handleExportPdf = () => {
-    exportCantonComparePdf({
-      header: brokerHeader,
-      input: {
-        grossSalary: base.grossSalary,
-        spouseGrossSalary: base.spouseGrossSalary,
-        status: lumpSumStatus,
-        children: base.children,
-        netWealth: base.netWealth,
-        referenceCanton,
-      },
-      rows: data,
-    });
-  };
 
   const [guideOpen, setGuideOpen] = useState(false);
   const guideSteps: GuideStep[] = [
@@ -731,7 +714,6 @@ function CantonCompareCalc() {
       </CalcCard>
 
       <div className="flex flex-wrap justify-end gap-2" data-guide="canton-save">
-        <ExportPdfButton clientId={clientId} onExport={handleExportPdf} />
         <SaveSimulationButton
           kind="canton_compare"
           inputs={{ ...base, referenceCanton }}

@@ -18,8 +18,6 @@ import { CalcCard, MoneyTile, Row } from "@/components/calculators/CalcUI";
 import { SaveSimulationButton } from "@/components/calculators/SaveSimulationButton";
 import { useAuth } from "@/contexts/AuthContext";
 import { useBrokerPdfHeader } from "@/hooks/useBrokerPdfHeader";
-import { ExportPdfButton } from "@/components/calculators/ExportPdfButton";
-import { exportRetirementPdf } from "@/lib/pdf/reports";
 import { useT } from "@/contexts/LanguageContext";
 
 import { zodValidator, fallback } from "@tanstack/zod-adapter";
@@ -119,23 +117,6 @@ const projectedCapital = dashboard?.lpp?.projectedCapitalAt65;
 
   const { user } = useAuth();
   const brokerHeader = useBrokerPdfHeader();
-
-  const handleExportPdf = () => {
-    exportRetirementPdf({
-      header: brokerHeader,
-      input: {
-        capital: form.capital,
-        canton: form.canton,
-        conversionRate: form.conversionRate,
-        yearsAlive: form.yearsAlive,
-        selfReturnRate: form.selfReturnRate,
-        rentMarginalRate: form.rentMarginalRate,
-      },
-      lumpTax,
-      compare,
-      reco,
-    });
-  };
 
   const [guideOpen, setGuideOpen] = useState(false);
     const guideSteps: GuideStep[] = [
@@ -337,7 +318,6 @@ const projectedCapital = dashboard?.lpp?.projectedCapitalAt65;
       </div>
 
       <div className="flex flex-wrap justify-end gap-2" data-guide="retirement-save">
-        <ExportPdfButton clientId={clientId} onExport={handleExportPdf} />
         <SaveSimulationButton
           kind="retirement"
           inputs={form}

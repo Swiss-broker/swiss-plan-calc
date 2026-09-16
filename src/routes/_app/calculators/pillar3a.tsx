@@ -24,8 +24,6 @@ import type { IncomeTaxInput } from "@/lib/tax/income";
 import { SaveSimulationButton } from "@/components/calculators/SaveSimulationButton";
 import { useAuth } from "@/contexts/AuthContext";
 import { useBrokerPdfHeader } from "@/hooks/useBrokerPdfHeader";
-import { ExportPdfButton } from "@/components/calculators/ExportPdfButton";
-import { exportPillar3aPdf } from "@/lib/pdf/reports";
 import { zodValidator, fallback } from "@tanstack/zod-adapter";
 import { z } from "zod";
 import { usePrefillFromClient, useHydrateFormFromPrefill } from "@/hooks/usePrefillFromClient";
@@ -277,24 +275,6 @@ function Pillar3aCalc() {
 
   const { user } = useAuth();
   const brokerHeader = useBrokerPdfHeader();
-
-  const handleExportPdf = () => {
-    exportPillar3aPdf({
-      header: brokerHeader,
-      input: {
-        canton: form.canton,
-        contribution: form.contribution,
-        yearsToRetirement: form.yearsToRetirement,
-        expectedReturn: form.expectedReturn,
-        withdrawalCapital: form.withdrawalCapital,
-        withdrawalAccounts: form.withdrawalAccounts,
-        grossSalary: form.grossSalary,
-      },
-      taxSavings: savings,
-      projection,
-      staggered: stag,
-    });
-  };
 
   const projection3b = useMemo(() => {
     const r = form.pillar3bReturn / 100;
@@ -594,7 +574,6 @@ useEffect(() => {
       </CalcCard>
 
       <div className="flex flex-wrap justify-end gap-2" data-guide="p3a-save">
-        <ExportPdfButton clientId={clientId} onExport={handleExportPdf} />
         <SaveSimulationButton
           kind="pillar3a"
           inputs={form}

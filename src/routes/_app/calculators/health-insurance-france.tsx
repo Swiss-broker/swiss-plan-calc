@@ -22,8 +22,6 @@ import {
 import { CalcCard, MoneyTile, Row, HelpDot } from "@/components/calculators/CalcUI";
 import { SaveSimulationButton } from "@/components/calculators/SaveSimulationButton";
 import { useBrokerPdfHeader } from "@/hooks/useBrokerPdfHeader";
-import { ExportPdfButton } from "@/components/calculators/ExportPdfButton";
-import { exportHealthFrancePdf } from "@/lib/pdf/reports";
 import { ClientLinkBanner } from "@/components/calculators/ClientLinkBanner";
 import { usePrefillFromClient, useHydrateFormFromPrefill } from "@/hooks/usePrefillFromClient";
 import { useLoadSavedSimulation } from "@/hooks/useLoadSavedSimulation";
@@ -75,9 +73,6 @@ function HealthInsuranceFranceCalc() {
 
   const result = useMemo(() => computeHealthFrance(form), [form]);
   const brokerHeader = useBrokerPdfHeader();
-  const handleExportPdf = () => {
-    exportHealthFrancePdf({ header: brokerHeader, input: form, result });
-  };
   const [guideOpen, setGuideOpen] = useState(false);
 
   const recoLabel = result.recommended === "CMU" ? "CMU (France)" : "LAMal (Suisse)";
@@ -280,7 +275,6 @@ function HealthInsuranceFranceCalc() {
         </CalcCard>
 
         <div className="flex justify-end" data-guide="health-fr-save">
-          <ExportPdfButton clientId={clientId} onExport={handleExportPdf} />
           <SaveSimulationButton
             kind="health_insurance_france"
             inputs={form}
