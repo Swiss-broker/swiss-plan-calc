@@ -13,7 +13,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useT } from "@/contexts/LanguageContext";
 import { PublicLanguageSwitcher } from "@/components/common/PublicLanguageSwitcher";
 import { t as translate } from "@/lib/i18n";
-import { PRICE_IDS, PLAN_LABELS, type BillablePlan } from "@/lib/billing/plans";
+import { PLAN_LABELS, type BillablePlan } from "@/lib/billing/plans";
 import { SelfServeClosedNotice } from "@/components/billing/SelfServeClosedNotice";
 
 const authSearchSchema = z.object({
@@ -126,27 +126,6 @@ const [otpState, setOtpState] = useState<{ email: string; plan: BillablePlan; in
         setOtpLoading(false);
         return;
       }
-    }
-    const priceId = PRICE_IDS[otpState.plan];
-    if (!priceId) {
-      navigate({ to: "/dashboard" });
-      return;
-    }
-
-    try {
-      const { data: stripeData, error: fnError } = await supabase.functions.invoke("stripe-checkout", {
-        body: {
-          priceId,
-          brokerId: data.session.user.id,
-          brokerEmail: data.session.user.email,
-          plan: otpState.plan,
-        },
-      });
-      if (fnError || !stripeData?.url) throw new Error("Erreur Stripe");
-      window.location.href = stripeData.url;
-    } catch {
-      setOtpError("Erreur lors de la redirection vers le paiement. Contactez le support.");
-      setOtpLoading(false);
     }
   };
 

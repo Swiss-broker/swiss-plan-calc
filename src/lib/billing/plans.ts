@@ -1,16 +1,13 @@
 // src/lib/billing/plans.ts
-// Point unique de vérité pour les plans facturables (évite d'avoir 3
-// copies divergentes des price_id Stripe entre auth.tsx, auth/confirm.tsx
-// et la porte d'accès de _app.tsx).
+// Libellés des plans facturables et liste des plans donnant un accès réel
+// à l'application (ACTIVE_PLANS, lue par la porte d'accès de _app.tsx).
+// Les price_id Stripe eux-mêmes (VITE_STRIPE_*) ont été retirés : le
+// parcours self-serve générique est fermé (voir auth.tsx), seule
+// l'invitation cabinet reste ouverte, avec un price_id différent (siège
+// cabinet) codé dans cabinet-add-seat.
 import type { BrokerPlan } from "@/contexts/PlanContext";
 
 export type BillablePlan = "starter" | "pro" | "cabinet";
-
-export const PRICE_IDS: Record<BillablePlan, string> = {
-  starter: import.meta.env.VITE_STRIPE_STARTER_MONTHLY ?? "",
-  pro: import.meta.env.VITE_STRIPE_PRO_MONTHLY ?? "",
-  cabinet: import.meta.env.VITE_STRIPE_CABINET_MONTHLY ?? "",
-};
 
 export const PLAN_LABELS: Record<BillablePlan, string> = {
   starter: "Starter",
