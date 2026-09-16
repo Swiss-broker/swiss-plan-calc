@@ -19,6 +19,7 @@ const ALLOWED_PLANS = new Set([
   "starter",
   "cabinet",
   "internal",
+  "demo",
   "expired",
 ]);
 
