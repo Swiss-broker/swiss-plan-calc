@@ -44,7 +44,7 @@ function Landing() {
     <div className="min-h-screen bg-background overflow-x-hidden">
       <Header />
       <Hero />
-      <Commissions />
+      <TechStats />
       <Features />
       <Modules />
       <Optimization />
@@ -85,11 +85,11 @@ function Hero() {
   const t = useT();
   const ref = useRef(null);
   const inView = useInView(ref, { once: true });
-  const stats = [
-    { value: 12, label: "Modules de calcul" },
-    { value: 9, label: "Cantons couverts" },
-    { value: 2026, label: "Barèmes officiels" },
-    { value: 20, label: "Minutes par RDV" },
+  const commissionItems = [
+    { num: t("landing.commissions.item1.num"), label: t("landing.commissions.item1.label"), desc: t("landing.commissions.item1.desc") },
+    { num: t("landing.commissions.item2.num"), label: t("landing.commissions.item2.label"), desc: t("landing.commissions.item2.desc") },
+    { num: t("landing.commissions.item3.num"), label: t("landing.commissions.item3.label"), desc: t("landing.commissions.item3.desc") },
+    { num: t("landing.commissions.item4.num"), label: t("landing.commissions.item4.label"), desc: t("landing.commissions.item4.desc") },
   ];
   return (
     <section ref={ref} className="relative overflow-hidden">
@@ -130,15 +130,19 @@ function Hero() {
           </motion.div>
         </div>
 
-        {/* Stats intégrées dans le hero */}
+        {/* Potentiel de revenu intégré dans le hero */}
         <motion.div initial={{ opacity: 0, y: 40 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, delay: 0.8 }}
-          className="mx-auto mt-16 max-w-4xl rounded-2xl border border-white/10 bg-white/5 backdrop-blur-xl p-6">
-          <div className="grid grid-cols-2 gap-6 lg:grid-cols-4">
-            {stats.map((s, i) => (
-              <motion.div key={i} initial={{ opacity: 0, y: 10 }} animate={inView ? { opacity: 1, y: 0 } : {}}
-                transition={{ duration: 0.4, delay: 0.9 + i * 0.1 }} className="text-center">
-                <div className="text-3xl font-extrabold text-emerald-300 tabular-nums"><AnimCount value={s.value} inView={inView} /></div>
-                <p className="mt-1 text-xs text-white/50">{s.label}</p>
+          className="mx-auto mt-16 max-w-6xl">
+          <div className="grid gap-4" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))" }}>
+            {commissionItems.map((it, i) => (
+              <motion.div key={it.label} initial={{ opacity: 0, y: 10 }} animate={inView ? { opacity: 1, y: 0 } : {}}
+                transition={{ duration: 0.4, delay: 0.9 + i * 0.1 }}
+                className="rounded-2xl border border-white/10 bg-white/5 backdrop-blur-xl p-5 text-left">
+                <div className="whitespace-nowrap text-lg font-extrabold tracking-tight text-emerald-300 tabular-nums sm:text-xl">
+                  {it.num}
+                </div>
+                <p className="mt-2 text-sm font-bold text-white">{it.label}</p>
+                <p className="mt-1 text-sm text-white/60 leading-relaxed">{it.desc}</p>
               </motion.div>
             ))}
           </div>
@@ -148,35 +152,28 @@ function Hero() {
   );
 }
 
-function Commissions() {
+function TechStats() {
   const ref = useRef(null);
   const inView = useInView(ref, { once: true, margin: "-80px" });
-  const t = useT();
-  const items = [
-    { num: t("landing.commissions.item1.num"), label: t("landing.commissions.item1.label"), desc: t("landing.commissions.item1.desc") },
-    { num: t("landing.commissions.item2.num"), label: t("landing.commissions.item2.label"), desc: t("landing.commissions.item2.desc") },
-    { num: t("landing.commissions.item3.num"), label: t("landing.commissions.item3.label"), desc: t("landing.commissions.item3.desc") },
-    { num: t("landing.commissions.item4.num"), label: t("landing.commissions.item4.label"), desc: t("landing.commissions.item4.desc") },
+  const stats = [
+    { value: 12, label: "Modules de calcul" },
+    { value: 9, label: "Cantons couverts" },
+    { value: 2026, label: "Barèmes officiels" },
+    { value: 20, label: "Minutes par RDV" },
   ];
   return (
-    <section ref={ref} className="py-20 bg-background border-b border-border">
+    <section ref={ref} className="py-16 bg-background border-b border-border">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <motion.div initial={{ opacity: 0, y: 30 }} animate={inView ? { opacity: 1, y: 0 } : {}} transition={{ duration: 0.6 }}
-          className="mx-auto max-w-2xl text-center mb-14">
-          <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">{t("landing.commissions.title")}</h2>
-          <p className="mt-3 text-muted-foreground">{t("landing.commissions.subtitle")}</p>
-        </motion.div>
-        <div className="grid gap-4" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))" }}>
-          {items.map((it, i) => (
-            <motion.div key={it.label}
-              initial={{ opacity: 0, y: 30 }} animate={inView ? { opacity: 1, y: 0 } : {}}
+        <div className="grid gap-4" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))" }}>
+          {stats.map((s, i) => (
+            <motion.div key={s.label}
+              initial={{ opacity: 0, y: 20 }} animate={inView ? { opacity: 1, y: 0 } : {}}
               transition={{ duration: 0.5, delay: i * 0.1 }}
-              className="rounded-2xl border border-border bg-gradient-to-br from-emerald-500/[0.06] to-transparent p-6 shadow-card">
-              <div className="whitespace-nowrap text-xl font-extrabold tracking-tight text-emerald-600 dark:text-emerald-300 tabular-nums sm:text-2xl">
-                {it.num}
+              className="rounded-2xl border border-border bg-muted p-6 text-center">
+              <div className="text-3xl font-extrabold tracking-tight text-emerald-600 tabular-nums">
+                <AnimCount value={s.value} inView={inView} />
               </div>
-              <p className="mt-2 text-sm font-semibold">{it.label}</p>
-              <p className="mt-1 text-sm text-muted-foreground leading-relaxed">{it.desc}</p>
+              <p className="mt-1 text-xs text-muted-foreground">{s.label}</p>
             </motion.div>
           ))}
         </div>
