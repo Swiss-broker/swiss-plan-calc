@@ -37,6 +37,37 @@ function AnimCount({ value, inView }: { value: number; inView: boolean }) {
   return <>{d}</>;
 }
 
+// Formatage suisse (apostrophe) pour les nombres animés, cohérent avec les
+// chiffres déjà écrits en dur dans les textes (ex. "40'000 à 50'000 CHF").
+function formatApostrophe(n: number): string {
+  return Math.round(n).toString().replace(/\B(?=(\d{3})+(?!\d))/g, "'");
+}
+
+function AnimNumberToken({ target, inView }: { target: number; inView: boolean }) {
+  const mv = useMotionValue(0);
+  const sp = useSpring(mv, { duration: 1800, bounce: 0 });
+  const [d, setD] = useState("0");
+  useEffect(() => { if (inView) mv.set(target); }, [inView, target, mv]);
+  useEffect(() => sp.on("change", (v) => setD(formatApostrophe(v))), [sp]);
+  return <>{d}</>;
+}
+
+// Anime chaque nombre trouvé dans un texte (ex. "40'000 à 50'000 CHF", "3%",
+// "8 à 12") en le faisant monter depuis 0, en gardant le reste du texte
+// (unités, séparateurs) statique.
+function AnimRangeText({ text, inView }: { text: string; inView: boolean }) {
+  const parts = text.split(/(\d[\d']*)/g);
+  return (
+    <>
+      {parts.map((part, i) =>
+        /^\d/.test(part)
+          ? <AnimNumberToken key={i} target={parseInt(part.replace(/'/g, ""), 10)} inView={inView} />
+          : <span key={i}>{part}</span>
+      )}
+    </>
+  );
+}
+
 const fadeUp = { hidden: { opacity: 0, y: 30 }, show: { opacity: 1, y: 0 } };
 
 function Landing() {
@@ -44,7 +75,6 @@ function Landing() {
     <div className="min-h-screen bg-background overflow-x-hidden">
       <Header />
       <Hero />
-      <TechStats />
       <Features />
       <Modules />
       <Optimization />
@@ -107,7 +137,8 @@ function Hero() {
             className="mb-6 inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-1.5 text-xs font-medium text-white/80 backdrop-blur">
             <Sparkles className="h-3.5 w-3.5 text-emerald-300" />{t("landing.hero.badge")}
           </motion.div>
-          <motion.h1 initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.2 }}
+          <motion.h1 initial={{ opacity: 0, y: 50, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }}
+            transition={{ type: "spring", stiffness: 120, damping: 14, delay: 0.2 }}
             className="text-balance text-5xl font-bold tracking-tight text-white sm:text-6xl lg:text-7xl">
             {t("landing.hero.title.prefix")}{" "}<span className="text-emerald-300">{t("landing.hero.title.highlight")}</span>
           </motion.h1>
@@ -139,7 +170,7 @@ function Hero() {
                 transition={{ duration: 0.4, delay: 0.9 + i * 0.1 }}
                 className="rounded-2xl border border-white/10 bg-white/5 backdrop-blur-xl p-5 text-left">
                 <div className="whitespace-nowrap text-lg font-extrabold tracking-tight text-emerald-300 tabular-nums sm:text-xl">
-                  {it.num}
+                  <AnimRangeText text={it.num} inView={inView} />
                 </div>
                 <p className="mt-2 text-sm font-bold text-white">{it.label}</p>
                 <p className="mt-1 text-sm text-white/60 leading-relaxed">{it.desc}</p>
@@ -152,19 +183,32 @@ function Hero() {
   );
 }
 
-function TechStats() {
+function Features() {
   const ref = useRef(null);
   const inView = useInView(ref, { once: true, margin: "-80px" });
+  const t = useT();
   const stats = [
     { value: 12, label: "Modules de calcul" },
     { value: 9, label: "Cantons couverts" },
     { value: 2026, label: "Barèmes officiels" },
     { value: 20, label: "Minutes par RDV" },
   ];
+  const items = [
+    { icon: Clock, title: t("landing.feature.exact.title"), desc: t("landing.feature.exact.desc"), gradient: "from-emerald-500/20 to-teal-500/20" },
+    { icon: Calculator, title: t("landing.feature.proj.title"), desc: t("landing.feature.proj.desc"), gradient: "from-blue-500/20 to-cyan-500/20" },
+    { icon: Sparkles, title: t("landing.feature.opt.title"), desc: t("landing.feature.opt.desc"), gradient: "from-violet-500/20 to-purple-500/20" },
+    { icon: Shield, title: t("landing.feature.priv.title"), desc: t("landing.feature.priv.desc"), gradient: "from-amber-500/20 to-orange-500/20" },
+  ];
   return (
-    <section ref={ref} className="py-16 bg-background border-b border-border">
+    <section id="features" ref={ref} className="py-20 bg-gradient-to-b from-muted/50 to-background">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="grid gap-4" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))" }}>
+        <motion.div initial={{ opacity: 0, y: 45, scale: 0.96 }} animate={inView ? { opacity: 1, y: 0, scale: 1 } : {}}
+          transition={{ type: "spring", stiffness: 120, damping: 14 }}
+          className="mx-auto max-w-5xl text-center mb-10">
+          <h2 className="text-balance text-3xl font-bold tracking-tight text-emerald-800 sm:text-4xl">{t("landing.features.title")}</h2>
+          <p className="mt-3 text-muted-foreground">{t("landing.features.subtitle")}</p>
+        </motion.div>
+        <div className="mx-auto mb-14 grid max-w-5xl gap-4" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))" }}>
           {stats.map((s, i) => (
             <motion.div key={s.label}
               initial={{ opacity: 0, y: 20 }} animate={inView ? { opacity: 1, y: 0 } : {}}
@@ -177,29 +221,6 @@ function TechStats() {
             </motion.div>
           ))}
         </div>
-      </div>
-    </section>
-  );
-}
-
-function Features() {
-  const ref = useRef(null);
-  const inView = useInView(ref, { once: true, margin: "-80px" });
-  const t = useT();
-  const items = [
-    { icon: Clock, title: t("landing.feature.exact.title"), desc: t("landing.feature.exact.desc"), gradient: "from-emerald-500/20 to-teal-500/20" },
-    { icon: Calculator, title: t("landing.feature.proj.title"), desc: t("landing.feature.proj.desc"), gradient: "from-blue-500/20 to-cyan-500/20" },
-    { icon: Sparkles, title: t("landing.feature.opt.title"), desc: t("landing.feature.opt.desc"), gradient: "from-violet-500/20 to-purple-500/20" },
-    { icon: Shield, title: t("landing.feature.priv.title"), desc: t("landing.feature.priv.desc"), gradient: "from-amber-500/20 to-orange-500/20" },
-  ];
-  return (
-    <section id="features" ref={ref} className="py-20 bg-gradient-to-b from-muted/50 to-background">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <motion.div initial={{ opacity: 0, y: 30 }} animate={inView ? { opacity: 1, y: 0 } : {}} transition={{ duration: 0.6 }}
-          className="mx-auto max-w-5xl text-center mb-14">
-          <h2 className="text-balance text-3xl font-bold tracking-tight text-emerald-800 sm:text-4xl">{t("landing.features.title")}</h2>
-          <p className="mt-3 text-muted-foreground">{t("landing.features.subtitle")}</p>
-        </motion.div>
         <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
           {items.map((it, i) => (
             <motion.div key={it.title}
@@ -235,7 +256,8 @@ function Modules() {
   return (
     <section id="modules" ref={ref} className="py-20 bg-gradient-to-b from-background via-primary/5 to-background">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <motion.div initial={{ opacity: 0, y: 30 }} animate={inView ? { opacity: 1, y: 0 } : {}} transition={{ duration: 0.6 }}
+        <motion.div initial={{ opacity: 0, y: 45, scale: 0.96 }} animate={inView ? { opacity: 1, y: 0, scale: 1 } : {}}
+          transition={{ type: "spring", stiffness: 120, damping: 14 }}
           className="mx-auto max-w-2xl text-center mb-14">
           <h2 className="text-3xl font-bold tracking-tight text-emerald-800 sm:text-4xl">{t("landing.modules.title")}</h2>
           <p className="mt-3 text-muted-foreground">{t("landing.modules.subtitle")}</p>
