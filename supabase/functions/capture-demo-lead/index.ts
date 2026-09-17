@@ -157,6 +157,13 @@ export async function handleCaptureDemoLeadRequest(req: Request, env: Env): Prom
 
     const demoDate: string | null = typeof payload.startTime === "string" ? payload.startTime : null;
 
+    // Présent quand le type d'événement Cal.com utilise Cal Video (ou
+    // Google Meet) comme emplacement : Cal.com génère alors un lien de
+    // visioconférence et l'expose dans payload.metadata.videoCallUrl.
+    // Absent pour les autres emplacements (téléphone, présentiel, etc.).
+    const meetingUrl: string | null =
+      typeof payload.metadata?.videoCallUrl === "string" ? payload.metadata.videoCallUrl : null;
+
     const insertRes = await fetch(`${supabaseUrl}/rest/v1/demo_requests`, {
       method: "POST",
       headers: {
@@ -172,6 +179,7 @@ export async function handleCaptureDemoLeadRequest(req: Request, env: Env): Prom
         status: "pending",
         assigned_to: null,
         demo_date: demoDate,
+        meeting_url: meetingUrl,
       }),
     });
     if (!insertRes.ok) {
