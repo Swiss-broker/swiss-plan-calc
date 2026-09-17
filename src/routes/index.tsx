@@ -1,6 +1,6 @@
 // src/routes/index.tsx
 import { createFileRoute } from "@tanstack/react-router";
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, type ReactNode } from "react";
 import { motion, useInView, useMotionValue, useSpring } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import {
@@ -69,6 +69,32 @@ function AnimRangeText({ text, inView }: { text: string; inView: boolean }) {
 }
 
 const fadeUp = { hidden: { opacity: 0, y: 30 }, show: { opacity: 1, y: 0 } };
+
+// Anime chaque élément selon SA PROPRE position à l'écran, pas celle d'une
+// section parente : dans une section haute (Fonctionnalités, Modules), une
+// carte loin en dessous du pli ne doit pas se déclencher en même temps que
+// le haut de la section, sinon son animation est déjà terminée bien avant
+// que l'utilisateur ne la fasse défiler jusqu'à l'écran.
+function Reveal({
+  children, delay = 0, y = 30, scale, className, whileHover,
+}: {
+  children: ReactNode | ((inView: boolean) => ReactNode);
+  delay?: number; y?: number; scale?: number; className?: string;
+  whileHover?: Record<string, number>;
+}) {
+  const ref = useRef(null);
+  const inView = useInView(ref, { once: true, margin: "-40px" });
+  const initial: Record<string, number> = { opacity: 0, y };
+  const animate: Record<string, number> = { opacity: 1, y: 0 };
+  if (scale !== undefined) { initial.scale = scale; animate.scale = 1; }
+  return (
+    <motion.div ref={ref} initial={initial} animate={inView ? animate : undefined}
+      transition={{ type: "spring", stiffness: 140, damping: 16, delay }}
+      whileHover={whileHover} className={className}>
+      {typeof children === "function" ? children(inView) : children}
+    </motion.div>
+  );
+}
 
 function Landing() {
   return (
@@ -184,8 +210,6 @@ function Hero() {
 }
 
 function Features() {
-  const ref = useRef(null);
-  const inView = useInView(ref, { once: true, margin: "-80px" });
   const t = useT();
   const stats = [
     { value: 12, label: "Modules de calcul" },
@@ -200,40 +224,37 @@ function Features() {
     { icon: Shield, title: t("landing.feature.priv.title"), desc: t("landing.feature.priv.desc"), gradient: "from-amber-500/20 to-orange-500/20" },
   ];
   return (
-    <section id="features" ref={ref} className="py-20 bg-gradient-to-b from-muted/50 to-background">
+    <section id="features" className="py-20 bg-gradient-to-b from-muted/50 to-background">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <motion.div initial={{ opacity: 0, y: 45, scale: 0.96 }} animate={inView ? { opacity: 1, y: 0, scale: 1 } : {}}
-          transition={{ type: "spring", stiffness: 120, damping: 14 }}
-          className="mx-auto max-w-5xl text-center mb-10">
+        <Reveal y={45} scale={0.96} className="mx-auto max-w-5xl text-center mb-10">
           <h2 className="text-balance text-3xl font-bold tracking-tight text-emerald-800 sm:text-4xl">{t("landing.features.title")}</h2>
           <p className="mt-3 text-muted-foreground">{t("landing.features.subtitle")}</p>
-        </motion.div>
+        </Reveal>
         <div className="mx-auto mb-14 grid max-w-5xl gap-4" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))" }}>
           {stats.map((s, i) => (
-            <motion.div key={s.label}
-              initial={{ opacity: 0, y: 20 }} animate={inView ? { opacity: 1, y: 0 } : {}}
-              transition={{ duration: 0.5, delay: i * 0.1 }}
+            <Reveal key={s.label} delay={i * 0.08} y={20}
               className="rounded-2xl border border-border bg-muted p-6 text-center">
-              <div className="text-3xl font-extrabold tracking-tight text-emerald-600 tabular-nums">
-                <AnimCount value={s.value} inView={inView} />
-              </div>
-              <p className="mt-1 text-xs text-muted-foreground">{s.label}</p>
-            </motion.div>
+              {(inView) => (
+                <>
+                  <div className="text-3xl font-extrabold tracking-tight text-emerald-600 tabular-nums">
+                    <AnimCount value={s.value} inView={inView} />
+                  </div>
+                  <p className="mt-1 text-xs text-muted-foreground">{s.label}</p>
+                </>
+              )}
+            </Reveal>
           ))}
         </div>
         <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
           {items.map((it, i) => (
-            <motion.div key={it.title}
-              initial={{ opacity: 0, y: 50 }} animate={inView ? { opacity: 1, y: 0 } : {}}
-              transition={{ duration: 0.5, delay: i * 0.1 }}
-              whileHover={{ y: -8, scale: 1.02 }}
+            <Reveal key={it.title} delay={i * 0.08} y={50} whileHover={{ y: -8, scale: 1.02 }}
               className={`group rounded-2xl border border-border bg-gradient-to-br ${it.gradient} p-6 shadow-card cursor-default backdrop-blur-sm`}>
               <div className="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-xl bg-background/80 text-primary shadow-sm transition-all group-hover:shadow-md group-hover:scale-110">
                 <it.icon className="h-5 w-5" />
               </div>
               <h3 className="text-base font-semibold mb-2">{it.title}</h3>
               <p className="text-sm text-muted-foreground leading-relaxed">{it.desc}</p>
-            </motion.div>
+            </Reveal>
           ))}
         </div>
       </div>
@@ -242,8 +263,6 @@ function Features() {
 }
 
 function Modules() {
-  const ref = useRef(null);
-  const inView = useInView(ref, { once: true, margin: "-80px" });
   const t = useT();
   const modules = [
     { tag: t("landing.module.tax.tag"), title: t("landing.module.tax.title"), desc: t("landing.module.tax.desc"), color: "bg-blue-500" },
@@ -254,20 +273,15 @@ function Modules() {
     { tag: t("landing.module.cmp.tag"), title: t("landing.module.cmp.title"), desc: t("landing.module.cmp.desc"), color: "bg-cyan-500" },
   ];
   return (
-    <section id="modules" ref={ref} className="py-20 bg-gradient-to-b from-background via-primary/5 to-background">
+    <section id="modules" className="py-20 bg-gradient-to-b from-background via-primary/5 to-background">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <motion.div initial={{ opacity: 0, y: 45, scale: 0.96 }} animate={inView ? { opacity: 1, y: 0, scale: 1 } : {}}
-          transition={{ type: "spring", stiffness: 120, damping: 14 }}
-          className="mx-auto max-w-2xl text-center mb-14">
+        <Reveal y={45} scale={0.96} className="mx-auto max-w-2xl text-center mb-14">
           <h2 className="text-3xl font-bold tracking-tight text-emerald-800 sm:text-4xl">{t("landing.modules.title")}</h2>
           <p className="mt-3 text-muted-foreground">{t("landing.modules.subtitle")}</p>
-        </motion.div>
+        </Reveal>
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {modules.map((m, i) => (
-            <motion.div key={m.title}
-              initial={{ opacity: 0, y: 40, scale: 0.95 }} animate={inView ? { opacity: 1, y: 0, scale: 1 } : {}}
-              transition={{ duration: 0.5, delay: i * 0.08 }}
-              whileHover={{ scale: 1.03, y: -4 }}
+            <Reveal key={m.title} delay={i * 0.08} y={40} scale={0.95} whileHover={{ scale: 1.03, y: -4 }}
               className="rounded-2xl border border-border bg-card p-5 shadow-card hover:shadow-elegant transition-shadow cursor-default">
               <div className="mb-3 flex items-center gap-2">
                 <div className={`h-2 w-2 rounded-full ${m.color}`} />
@@ -275,7 +289,7 @@ function Modules() {
               </div>
               <h3 className="text-base font-semibold mb-2">{m.title}</h3>
               <p className="text-sm leading-relaxed text-muted-foreground">{m.desc}</p>
-            </motion.div>
+            </Reveal>
           ))}
         </div>
       </div>
