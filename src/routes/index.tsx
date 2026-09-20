@@ -275,9 +275,26 @@ function Modules() {
   return (
     <section id="modules" className="py-20 bg-gradient-to-b from-background via-primary/5 to-background">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <Reveal y={45} scale={0.96} className="mx-auto max-w-2xl text-center mb-14">
-          <h2 className="text-3xl font-bold tracking-tight text-emerald-800 sm:text-4xl">{t("landing.modules.title")}</h2>
+        <Reveal y={45} scale={0.96} className="mx-auto max-w-3xl text-center mb-10">
+          <h2 className="text-3xl font-bold tracking-tight text-emerald-800 sm:text-4xl">
+            {/* Deux phrases courtes : chacune sa propre ligne, jamais coupée
+                au milieu par le retour à la ligne naturel du navigateur. */}
+            {t("landing.modules.title").split(/(?<=\.)\s+/).map((sentence, i) => (
+              <span key={i} className="block">{sentence}</span>
+            ))}
+          </h2>
           <p className="mt-3 text-muted-foreground">{t("landing.modules.subtitle")}</p>
+        </Reveal>
+        <Reveal y={40} scale={0.97} whileHover={{ scale: 1.015, y: -4 }}
+          className="mx-auto mb-14 max-w-3xl overflow-hidden rounded-2xl border border-border bg-card shadow-card hover:shadow-elegant transition-shadow">
+          <video
+            className="aspect-video w-full bg-black"
+            src="/guided-tour.mp4"
+            poster="/guided-tour-poster.jpg"
+            controls
+            preload="metadata"
+            playsInline
+          />
         </Reveal>
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {modules.map((m, i) => (
