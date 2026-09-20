@@ -103,8 +103,8 @@ function Landing() {
       <Hero />
       <Features />
       <Modules />
-      <Optimization />
       <Path />
+      <Optimization />
       <CTASection />
       <FAQ />
       <Footer />
