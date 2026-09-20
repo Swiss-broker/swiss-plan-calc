@@ -170,7 +170,7 @@ function Hero() {
           </motion.h1>
           <motion.p initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.35 }}
             className="mx-auto mt-6 max-w-2xl text-balance text-lg text-white/70">
-            {t("landing.hero.subtitle")}
+            <strong className="font-semibold text-white/90">{t("landing.hero.subtitle.lead")}</strong>{" "}{t("landing.hero.subtitle.rest")}
           </motion.p>
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.5 }}
             className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
