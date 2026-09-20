@@ -470,6 +470,31 @@
     0%, 100% { box-shadow: 0 0 0 1px rgba(110, 231, 183, 0.12), 0 0 0px rgba(52, 211, 153, 0); }
     50% { box-shadow: 0 0 0 1px rgba(110, 231, 183, 0.45), 0 0 28px rgba(52, 211, 153, 0.35); }
   }
+  .feature-icon-badge {
+    position: relative;
+    isolation: isolate;
+    animation: feature-badge-scale 2.6s ease-in-out infinite;
+  }
+  .feature-icon-badge::before {
+    content: "";
+    position: absolute;
+    inset: -55%;
+    z-index: -1;
+    border-radius: 9999px;
+    background: radial-gradient(circle, var(--accent, currentColor), transparent 65%);
+    opacity: 0.35;
+    animation: feature-badge-glow 2.6s ease-in-out infinite;
+    animation-delay: inherit;
+    pointer-events: none;
+  }
+  @keyframes feature-badge-scale {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.08); }
+  }
+  @keyframes feature-badge-glow {
+    0%, 100% { opacity: 0.2; transform: scale(0.85); }
+    50% { opacity: 0.55; transform: scale(1.25); }
+  }
 
   @media (prefers-reduced-motion: reduce) {
     .tilt-3d,
@@ -479,7 +504,9 @@
     .chart-rise,
     .shine::after,
     .hero-stat-card,
-    .hero-stat-card::before {
+    .hero-stat-card::before,
+    .feature-icon-badge,
+    .feature-icon-badge::before {
       animation: none !important;
       transition: none !important;
       transform: none !important;

@@ -219,10 +219,10 @@ function Features() {
     { value: 20, label: "Minutes par RDV" },
   ];
   const items = [
-    { icon: Clock, title: t("landing.feature.exact.title"), desc: t("landing.feature.exact.desc"), gradient: "from-emerald-500/20 to-teal-500/20" },
-    { icon: Calculator, title: t("landing.feature.proj.title"), desc: t("landing.feature.proj.desc"), gradient: "from-blue-500/20 to-cyan-500/20" },
-    { icon: Sparkles, title: t("landing.feature.opt.title"), desc: t("landing.feature.opt.desc"), gradient: "from-violet-500/20 to-purple-500/20" },
-    { icon: Shield, title: t("landing.feature.priv.title"), desc: t("landing.feature.priv.desc"), gradient: "from-amber-500/20 to-orange-500/20" },
+    { icon: Clock, title: t("landing.feature.exact.title"), desc: t("landing.feature.exact.desc"), gradient: "from-emerald-500/20 to-teal-500/20", accent: "#059669" },
+    { icon: Calculator, title: t("landing.feature.proj.title"), desc: t("landing.feature.proj.desc"), gradient: "from-blue-500/20 to-cyan-500/20", accent: "#2563eb" },
+    { icon: Sparkles, title: t("landing.feature.opt.title"), desc: t("landing.feature.opt.desc"), gradient: "from-violet-500/20 to-purple-500/20", accent: "#7c3aed" },
+    { icon: Shield, title: t("landing.feature.priv.title"), desc: t("landing.feature.priv.desc"), gradient: "from-amber-500/20 to-orange-500/20", accent: "#d97706" },
   ];
   return (
     <section id="features" className="py-20 bg-gradient-to-b from-muted/50 to-background">
@@ -250,7 +250,8 @@ function Features() {
           {items.map((it, i) => (
             <Reveal key={it.title} delay={i * 0.08} y={50} whileHover={{ y: -8, scale: 1.02 }}
               className={`group rounded-2xl border border-border bg-gradient-to-br ${it.gradient} p-6 shadow-card cursor-default backdrop-blur-sm`}>
-              <div className="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-xl bg-background/80 text-primary shadow-sm transition-all group-hover:shadow-md group-hover:scale-110">
+              <div className="feature-icon-badge mb-4 inline-flex h-12 w-12 items-center justify-center rounded-xl bg-background/80 shadow-sm transition-all group-hover:shadow-md group-hover:scale-110"
+                style={{ color: it.accent, ["--accent" as string]: it.accent, animationDelay: `${i * 0.25}s` }}>
                 <it.icon className="h-5 w-5" />
               </div>
               <h3 className="text-base font-semibold mb-2">{it.title}</h3>
