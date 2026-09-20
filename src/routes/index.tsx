@@ -5,7 +5,7 @@ import { motion, useInView, useMotionValue, useSpring } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import {
   ArrowRight, CheckCircle2, Building2, Globe2,
-  Clock, Shield, Sparkles, TrendingUp, Calculator,
+  Clock, Shield, Sparkles, TrendingUp, Calculator, Lock, ChevronDown,
 } from "lucide-react";
 import { useT } from "@/contexts/LanguageContext";
 import { PublicLanguageSwitcher } from "@/components/common/PublicLanguageSwitcher";
@@ -104,7 +104,9 @@ function Landing() {
       <Features />
       <Modules />
       <Optimization />
+      <Path />
       <CTASection />
+      <FAQ />
       <Footer />
     </div>
   );
@@ -366,6 +368,115 @@ function Optimization() {
               </div>
             </div>
           </motion.div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function Path() {
+  const t = useT();
+  const steps = [
+    { title: t("landing.path.step1.title"), desc: t("landing.path.step1.desc") },
+    { title: t("landing.path.step2.title"), desc: t("landing.path.step2.desc") },
+    { title: t("landing.path.step3.title"), desc: t("landing.path.step3.desc") },
+    { title: t("landing.path.step4.title"), desc: t("landing.path.step4.desc") },
+  ];
+  const trust = [
+    { icon: Lock, title: t("landing.trust.isolation.title"), desc: t("landing.trust.isolation.desc") },
+    { icon: Shield, title: t("landing.trust.encryption.title"), desc: t("landing.trust.encryption.desc") },
+    { icon: CheckCircle2, title: t("landing.trust.noCommitment.title"), desc: t("landing.trust.noCommitment.desc") },
+  ];
+  return (
+    <section className="py-20 bg-background">
+      <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+        <Reveal y={45} scale={0.96} className="mx-auto max-w-2xl text-center mb-16">
+          <h2 className="text-3xl font-bold tracking-tight text-emerald-800 sm:text-4xl">{t("landing.path.title")}</h2>
+          <p className="mt-3 text-muted-foreground">{t("landing.path.subtitle")}</p>
+        </Reveal>
+
+        <div className="relative">
+          {/* Ligne pointillée continue derrière les 4 puces numérotées : chaque
+              puce a un fond opaque qui la recouvre à son emplacement, ce qui
+              donne visuellement des segments entre les puces sans calcul de
+              position par élément. */}
+          <div className="pointer-events-none absolute left-0 right-0 top-6 hidden border-t-2 border-dashed border-border lg:block" />
+          <div className="relative grid gap-10 sm:grid-cols-2 lg:grid-cols-4">
+            {steps.map((s, i) => (
+              <Reveal key={s.title} delay={i * 0.1} y={30} className="text-center">
+                <div className="relative z-10 mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-emerald-600 to-teal-600 text-base font-extrabold text-white shadow-lg shadow-emerald-600/30">
+                  {i + 1}
+                </div>
+                <h3 className="text-sm font-semibold mb-1.5">{s.title}</h3>
+                <p className="text-sm text-muted-foreground leading-relaxed">{s.desc}</p>
+              </Reveal>
+            ))}
+          </div>
+        </div>
+
+        <div className="mt-14 grid gap-4 sm:grid-cols-3">
+          {trust.map((tr, i) => (
+            <Reveal key={tr.title} delay={i * 0.08} y={30}
+              className="flex items-start gap-3 rounded-2xl border border-border bg-muted p-5">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                <tr.icon className="h-4.5 w-4.5" />
+              </div>
+              <div>
+                <h4 className="text-sm font-semibold mb-1">{tr.title}</h4>
+                <p className="text-xs text-muted-foreground leading-relaxed">{tr.desc}</p>
+              </div>
+            </Reveal>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function FAQItem({ q, a }: { q: string; a: string }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="overflow-hidden rounded-2xl border border-border bg-card">
+      <button onClick={() => setOpen((v) => !v)}
+        className="flex w-full items-center justify-between gap-3 px-5 py-4 text-left">
+        <span className="text-sm font-semibold">{q}</span>
+        <ChevronDown className={`h-4 w-4 shrink-0 text-primary transition-transform duration-300 ${open ? "rotate-180" : ""}`} />
+      </button>
+      <div className="grid transition-[grid-template-rows] duration-300 ease-out" style={{ gridTemplateRows: open ? "1fr" : "0fr" }}>
+        <div className="overflow-hidden">
+          <p className="px-5 pb-4 text-sm leading-relaxed text-muted-foreground">{a}</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function FAQ() {
+  const t = useT();
+  const items = [
+    { q: t("landing.faq.q1.title"), a: t("landing.faq.q1.answer") },
+    { q: t("landing.faq.q2.title"), a: t("landing.faq.q2.answer") },
+    { q: t("landing.faq.q3.title"), a: t("landing.faq.q3.answer") },
+    { q: t("landing.faq.q4.title"), a: t("landing.faq.q4.answer") },
+    { q: t("landing.faq.q5.title"), a: t("landing.faq.q5.answer") },
+    { q: t("landing.faq.q6.title"), a: t("landing.faq.q6.answer") },
+    { q: t("landing.faq.q7.title"), a: t("landing.faq.q7.answer") },
+    { q: t("landing.faq.q8.title"), a: t("landing.faq.q8.answer") },
+    { q: t("landing.faq.q9.title"), a: t("landing.faq.q9.answer") },
+  ];
+  return (
+    <section className="py-20 bg-muted/40">
+      <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8">
+        <Reveal y={45} scale={0.96} className="mx-auto max-w-2xl text-center mb-14">
+          <h2 className="text-3xl font-bold tracking-tight text-emerald-800 sm:text-4xl">{t("landing.faq.title")}</h2>
+          <p className="mt-3 text-muted-foreground">{t("landing.faq.subtitle")}</p>
+        </Reveal>
+        <div className="space-y-3">
+          {items.map((it, i) => (
+            <Reveal key={it.q} delay={i * 0.05} y={20}>
+              <FAQItem q={it.q} a={it.a} />
+            </Reveal>
+          ))}
         </div>
       </div>
     </section>
