@@ -447,6 +447,29 @@
   .shine:hover::after {
     transform: translateX(120%);
   }
+  .hero-stat-card {
+    position: relative;
+    overflow: hidden;
+    isolation: isolate;
+    animation: hero-halo-border 3.2s ease-in-out infinite;
+  }
+  .hero-stat-card::before {
+    content: "";
+    position: absolute;
+    inset: -30%;
+    z-index: 0;
+    background: radial-gradient(circle, rgba(52, 211, 153, 0.35), transparent 65%);
+    animation: hero-halo-glow 3.2s ease-in-out infinite;
+    pointer-events: none;
+  }
+  @keyframes hero-halo-glow {
+    0%, 100% { opacity: 0.25; transform: scale(0.9); }
+    50% { opacity: 0.7; transform: scale(1.08); }
+  }
+  @keyframes hero-halo-border {
+    0%, 100% { box-shadow: 0 0 0 1px rgba(110, 231, 183, 0.12), 0 0 0px rgba(52, 211, 153, 0); }
+    50% { box-shadow: 0 0 0 1px rgba(110, 231, 183, 0.45), 0 0 28px rgba(52, 211, 153, 0.35); }
+  }
 
   @media (prefers-reduced-motion: reduce) {
     .tilt-3d,
@@ -454,7 +477,9 @@
     .press,
     .kpi-pop,
     .chart-rise,
-    .shine::after {
+    .shine::after,
+    .hero-stat-card,
+    .hero-stat-card::before {
       animation: none !important;
       transition: none !important;
       transform: none !important;

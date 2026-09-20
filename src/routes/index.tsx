@@ -194,12 +194,13 @@ function Hero() {
             {commissionItems.map((it, i) => (
               <motion.div key={it.label} initial={{ opacity: 0, y: 10 }} animate={inView ? { opacity: 1, y: 0 } : {}}
                 transition={{ duration: 0.4, delay: 0.9 + i * 0.1 }}
-                className="rounded-2xl border border-white/10 bg-white/5 backdrop-blur-xl p-5 text-left">
-                <div className="whitespace-nowrap text-lg font-extrabold tracking-tight text-emerald-300 tabular-nums sm:text-xl">
+                className="hero-stat-card rounded-2xl border border-white/10 bg-white/5 backdrop-blur-xl p-5 text-left"
+                style={{ animationDelay: `${i * 0.4}s` }}>
+                <div className="relative z-[1] whitespace-nowrap text-lg font-extrabold tracking-tight text-emerald-300 tabular-nums sm:text-xl">
                   <AnimRangeText text={it.num} inView={inView} />
                 </div>
-                <p className="mt-2 text-sm font-bold text-white">{it.label}</p>
-                <p className="mt-1 text-sm text-white/60 leading-relaxed">{it.desc}</p>
+                <p className="relative z-[1] mt-2 text-sm font-bold text-white">{it.label}</p>
+                <p className="relative z-[1] mt-1 text-sm text-white/60 leading-relaxed">{it.desc}</p>
               </motion.div>
             ))}
           </div>
