@@ -21,6 +21,7 @@ import {
   consolidatePensionBenefits,
   consolidateOptimizedBenefits,
   getOptimizationAssumptions,
+  pickConsolidationReferences,
   PENSION_EVENT_LABELS,
 } from "@/lib/pension-consolidation";
 import { projectLPP } from "@/lib/lpp";
@@ -368,7 +369,7 @@ export function exportSynthesisReportPdf(args: SynthesisReportArgs): void {
   // évite de faire passer une divergence pour une erreur de calcul.
   pdf.newPage();
   toc.push({ title: "Prestations consolidées", page: pdf.doc.getCurrentPageInfo().pageNumber });
-  drawConsolidatedBenefitsPage(pdf, client, pension, assets);
+  drawConsolidatedBenefitsPage(pdf, client, pension, assets, entries);
 
   // ---------- PAGES SIMULATIONS ----------
   // Les simulations s'enchaînent à la suite les unes des autres, sans saut
@@ -825,15 +826,17 @@ function drawConsolidatedBenefitsPage(
   client: Client,
   pension: ClientPension | null,
   assets: ClientAssets | null,
+  entries: HistoryEntry[],
 ) {
   pdf.section("Prestations consolidées");
   pdf.richParagraph(
-    "Ce chiffre réunit **tout ce que votre dossier finance à la retraite** : 1er pilier AVS/AI, 2e pilier LPP et 3e pilier, calculé à partir des données actuelles de votre situation. C'est notre référence officielle. Les simulations détaillées qui suivent explorent chacune un scénario particulier, comme un montant de rachat étalé sur quelques années ou une hypothèse de capital testée ponctuellement, et peuvent donc légèrement s'en écarter : ce n'est pas une erreur, simplement un scénario différent de cette vue d'ensemble.",
+    "Ce chiffre réunit **tout ce que votre dossier finance à la retraite** : 1er pilier AVS/AI, 2e pilier LPP et 3e pilier. C'est notre référence officielle. Quand une simulation « Rente AVS/AI », « LPP & rachats » ou « Pilier 3a » a été enregistrée pour ce client, ce sont exactement ses résultats qui sont repris ici — les mêmes que sur la page dédiée de ce document, jamais un recalcul différent. À défaut de simulation enregistrée pour un pilier, une estimation est utilisée et signalée comme telle ci-dessous.",
   );
 
   const bundle = { client, pension, assets };
-  const current = consolidatePensionBenefits(bundle);
-  const optimized = consolidateOptimizedBenefits(bundle);
+  const refs = pickConsolidationReferences(entries);
+  const current = consolidatePensionBenefits(bundle, refs);
+  const optimized = consolidateOptimizedBenefits(bundle, refs);
 
   if (!current.retirement) {
     pdf.spacer(2);

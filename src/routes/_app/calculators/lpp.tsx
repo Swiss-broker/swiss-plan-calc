@@ -95,7 +95,9 @@ function LppCalc() {
     pillar3aContributions: 0,
     healthInsurancePremiums: 0,
     confession: "none" as NonNullable<IncomeTaxInput["confession"]>,
-    // Rentes LPP du certificat (invalidité / orphelin / veuf-veuve)
+    // Rentes LPP du certificat (vieillesse / invalidité / orphelin / veuf-veuve)
+    oldAgeAmount: 0,
+    oldAgePeriod: "year" as "year" | "month",
     disabilityAmount: 0,
     disabilityPeriod: "year" as "year" | "month",
     orphanAmount: 0,
@@ -634,6 +636,15 @@ function LppCalc() {
             totalFees: projection.totalFees,
             totalBuybacks: projection.totalBuybacks,
             totalTaxSavings: buybackPlan.totalTaxSavings,
+            // Rentes du certificat LPP saisies à la main (chiffre officiel de
+            // la caisse) : source prioritaire pour « Prestations consolidées »
+            // et le PDF de synthèse, avant toute estimation recalculée.
+            certificateAnnualPensions: {
+              oldAge: certAmountToAnnual(form.oldAgeAmount, form.oldAgePeriod) || undefined,
+              disability: certAmountToAnnual(form.disabilityAmount, form.disabilityPeriod) || undefined,
+              orphan: certAmountToAnnual(form.orphanAmount, form.orphanPeriod) || undefined,
+              widow: certAmountToAnnual(form.widowAmount, form.widowPeriod) || undefined,
+            },
             // Trajectoire année par année (âge → capital), pour le graphique
             // d'évolution du PDF de synthèse. Simple retranscription de
             // projection.yearly, déjà calculé ci-dessus — aucune valeur
@@ -1042,6 +1053,8 @@ const MAX_ORPHAN_CHILDREN = 3;
 
 type CertForm = {
   children: number;
+  oldAgeAmount: number;
+  oldAgePeriod: "year" | "month";
   disabilityAmount: number;
   disabilityPeriod: "year" | "month";
   orphanAmount: number;
@@ -1049,6 +1062,14 @@ type CertForm = {
   widowAmount: number;
   widowPeriod: "year" | "month";
 };
+
+/** Convertit un montant du certificat (mensuel ou annuel) en montant annuel.
+ *  Partagée entre CertificatePensionsCard (aperçu) et le résumé sauvegardé
+ *  par SaveSimulationButton dans LppCalc, pour ne jamais avoir deux calculs
+ *  qui divergent. */
+export function certAmountToAnnual(a: number, p: "year" | "month"): number {
+  return p === "month" ? a * 12 : a;
+}
 
 function CertificatePensionsCard({
   form,
@@ -1061,9 +1082,12 @@ function CertificatePensionsCard({
     onChange({ [k]: v } as Partial<CertForm>);
   const t = useT();
 
-  const toAnnual = (a: number, p: "year" | "month") => (p === "month" ? a * 12 : a);
+  const toAnnual = certAmountToAnnual;
   const toMonthly = (a: number, p: "year" | "month") =>
     p === "month" ? a : Math.round(a / 12);
+
+  const oldAgeAnnual = toAnnual(form.oldAgeAmount, form.oldAgePeriod);
+  const oldAgeMonthly = toMonthly(form.oldAgeAmount, form.oldAgePeriod);
 
   const disabilityAnnual = toAnnual(form.disabilityAmount, form.disabilityPeriod);
   const disabilityMonthly = toMonthly(form.disabilityAmount, form.disabilityPeriod);
@@ -1083,7 +1107,16 @@ function CertificatePensionsCard({
       title={t("calc.lpp.cert.card_title")}
       description={t("calc.lpp.cert.card_desc")}
     >
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <CertBlock
+          title={t("calc.lpp.cert.oldage_title")}
+          amount={form.oldAgeAmount}
+          period={form.oldAgePeriod}
+          onAmount={(v) => set("oldAgeAmount", v)}
+          onPeriod={(p) => set("oldAgePeriod", p)}
+          monthly={oldAgeMonthly}
+          annual={oldAgeAnnual}
+        />
         <CertBlock
           title={t("calc.lpp.cert.disability_title")}
           amount={form.disabilityAmount}
@@ -1140,6 +1173,11 @@ function CertificatePensionsCard({
           {t("calc.lpp.cert.summary_title")}
         </div>
         <div className="mt-2 space-y-1.5 text-sm">
+          <SummaryRow
+            label={t("calc.lpp.cert.summary_oldage")}
+            monthly={oldAgeMonthly}
+            annual={oldAgeAnnual}
+          />
           <SummaryRow
             label={t("calc.lpp.cert.summary_disability")}
             monthly={disabilityMonthly}

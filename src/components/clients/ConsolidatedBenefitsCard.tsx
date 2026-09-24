@@ -19,6 +19,7 @@ import {
   type SplitRow,
 } from "@/components/calculators/SplitCompareLayout";
 import type { ClientBundle } from "@/lib/client-dashboard";
+import { useConsolidationReferences } from "@/hooks/useConsolidationReferences";
 
 interface Props {
   bundle: ClientBundle;
@@ -31,8 +32,13 @@ const EVENT_ICONS: Record<PensionEvent, typeof HeartHandshake> = {
 };
 
 export function ConsolidatedBenefitsCard({ bundle }: Props) {
-  const current = useMemo(() => consolidatePensionBenefits(bundle), [bundle]);
-  const optimized = useMemo(() => consolidateOptimizedBenefits(bundle), [bundle]);
+  // "Actuel" reprend les résultats des dernières simulations AVS/AI, LPP et
+  // 3a réellement sauvegardées pour ce client (même sélection que le PDF de
+  // synthèse) — jamais un recalcul indépendant qui pourrait afficher un
+  // chiffre différent de celui du calculateur dédié.
+  const { data: refs } = useConsolidationReferences(bundle.client.id);
+  const current = useMemo(() => consolidatePensionBenefits(bundle, refs), [bundle, refs]);
+  const optimized = useMemo(() => consolidateOptimizedBenefits(bundle, refs), [bundle, refs]);
   const [tab, setTab] = useState<PensionEvent>("retirement");
 
   return (

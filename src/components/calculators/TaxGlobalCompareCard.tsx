@@ -9,15 +9,14 @@
 //   marginal. La liste des champs modifiés est affichée pour rendre
 //   l'impact compréhensible.
 
-import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { Camera, RotateCcw, ArrowRight as ArrowRightIcon } from "lucide-react";
+import { useMemo, type ReactNode } from "react";
+import { ArrowRight as ArrowRightIcon } from "lucide-react";
 
 import { CalcCard } from "@/components/calculators/CalcUI";
 import {
   SplitCompareLayout,
   type SplitRow,
 } from "@/components/calculators/SplitCompareLayout";
-import { Button } from "@/components/ui/button";
 
 import { formatCHF } from "@/lib/format";
 import { computeTaxGlobal } from "@/lib/tax-global/engine";
@@ -32,8 +31,10 @@ import type { TaxGlobalInput, TaxGlobalResult } from "@/lib/tax-global/types";
 interface Props {
   form: TaxGlobalInput;
   result: TaxGlobalResult;
-  /** Identifiant client : si présent, la base est resynchronisée au changement. */
-  clientId?: string;
+  /** Base de comparaison ("avant"), définie par le bouton « Définir comme
+   *  base » situé en haut de page — plus la peine de descendre jusqu'ici
+   *  pour la fixer avant d'ajuster les champs d'optimisation. */
+  baseline: TaxGlobalInput;
 }
 
 // Champs numériques surveillés pour détecter une modification utilisateur.
@@ -134,29 +135,7 @@ function diffForms(base: TaxGlobalInput, curr: TaxGlobalInput): FieldDiff[] {
   return diffs;
 }
 
-export function TaxGlobalCompareCard({ form, result, clientId }: Props) {
-  // Base de comparaison : snapshot initial du formulaire.
-  const [baseline, setBaseline] = useState<TaxGlobalInput>(form);
-  const initializedRef = useRef(false);
-  const lastClientRef = useRef<string | undefined>(clientId);
-
-  // Resynchroniser la base lorsqu'on change de client (prefill).
-  useEffect(() => {
-    if (lastClientRef.current !== clientId) {
-      lastClientRef.current = clientId;
-      setBaseline(form);
-      initializedRef.current = true;
-      return;
-    }
-    // Première hydratation : si la base est encore le default et le form a été
-    // peuplé par le prefill, on resynchronise une seule fois.
-    if (!initializedRef.current) {
-      setBaseline(form);
-      initializedRef.current = true;
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [clientId, form.grossSalary, form.canton, form.permit, form.civilStatus]);
-
+export function TaxGlobalCompareCard({ form, result, baseline }: Props) {
   const baselineResult = useMemo(() => computeTaxGlobal(baseline), [baseline]);
 
   const diffs = useMemo(() => diffForms(baseline, form), [baseline, form]);
@@ -332,35 +311,10 @@ export function TaxGlobalCompareCard({ form, result, clientId }: Props) {
       <p className="mb-3 text-xs text-muted-foreground">
         Comparez la situation de référence (base figée) avec la situation
         simulée en direct. Cliquez sur une pastille verte ou rouge pour voir
-        quels champs précis ont produit l'écart.
+        quels champs précis ont produit l'écart. Base figée via le bouton «
+        Définir comme base » en haut de page, juste après avoir saisi la
+        situation actuelle du client.
       </p>
-
-      {/* Barre d'actions base */}
-      <div className="mb-4 flex flex-wrap items-center gap-2">
-        <Button
-          type="button"
-          size="sm"
-          variant="outline"
-          onClick={() => setBaseline(form)}
-          className="gap-1.5"
-        >
-          <Camera className="h-3.5 w-3.5" />
-          Définir comme base
-        </Button>
-        {hasChanges && (
-          <Button
-            type="button"
-            size="sm"
-            variant="ghost"
-            onClick={() => setBaseline(form)}
-            className="gap-1.5 text-muted-foreground"
-            title="Réinitialiser la base sur les valeurs actuelles"
-          >
-            <RotateCcw className="h-3.5 w-3.5" />
-            Réinitialiser la base
-          </Button>
-        )}
-      </div>
 
       {/* Liste des changements - grille tabulaire propre */}
       {hasChanges ? (

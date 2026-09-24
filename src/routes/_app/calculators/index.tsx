@@ -42,6 +42,7 @@ const MODULES: ModuleDef[] = [
       { to: "/calculators/lpp", labelKey: "calc.lpp.title" },
       { to: "/calculators/vested-benefits", labelKey: "calc.vested.title" },
       { to: "/calculators/pillar3a", labelKey: "calc.pillar3a.title" },
+      { to: "/calculators/consolidated-benefits", labelKey: "calc.consolidated.title" },
     ],
   },
   {

@@ -55,6 +55,7 @@ import { Route as AppCalculatorsHealthInsuranceFranceRouteImport } from './route
 import { Route as AppCalculatorsFxClaimRouteImport } from './routes/_app/calculators/fx-claim'
 import { Route as AppCalculatorsDirectorCompensationRouteImport } from './routes/_app/calculators/director-compensation'
 import { Route as AppCalculatorsCrossBorderRouteImport } from './routes/_app/calculators/cross-border'
+import { Route as AppCalculatorsConsolidatedBenefitsRouteImport } from './routes/_app/calculators/consolidated-benefits'
 import { Route as AppCalculatorsCantonCompareRouteImport } from './routes/_app/calculators/canton-compare'
 import { Route as AppCalculatorsAvsAiRouteImport } from './routes/_app/calculators/avs-ai'
 import { Route as AppCompaniesCompanyIdEditRouteImport } from './routes/_app/companies/$companyId_.edit'
@@ -296,6 +297,12 @@ const AppCalculatorsCrossBorderRoute =
     path: '/cross-border',
     getParentRoute: () => AppCalculatorsRoute,
   } as any)
+const AppCalculatorsConsolidatedBenefitsRoute =
+  AppCalculatorsConsolidatedBenefitsRouteImport.update({
+    id: '/consolidated-benefits',
+    path: '/consolidated-benefits',
+    getParentRoute: () => AppCalculatorsRoute,
+  } as any)
 const AppCalculatorsCantonCompareRoute =
   AppCalculatorsCantonCompareRouteImport.update({
     id: '/canton-compare',
@@ -352,6 +359,7 @@ export interface FileRoutesByFullPath {
   '/shared/$token': typeof SharedTokenRoute
   '/calculators/avs-ai': typeof AppCalculatorsAvsAiRoute
   '/calculators/canton-compare': typeof AppCalculatorsCantonCompareRoute
+  '/calculators/consolidated-benefits': typeof AppCalculatorsConsolidatedBenefitsRoute
   '/calculators/cross-border': typeof AppCalculatorsCrossBorderRoute
   '/calculators/director-compensation': typeof AppCalculatorsDirectorCompensationRoute
   '/calculators/fx-claim': typeof AppCalculatorsFxClaimRoute
@@ -402,6 +410,7 @@ export interface FileRoutesByTo {
   '/shared/$token': typeof SharedTokenRoute
   '/calculators/avs-ai': typeof AppCalculatorsAvsAiRoute
   '/calculators/canton-compare': typeof AppCalculatorsCantonCompareRoute
+  '/calculators/consolidated-benefits': typeof AppCalculatorsConsolidatedBenefitsRoute
   '/calculators/cross-border': typeof AppCalculatorsCrossBorderRoute
   '/calculators/director-compensation': typeof AppCalculatorsDirectorCompensationRoute
   '/calculators/fx-claim': typeof AppCalculatorsFxClaimRoute
@@ -456,6 +465,7 @@ export interface FileRoutesById {
   '/shared/$token': typeof SharedTokenRoute
   '/_app/calculators/avs-ai': typeof AppCalculatorsAvsAiRoute
   '/_app/calculators/canton-compare': typeof AppCalculatorsCantonCompareRoute
+  '/_app/calculators/consolidated-benefits': typeof AppCalculatorsConsolidatedBenefitsRoute
   '/_app/calculators/cross-border': typeof AppCalculatorsCrossBorderRoute
   '/_app/calculators/director-compensation': typeof AppCalculatorsDirectorCompensationRoute
   '/_app/calculators/fx-claim': typeof AppCalculatorsFxClaimRoute
@@ -510,6 +520,7 @@ export interface FileRouteTypes {
     | '/shared/$token'
     | '/calculators/avs-ai'
     | '/calculators/canton-compare'
+    | '/calculators/consolidated-benefits'
     | '/calculators/cross-border'
     | '/calculators/director-compensation'
     | '/calculators/fx-claim'
@@ -560,6 +571,7 @@ export interface FileRouteTypes {
     | '/shared/$token'
     | '/calculators/avs-ai'
     | '/calculators/canton-compare'
+    | '/calculators/consolidated-benefits'
     | '/calculators/cross-border'
     | '/calculators/director-compensation'
     | '/calculators/fx-claim'
@@ -613,6 +625,7 @@ export interface FileRouteTypes {
     | '/shared/$token'
     | '/_app/calculators/avs-ai'
     | '/_app/calculators/canton-compare'
+    | '/_app/calculators/consolidated-benefits'
     | '/_app/calculators/cross-border'
     | '/_app/calculators/director-compensation'
     | '/_app/calculators/fx-claim'
@@ -981,6 +994,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppCalculatorsCrossBorderRouteImport
       parentRoute: typeof AppCalculatorsRoute
     }
+    '/_app/calculators/consolidated-benefits': {
+      id: '/_app/calculators/consolidated-benefits'
+      path: '/consolidated-benefits'
+      fullPath: '/calculators/consolidated-benefits'
+      preLoaderRoute: typeof AppCalculatorsConsolidatedBenefitsRouteImport
+      parentRoute: typeof AppCalculatorsRoute
+    }
     '/_app/calculators/canton-compare': {
       id: '/_app/calculators/canton-compare'
       path: '/canton-compare'
@@ -1022,6 +1042,7 @@ declare module '@tanstack/react-router' {
 interface AppCalculatorsRouteChildren {
   AppCalculatorsAvsAiRoute: typeof AppCalculatorsAvsAiRoute
   AppCalculatorsCantonCompareRoute: typeof AppCalculatorsCantonCompareRoute
+  AppCalculatorsConsolidatedBenefitsRoute: typeof AppCalculatorsConsolidatedBenefitsRoute
   AppCalculatorsCrossBorderRoute: typeof AppCalculatorsCrossBorderRoute
   AppCalculatorsDirectorCompensationRoute: typeof AppCalculatorsDirectorCompensationRoute
   AppCalculatorsFxClaimRoute: typeof AppCalculatorsFxClaimRoute
@@ -1042,6 +1063,8 @@ interface AppCalculatorsRouteChildren {
 const AppCalculatorsRouteChildren: AppCalculatorsRouteChildren = {
   AppCalculatorsAvsAiRoute: AppCalculatorsAvsAiRoute,
   AppCalculatorsCantonCompareRoute: AppCalculatorsCantonCompareRoute,
+  AppCalculatorsConsolidatedBenefitsRoute:
+    AppCalculatorsConsolidatedBenefitsRoute,
   AppCalculatorsCrossBorderRoute: AppCalculatorsCrossBorderRoute,
   AppCalculatorsDirectorCompensationRoute:
     AppCalculatorsDirectorCompensationRoute,

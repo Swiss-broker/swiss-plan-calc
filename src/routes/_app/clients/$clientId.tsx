@@ -65,7 +65,6 @@ import {
   DashboardPension,
   DashboardWealthSummary,
 } from "@/components/clients/ClientDashboardSections";
-import { ConsolidatedBenefitsCard } from "@/components/clients/ConsolidatedBenefitsCard";
 import { ClientCompanyCard } from "@/components/clients/ClientCompanyCard";
 import { DeleteConfirmDialog } from "@/components/common/DeleteConfirmDialog";
 import { ArchiveConfirmDialog } from "@/components/common/ArchiveConfirmDialog";
@@ -437,10 +436,6 @@ function ClientDetailPage() {
           </TabsTrigger>
           <TabsTrigger value="fiscal">Fiscalité</TabsTrigger>
           <TabsTrigger value="pension">Prévoyance</TabsTrigger>
-          <TabsTrigger value="consolidated" className="gap-1">
-            <HeartHandshake className="h-3.5 w-3.5" />
-            Prestations consolidées
-          </TabsTrigger>
           <TabsTrigger value="patrimoine">Patrimoine</TabsTrigger>
           <TabsTrigger value="family">Famille</TabsTrigger>
           <TabsTrigger value="notes">Notes</TabsTrigger>
@@ -554,6 +549,12 @@ function ClientDetailPage() {
           {dashboard?.hasEnoughData && (
             <DashboardPension dashboard={dashboard} clientId={clientId} />
           )}
+          <Button asChild size="sm" variant="outline">
+            <Link to="/calculators/consolidated-benefits" search={{ clientId }}>
+              <HeartHandshake className="h-3.5 w-3.5" />
+              Voir les prestations consolidées (1er + 2e + 3e pilier)
+            </Link>
+          </Button>
           <div className="grid gap-4 lg:grid-cols-2">
             <Card title="2e pilier (LPP)">
               <Row label="Plan" value={pension ? LPP_PLAN_LABELS[pension.lpp_plan] : "—"} />
@@ -632,16 +633,6 @@ function ClientDetailPage() {
                 </Button>
               </div>
             </Card>
-          )}
-        </TabsContent>
-
-        <TabsContent value="consolidated" className="mt-4 space-y-6">
-          {bundle ? (
-            <ConsolidatedBenefitsCard bundle={bundle} />
-          ) : (
-            <p className="text-sm text-muted-foreground">
-              Données insuffisantes pour calculer les prestations consolidées (date de naissance, salaire ou avoirs manquants).
-            </p>
           )}
         </TabsContent>
 

@@ -192,9 +192,20 @@ function Pillar3aCalc() {
     [form.pillar3bCurrent, form.pillar3bReturn, form.pillar3bYears, target3bYearly],
   );
 
-  // Impôt de sortie : actuel = retrait unique sur 3a projeté ; projeté =
-  // fractionné sur N comptes (utilise le stag déjà calculé sur withdrawalCapital,
-  // mais on recalcule ici sur le capital 3a projeté pour cohérence).
+  // Impôt de sortie — deux effets distincts, jamais mélangés dans une même
+  // ligne de comparaison (cf. audit) :
+  // 1. L'effet "capital plus élevé" : même méthode (retrait unique) des deux
+  //    côtés, seul le capital change (actuel vs projeté).
+  // 2. L'effet "fractionnement" : même capital (le projeté) des deux côtés,
+  //    seule la méthode de retrait change (unique vs étalé sur N comptes) —
+  //    taxStaggeredProjected.totalTaxSingle calcule déjà l'impôt "retrait
+  //    unique" sur ce même capital projeté (staggeredWithdrawal l'évalue
+  //    systématiquement sur tout `totalCapital`, indépendamment du nombre
+  //    de comptes), pas besoin d'un second appel.
+  // Avant, la ligne "actuel" utilisait le petit capital en retrait unique et
+  // la ligne "projeté" le gros capital en retrait fractionné : le delta
+  // mélangeait les deux effets sous une étiquette qui n'en isolait aucun,
+  // et pouvait afficher une hausse d'impôt sous une case verte "Optimisé".
   const taxLumpCurrent = useMemo(
     () =>
       staggeredWithdrawal({
@@ -215,6 +226,11 @@ function Pillar3aCalc() {
       }),
     [optimizedProjection.finalBalance, form.withdrawalAccounts, form.canton, form.status],
   );
+  // Économie réellement imputable au fractionnement seul (même capital
+  // projeté des deux côtés) — peut être modeste : la part cantonale de
+  // capitalWithdrawalTax est un taux fixe par canton, non progressif, donc
+  // seule la petite part IFD (1/5 du barème) bénéficie du fractionnement.
+  const fractioningSavings = taxStaggeredProjected.totalTaxSingle - taxStaggeredProjected.totalTaxSeparated;
 
   const currentTotalPrivate = projection.finalBalance + current3bFinal;
   const projectedTotalPrivate = optimizedProjection.finalBalance + optimized3bFinal;
@@ -252,11 +268,18 @@ function Pillar3aCalc() {
         betterWhen: "higher",
       },
       {
-        label: "Impôt sur le retrait (unique vs fractionné)",
+        label: "Impôt sur le retrait (capital projeté, retrait unique)",
         current: taxLumpCurrent.totalTaxSingle,
+        projected: taxStaggeredProjected.totalTaxSingle,
+        betterWhen: "lower",
+        hint: "Même méthode de retrait (unique) des deux côtés : isole l'effet d'avoir plus de capital, sans le mélanger au fractionnement.",
+      },
+      {
+        label: "Fractionnement du retrait (capital projeté)",
+        current: taxStaggeredProjected.totalTaxSingle,
         projected: taxStaggeredProjected.totalTaxSeparated,
         betterWhen: "lower",
-        hint: `Projeté = retrait étalé sur ${Math.max(2, form.withdrawalAccounts)} comptes.`,
+        hint: `Même capital projeté des deux côtés : retrait unique vs étalé sur ${Math.max(2, form.withdrawalAccounts)} comptes — isole l'effet du fractionnement seul.`,
       },
       {
         label: "Capital net après impôt de sortie",
@@ -500,8 +523,9 @@ useEffect(() => {
             <>
               <strong>D'où vient le gain ?</strong> Capital 3a supplémentaire :{" "}
               {(optimizedProjection.finalBalance - projection.finalBalance).toLocaleString("fr-CH")} CHF · Capital 3b supplémentaire :{" "}
-              {(optimized3bFinal - current3bFinal).toLocaleString("fr-CH")} CHF · Impôt en moins au retrait (fractionnement) :{" "}
-              {(taxLumpCurrent.totalTaxSingle - taxStaggeredProjected.totalTaxSeparated).toLocaleString("fr-CH")} CHF.
+              {(optimized3bFinal - current3bFinal).toLocaleString("fr-CH")} CHF · Impôt de sortie en plus, capital plus élevé (retrait unique dans les deux cas) :{" "}
+              {(taxStaggeredProjected.totalTaxSingle - taxLumpCurrent.totalTaxSingle).toLocaleString("fr-CH")} CHF · Impôt en moins grâce au fractionnement, à capital projeté égal :{" "}
+              {fractioningSavings.toLocaleString("fr-CH")} CHF.
               {isMaxed && " Votre 3a est déjà au maximum légal → le gain provient uniquement du 3b + du fractionnement des retraits."}
             </>
           ),

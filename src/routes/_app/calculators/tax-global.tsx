@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { zodValidator, fallback } from "@tanstack/zod-adapter";
 import { z } from "zod";
-import { Sparkles, Info, ArrowRight, Download } from "lucide-react";
+import { Sparkles, Info, ArrowRight, Download, Camera } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 import { CalcCard, MoneyTile, PctTile, Row, InfoLabel, HelpDot } from "@/components/calculators/CalcUI";
@@ -86,6 +86,31 @@ function TaxGlobalCalc() {
 
   const set = <K extends keyof TaxGlobalInput>(k: K, v: TaxGlobalInput[K]) =>
     setForm((f) => ({ ...f, [k]: v }));
+
+  // Base de comparaison ("avant") du comparateur Avant/Après, pilotée par le
+  // bouton "Définir comme base" du bandeau ci-dessous (en haut de page,
+  // juste après la saisie de la situation actuelle) — plus besoin de
+  // descendre jusqu'au comparateur pour la fixer avant d'ajuster les champs
+  // d'optimisation/déduction.
+  const [baseline, setBaselineState] = useState<TaxGlobalInput>(form);
+  const baselineInitializedRef = useRef(false);
+  const baselineClientRef = useRef<string | undefined>(clientId);
+  useEffect(() => {
+    if (baselineClientRef.current !== clientId) {
+      baselineClientRef.current = clientId;
+      setBaselineState(form);
+      baselineInitializedRef.current = true;
+      return;
+    }
+    // Première hydratation : si la base est encore le default et le form a
+    // été peuplé par le prefill, on resynchronise une seule fois.
+    if (!baselineInitializedRef.current) {
+      setBaselineState(form);
+      baselineInitializedRef.current = true;
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [clientId, form.grossSalary, form.canton, form.permit, form.civilStatus]);
+  const setBaseline = () => setBaselineState(form);
 
   const result = useMemo(() => computeTaxGlobal(form), [form]);
   const scenarios = useMemo(() => buildScenarios(form), [form]);
@@ -202,6 +227,21 @@ function TaxGlobalCalc() {
               )}
             </div>
           </div>
+        </div>
+        <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-white/15 pt-3">
+          <Button
+            type="button"
+            size="sm"
+            variant="secondary"
+            onClick={setBaseline}
+            className="gap-1.5 bg-white/15 text-white hover:bg-white/25"
+          >
+            <Camera className="h-3.5 w-3.5" />
+            Définir comme base
+          </Button>
+          <p className="text-xs opacity-80">
+            Fige la situation actuelle du client comme référence « avant », avant d'ajuster les champs d'optimisation/déduction ci-dessous.
+          </p>
         </div>
       </CalcCard>
 
@@ -981,7 +1021,7 @@ function TaxGlobalCalc() {
       </div>
 
       {/* COMPARATEUR Actuel vs Projeté */}
-      <TaxGlobalCompareCard form={form} result={result} clientId={clientId} />
+      <TaxGlobalCompareCard form={form} result={result} baseline={baseline} />
 
       {/* TRANSPARENCE : comment ce résultat est calculé */}
       <TaxGlobalExplanation form={form} result={result} client={client} />

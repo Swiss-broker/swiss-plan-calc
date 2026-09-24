@@ -40,6 +40,7 @@ import { SaveSimulationButton } from "@/components/calculators/SaveSimulationBut
 import { useBrokerPdfHeader } from "@/hooks/useBrokerPdfHeader";
 import { useT } from "@/contexts/LanguageContext";
 import { useClientDashboard } from "@/hooks/use-client-dashboard";
+import { useConsolidationReferences } from "@/hooks/useConsolidationReferences";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import type {
@@ -140,6 +141,13 @@ function CantonCompareCalc() {
     },
   });
   const dashboard = useClientDashboard(bundle ?? null);
+  // Import "Capitaux retirés à la retraite" : priorité à la dernière
+  // simulation LPP / Pilier 3a réellement sauvegardée pour ce client (même
+  // sélection que le PDF de synthèse), pour ne jamais importer un chiffre
+  // différent de celui affiché sur le calculateur dédié. Repli sur le
+  // recalcul "fiche" (dashboard) uniquement si aucune simulation n'a été
+  // enregistrée pour ce pilier.
+  const { data: consolidationRefs } = useConsolidationReferences(clientId);
   // Fortune nette telle que déclarée sur la fiche (client_assets), pour le
   // contrôle de cohérence sur le champ "Fortune nette" ci-dessous. undefined
   // tant que le bundle n'a pas fini de charger (évite un faux "conforme" à 0
@@ -204,8 +212,16 @@ function CantonCompareCalc() {
   // Mode lump_sum : impôt sur prestation en capital LPP/3a à la retraite.
   // Inchangé, barème séparé, ne dépend pas du régime fiscal courant.
   // ──────────────────────────────────────────────────────────────────────
-  const lppFromFiche = dashboard?.lpp?.projectedCapitalAt65 ?? 0;
-  const p3aFromFiche = dashboard?.pillar3a?.projectedCapitalAt65 ?? 0;
+  const lppSimBalance = Number(
+    (consolidationRefs?.lpp?.summary as Record<string, unknown> | undefined)?.projectedBalance ?? 0,
+  );
+  const p3aSimBalance = Number(
+    (consolidationRefs?.pillar3a?.summary as Record<string, unknown> | undefined)?.finalBalance ?? 0,
+  );
+  const lppFromFiche = lppSimBalance > 0 ? lppSimBalance : (dashboard?.lpp?.projectedCapitalAt65 ?? 0);
+  const p3aFromFiche = p3aSimBalance > 0 ? p3aSimBalance : (dashboard?.pillar3a?.projectedCapitalAt65 ?? 0);
+  const lppFromSavedSim = lppSimBalance > 0;
+  const p3aFromSavedSim = p3aSimBalance > 0;
   const [lppCapitalOverride, setLppCapitalOverride] = useState<number | null>(null);
   const [p3aCapitalOverride, setP3aCapitalOverride] = useState<number | null>(null);
   useEffect(() => {
@@ -439,14 +455,16 @@ function CantonCompareCalc() {
               <Label className="text-xs font-medium text-muted-foreground">Capital LPP projeté à la retraite</Label>
               <BaseNumField value={String(lppCapital)} onChange={(v) => setLppCapitalOverride(Number(v) || 0)} suffix="CHF" />
               <p className="text-[11px] text-muted-foreground">
-                {lppFromFiche > 0
-                  ? `Source : Projection fiche client (rendement 1,25%, frais 0,6%, conversion 6,0%, sans rachats). Modifiable pour what-if.`
-                  : "Aucune projection disponible : complétez l'avoir LPP dans la fiche client."}
+                {lppFromSavedSim
+                  ? "Source : dernière simulation « LPP & rachats » enregistrée pour ce client (capital projeté à la retraite, mêmes hypothèses que le calculateur). Modifiable pour what-if."
+                  : lppFromFiche > 0
+                    ? "Estimation depuis la fiche client (rendement 1,25%, frais 0,6%, conversion 6,0%, sans rachats) : aucune simulation « LPP & rachats » enregistrée pour ce client. Enregistrez-en une pour importer le vrai résultat. Modifiable pour what-if."
+                    : "Aucune projection disponible : complétez l'avoir LPP dans la fiche client."}
                 {lppDivergesFromFiche && (
                   <>
                     {" "}
                     <button type="button" onClick={resetLppFromFiche} className="underline hover:text-foreground">
-                      Réinitialiser depuis la fiche ({formatCHF(lppFromFiche)})
+                      Réinitialiser ({formatCHF(lppFromFiche)})
                     </button>
                   </>
                 )}
@@ -456,14 +474,16 @@ function CantonCompareCalc() {
               <Label className="text-xs font-medium text-muted-foreground">Capital 3e pilier A projeté</Label>
               <BaseNumField value={String(p3aCapital)} onChange={(v) => setP3aCapitalOverride(Number(v) || 0)} suffix="CHF" />
               <p className="text-[11px] text-muted-foreground">
-                {p3aFromFiche > 0
-                  ? "D'après la fiche client (versement annuel + solde existant, rendement 2%). Modifiable."
-                  : "Aucun 3a renseigné en fiche. Saisissez la valeur si pertinent."}
+                {p3aFromSavedSim
+                  ? "Source : dernière simulation « Pilier 3a » enregistrée pour ce client (capital projeté à la retraite, mêmes hypothèses que le calculateur). Modifiable pour what-if."
+                  : p3aFromFiche > 0
+                    ? "Estimation depuis la fiche client (versement annuel + solde existant, rendement 2%) : aucune simulation « Pilier 3a » enregistrée pour ce client. Enregistrez-en une pour importer le vrai résultat. Modifiable."
+                    : "Aucun 3a renseigné en fiche. Saisissez la valeur si pertinent."}
                 {p3aDivergesFromFiche && (
                   <>
                     {" "}
                     <button type="button" onClick={resetP3aFromFiche} className="underline hover:text-foreground">
-                      Réinitialiser depuis la fiche ({formatCHF(p3aFromFiche)})
+                      Réinitialiser ({formatCHF(p3aFromFiche)})
                     </button>
                   </>
                 )}
