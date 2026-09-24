@@ -587,32 +587,46 @@ function buildDeath(
   const pillar2Items: ConsolidatedItem[] = [];
   const cert = certificatePensionsFromRef(refs?.lpp);
   const lppRef = lppRefFigures(refs?.lpp);
+  // fullAiPension sert de base à la rente d'orphelin (20 %) quand aucun
+  // montant de certificat dédié n'est saisi pour elle — calculée séparément
+  // du choix de source pour la rente de veuf/veuve ci-dessous : un client
+  // dont seul le certificat "veuf/veuve" a été saisi (sans montant
+  // "orphelin" distinct) doit quand même obtenir une estimation d'orphelin
+  // au lieu de 0.
   let fullAiPension = 0;
-  let usingCertificate = false;
-  if (isCouple && cert?.widow) {
-    pillar2Items.push(toItem("Rente survivant LPP (certificat)", cert.widow, "LPP"));
-    usingCertificate = true;
-  } else if (lppRef) {
+  if (lppRef) {
     fullAiPension = lppRef.projectedBalance * lppRef.impliedConversionRate;
-    if (isCouple) {
-      pillar2Items.push(
-        toItem("Rente survivant LPP (60 % AI)", Math.round(fullAiPension * 0.6), "LPP"),
-      );
-    }
   } else {
     const lpp = projectClientLPP(b);
     if (lpp && lpp.projectedCapitalAt65 > 0) {
       const conversionRate = lpp.assumptions.conversionRate / 100;
       fullAiPension = lpp.projectedCapitalAt65 * conversionRate;
-      if (isCouple) {
-        pillar2Items.push(
-          toItem("Rente survivant LPP (60 % AI)", Math.round(fullAiPension * 0.6), "LPP"),
-        );
-      }
+    }
+  }
+
+  // Index des lignes sourcées du certificat (jamais extrapolées vers le
+  // scénario optimisé ci-dessous) — suivies individuellement : la rente de
+  // veuf/veuve et celle d'orphelin peuvent avoir des sources différentes
+  // (l'une du certificat, l'autre estimée), ce qu'un simple booléen global
+  // ne peut pas représenter correctement.
+  const certificateSourcedIndices = new Set<number>();
+  if (isCouple && cert?.widow) {
+    certificateSourcedIndices.add(pillar2Items.length);
+    pillar2Items.push(toItem("Rente survivant LPP (certificat)", cert.widow, "LPP"));
+  } else if (isCouple && fullAiPension > 0) {
+    pillar2Items.push(
+      toItem("Rente survivant LPP (60 % AI)", Math.round(fullAiPension * 0.6), "LPP"),
+    );
+    if (!lppRef) {
       notes.push(
         "Rentes LPP survivants estimées : approximation (capital projeté × taux de conversion), aucune simulation « LPP & rachats » enregistrée pour ce client, ni montant de certificat saisi.",
       );
     }
+  }
+  if (!cert?.orphan && fullAiPension > 0 && !lppRef && childrenCount > 0) {
+    notes.push(
+      "Rente d'orphelin LPP estimée : approximation (capital projeté × taux de conversion), aucune simulation « LPP & rachats » enregistrée pour ce client, ni montant de certificat saisi.",
+    );
   }
   for (let i = 0; i < childrenCount; i++) {
     const orphanAnnual = cert?.orphan
@@ -621,6 +635,7 @@ function buildDeath(
         ? Math.round(fullAiPension * 0.2)
         : 0;
     if (orphanAnnual > 0) {
+      if (cert?.orphan) certificateSourcedIndices.add(pillar2Items.length);
       pillar2Items.push(
         toItem(
           `Rente orphelin LPP · ${childLabelsFromBundle(b)[i] ?? `Enfant ${i + 1}`}`,
@@ -631,12 +646,13 @@ function buildDeath(
     }
   }
 
-  if (optimizedBundle && pillar2Items.length > 0 && !usingCertificate) {
+  if (optimizedBundle && pillar2Items.length > certificateSourcedIndices.size) {
     const liveCurrentLpp = projectClientLPP(b);
     const liveOptimizedLpp = projectClientLPP(optimizedBundle);
     if (liveCurrentLpp && liveOptimizedLpp) {
       const factor = growthFactor(liveCurrentLpp.projectedCapitalAt65, liveOptimizedLpp.projectedCapitalAt65);
       for (let i = 0; i < pillar2Items.length; i++) {
+        if (certificateSourcedIndices.has(i)) continue;
         pillar2Items[i] = toItem(pillar2Items[i].label, Math.round(pillar2Items[i].annual * factor), "LPP");
       }
     }
