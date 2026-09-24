@@ -1,6 +1,6 @@
 // Modale "Préparer dossier de synthèse PDF" · V1 française uniquement.
 import { useEffect, useMemo, useState } from "react";
-import { Loader2, FileText } from "lucide-react";
+import { Loader2, FileText, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 import {
   Dialog,
@@ -28,6 +28,7 @@ import type { HistoryEntry } from "@/lib/history/types";
 import { KIND_LABELS } from "@/lib/history/types";
 import { extractGain } from "@/lib/simulations/extract-gain";
 import { exportSynthesisReportPdf } from "@/lib/pdf/synthesis-report";
+import { checkSynthesisConsistency } from "@/lib/pdf/consistency-check";
 import { formatCHF } from "@/lib/format";
 
 interface Props {
@@ -102,6 +103,20 @@ export function SynthesisReportModal({ open, onOpenChange, clientId, entries }: 
     () => entries.filter((e) => selected.has(e.id)),
     [entries, selected],
   );
+
+  // Contrôle de cohérence avant génération (audit point 9) : signale les cas
+  // où le PDF pourrait afficher un chiffre différent de celui attendu par le
+  // courtier (sélection ambiguë, simulation sauvegardée avant une mise à
+  // jour de l'outil). N'empêche pas de générer — c'est un point de
+  // vérification, la décision finale reste au courtier.
+  const consistencyWarnings = useMemo(
+    () => checkSynthesisConsistency(selectedEntries),
+    [selectedEntries],
+  );
+  const [warningsAcknowledged, setWarningsAcknowledged] = useState(false);
+  useEffect(() => {
+    setWarningsAcknowledged(false);
+  }, [consistencyWarnings]);
 
   const handleGenerate = async () => {
     if (!client) {
@@ -258,13 +273,37 @@ export function SynthesisReportModal({ open, onOpenChange, clientId, entries }: 
           </div>
         </ScrollArea>
 
+        {consistencyWarnings.length > 0 && (
+          <div className="rounded-lg border border-warning/40 bg-warning/10 p-3 text-sm">
+            <div className="flex items-center gap-2 font-semibold text-warning">
+              <AlertTriangle className="h-4 w-4" />
+              Incohérence détectée avant génération du PDF
+            </div>
+            <ul className="mt-2 space-y-1.5 text-xs text-foreground/90">
+              {consistencyWarnings.map((w, i) => (
+                <li key={i}>• {w}</li>
+              ))}
+            </ul>
+            <label className="mt-2 flex items-center gap-2 text-xs font-medium">
+              <Checkbox checked={warningsAcknowledged} onCheckedChange={(v) => setWarningsAcknowledged(v === true)} />
+              J'ai vérifié ces points et je souhaite générer le PDF malgré tout
+            </label>
+          </div>
+        )}
+
         <DialogFooter className="gap-2">
           <Button variant="ghost" onClick={() => onOpenChange(false)} disabled={generating}>
             Annuler
           </Button>
           <Button
             onClick={handleGenerate}
-            disabled={generating || loadingClient || selectedEntries.length === 0 || !client}
+            disabled={
+              generating ||
+              loadingClient ||
+              selectedEntries.length === 0 ||
+              !client ||
+              (consistencyWarnings.length > 0 && !warningsAcknowledged)
+            }
             className="gap-2"
           >
             {generating ? (

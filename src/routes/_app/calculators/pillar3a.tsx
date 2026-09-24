@@ -20,6 +20,7 @@ import {
   staggeredWithdrawal,
 } from "@/lib/pillar3";
 import { CalcCard, MoneyTile, Row } from "@/components/calculators/CalcUI";
+import { formatCHF } from "@/lib/format";
 import type { IncomeTaxInput } from "@/lib/tax/income";
 import { SaveSimulationButton } from "@/components/calculators/SaveSimulationButton";
 import { useAuth } from "@/contexts/AuthContext";
@@ -35,6 +36,13 @@ import { FiscalSnapshotBanner } from "@/components/calculators/FiscalSnapshotBan
 import { SplitCompareLayout, type SplitRow } from "@/components/calculators/SplitCompareLayout";
 import { useT } from "@/contexts/LanguageContext";
 import { CrossCalcImpactBanner } from "@/components/calculators/CrossCalcImpactBanner";
+
+// Rente de vieillesse estimée du 3e pilier = capital final ÷ 25 ans
+// (hypothèse d'espérance de vie retenue après l'âge de la retraite) ÷ 12
+// mois. Alignée sur la même hypothèse (25 ans) que la consolidation des 3
+// piliers (src/lib/pension-consolidation), pour ne jamais avoir deux
+// diviseurs différents dans l'app pour le même calcul.
+export const PILLAR3A_OLD_AGE_ANNUITY_YEARS = 25;
 
 const searchSchema = z.object({
   clientId: fallback(z.string().uuid().optional(), undefined),
@@ -72,6 +80,10 @@ function Pillar3aCalc() {
     pillar3bCurrent: 0,
     pillar3bYears: 25,
     pillar3bReturn: 2.0,
+    // Rente d'invalidité du 3e pilier (police liée, si elle existe) —
+    // saisie manuelle uniquement, jamais recalculée : voir audit. 0/vide si
+    // aucune rente d'invalidité n'est prévue par la police du client.
+    disabilityAnnualPension: 0,
   });
   useHydrateFormFromPrefill(simId ? null : prefill, setForm);
 
@@ -121,6 +133,11 @@ function Pillar3aCalc() {
         expectedReturnRate: form.expectedReturn,
       }),
     [form],
+  );
+  // Rente de vieillesse mensuelle estimée à partir du capital final
+  // enregistré dans CETTE simulation — jamais un montant intermédiaire.
+  const oldAgeMonthlyPension = Math.round(
+    projection.finalBalance / PILLAR3A_OLD_AGE_ANNUITY_YEARS / 12,
   );
 
   const stag = useMemo(
@@ -557,6 +574,13 @@ useEffect(() => {
             <MoneyTile label={t("calc.p3a.total_contrib")} value={projection.totalContributions} tip={t("calc.p3a.tip.total_contrib")} />
             <MoneyTile label={t("calc.p3a.total_returns")} value={projection.totalReturns} tone="success" tip={t("calc.p3a.tip.total_returns")} />
           </div>
+          <div className="mt-3 rounded-lg border border-border bg-muted/30 p-3 text-center">
+            <p className="text-[11px] font-medium text-muted-foreground">Rente de vieillesse estimée (capital ÷ 25 ans ÷ 12)</p>
+            <p className="mt-1 text-xl font-semibold tabular-nums text-foreground">{formatCHF(oldAgeMonthlyPension)} / mois</p>
+            <p className="mt-0.5 text-[10.5px] italic text-muted-foreground">
+              Hypothèse : capital final réparti sur 25 ans d'espérance de vie après la retraite.
+            </p>
+          </div>
         </CalcCard>
         <CalcCard title={t("calc.p3a.staggered_card")} description={t("calc.p3a.staggered_desc")}>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -597,6 +621,19 @@ useEffect(() => {
         </div>
       </CalcCard>
 
+      <CalcCard
+        title="Rente d'invalidité (pilier 3)"
+        description="Si la police liée au 3e pilier du client prévoit une rente d'invalidité, saisissez-la ici. Saisie manuelle uniquement — jamais recalculée, laissez à 0 si aucune rente d'invalidité n'existe."
+      >
+        <div className="max-w-xs">
+          <NumField
+            label="Rente d'invalidité annuelle"
+            value={form.disabilityAnnualPension}
+            onChange={(v) => set("disabilityAnnualPension", v)}
+          />
+        </div>
+      </CalcCard>
+
       <div className="flex flex-wrap justify-end gap-2" data-guide="p3a-save">
         <SaveSimulationButton
           kind="pillar3a"
@@ -609,6 +646,14 @@ useEffect(() => {
             totalContributions: projection.totalContributions,
             totalReturns: projection.totalReturns,
             staggeredSavings: stag.savings,
+            // Rente de vieillesse mensuelle = capital final ÷ 25 ans ÷ 12,
+            // reprise telle quelle par la consolidation et le PDF — jamais
+            // recalculée ailleurs à partir d'un autre capital.
+            oldAgeMonthlyPension,
+            // Rente d'invalidité saisie manuellement (police 3e pilier,
+            // le cas échéant) — reprise telle quelle par la consolidation
+            // et le comparateur cantonal, jamais recalculée.
+            disabilityAnnualPension: form.disabilityAnnualPension || undefined,
             // Trajectoire année par année (année → capital), pour le
             // graphique d'évolution du PDF de synthèse. Simple retranscription
             // de projection.yearly, déjà calculé ci-dessus.

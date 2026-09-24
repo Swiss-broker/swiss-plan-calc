@@ -1,7 +1,13 @@
 // Module libre passage · stratégies de placement et projection nette
 // Sources : OLP (Ordonnance sur le libre passage), pratique OFAS 2026.
 
-export type VestedStrategy = "security" | "balanced" | "dynamic";
+export type VestedStrategy = "current" | "security" | "balanced" | "dynamic";
+
+/** Taux de la Fondation supplétive LPP (Suppletive) : hypothèse de rendement
+ *  pour un capital de libre passage resté sur un compte de libre passage
+ *  "par défaut", sans stratégie de placement active. Utilisé comme scénario
+ *  "situation actuelle" de référence, distinct des 3 stratégies proposées. */
+export const SUPPLETIVE_RATE = 0.03;
 
 export interface VestedStrategyDef {
   id: VestedStrategy;
@@ -18,6 +24,16 @@ export interface VestedStrategyDef {
 }
 
 export const VESTED_STRATEGIES: VestedStrategyDef[] = [
+  {
+    id: "current",
+    label: "Situation actuelle (taux Suppletive)",
+    description:
+      "Hypothèse : capital resté sur un compte de libre passage par défaut, au taux de la Fondation supplétive LPP (0,03 %/an), sans stratégie de placement active.",
+    equityAllocation: 0,
+    expectedReturn: SUPPLETIVE_RATE,
+    volatility: 0,
+    totalFees: 0,
+  },
   {
     id: "security",
     label: "Sécurité (0–25 % actions)",

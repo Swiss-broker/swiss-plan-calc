@@ -26,6 +26,7 @@ import {
   type PostBreakdown,
 } from "@/lib/tax-global/sensitivities";
 import type { TaxGlobalInput, TaxGlobalResult } from "@/lib/tax-global/types";
+import { buildTaxGlobalCompareRows } from "@/lib/tax-global/compare-rows";
 
 
 interface Props {
@@ -151,12 +152,6 @@ export function TaxGlobalCompareCard({ form, result, baseline }: Props) {
     );
   }, [baseline, form, diffs, hasChanges]);
 
-  const ifdRow = (r: TaxGlobalResult): number =>
-    r.income ? r.income.ifd : r.crossBorder?.swissTax ?? r.source?.annualTax ?? 0;
-  const cantonalRow = (r: TaxGlobalResult): number =>
-    r.income ? r.income.cantonal + r.income.communal : 0;
-  const wealthRow = (r: TaxGlobalResult): number => r.income?.wealthTax ?? 0;
-
   // Helper : rend le panneau de causes pour un poste donné.
   const buildBreakdown = (postKey: keyof PostBreakdown): ReactNode => {
     if (sensitivities.length === 0) return null;
@@ -209,86 +204,10 @@ export function TaxGlobalCompareCard({ form, result, baseline }: Props) {
     );
   };
 
-  const rows: SplitRow[] = [
-    {
-      id: "total",
-      label: "Impôt total annuel",
-      current: baselineResult.totalTaxCHF,
-      projected: result.totalTaxCHF,
-      betterWhen: "lower",
-      breakdown: buildBreakdown("total"),
-    },
-    {
-      id: "ifd",
-      label: "Impôt fédéral / source CH",
-      current: ifdRow(baselineResult),
-      projected: ifdRow(result),
-      betterWhen: "lower",
-      breakdown: buildBreakdown("ifd"),
-    },
-    ...(cantonalRow(baselineResult) > 0 || cantonalRow(result) > 0
-      ? [
-          {
-            id: "cantonalCommunal",
-            label: "Cantonal + communal",
-            current: cantonalRow(baselineResult),
-            projected: cantonalRow(result),
-            betterWhen: "lower" as const,
-            breakdown: buildBreakdown("cantonalCommunal"),
-          },
-        ]
-      : []),
-    ...(wealthRow(baselineResult) > 0 || wealthRow(result) > 0
-      ? [
-          {
-            id: "wealth",
-            label: "Impôt sur la fortune",
-            current: wealthRow(baselineResult),
-            projected: wealthRow(result),
-            betterWhen: "lower" as const,
-            breakdown: buildBreakdown("wealth"),
-          },
-        ]
-      : []),
-    ...(baselineResult.socialChargesCHF > 0 || result.socialChargesCHF > 0
-      ? [
-          {
-            id: "health",
-            label: "Charges santé (LAMal / CMU)",
-            current: baselineResult.socialChargesCHF,
-            projected: result.socialChargesCHF,
-            betterWhen: "lower" as const,
-            breakdown: buildBreakdown("health"),
-          },
-        ]
-      : []),
-    {
-      id: "net",
-      label: "Net annuel disponible",
-      current: baselineResult.netAnnualCHF,
-      projected: result.netAnnualCHF,
-      betterWhen: "higher",
-      breakdown: buildBreakdown("net"),
-    },
-    {
-      id: "effectiveRate",
-      label: "Taux effectif",
-      current: baselineResult.effectiveRate,
-      projected: result.effectiveRate,
-      format: "pct",
-      betterWhen: "lower",
-      breakdown: buildBreakdown("effectiveRate"),
-    },
-    {
-      id: "marginalRate",
-      label: "Taux marginal",
-      current: baselineResult.marginalRate,
-      projected: result.marginalRate,
-      format: "pct",
-      betterWhen: "lower",
-      breakdown: buildBreakdown("marginalRate"),
-    },
-  ];
+  const rows: SplitRow[] = buildTaxGlobalCompareRows(baselineResult, result).map((r) => ({
+    ...r,
+    breakdown: buildBreakdown(r.id as keyof PostBreakdown),
+  }));
 
   const annualSaving = baselineResult.totalTaxCHF - result.totalTaxCHF;
   const netGain = result.netAnnualCHF - baselineResult.netAnnualCHF;

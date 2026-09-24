@@ -23,6 +23,7 @@ import { useT } from "@/contexts/LanguageContext";
 import { zodValidator, fallback } from "@tanstack/zod-adapter";
 import { z } from "zod";
 import { useClientDashboard } from "@/hooks/use-client-dashboard";
+import { useConsolidationReferences } from "@/hooks/useConsolidationReferences";
 import { usePrefillFromClient, useHydrateFormFromPrefill } from "@/hooks/usePrefillFromClient";
 import { useLoadSavedSimulation } from "@/hooks/useLoadSavedSimulation";
 import { ClientLinkBanner } from "@/components/calculators/ClientLinkBanner";
@@ -48,7 +49,18 @@ function RetirementCalc() {
   const { client, bundle, prefill } = usePrefillFromClient(clientId, "retirement");
   const { inputs: savedInputs, isLoading: loadingSaved } = useLoadSavedSimulation(simId);
   const dashboard = useClientDashboard(bundle ?? null);
-const projectedCapital = dashboard?.lpp?.projectedCapitalAt65;
+  // Priorité à la dernière simulation "LPP & rachats" réellement sauvegardée
+  // pour ce client (même sélection que Prestations consolidées / le PDF de
+  // synthèse) — avant, ce capital venait uniquement du recalcul "fiche"
+  // (useClientDashboard), qui ignore les rachats/hypothèses de la simulation
+  // sauvegardée et pouvait donc afficher un capital différent de celui de la
+  // page "Prestations consolidées" pour la même situation.
+  const { data: consolidationRefs } = useConsolidationReferences(clientId);
+  const lppSimCapital = Number(
+    (consolidationRefs?.lpp?.summary as Record<string, unknown> | undefined)?.projectedBalance ?? 0,
+  );
+  const projectedCapital = lppSimCapital > 0 ? lppSimCapital : dashboard?.lpp?.projectedCapitalAt65;
+  const projectedCapitalFromSavedSim = lppSimCapital > 0;
   const [form, setForm] = useState({
     capital: 600_000,
     canton: "VD",
@@ -158,7 +170,9 @@ const projectedCapital = dashboard?.lpp?.projectedCapitalAt65;
               <div className="space-y-1">
                 <NumField label={t("calc.retirement.field.capital")} value={form.capital} onChange={(v) => set("capital", v)} wikiId="lpp-conversion" wikiTip={t("calc.retirement.tip.capital")} />
                 <p className="text-[10px] text-muted-foreground">
-                  {t("calc.retirement.caption.capital")}
+                  {projectedCapitalFromSavedSim
+                    ? "Pré-rempli depuis la dernière simulation « LPP & rachats » enregistrée pour ce client (capital projeté à la retraite, rachats inclus). Modifiable pour tester un autre montant."
+                    : t("calc.retirement.caption.capital")}
                 </p>
               </div>
               <ClientPrefillBadge show={!!prefill?.capital && form.capital === prefill.capital} clientName={client ? `${client.first_name} ${client.last_name}` : undefined} />

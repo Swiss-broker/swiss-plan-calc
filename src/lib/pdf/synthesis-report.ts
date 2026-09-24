@@ -21,6 +21,7 @@ import {
   consolidatePensionBenefits,
   consolidateOptimizedBenefits,
   getOptimizationAssumptions,
+  getConsolidatedCapitals,
   pickConsolidationReferences,
   PENSION_EVENT_LABELS,
 } from "@/lib/pension-consolidation";
@@ -284,7 +285,7 @@ const EXPLAIN_FR: Partial<Record<SimulationKind, string>> = {
   tax_global: "Ce calculateur reconstitue l'ensemble de votre charge fiscale annuelle (impôt fédéral, cantonal et communal réunis), sur la base de votre situation personnelle et professionnelle. Il fait ressortir deux chiffres utiles : votre taux d'imposition moyen sur l'ensemble de votre revenu, et votre taux marginal, c'est-à-dire ce que vous payez d'impôt sur le prochain franc que vous gagnez. Ce second chiffre est particulièrement utile pour savoir si une déduction supplémentaire, comme un versement 3a ou un rachat LPP, vaut la peine pour vous.",
   income_tax: "Ce calcul détermine l'impôt sur le revenu que vous devez, sur la base des barèmes cantonaux et fédéraux en vigueur pour votre situation.",
   source_tax: "L'impôt à la source s'applique automatiquement si vous êtes salarié étranger sans permis d'établissement C : votre employeur prélève directement l'impôt sur votre salaire, selon un barème qui dépend de votre situation familiale et de votre canton.",
-  retirement: "Au moment de la retraite, vous avez le choix entre toucher une rente à vie, ou retirer tout ou partie de votre capital de prévoyance en une fois. C'est une décision importante et difficile à revenir en arrière. Ce calculateur compare les deux options sur la base de votre espérance de vie, du taux de conversion applicable et de votre situation fiscale, pour vous aider à objectiver ce choix. Le montant de capital utilisé ici est celui saisi pour ce test précis : il peut différer de la page « Prestations consolidées », qui reflète toujours la situation actuelle de votre dossier.",
+  retirement: "Au moment de la retraite, vous avez le choix entre toucher une rente à vie, ou retirer tout ou partie de votre capital de prévoyance en une fois. C'est une décision importante et difficile à revenir en arrière. Ce calculateur compare les deux options sur la base de votre espérance de vie, du taux de conversion applicable et de votre situation fiscale, pour vous aider à objectiver ce choix. Le capital utilisé ici reprend par défaut celui de votre dernière simulation « LPP & rachats » enregistrée — le même que sur la page « Prestations consolidées » — sauf si le courtier l'a volontairement modifié pour tester un autre montant.",
   avs_ai: "L'AVS est votre 1er pilier, le socle obligatoire de la prévoyance suisse. Son montant dépend de deux choses : le nombre d'années où vous avez cotisé (44 ans pour une carrière complète) et votre revenu moyen sur l'ensemble de votre carrière. Chaque année de cotisation manquante réduit votre rente finale.",
   vested_benefits: "Le libre passage correspond à votre capital LPP en transit entre deux emplois, ou lorsque vous quittez temporairement le marché du travail suisse. Ce capital doit être placé sur un compte ou une police dédiée, et la stratégie de placement que vous choisissez influence directement le montant dont vous disposerez à votre prochain emploi ou à la retraite.",
   cross_border: "En tant que frontalier, la façon dont vous êtes imposé dépend d'accords particuliers entre la Suisse et votre pays de résidence, qui peuvent varier sensiblement d'un canton de travail à l'autre. Ce calculateur compare votre charge fiscale selon les différents régimes qui pourraient s'appliquer à votre situation.",
@@ -847,6 +848,22 @@ function drawConsolidatedBenefitsPage(
     return;
   }
 
+  const capitals = getConsolidatedCapitals(bundle, refs);
+  pdf.spacer(2);
+  pdf.section("Capitaux 2e et 3e pilier");
+  pdf.kvTable([
+    ["Avoir LPP actuel", formatCHF(capitals.lppCurrentBalance)],
+    [
+      `Capital LPP projeté à la retraite${capitals.lppProjectedIsEstimate ? " (estimation)" : ""}`,
+      formatCHF(capitals.lppProjectedCapital),
+    ],
+    ["Rachats LPP (simulation)", formatCHF(capitals.lppBuybacksTotal)],
+    [
+      `Capital 3e pilier projeté${capitals.pillar3aProjectedIsEstimate ? " (estimation)" : ""}`,
+      formatCHF(capitals.pillar3aProjectedCapital),
+    ],
+  ]);
+
   const assumptions = getOptimizationAssumptions(bundle);
   pdf.spacer(2);
   pdf.richParagraph(
@@ -1338,6 +1355,7 @@ export function formatMetrics(
     case "pillar3a":
       if (has(s.taxSavings)) out.push({ label: "Économie fiscale annuelle", value: num(s.taxSavings), tone: "success" });
       if (has(s.finalBalance)) out.push({ label: "Capital projeté", value: num(s.finalBalance), tone: "primary" });
+      if (has(s.oldAgeMonthlyPension)) out.push({ label: "Rente de vieillesse estimée (÷ 25 ans)", value: num(s.oldAgeMonthlyPension) });
       if (has(s.effectiveCost)) out.push({ label: "Coût net réel", value: num(s.effectiveCost) });
       if (has(s.marginalRate)) out.push({ label: "Taux marginal", value: formatPct(num(s.marginalRate)), tone: "warning" });
       if (has(s.totalContributions)) out.push({ label: "Cotisations cumulées", value: num(s.totalContributions) });

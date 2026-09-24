@@ -39,6 +39,7 @@ import { useLoadSavedSimulation } from "@/hooks/useLoadSavedSimulation";
 
 import { computeTaxGlobal, computeGrossForRegime } from "@/lib/tax-global/engine";
 import { buildScenarios } from "@/lib/tax-global/scenarios";
+import { buildTaxGlobalCompareRows } from "@/lib/tax-global/compare-rows";
 
 import { createDefaultInput } from "@/lib/tax-global/profile";
 import type { TaxGlobalInput } from "@/lib/tax-global/types";
@@ -113,6 +114,16 @@ function TaxGlobalCalc() {
   const setBaseline = () => setBaselineState(form);
 
   const result = useMemo(() => computeTaxGlobal(form), [form]);
+  // Même paire "avant/après" que celle affichée dans TaxGlobalCompareCard,
+  // recalculée ici pour être sauvegardée avec la simulation (voir audit :
+  // avant, seul `result` était sauvegardé, sans référence "avant" — le PDF
+  // ne pouvait donc pas garantir d'afficher un comparatif fiable, ni même
+  // garantir que ce résultat était bien le scénario optimisé final).
+  const baselineResult = useMemo(() => computeTaxGlobal(baseline), [baseline]);
+  const taxGlobalCompareRows = useMemo(
+    () => buildTaxGlobalCompareRows(baselineResult, result),
+    [baselineResult, result],
+  );
   const scenarios = useMemo(() => buildScenarios(form), [form]);
   const bestScenario = useMemo(() => {
     const savings = scenarios.filter((s) => s.id !== "baseline" && s.deltaVsBaseline < 0);
@@ -1043,6 +1054,18 @@ function TaxGlobalCalc() {
             socialChargesCHF: result.socialChargesCHF,
             bestScenarioSavings: bestScenario ? Math.round(-bestScenario.deltaVsBaseline) : 0,
             bestScenarioLabel: bestScenario ? bestScenario.label : undefined,
+            // Comparatif avant/après tel qu'affiché à l'écran (bouton
+            // "Définir comme base" en haut de page) : sans ce champ, le PDF
+            // ne peut reprendre que ce seul résultat courant, sans référence
+            // "avant" ni garantie que c'est bien le scénario optimisé final
+            // qui a été saisi au moment de la sauvegarde.
+            compareRows: taxGlobalCompareRows.map(({ label, current, projected, format, betterWhen }) => ({
+              label,
+              current,
+              projected,
+              format,
+              betterWhen,
+            })),
           }}
           defaultTitle={`Fiscal global ${form.canton} · ${result.regimeLabel}`}
         />

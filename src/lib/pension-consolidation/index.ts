@@ -131,6 +131,9 @@ function childLabelsFromBundle(b: ClientBundle): string[] {
 interface CertificatePensions {
   oldAge?: number;
   disability?: number;
+  /** Rente d'enfant de retraité (versée en plus de la rente de vieillesse),
+   *  montant PAR ENFANT — distincte de la rente d'orphelin. */
+  child?: number;
   orphan?: number;
   widow?: number;
 }
@@ -147,6 +150,7 @@ function certificatePensionsFromRef(
   const out: CertificatePensions = {};
   if (Number(r.oldAge) > 0) out.oldAge = Number(r.oldAge);
   if (Number(r.disability) > 0) out.disability = Number(r.disability);
+  if (Number(r.child) > 0) out.child = Number(r.child);
   if (Number(r.orphan) > 0) out.orphan = Number(r.orphan);
   if (Number(r.widow) > 0) out.widow = Number(r.widow);
   return Object.keys(out).length > 0 ? out : null;
@@ -310,24 +314,48 @@ function buildRetirement(
       );
   }
 
-  // Pilier 3a : capital projeté annualisé sur 22 ans (espérance de vie post-retraite)
+  // Rente d'enfant de retraité (LPP) : saisie manuelle uniquement (certificat),
+  // aucune approximation live — pas de formule officielle équivalente à celle
+  // de l'invalidité/décès pour ce cas.
+  if (cert?.child) {
+    for (let i = 0; i < childrenCount; i++) {
+      pillar2Items.push(
+        toItem(
+          `Rente enfant LPP (certificat) · ${childLabelsFromBundle(b)[i] ?? `Enfant ${i + 1}`}`,
+          cert.child,
+          "LPP",
+        ),
+      );
+    }
+  }
+
+  // Pilier 3a : rente de vieillesse = capital final ÷ 25 ans ÷ 12 (même
+  // hypothèse partout dans l'app, voir PILLAR3A_OLD_AGE_ANNUITY_YEARS dans
+  // pillar3a.tsx) — reprend le montant déjà calculé et sauvegardé par le
+  // calculateur 3e pilier quand disponible, plutôt que de le recalculer ici
+  // à partir d'un capital potentiellement différent.
   const p3aRefBalance = pillar3aRefBalance(refs?.pillar3a);
+  const p3aRefMonthlyPension = Number(
+    (refs?.pillar3a?.summary as Record<string, unknown> | undefined)?.oldAgeMonthlyPension ?? 0,
+  );
   let p3aBalance = 0;
   if (p3aRefBalance) {
     p3aBalance = p3aRefBalance;
-    notes.push("3a annualisé sur 22 ans à titre indicatif (capital en pratique).");
   } else {
     const p3a = projectClient3a(b);
     if (p3a && p3a.projectedCapitalAt65 > 0) {
       p3aBalance = p3a.projectedCapitalAt65;
       notes.push(
-        "3a annualisé sur 22 ans à titre indicatif (capital en pratique). Estimation : aucune simulation « Pilier 3a » enregistrée pour ce client.",
+        "Rente de vieillesse 3a estimée (capital projeté ÷ 25 ans ÷ 12) : aucune simulation « Pilier 3a » enregistrée pour ce client.",
       );
     }
   }
-  if (p3aBalance > 0) {
-    const annualized = Math.round(p3aBalance / 22);
-    pillar2Items.push(toItem("3a (capital projeté ÷ 22 ans)", annualized, "3A"));
+  if (p3aRefMonthlyPension > 0) {
+    pillar2Items.push(toItem("3a (rente de vieillesse, capital ÷ 25 ans)", p3aRefMonthlyPension * 12, "3A"));
+    notes.push("3a exprimé en rente pour comparaison (capital ÷ 25 ans) : en pratique, le 3e pilier est généralement retiré en capital, pas versé sous forme de rente.");
+  } else if (p3aBalance > 0) {
+    pillar2Items.push(toItem("3a (rente de vieillesse, capital ÷ 25 ans)", Math.round(p3aBalance / 25), "3A"));
+    notes.push("3a exprimé en rente pour comparaison (capital ÷ 25 ans) : en pratique, le 3e pilier est généralement retiré en capital, pas versé sous forme de rente.");
   }
 
   // Rachats planifiés : n'affiche la note d'étalement que si on est bien
@@ -368,7 +396,7 @@ function buildRetirement(
       const idx = pillar2Items.findIndex((i) => i.pillar === "3A");
       if (idx >= 0) {
         const optimizedBalance = p3aBalance * factor;
-        pillar2Items[idx] = toItem(pillar2Items[idx].label, Math.round(optimizedBalance / 22), "3A");
+        pillar2Items[idx] = toItem(pillar2Items[idx].label, Math.round(optimizedBalance / 25), "3A");
       }
     }
   }
@@ -488,6 +516,17 @@ function buildDisability(
         pillar2Items[i] = toItem(pillar2Items[i].label, Math.round(pillar2Items[i].annual * factor), "LPP");
       }
     }
+  }
+
+  // Rente d'invalidité 3e pilier (police liée, le cas échéant) — saisie
+  // manuelle uniquement (pillar3a.tsx), jamais recalculée ni extrapolée
+  // vers le scénario optimisé, ajoutée après la boucle de mise à l'échelle
+  // ci-dessus pour ne surtout pas être rescalée avec le facteur LPP.
+  const p3aDisability = Number(
+    (refs?.pillar3a?.summary as Record<string, unknown> | undefined)?.disabilityAnnualPension ?? 0,
+  );
+  if (p3aDisability > 0) {
+    pillar2Items.push(toItem("Rente invalidité 3e pilier", p3aDisability, "3A"));
   }
 
   const p1Total = benefits.totalAnnual;
@@ -618,6 +657,51 @@ function buildDeath(
     combinedAnnual: combined,
     combinedMonthly: Math.round(combined / 12),
     notes,
+  };
+}
+
+// ────────────────────────────────────────────────────────────
+// Capitaux (2e + 3e pilier), pour l'onglet Consolidation
+// ────────────────────────────────────────────────────────────
+
+export interface ConsolidatedCapitals {
+  lppCurrentBalance: number;
+  /** Capital LPP projeté à la retraite — simulation sauvegardée si
+   *  disponible, sinon estimation live (voir `lppProjectedIsEstimate`). */
+  lppProjectedCapital: number;
+  lppProjectedIsEstimate: boolean;
+  /** Rachats LPP cumulés (simulation sauvegardée uniquement — 0 si aucune). */
+  lppBuybacksTotal: number;
+  /** Capital 3e pilier projeté — simulation sauvegardée si disponible,
+   *  sinon estimation live (voir `pillar3aProjectedIsEstimate`). */
+  pillar3aProjectedCapital: number;
+  pillar3aProjectedIsEstimate: boolean;
+}
+
+/** Capitaux 2e/3e pilier à afficher tels quels dans l'onglet Consolidation
+ *  (point 4 de l'audit) — mêmes sources que les rentes ci-dessus : simulation
+ *  sauvegardée en priorité, estimation live en repli (signalée). */
+export function getConsolidatedCapitals(
+  b: ClientBundle,
+  refs?: ConsolidationReferenceSimulations,
+): ConsolidatedCapitals {
+  const lppRef = lppRefFigures(refs?.lpp);
+  const lppSummary = refs?.lpp?.summary as Record<string, unknown> | undefined;
+  const p3aBalance = pillar3aRefBalance(refs?.pillar3a);
+
+  const lppProjectedIsEstimate = !lppRef;
+  const lppProjectedCapital = lppRef?.projectedBalance ?? projectClientLPP(b)?.projectedCapitalAt65 ?? 0;
+
+  const pillar3aProjectedIsEstimate = !p3aBalance;
+  const pillar3aProjectedCapital = p3aBalance ?? projectClient3a(b)?.projectedCapitalAt65 ?? 0;
+
+  return {
+    lppCurrentBalance: Number(b.pension?.lpp_current_balance ?? 0),
+    lppProjectedCapital,
+    lppProjectedIsEstimate,
+    lppBuybacksTotal: lppRef ? Number(lppSummary?.totalBuybacks ?? 0) : 0,
+    pillar3aProjectedCapital,
+    pillar3aProjectedIsEstimate,
   };
 }
 

@@ -743,6 +743,17 @@ function CantonCompareCalc() {
             referenceCanton,
             referenceTax,
             maxSavings: Math.max(0, referenceTax - (cheapestRomand?.total ?? 0)),
+            // Capital utilisé pour le mode "Impôt sur prestation en capital"
+            // (LPP + 3e pilier) — sauvegardé pour que le contrôle de
+            // cohérence avant génération du PDF puisse vérifier qu'il
+            // correspond bien à la simulation LPP/3a de référence.
+            ...(mode === "lump_sum"
+              ? {
+                  lumpSumProjectedCapital: projectedLPPCapital,
+                  lumpSumLppCapitalFromSavedSim: lppFromSavedSim,
+                  lumpSumP3aCapitalFromSavedSim: p3aFromSavedSim,
+                }
+              : {}),
             // Retranscrit tel quel dans le PDF de synthèse (section "Actuel
             // vs Projeté") : le comparatif résidence vs Zoug affiché à
             // l'écran, avec le même canton de référence que le classement.

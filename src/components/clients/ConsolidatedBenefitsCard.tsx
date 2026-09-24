@@ -9,6 +9,7 @@ import { formatCHF } from "@/lib/format";
 import {
   consolidatePensionBenefits,
   consolidateOptimizedBenefits,
+  getConsolidatedCapitals,
   PENSION_EVENT_LABELS,
   type ConsolidatedBenefits,
   type ConsolidatedScenario,
@@ -39,6 +40,7 @@ export function ConsolidatedBenefitsCard({ bundle }: Props) {
   const { data: refs } = useConsolidationReferences(bundle.client.id);
   const current = useMemo(() => consolidatePensionBenefits(bundle, refs), [bundle, refs]);
   const optimized = useMemo(() => consolidateOptimizedBenefits(bundle, refs), [bundle, refs]);
+  const capitals = useMemo(() => getConsolidatedCapitals(bundle, refs), [bundle, refs]);
   const [tab, setTab] = useState<PensionEvent>("retirement");
 
   return (
@@ -46,6 +48,24 @@ export function ConsolidatedBenefitsCard({ bundle }: Props) {
       title="Prestations consolidées · Actuel vs Projeté"
       icon={HeartHandshake}
     >
+      <div className="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
+        <CapitalTile
+          label="Capital LPP projeté"
+          value={capitals.lppProjectedCapital}
+          isEstimate={capitals.lppProjectedIsEstimate}
+          sub={`Avoir actuel : ${formatCHF(capitals.lppCurrentBalance)}`}
+        />
+        <CapitalTile
+          label="Rachats LPP (simulation)"
+          value={capitals.lppBuybacksTotal}
+          isEstimate={false}
+        />
+        <CapitalTile
+          label="Capital 3e pilier projeté"
+          value={capitals.pillar3aProjectedCapital}
+          isEstimate={capitals.pillar3aProjectedIsEstimate}
+        />
+      </div>
       <Tabs value={tab} onValueChange={(v) => setTab(v as PensionEvent)}>
         <TabsList className="grid w-full grid-cols-3">
           {(Object.keys(PENSION_EVENT_LABELS) as PensionEvent[]).map((ev) => {
@@ -133,6 +153,29 @@ function SplitPanel({
       currentExtra={<PillarDetails scenario={cur} tone="current" />}
       projectedExtra={<PillarDetails scenario={opt} tone="projected" />}
     />
+  );
+}
+
+function CapitalTile({
+  label,
+  value,
+  isEstimate,
+  sub,
+}: {
+  label: string;
+  value: number;
+  isEstimate: boolean;
+  sub?: string;
+}) {
+  return (
+    <div className="rounded-lg border border-border bg-background/60 p-3">
+      <div className="text-[11px] font-medium text-muted-foreground">{label}</div>
+      <div className="mt-0.5 text-lg font-semibold tabular-nums">{formatCHF(value)}</div>
+      {sub && <div className="mt-0.5 text-[10.5px] text-muted-foreground">{sub}</div>}
+      {isEstimate && value > 0 && (
+        <div className="mt-0.5 text-[10.5px] italic text-warning">Estimation — aucune simulation enregistrée</div>
+      )}
+    </div>
   );
 }
 

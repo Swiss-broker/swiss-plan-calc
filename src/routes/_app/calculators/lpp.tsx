@@ -95,11 +95,13 @@ function LppCalc() {
     pillar3aContributions: 0,
     healthInsurancePremiums: 0,
     confession: "none" as NonNullable<IncomeTaxInput["confession"]>,
-    // Rentes LPP du certificat (vieillesse / invalidité / orphelin / veuf-veuve)
+    // Rentes LPP du certificat (vieillesse / invalidité / enfant / orphelin / veuf-veuve)
     oldAgeAmount: 0,
     oldAgePeriod: "year" as "year" | "month",
     disabilityAmount: 0,
     disabilityPeriod: "year" as "year" | "month",
+    childAmount: 0,
+    childPeriod: "year" as "year" | "month",
     orphanAmount: 0,
     orphanPeriod: "year" as "year" | "month",
     widowAmount: 0,
@@ -642,6 +644,9 @@ function LppCalc() {
             certificateAnnualPensions: {
               oldAge: certAmountToAnnual(form.oldAgeAmount, form.oldAgePeriod) || undefined,
               disability: certAmountToAnnual(form.disabilityAmount, form.disabilityPeriod) || undefined,
+              // Montant PAR ENFANT (avant multiplication par le nombre
+              // d'enfants de la fiche) — même convention que `orphan`.
+              child: certAmountToAnnual(form.childAmount, form.childPeriod) || undefined,
               orphan: certAmountToAnnual(form.orphanAmount, form.orphanPeriod) || undefined,
               widow: certAmountToAnnual(form.widowAmount, form.widowPeriod) || undefined,
             },
@@ -1057,6 +1062,8 @@ type CertForm = {
   oldAgePeriod: "year" | "month";
   disabilityAmount: number;
   disabilityPeriod: "year" | "month";
+  childAmount: number;
+  childPeriod: "year" | "month";
   orphanAmount: number;
   orphanPeriod: "year" | "month";
   widowAmount: number;
@@ -1092,6 +1099,16 @@ function CertificatePensionsCard({
   const disabilityAnnual = toAnnual(form.disabilityAmount, form.disabilityPeriod);
   const disabilityMonthly = toMonthly(form.disabilityAmount, form.disabilityPeriod);
 
+  // Rente d'enfant (de retraité) : versée en plus de la rente de vieillesse
+  // tant qu'un enfant à charge existe — distincte de la rente d'orphelin,
+  // versée après le décès du parent.
+  const childCount = Math.min(MAX_ORPHAN_CHILDREN, Math.max(0, form.children));
+  const childCapped = form.children > MAX_ORPHAN_CHILDREN;
+  const childPerAnnual = toAnnual(form.childAmount, form.childPeriod);
+  const childPerMonthly = toMonthly(form.childAmount, form.childPeriod);
+  const childTotalAnnual = childPerAnnual * childCount;
+  const childTotalMonthly = childPerMonthly * childCount;
+
   const orphanCount = Math.min(MAX_ORPHAN_CHILDREN, Math.max(0, form.children));
   const orphanCapped = form.children > MAX_ORPHAN_CHILDREN;
   const orphanPerAnnual = toAnnual(form.orphanAmount, form.orphanPeriod);
@@ -1107,7 +1124,7 @@ function CertificatePensionsCard({
       title={t("calc.lpp.cert.card_title")}
       description={t("calc.lpp.cert.card_desc")}
     >
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <CertBlock
           title={t("calc.lpp.cert.oldage_title")}
           amount={form.oldAgeAmount}
@@ -1125,6 +1142,37 @@ function CertificatePensionsCard({
           onPeriod={(p) => set("disabilityPeriod", p)}
           monthly={disabilityMonthly}
           annual={disabilityAnnual}
+        />
+        <CertBlock
+          title={t("calc.lpp.cert.child_title")}
+          amountLabel={t("calc.lpp.cert.child_amount_label")}
+          amount={form.childAmount}
+          period={form.childPeriod}
+          onAmount={(v) => set("childAmount", v)}
+          onPeriod={(p) => set("childPeriod", p)}
+          monthly={childPerMonthly}
+          annual={childPerAnnual}
+          extra={
+            <div className="mt-2 space-y-1 rounded-md border border-border/60 bg-muted/30 p-2 text-[11px]">
+              <div>
+                {t("calc.lpp.cert.child_children_used", { n: childCount })}
+                {childCapped && (
+                  <span className="ml-1 text-warning">
+                    {" "}
+                    {t("calc.lpp.cert.orphan_cap_note")}
+                  </span>
+                )}
+              </div>
+              <div className="flex justify-between font-medium tabular-nums">
+                <span>{t("calc.lpp.cert.child_total_month")}</span>
+                <span>{formatCHF(childTotalMonthly)}</span>
+              </div>
+              <div className="flex justify-between font-medium tabular-nums">
+                <span>{t("calc.lpp.cert.child_total_year")}</span>
+                <span>{formatCHF(childTotalAnnual)}</span>
+              </div>
+            </div>
+          }
         />
         <CertBlock
           title={t("calc.lpp.cert.orphan_title")}
@@ -1182,6 +1230,11 @@ function CertificatePensionsCard({
             label={t("calc.lpp.cert.summary_disability")}
             monthly={disabilityMonthly}
             annual={disabilityAnnual}
+          />
+          <SummaryRow
+            label={t("calc.lpp.cert.summary_child", { n: childCount })}
+            monthly={childTotalMonthly}
+            annual={childTotalAnnual}
           />
           <SummaryRow
             label={t("calc.lpp.cert.summary_orphan", { n: orphanCount })}

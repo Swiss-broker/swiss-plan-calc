@@ -9,7 +9,7 @@ import {
 } from "@/components/ui/select";
 import { NumField as BaseNumField } from "@/components/ui/num-field";
 import { Label } from "@/components/ui/label";
-import { Sparkles, ShieldCheck, TrendingUp, Activity, Download } from "lucide-react";
+import { Sparkles, ShieldCheck, TrendingUp, Activity, Download, Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Line,
@@ -27,6 +27,7 @@ import {
   compareVestedStrategies,
   recommendVestedStrategy,
   VESTED_STRATEGIES,
+  SUPPLETIVE_RATE,
   type VestedStrategy,
 } from "@/lib/lpp/vested";
 import { formatCHF } from "@/lib/format";
@@ -56,6 +57,7 @@ export const Route = createFileRoute("/_app/calculators/vested-benefits")({
 });
 
 const STRATEGY_ICONS: Record<VestedStrategy, React.ElementType> = {
+  current: Info,
   security: ShieldCheck,
   balanced: Activity,
   dynamic: TrendingUp,
@@ -95,6 +97,7 @@ function VestedBenefitsCalc() {
   const brokerHeader = useBrokerPdfHeader();
   const strategyLabel = (id: VestedStrategy) => {
     const map: Record<VestedStrategy, string> = {
+      current: t("calc.vested.strategy.current"),
       security: t("calc.vested.strategy.security"),
       balanced: t("calc.vested.strategy.balanced"),
       dynamic: t("calc.vested.strategy.dynamic"),
@@ -104,12 +107,18 @@ function VestedBenefitsCalc() {
 
   const strategyDesc = (id: VestedStrategy) => {
     const map: Record<VestedStrategy, string> = {
+      current: t("calc.vested.strategy.current_desc"),
       security: t("calc.vested.strategy.security_desc"),
       balanced: t("calc.vested.strategy.balanced_desc"),
       dynamic: t("calc.vested.strategy.dynamic_desc"),
     };
     return map[id];
   };
+
+  const currentProjection = projections.find((p) => p.strategy.id === "current");
+  const recommendedProjection = projections.find((p) => p.strategy.id === recommended);
+  const gainVsCurrent =
+    (recommendedProjection?.finalBalance ?? 0) - (currentProjection?.finalBalance ?? 0);
 
   const chartData = useMemo(() => {
     const len = projections[0]?.yearByYear.length ?? 0;
@@ -209,6 +218,15 @@ function VestedBenefitsCalc() {
                 strategy: strategyLabel(recommended),
               })}
             </p>
+            {gainVsCurrent > 0 && (
+              <p className="mt-2 text-xs">
+                <span className="font-semibold text-foreground">
+                  {strategyLabel(recommended)} vs {strategyLabel("current")} :
+                </span>{" "}
+                <span className="font-semibold text-success">+{formatCHF(gainVsCurrent)}</span>{" "}
+                <span className="text-muted-foreground">à l'échéance.</span>
+              </p>
+            )}
           </div>
         </CalcCard>
       </div>
@@ -231,6 +249,7 @@ function VestedBenefitsCalc() {
                   }}
                 />
                 <Legend />
+                <Line type="monotone" dataKey="current" name={t("calc.vested.strategy.current")} stroke="var(--destructive)" strokeWidth={2} strokeDasharray="4 4" dot={false} />
                 <Line type="monotone" dataKey="security" name={t("calc.vested.strategy.security")} stroke="var(--muted-foreground)" strokeWidth={3} dot={false} />
                 <Line type="monotone" dataKey="balanced" name={t("calc.vested.strategy.balanced")} stroke="var(--primary)" strokeWidth={3} dot={false} />
                 <Line type="monotone" dataKey="dynamic" name={t("calc.vested.strategy.dynamic")} stroke="var(--success)" strokeWidth={3} dot={false} />
@@ -245,16 +264,22 @@ function VestedBenefitsCalc() {
           {projections.map((p) => {
             const Icon = STRATEGY_ICONS[p.strategy.id];
             const isRecommended = p.strategy.id === recommended;
+            const isCurrent = p.strategy.id === "current";
             return (
-              <CalcCard key={p.strategy.id} className={isRecommended ? "ring-2 ring-primary/40" : undefined}>
+              <CalcCard key={p.strategy.id} className={isRecommended ? "ring-2 ring-primary/40" : isCurrent ? "ring-2 ring-destructive/30" : undefined}>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <Icon className="h-5 w-5 text-primary" />
+                    <Icon className={isCurrent ? "h-5 w-5 text-destructive" : "h-5 w-5 text-primary"} />
                     <h4 className="font-semibold">{strategyLabel(p.strategy.id)}</h4>
                   </div>
                   {isRecommended && (
                     <span className="rounded-full bg-primary/15 px-2 py-0.5 text-[10px] font-semibold uppercase text-primary">
                       {t("calc.vested.recommended_badge")}
+                    </span>
+                  )}
+                  {isCurrent && (
+                    <span className="rounded-full bg-destructive/15 px-2 py-0.5 text-[10px] font-semibold uppercase text-destructive">
+                      Situation actuelle
                     </span>
                   )}
                 </div>
@@ -305,6 +330,11 @@ function VestedBenefitsCalc() {
             recommendedStrategy: recommended,
             recommendedFinalBalance:
               projections.find((p) => p.strategy.id === recommended)?.finalBalance ?? 0,
+            // Situation actuelle : hypothèse taux Fondation supplétive LPP
+            // (0,03 %/an), scénario de référence si le capital reste sur un
+            // compte de libre passage par défaut sans stratégie active.
+            currentFinalBalance: currentProjection?.finalBalance ?? 0,
+            currentRate: SUPPLETIVE_RATE,
             securityFinalBalance:
               projections.find((p) => p.strategy.id === "security")?.finalBalance ?? 0,
             balancedFinalBalance:
@@ -314,7 +344,17 @@ function VestedBenefitsCalc() {
             gainVsSecurity:
               (projections.find((p) => p.strategy.id === recommended)?.finalBalance ?? 0) -
               (projections.find((p) => p.strategy.id === "security")?.finalBalance ?? 0),
+            gainVsCurrent,
             yearsToRetirement: form.yearsToRetirement,
+            compareRows: [
+              {
+                label: "Capital de libre passage projeté",
+                current: currentProjection?.finalBalance ?? 0,
+                projected: recommendedProjection?.finalBalance ?? 0,
+                betterWhen: "higher",
+                hint: `Actuel = taux Fondation supplétive LPP (${SUPPLETIVE_RATE}%/an) · Projeté = stratégie ${strategyLabel(recommended)}.`,
+              },
+            ],
           }}
           defaultTitle={`Libre passage · ${form.initialBalance} CHF / ${form.yearsToRetirement} ans`}
         />
