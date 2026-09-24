@@ -88,13 +88,14 @@ function ConsolidatedBenefitsCalc() {
         <div className="max-w-sm space-y-1.5">
           <Label className="text-xs font-medium text-muted-foreground">Client</Label>
           <Select
-            value={clientId ?? ""}
-            onValueChange={(v) => navigate({ search: { clientId: v || undefined } })}
+            value={clientId ?? "none"}
+            onValueChange={(v) => navigate({ search: { clientId: v === "none" ? undefined : v } })}
           >
             <SelectTrigger>
               <SelectValue placeholder="Sélectionnez un client" />
             </SelectTrigger>
             <SelectContent>
+              <SelectItem value="none">Sélectionnez un client</SelectItem>
               {clients.map((c) => (
                 <SelectItem key={c.id} value={c.id}>
                   {c.last_name} {c.first_name}
