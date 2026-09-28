@@ -84,6 +84,10 @@ function Pillar3aCalc() {
     // saisie manuelle uniquement, jamais recalculée : voir audit. 0/vide si
     // aucune rente d'invalidité n'est prévue par la police du client.
     disabilityAnnualPension: 0,
+    // Capital décès du 3e pilier (clause décès de la police liée, le cas
+    // échéant) — saisie manuelle uniquement, jamais recalculé. 0/vide si
+    // aucun capital décès n'est prévu par la police du client.
+    deathCapital: 0,
   });
   useHydrateFormFromPrefill(simId ? null : prefill, setForm);
 
@@ -622,14 +626,19 @@ useEffect(() => {
       </CalcCard>
 
       <CalcCard
-        title="Rente d'invalidité (pilier 3)"
-        description="Si la police liée au 3e pilier du client prévoit une rente d'invalidité, saisissez-la ici. Saisie manuelle uniquement — jamais recalculée, laissez à 0 si aucune rente d'invalidité n'existe."
+        title="Invalidité et décès (pilier 3)"
+        description="Si la police liée au 3e pilier du client prévoit une rente d'invalidité et/ou un capital décès, saisissez-les ici. Saisie manuelle uniquement — jamais recalculée, laissez à 0 si la prestation n'existe pas."
       >
-        <div className="max-w-xs">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <NumField
             label="Rente d'invalidité annuelle"
             value={form.disabilityAnnualPension}
             onChange={(v) => set("disabilityAnnualPension", v)}
+          />
+          <NumField
+            label="Capital décès"
+            value={form.deathCapital}
+            onChange={(v) => set("deathCapital", v)}
           />
         </div>
       </CalcCard>
@@ -654,6 +663,10 @@ useEffect(() => {
             // le cas échéant) — reprise telle quelle par la consolidation
             // et le comparateur cantonal, jamais recalculée.
             disabilityAnnualPension: form.disabilityAnnualPension || undefined,
+            // Capital décès saisi manuellement (police 3e pilier, le cas
+            // échéant) — repris tel quel par la consolidation (scénario
+            // décès), jamais recalculé.
+            deathCapital: form.deathCapital || undefined,
             // Trajectoire année par année (année → capital), pour le
             // graphique d'évolution du PDF de synthèse. Simple retranscription
             // de projection.yearly, déjà calculé ci-dessus.

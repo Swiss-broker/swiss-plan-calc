@@ -83,6 +83,7 @@ export interface ConsolidationReferenceSimulations {
   avsAi?: HistoryEntry | null;
   lpp?: HistoryEntry | null;
   pillar3a?: HistoryEntry | null;
+  taxGlobal?: HistoryEntry | null;
 }
 
 /** Sélectionne, parmi une liste de simulations déjà chargées pour un client
@@ -95,6 +96,7 @@ export function pickConsolidationReferences(
     avsAi: pickLatestNonDismissed(entries, "avs_ai") ?? null,
     lpp: pickLatestNonDismissed(entries, "lpp") ?? null,
     pillar3a: pickLatestNonDismissed(entries, "pillar3a") ?? null,
+    taxGlobal: pickLatestNonDismissed(entries, "tax_global") ?? null,
   };
 }
 
@@ -656,6 +658,24 @@ function buildDeath(
         pillar2Items[i] = toItem(pillar2Items[i].label, Math.round(pillar2Items[i].annual * factor), "LPP");
       }
     }
+  }
+
+  // Capital décès 3e pilier (police liée, le cas échéant) — saisi
+  // manuellement uniquement (pillar3a.tsx), jamais recalculé ni extrapolé
+  // vers le scénario optimisé. Exprimé en rente équivalente (capital ÷ 25
+  // ans) pour rester comparable aux autres lignes de ce tableau, même
+  // convention que la rente de vieillesse 3a ailleurs dans ce fichier — en
+  // pratique, ce capital est versé en une fois aux bénéficiaires désignés.
+  const p3aDeathCapital = Number(
+    (refs?.pillar3a?.summary as Record<string, unknown> | undefined)?.deathCapital ?? 0,
+  );
+  if (p3aDeathCapital > 0) {
+    pillar2Items.push(
+      toItem("Capital décès 3e pilier (rente équivalente, capital ÷ 25 ans)", Math.round(p3aDeathCapital / 25), "3A"),
+    );
+    notes.push(
+      "Capital décès 3e pilier exprimé en rente équivalente (capital ÷ 25 ans) pour comparaison : en pratique, versé en une fois aux bénéficiaires désignés, pas sous forme de rente.",
+    );
   }
 
   const p1Total = benefits.totalAnnual;

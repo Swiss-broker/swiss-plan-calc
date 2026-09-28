@@ -5,12 +5,13 @@ import { z } from "zod";
 import {
   Calculator,
   Coins,
-  
+
   PiggyBank,
   Landmark,
   Map,
   TrendingUp,
   HeartHandshake,
+  HeartPulse,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
@@ -46,9 +47,9 @@ const MORE_TABS = [
   { to: "/calculators/vested-benefits", labelKey: "calc.tab.vested_benefits", icon: Landmark, exact: false as boolean },
   { to: "/calculators/director-compensation", labelKey: "calc.tab.director", icon: TrendingUp, exact: false as boolean },
   { to: "/calculators/health-insurance-france", labelKey: "calc.tab.health_fr", icon: Coins, exact: false as boolean },
+  { to: "/calculators/health-insurance-resident", labelKey: "calc.tab.health_resident", icon: HeartPulse, exact: false as boolean },
   { to: "/calculators/overtime", labelKey: "calc.tab.overtime", icon: Coins, exact: false as boolean },
   { to: "/calculators/investment-compare", labelKey: "calc.tab.investment_compare", icon: TrendingUp, exact: false as boolean },
-  { to: "/calculators/fx-claim", labelKey: "calc.tab.fx_claim", icon: Coins, exact: false as boolean },
 ] as const;
 
 const ALL_TABS = [...TABS, ...MORE_TABS] as const;

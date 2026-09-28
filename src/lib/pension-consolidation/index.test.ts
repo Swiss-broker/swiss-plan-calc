@@ -142,6 +142,21 @@ describe("consolidatePensionBenefits — priorité des sources (certificat > sim
     expect(optimizedP3a?.annual).toBe(15_000);
   });
 
+  it("décès : ajoute le capital décès 3e pilier saisi manuellement, exprimé en rente équivalente (÷ 25 ans), sans jamais le recalculer", () => {
+    const b = makeBundle({});
+    const refs: ConsolidationReferenceSimulations = {
+      lpp: makeEntry("lpp", { projectedBalance: 200_000, annualPension: 12_000 }),
+      pillar3a: makeEntry("pillar3a", { finalBalance: 100_000, deathCapital: 50_000 }),
+    };
+    const current = consolidatePensionBenefits(b, refs);
+    const optimized = consolidateOptimizedBenefits(b, refs);
+    const currentP3a = current.death?.pillar2.items.find((i) => i.pillar === "3A");
+    const optimizedP3a = optimized.death?.pillar2.items.find((i) => i.pillar === "3A");
+    expect(currentP3a?.annual).toBe(2_000); // 50'000 / 25
+    // Jamais extrapolée vers le scénario optimisé (saisie manuelle, police figée).
+    expect(optimizedP3a?.annual).toBe(2_000);
+  });
+
   it("décès : rente de veuf/veuve du certificat sans montant d'orphelin dédié -> l'orphelin retombe sur l'estimation live, pas 0 (régression)", () => {
     const b = makeBundle({
       client: {

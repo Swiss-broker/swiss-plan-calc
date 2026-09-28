@@ -31,6 +31,7 @@ import {
 } from "@/lib/health-france";
 import { CrossCalcImpactBanner } from "@/components/calculators/CrossCalcImpactBanner";
 import { GuideMode, GuideToggleButton, type GuideStep } from "@/components/calculators/GuideMode";
+import { formatCHF } from "@/lib/format";
 
 const searchSchema = z.object({
   clientId: fallback(z.string().uuid().optional(), undefined),
@@ -55,6 +56,7 @@ function HealthInsuranceFranceCalc() {
     taxYear: 2026,
     lamalAdultMonthlyCHF: 200,
     lamalChildMonthlyCHF: 49.4,
+    yearsToRetirement: 20,
   });
   useHydrateFormFromPrefill(simId ? null : prefill, setForm);
 
@@ -176,6 +178,12 @@ function HealthInsuranceFranceCalc() {
                 onChange={(v) => set("taxYear", v)}
                 tip="Détermine l'abattement officiel applicable. 2026 : 12 015 €. Révisé chaque année par l'administration française."
               />
+              <NumField
+                label="Années restantes jusqu'à la retraite"
+                value={form.yearsToRetirement ?? 20}
+                onChange={(v) => set("yearsToRetirement", v)}
+                tip="Utilisé uniquement pour chiffrer l'économie CMU/LAMal cumulée jusqu'à la retraite dans la synthèse."
+              />
             </div>
             <div className="mt-3 flex items-start gap-2 rounded-md border bg-muted/30 p-3 text-xs text-muted-foreground">
               <Info className="mt-0.5 h-4 w-4 flex-shrink-0 text-primary" />
@@ -253,6 +261,19 @@ function HealthInsuranceFranceCalc() {
                 tone={result.recommended === "LAMAL" ? "success" : "default"}
               />
             </div>
+            {result.cmuToLamalCumulativeSavingsCHF !== null && (
+              <div className="mt-3 rounded-lg border-2 border-success/40 bg-success/5 p-3">
+                <div className="text-xs font-semibold uppercase tracking-wide text-success">
+                  Économie CMU → LAMal jusqu'à la retraite ({form.yearsToRetirement} ans)
+                </div>
+                <div className="mt-1 text-2xl font-bold tabular-nums text-success">
+                  {formatCHF(result.cmuToLamalCumulativeSavingsCHF)}
+                </div>
+                <div className="mt-1 text-xs text-muted-foreground">
+                  Soit {formatCHF(result.cmuToLamalMonthlySavingsCHF)} / mois · {formatCHF(result.cmuToLamalAnnualSavingsCHF)} / an
+                </div>
+              </div>
+            )}
             <div className="mt-3 flex items-start gap-2 rounded-md border bg-muted/30 p-3 text-xs text-muted-foreground">
               <Shield className="mt-0.5 h-4 w-4 flex-shrink-0 text-primary" />
               <span>
@@ -285,6 +306,13 @@ function HealthInsuranceFranceCalc() {
               lamalAnnualCHF: result.lamalAnnualCHF,
               savingsCHF: result.savingsCHF,
               rfrEUR: result.rfrEUR,
+              // Comparatif avant (CMU) / après (LAMal) pour la synthèse
+              // globale du PDF, avec l'économie cumulée jusqu'à la retraite
+              // mise en évidence (cahier des charges point 3).
+              yearsToRetirement: result.yearsToRetirement,
+              cmuToLamalAnnualSavingsCHF: result.cmuToLamalAnnualSavingsCHF,
+              cmuToLamalMonthlySavingsCHF: result.cmuToLamalMonthlySavingsCHF,
+              cmuToLamalCumulativeSavingsCHF: result.cmuToLamalCumulativeSavingsCHF,
             }}
             defaultTitle={`Santé frontalier · ${form.civilStatus === "married" ? "Couple" : "Solo"} · ${form.swissGrossSalaryCHF} CHF`}
           />

@@ -36,6 +36,8 @@ export interface HealthFranceInput {
   lamalAdultMonthlyCHF?: number;
   /** Tarif LAMal enfant (CHF/mois), modifiable */
   lamalChildMonthlyCHF?: number;
+  /** Années restantes avant la retraite, pour chiffrer l'économie cumulée */
+  yearsToRetirement?: number;
   [key: string]: unknown;
 }
 
@@ -58,6 +60,12 @@ export interface HealthFranceResult {
   recommended: "CMU" | "LAMAL";
   recommendedAnnualCHF: number;
   savingsCHF: number;
+  /** Économie annuelle d'un passage CMU → LAMal (négatif si LAMal coûte plus cher). */
+  cmuToLamalAnnualSavingsCHF: number;
+  cmuToLamalMonthlySavingsCHF: number;
+  /** Économie cumulée jusqu'à la retraite (cmuToLamalAnnualSavingsCHF × yearsToRetirement). */
+  cmuToLamalCumulativeSavingsCHF: number | null;
+  yearsToRetirement: number | null;
   cmuBreakdown: BreakdownLine[];
   lamalBreakdown: BreakdownLine[];
   notes: string[];
@@ -111,6 +119,16 @@ export function computeHealthFrance(input: HealthFranceInput): HealthFranceResul
   const recommendedAnnualCHF = recommended === "CMU" ? cmuAnnualCHF : lamalAnnualCHF;
   const savingsCHF = Math.abs(lamalAnnualCHF - cmuAnnualCHF);
 
+  // Comparatif "avant/après" (situation actuelle CMU → optimisation LAMal),
+  // pour la synthèse globale du PDF : économie signée, positive si LAMal est
+  // meilleur marché, négative sinon.
+  const cmuToLamalAnnualSavingsCHF = cmuAnnualCHF - lamalAnnualCHF;
+  const cmuToLamalMonthlySavingsCHF = Math.round(cmuToLamalAnnualSavingsCHF / 12);
+  const yearsToRetirement =
+    input.yearsToRetirement && input.yearsToRetirement > 0 ? Math.round(input.yearsToRetirement) : null;
+  const cmuToLamalCumulativeSavingsCHF =
+    yearsToRetirement !== null ? cmuToLamalAnnualSavingsCHF * yearsToRetirement : null;
+
   const cmuBreakdown: BreakdownLine[] = [
     { label: "Salaire suisse brut N-2", value: fmtCHF(input.swissGrossSalaryCHF) },
     { label: "Taux de change CHF → EUR", value: String(rate) },
@@ -159,6 +177,10 @@ export function computeHealthFrance(input: HealthFranceInput): HealthFranceResul
     recommended,
     recommendedAnnualCHF,
     savingsCHF,
+    cmuToLamalAnnualSavingsCHF,
+    cmuToLamalMonthlySavingsCHF,
+    cmuToLamalCumulativeSavingsCHF,
+    yearsToRetirement,
     cmuBreakdown,
     lamalBreakdown,
     notes,

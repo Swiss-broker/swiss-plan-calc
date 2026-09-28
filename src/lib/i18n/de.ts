@@ -462,9 +462,9 @@ export const de: Record<string, string> = {
   "calc.tab.vested_benefits": "Freizügigkeit",
   "calc.tab.director": "Vergleich Geschäftsführer",
   "calc.tab.health_fr": "CMU / KVG",
+  "calc.tab.health_resident": "Krankenkasse",
   "calc.tab.overtime": "Überstunden",
   "calc.tab.investment_compare": "Anlagevergleich",
-  "calc.tab.fx_claim": "Wechselkurs",
   "calc.tab.more": "Mehr ▾",
 
   // === Simulationsverlauf ===
@@ -1891,7 +1891,6 @@ export const de: Record<string, string> = {
   "calc.global.guide.s9.title": "Grenzgänger und Wechselkurs",
   "calc.global.guide.s9.body": "Bei Grenzgänger-Regimen rechnet der EUR/CHF-Wechselkurs die eingegebenen Beträge automatisch in beide Richtungen um.",
   "calc.global.guide.s10.title": "Ergebnis",
-  "calc.fx_claim.title": "Wechselkurs-Reklamation",
   "enum.civil_status.cohabiting": "Konkubinat",
   "clients.toast.status_verified": "Steuerstatus bestätigt",
   "clients.toast.note_added": "Notiz hinzugefügt",

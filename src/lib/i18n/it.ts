@@ -459,9 +459,9 @@ export const it: Record<string, string> = {
   "calc.tab.vested_benefits": "Libero passaggio",
   "calc.tab.director": "Confronto amministratore",
   "calc.tab.health_fr": "CMU / LAMal",
+  "calc.tab.health_resident": "Cassa malati",
   "calc.tab.overtime": "Straordinari",
   "calc.tab.investment_compare": "Confronto investimenti",
-  "calc.tab.fx_claim": "Tasso di cambio",
   "calc.tab.more": "Altro ▾",
 
   // === Cronologia delle simulazioni ===
@@ -1875,7 +1875,6 @@ export const it: Record<string, string> = {
   "calc.global.guide.s7.title": "Patrimonio netto",
   "calc.global.guide.s7.body": "L'imposta sul patrimonio è distinta dall'imposta sul reddito. Si applica solo in tassazione ordinaria.",
   "calc.global.guide.s8.title": "Deduzioni",
-  "calc.fx_claim.title": "Reclamo tasso di cambio",
   "enum.civil_status.cohabiting": "Convivenza",
   "clients.toast.status_verified": "Stato fiscale verificato",
   "clients.toast.note_added": "Nota aggiunta",

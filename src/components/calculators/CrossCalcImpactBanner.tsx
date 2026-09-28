@@ -18,11 +18,11 @@ export type CalculatorKey =
   | "retirement"
   | "avs-ai"
   | "health-insurance-france"
+  | "health-insurance-resident"
   | "canton-compare"
   | "director-compensation"
   | "investment-compare"
-  | "overtime"
-  | "fx-claim";
+  | "overtime";
 
 interface ImpactTarget {
   to: CalculatorKey;
@@ -46,11 +46,11 @@ const ROUTE_MAP: Record<CalculatorKey, string> = {
   retirement: "/calculators/retirement",
   "avs-ai": "/calculators/avs-ai",
   "health-insurance-france": "/calculators/health-insurance-france",
+  "health-insurance-resident": "/calculators/health-insurance-resident",
   "canton-compare": "/calculators/canton-compare",
   "director-compensation": "/calculators/director-compensation",
   "investment-compare": "/calculators/investment-compare",
   overtime: "/calculators/overtime",
-  "fx-claim": "/calculators/fx-claim",
 };
 
 const LABELS: Record<CalculatorKey, string> = {
@@ -65,11 +65,11 @@ const LABELS: Record<CalculatorKey, string> = {
   retirement: "Retraite",
   "avs-ai": "AVS / AI",
   "health-insurance-france": "LAMal / CMU",
+  "health-insurance-resident": "Caisse maladie résident",
   "canton-compare": "Comparateur cantons",
   "director-compensation": "Rémunération dirigeant",
   "investment-compare": "Comparateur placements",
   overtime: "Heures supplémentaires",
-  "fx-claim": "Réclamation change",
 };
 
 const IMPACT_MAP: Record<CalculatorKey, ImpactConfig> = {
@@ -181,11 +181,9 @@ const IMPACT_MAP: Record<CalculatorKey, ImpactConfig> = {
       { to: "tax-global", what: "Salaire brut total après heures sup." },
     ],
   },
-  "fx-claim": {
-    fields: ["devise", "période"],
-    targets: [
-      { to: "tax-global", what: "Taux EUR/CHF appliqué aux revenus étrangers." },
-    ],
+  "health-insurance-resident": {
+    fields: [],
+    targets: [],
   },
 };
 

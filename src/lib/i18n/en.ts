@@ -459,9 +459,9 @@ export const en: Record<string, string> = {
   "calc.tab.vested_benefits": "Vested benefits",
   "calc.tab.director": "Director compensation",
   "calc.tab.health_fr": "CMU / Health insurance",
+  "calc.tab.health_resident": "Health insurance",
   "calc.tab.overtime": "Overtime",
   "calc.tab.investment_compare": "Investment comparison",
-  "calc.tab.fx_claim": "Exchange rate",
   "calc.tab.more": "More ▾",
 
   // === Simulation history ===
@@ -1858,7 +1858,6 @@ export const en: Record<string, string> = {
   "calc.global.tou.eligible": "TOU eligible (quasi-resident)",
   "calc.global.tou.not_eligible": "Not TOU eligible",
   "calc.global.notes.title": "Notes & explanations",
-  "calc.fx_claim.title": "Exchange rate claim",
   "enum.civil_status.cohabiting": "Cohabiting",
   "clients.toast.status_verified": "Tax status verified",
   "clients.toast.note_added": "Note added",

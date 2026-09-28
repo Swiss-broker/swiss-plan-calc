@@ -51,8 +51,8 @@ import { Route as AppCalculatorsOvertimeRouteImport } from './routes/_app/calcul
 import { Route as AppCalculatorsLppRouteImport } from './routes/_app/calculators/lpp'
 import { Route as AppCalculatorsInvestmentCompareRouteImport } from './routes/_app/calculators/investment-compare'
 import { Route as AppCalculatorsIncomeTaxRouteImport } from './routes/_app/calculators/income-tax'
+import { Route as AppCalculatorsHealthInsuranceResidentRouteImport } from './routes/_app/calculators/health-insurance-resident'
 import { Route as AppCalculatorsHealthInsuranceFranceRouteImport } from './routes/_app/calculators/health-insurance-france'
-import { Route as AppCalculatorsFxClaimRouteImport } from './routes/_app/calculators/fx-claim'
 import { Route as AppCalculatorsDirectorCompensationRouteImport } from './routes/_app/calculators/director-compensation'
 import { Route as AppCalculatorsCrossBorderRouteImport } from './routes/_app/calculators/cross-border'
 import { Route as AppCalculatorsConsolidatedBenefitsRouteImport } from './routes/_app/calculators/consolidated-benefits'
@@ -274,17 +274,18 @@ const AppCalculatorsIncomeTaxRoute = AppCalculatorsIncomeTaxRouteImport.update({
   path: '/income-tax',
   getParentRoute: () => AppCalculatorsRoute,
 } as any)
+const AppCalculatorsHealthInsuranceResidentRoute =
+  AppCalculatorsHealthInsuranceResidentRouteImport.update({
+    id: '/health-insurance-resident',
+    path: '/health-insurance-resident',
+    getParentRoute: () => AppCalculatorsRoute,
+  } as any)
 const AppCalculatorsHealthInsuranceFranceRoute =
   AppCalculatorsHealthInsuranceFranceRouteImport.update({
     id: '/health-insurance-france',
     path: '/health-insurance-france',
     getParentRoute: () => AppCalculatorsRoute,
   } as any)
-const AppCalculatorsFxClaimRoute = AppCalculatorsFxClaimRouteImport.update({
-  id: '/fx-claim',
-  path: '/fx-claim',
-  getParentRoute: () => AppCalculatorsRoute,
-} as any)
 const AppCalculatorsDirectorCompensationRoute =
   AppCalculatorsDirectorCompensationRouteImport.update({
     id: '/director-compensation',
@@ -362,8 +363,8 @@ export interface FileRoutesByFullPath {
   '/calculators/consolidated-benefits': typeof AppCalculatorsConsolidatedBenefitsRoute
   '/calculators/cross-border': typeof AppCalculatorsCrossBorderRoute
   '/calculators/director-compensation': typeof AppCalculatorsDirectorCompensationRoute
-  '/calculators/fx-claim': typeof AppCalculatorsFxClaimRoute
   '/calculators/health-insurance-france': typeof AppCalculatorsHealthInsuranceFranceRoute
+  '/calculators/health-insurance-resident': typeof AppCalculatorsHealthInsuranceResidentRoute
   '/calculators/income-tax': typeof AppCalculatorsIncomeTaxRoute
   '/calculators/investment-compare': typeof AppCalculatorsInvestmentCompareRoute
   '/calculators/lpp': typeof AppCalculatorsLppRoute
@@ -413,8 +414,8 @@ export interface FileRoutesByTo {
   '/calculators/consolidated-benefits': typeof AppCalculatorsConsolidatedBenefitsRoute
   '/calculators/cross-border': typeof AppCalculatorsCrossBorderRoute
   '/calculators/director-compensation': typeof AppCalculatorsDirectorCompensationRoute
-  '/calculators/fx-claim': typeof AppCalculatorsFxClaimRoute
   '/calculators/health-insurance-france': typeof AppCalculatorsHealthInsuranceFranceRoute
+  '/calculators/health-insurance-resident': typeof AppCalculatorsHealthInsuranceResidentRoute
   '/calculators/income-tax': typeof AppCalculatorsIncomeTaxRoute
   '/calculators/investment-compare': typeof AppCalculatorsInvestmentCompareRoute
   '/calculators/lpp': typeof AppCalculatorsLppRoute
@@ -468,8 +469,8 @@ export interface FileRoutesById {
   '/_app/calculators/consolidated-benefits': typeof AppCalculatorsConsolidatedBenefitsRoute
   '/_app/calculators/cross-border': typeof AppCalculatorsCrossBorderRoute
   '/_app/calculators/director-compensation': typeof AppCalculatorsDirectorCompensationRoute
-  '/_app/calculators/fx-claim': typeof AppCalculatorsFxClaimRoute
   '/_app/calculators/health-insurance-france': typeof AppCalculatorsHealthInsuranceFranceRoute
+  '/_app/calculators/health-insurance-resident': typeof AppCalculatorsHealthInsuranceResidentRoute
   '/_app/calculators/income-tax': typeof AppCalculatorsIncomeTaxRoute
   '/_app/calculators/investment-compare': typeof AppCalculatorsInvestmentCompareRoute
   '/_app/calculators/lpp': typeof AppCalculatorsLppRoute
@@ -523,8 +524,8 @@ export interface FileRouteTypes {
     | '/calculators/consolidated-benefits'
     | '/calculators/cross-border'
     | '/calculators/director-compensation'
-    | '/calculators/fx-claim'
     | '/calculators/health-insurance-france'
+    | '/calculators/health-insurance-resident'
     | '/calculators/income-tax'
     | '/calculators/investment-compare'
     | '/calculators/lpp'
@@ -574,8 +575,8 @@ export interface FileRouteTypes {
     | '/calculators/consolidated-benefits'
     | '/calculators/cross-border'
     | '/calculators/director-compensation'
-    | '/calculators/fx-claim'
     | '/calculators/health-insurance-france'
+    | '/calculators/health-insurance-resident'
     | '/calculators/income-tax'
     | '/calculators/investment-compare'
     | '/calculators/lpp'
@@ -628,8 +629,8 @@ export interface FileRouteTypes {
     | '/_app/calculators/consolidated-benefits'
     | '/_app/calculators/cross-border'
     | '/_app/calculators/director-compensation'
-    | '/_app/calculators/fx-claim'
     | '/_app/calculators/health-insurance-france'
+    | '/_app/calculators/health-insurance-resident'
     | '/_app/calculators/income-tax'
     | '/_app/calculators/investment-compare'
     | '/_app/calculators/lpp'
@@ -966,18 +967,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppCalculatorsIncomeTaxRouteImport
       parentRoute: typeof AppCalculatorsRoute
     }
+    '/_app/calculators/health-insurance-resident': {
+      id: '/_app/calculators/health-insurance-resident'
+      path: '/health-insurance-resident'
+      fullPath: '/calculators/health-insurance-resident'
+      preLoaderRoute: typeof AppCalculatorsHealthInsuranceResidentRouteImport
+      parentRoute: typeof AppCalculatorsRoute
+    }
     '/_app/calculators/health-insurance-france': {
       id: '/_app/calculators/health-insurance-france'
       path: '/health-insurance-france'
       fullPath: '/calculators/health-insurance-france'
       preLoaderRoute: typeof AppCalculatorsHealthInsuranceFranceRouteImport
-      parentRoute: typeof AppCalculatorsRoute
-    }
-    '/_app/calculators/fx-claim': {
-      id: '/_app/calculators/fx-claim'
-      path: '/fx-claim'
-      fullPath: '/calculators/fx-claim'
-      preLoaderRoute: typeof AppCalculatorsFxClaimRouteImport
       parentRoute: typeof AppCalculatorsRoute
     }
     '/_app/calculators/director-compensation': {
@@ -1045,8 +1046,8 @@ interface AppCalculatorsRouteChildren {
   AppCalculatorsConsolidatedBenefitsRoute: typeof AppCalculatorsConsolidatedBenefitsRoute
   AppCalculatorsCrossBorderRoute: typeof AppCalculatorsCrossBorderRoute
   AppCalculatorsDirectorCompensationRoute: typeof AppCalculatorsDirectorCompensationRoute
-  AppCalculatorsFxClaimRoute: typeof AppCalculatorsFxClaimRoute
   AppCalculatorsHealthInsuranceFranceRoute: typeof AppCalculatorsHealthInsuranceFranceRoute
+  AppCalculatorsHealthInsuranceResidentRoute: typeof AppCalculatorsHealthInsuranceResidentRoute
   AppCalculatorsIncomeTaxRoute: typeof AppCalculatorsIncomeTaxRoute
   AppCalculatorsInvestmentCompareRoute: typeof AppCalculatorsInvestmentCompareRoute
   AppCalculatorsLppRoute: typeof AppCalculatorsLppRoute
@@ -1068,9 +1069,10 @@ const AppCalculatorsRouteChildren: AppCalculatorsRouteChildren = {
   AppCalculatorsCrossBorderRoute: AppCalculatorsCrossBorderRoute,
   AppCalculatorsDirectorCompensationRoute:
     AppCalculatorsDirectorCompensationRoute,
-  AppCalculatorsFxClaimRoute: AppCalculatorsFxClaimRoute,
   AppCalculatorsHealthInsuranceFranceRoute:
     AppCalculatorsHealthInsuranceFranceRoute,
+  AppCalculatorsHealthInsuranceResidentRoute:
+    AppCalculatorsHealthInsuranceResidentRoute,
   AppCalculatorsIncomeTaxRoute: AppCalculatorsIncomeTaxRoute,
   AppCalculatorsInvestmentCompareRoute: AppCalculatorsInvestmentCompareRoute,
   AppCalculatorsLppRoute: AppCalculatorsLppRoute,

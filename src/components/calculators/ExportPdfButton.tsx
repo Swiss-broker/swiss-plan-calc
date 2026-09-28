@@ -6,8 +6,7 @@
 // autonome, aucun client rattaché), l'export reste verrouillé par défaut :
 // il n'y a rien à "avoir payé" dans ce cas, et laisser passer recréerait
 // exactement la faille qu'on referme (il suffirait de ne jamais choisir de
-// client pour exporter librement). fx-claim.tsx n'utilise pas ce
-// composant, volontairement : son "courrier PDF" reste libre d'accès.
+// client pour exporter librement).
 import { useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { Download, Lock } from "lucide-react";

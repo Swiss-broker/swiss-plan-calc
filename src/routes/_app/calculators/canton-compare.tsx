@@ -148,6 +148,16 @@ function CantonCompareCalc() {
   // recalcul "fiche" (dashboard) uniquement si aucune simulation n'a été
   // enregistrée pour ce pilier.
   const { data: consolidationRefs } = useConsolidationReferences(clientId);
+  // Impôt "situation actuelle" : priorité à la dernière simulation « Fiscal
+  // global » enregistrée pour ce client (même canton que la référence ici),
+  // pour ne jamais afficher un montant différent de la ligne « Fiscal
+  // global » du PDF. Repli sur le recalcul local (computeTaxGlobal) si aucune
+  // simulation Fiscal global n'est enregistrée pour ce canton.
+  const savedTaxGlobal = consolidationRefs?.taxGlobal;
+  const savedTaxGlobalSummary = savedTaxGlobal?.summary as Record<string, unknown> | undefined;
+  const savedTaxGlobalCanton = (savedTaxGlobal?.inputs as Record<string, unknown> | undefined)?.canton;
+  const savedTaxGlobalTotal = Number(savedTaxGlobalSummary?.totalTaxCHF ?? 0);
+  const savedTaxGlobalEffective = Number(savedTaxGlobalSummary?.effectiveRate ?? 0);
   // Fortune nette telle que déclarée sur la fiche (client_assets), pour le
   // contrôle de cohérence sur le champ "Fortune nette" ci-dessous. undefined
   // tant que le bundle n'a pas fini de charger (évite un faux "conforme" à 0
@@ -255,11 +265,19 @@ function CantonCompareCalc() {
           // On ne change que le canton, le reste (régime, déductions,
           // bonus, 3a, fortune…) est identique au calculateur fiscal global.
           const r = computeTaxGlobal({ ...base, canton: c.code });
+          // Canton de référence + simulation « Fiscal global » enregistrée
+          // pour ce même canton : on reprend son montant tel quel plutôt que
+          // de recalculer, pour garantir l'identité avec la ligne « Fiscal
+          // global » du PDF (voir cahier des charges point 2).
+          const useSavedTaxGlobal =
+            c.code === referenceCanton &&
+            savedTaxGlobalTotal > 0 &&
+            savedTaxGlobalCanton === c.code;
           rows.push({
             code: c.code,
             name: c.name,
-            total: r.totalTaxCHF,
-            effective: r.effectiveRate,
+            total: useSavedTaxGlobal ? savedTaxGlobalTotal : r.totalTaxCHF,
+            effective: useSavedTaxGlobal ? savedTaxGlobalEffective : r.effectiveRate,
             regimeLabel: REGIME_SHORT[r.regime] ?? r.regimeLabel,
             regime: r.regime,
             isReference: REFERENCE_CODES.has(c.code),
@@ -291,7 +309,17 @@ function CantonCompareCalc() {
     const romands = rows.filter((r) => !REFERENCE_CODES.has(r.code)).sort((a, b) => a.total - b.total);
     const refs = rows.filter((r) => REFERENCE_CODES.has(r.code)).sort((a, b) => a.total - b.total);
     return [...romands, ...refs];
-  }, [base, comparable, mode, projectedLPPCapital, lumpSumStatus]);
+  }, [
+    base,
+    comparable,
+    mode,
+    projectedLPPCapital,
+    lumpSumStatus,
+    referenceCanton,
+    savedTaxGlobalTotal,
+    savedTaxGlobalEffective,
+    savedTaxGlobalCanton,
+  ]);
 
   // Mêmes lignes que le comparatif "Résidence vs Zoug" affiché plus bas —
   // calculées ici séparément pour pouvoir aussi les sauvegarder (voir
@@ -396,8 +424,19 @@ function CantonCompareCalc() {
         <div className="flex items-start gap-2">
           <Info className="mt-0.5 h-4 w-4 shrink-0 text-primary" aria-hidden />
           <p className="text-muted-foreground">
-            Les chiffres affichés ici sont calculés avec <strong>le même moteur que le calculateur Fiscal Global</strong>.
-            Pour un même client, la ligne du canton actuel correspond au montant affiché dans le Fiscal Global.
+            {savedTaxGlobalTotal > 0 && savedTaxGlobalCanton === referenceCanton ? (
+              <>
+                Le montant du canton de référence ({referenceCanton}) reprend <strong>exactement</strong> le
+                résultat de la dernière simulation « Fiscal global » enregistrée pour ce client — identique à
+                la ligne « Fiscal global » du PDF de synthèse.
+              </>
+            ) : (
+              <>
+                Les chiffres affichés ici sont calculés avec <strong>le même moteur que le calculateur Fiscal Global</strong>.
+                Pour un même client, la ligne du canton actuel correspond au montant affiché dans le Fiscal Global.
+                Enregistrez une simulation « Fiscal global » pour ce client afin de garantir l'identité exacte des deux montants.
+              </>
+            )}
           </p>
         </div>
       </div>

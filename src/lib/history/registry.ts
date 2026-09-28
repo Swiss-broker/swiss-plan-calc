@@ -120,6 +120,13 @@ export function extractKpis(kind: SimulationKind, summary: SummaryShape): Histor
         { label: "Économie vs autre option", value: num(summary.savingsCHF), unit: "CHF" },
         { label: "RFR estimé (EUR)", value: num(summary.rfrEUR) },
       ];
+    case "health_insurance_resident":
+      return [
+        { label: "Prime actuelle", value: num(summary.currentAnnualCHF), unit: "CHF" },
+        { label: "Prime optimisée", value: num(summary.optimizedAnnualCHF), unit: "CHF" },
+        { label: "Économie annuelle", value: num(summary.annualSavingsCHF), unit: "CHF" },
+        { label: "Économie cumulée", value: num(summary.cumulativeSavingsCHF), unit: "CHF" },
+      ];
     case "overtime":
       return [
         { label: "Économie fiscale", value: num(summary.taxSavingsCHF ?? summary.taxSavings), unit: "CHF" },
@@ -135,13 +142,6 @@ export function extractKpis(kind: SimulationKind, summary: SummaryShape): Histor
         { label: "Taux marginal", value: Number(num(summary.marginalRate).toFixed(2)), unit: "%" },
         { label: "Régime", value: String(summary.regimeLabel ?? summary.regime ?? "—") },
         { label: "Économie optimisations", value: num(summary.bestScenarioSavings), unit: "CHF" },
-      ];
-    case "fx_claim":
-      return [
-        { label: "Écart en votre faveur", value: num(summary.totalDeltaChf), unit: "CHF" },
-        { label: "Économie d'impôt estimée", value: num(summary.estimatedTaxRefund), unit: "CHF" },
-        { label: "CHF retenu (AFC)", value: num(summary.totalChfAfc), unit: "CHF" },
-        { label: "CHF réel (marché)", value: num(summary.totalChfMarket), unit: "CHF" },
       ];
   }
 }
@@ -421,6 +421,16 @@ export async function regeneratePdf(
       exportHealthFrancePdf({ header, input: hfInput, result });
       return;
     }
+    case "health_insurance_resident": {
+      const [{ computeHealthResident }, { exportHealthResidentPdf }] = await Promise.all([
+        import("@/lib/health-resident"),
+        import("@/lib/pdf/reports"),
+      ]);
+      const hrInput = inputs as unknown as Parameters<typeof computeHealthResident>[0];
+      const result = computeHealthResident(hrInput);
+      exportHealthResidentPdf({ header, input: hrInput, result });
+      return;
+    }
     case "overtime": {
       const [{ computeOvertime }, { exportOvertimePdf }] = await Promise.all([
         import("@/lib/overtime-fr"),
@@ -439,16 +449,6 @@ export async function regeneratePdf(
       const tgInput = inputs as unknown as Parameters<typeof computeTaxGlobal>[0];
       const result = computeTaxGlobal(tgInput);
       exportTaxGlobalPdf({ header, input: tgInput, result });
-      return;
-    }
-    case "fx_claim": {
-      const [{ analyzeFxClaim }, { exportFxClaimPdf }] = await Promise.all([
-        import("@/lib/fx/analyze"),
-        import("@/lib/pdf/fx-claim-report"),
-      ]);
-      const claimInput = inputs as unknown as Parameters<typeof analyzeFxClaim>[0];
-      const result = analyzeFxClaim(claimInput);
-      exportFxClaimPdf({ header, input: claimInput, result });
       return;
     }
     case "cross_border":

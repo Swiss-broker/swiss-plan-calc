@@ -18,6 +18,7 @@ import {
   toAvsAiInput,
   toInvestmentCompareInput,
   toHealthInsuranceFranceInput,
+  toHealthInsuranceResidentInput,
   toOvertimeInput,
   toTaxGlobalInput,
   stripUndefined,
@@ -38,6 +39,7 @@ export type CalculatorKind =
   | "avs-ai"
   | "investment-compare"
   | "health-insurance-france"
+  | "health-insurance-resident"
   | "overtime"
   | "tax-global";
 
@@ -54,6 +56,7 @@ const MAPPERS = {
   "avs-ai": toAvsAiInput,
   "investment-compare": toInvestmentCompareInput,
   "health-insurance-france": toHealthInsuranceFranceInput,
+  "health-insurance-resident": toHealthInsuranceResidentInput,
   overtime: toOvertimeInput,
   "tax-global": toTaxGlobalInput,
 } as const;

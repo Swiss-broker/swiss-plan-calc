@@ -174,6 +174,16 @@ export function extractGain(entry: HistoryEntry): ExtractedGain {
         details: "Économie annuelle vs autre option",
       };
     }
+    case "health_insurance_resident": {
+      const amount = num(summary.annualSavingsCHF);
+      if (amount <= 0) return none();
+      return {
+        type: "annual",
+        amount: Math.round(amount),
+        label: "Optimisation caisse maladie",
+        details: "Économie annuelle vs situation actuelle",
+      };
+    }
     case "overtime": {
       const amount = num(summary.taxSavings);
       if (amount <= 0) return none();
@@ -193,16 +203,6 @@ export function extractGain(entry: HistoryEntry): ExtractedGain {
         amount: Math.round(amount),
         label,
         details: "Économie fiscale annuelle (meilleur scénario simulé)",
-      };
-    }
-    case "fx_claim": {
-      const amount = num(summary.estimatedTaxRefund);
-      if (amount <= 0) return none();
-      return {
-        type: "one_time",
-        amount: Math.round(amount),
-        label: "Réclamation taux de change",
-        details: "Économie d'impôt estimée sur l'écart taux AFC / taux marché",
       };
     }
     default:

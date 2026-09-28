@@ -468,10 +468,22 @@ export function toHealthInsuranceFranceInput(b: ClientBundle) {
   const isCouple =
     b.client.civil_status === "married" ||
     b.client.civil_status === "registered_partnership";
+  const age = ageFromDob(b.client.date_of_birth);
   return {
     swissGrossSalaryCHF: main,
     civilStatus: isCouple ? ("married" as const) : ("single" as const),
     childrenCount,
+    yearsToRetirement: age !== null ? Math.max(1, 65 - age) : undefined,
+  };
+}
+
+// ──────────────────────────────────────────────────────────────────────────
+// CAISSE MALADIE RÉSIDENT (LAMal, actuel vs optimisé)
+// ──────────────────────────────────────────────────────────────────────────
+export function toHealthInsuranceResidentInput(b: ClientBundle) {
+  const age = ageFromDob(b.client.date_of_birth);
+  return {
+    yearsToRetirement: age !== null ? Math.max(1, 65 - age) : undefined,
   };
 }
 

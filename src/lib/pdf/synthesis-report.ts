@@ -148,10 +148,13 @@ export interface DerivedComparison {
 // calcul, uniquement une mise en forme différente de valeurs déjà
 // retranscrites. Limité aux cas où la sémantique "actuel vs optimisé" est
 // sans ambiguïté (une vraie option recommandée face à la situation de
-// départ) ; les comparaisons "option A vs option B" (rente vs capital,
-// LAMal vs CMU, placement A vs B) restent volontairement en dehors, tout
-// comme la réclamation de taux de change (ce n'est pas une optimisation
-// actionnable mais un constat de trop-perçu).
+// départ) ; les comparaisons "option A vs option B" sans situation de départ
+// identifiable (rente vs capital, placement A vs B) restent volontairement
+// en dehors. CMU vs LAMal fait exception : le cabinet demande explicitement
+// de toujours traiter la CMU
+// comme la situation actuelle et LAMal comme l'optimisation proposée (cahier
+// des charges point 3), même si le calculateur reste capable de recommander
+// l'un ou l'autre selon le profil.
 export function buildDerivedComparison(entry: HistoryEntry): DerivedComparison | null {
   const s = entry.summary ?? {};
   switch (entry.kind) {
@@ -164,15 +167,19 @@ export function buildDerivedComparison(entry: HistoryEntry): DerivedComparison |
       };
     }
     case "vested_benefits": {
-      const sec = num(s.securityFinalBalance);
-      const reco = num(s.recommendedFinalBalance);
-      if (!sec || !reco) return null;
+      // Actuel = taux Fondation supplétive (situation si le capital reste
+      // sur un compte par défaut), Projeté = stratégie la plus dynamique —
+      // demande explicite du cabinet, pas "stratégie recommandée" (qui
+      // varie selon l'horizon et peut être sécurité/modérée).
+      const current = num(s.currentFinalBalance);
+      const dynamic = num(s.dynamicFinalBalance);
+      if (!current || !dynamic) return null;
       return {
-        rows: [{ label: "Capital de libre passage projeté", current: sec, projected: reco, betterWhen: "higher" }],
-        currentLabel: "Stratégie sécurité",
-        projectedLabel: "Stratégie recommandée",
-        currentBadge: "Prudent",
-        projectedBadge: "Recommandé",
+        rows: [{ label: "Capital de libre passage projeté", current, projected: dynamic, betterWhen: "higher" }],
+        currentLabel: "Situation actuelle",
+        projectedLabel: "Projection dynamique",
+        currentBadge: "Supplétive",
+        projectedBadge: "Dynamique",
       };
     }
     case "cross_border": {
@@ -183,6 +190,50 @@ export function buildDerivedComparison(entry: HistoryEntry): DerivedComparison |
         rows: [{ label: "Charge fiscale annuelle", current: cur, projected: alt, betterWhen: "lower" }],
         currentLabel: "Régime actuel",
         projectedLabel: "Régime alternatif",
+      };
+    }
+    case "health_insurance_france": {
+      // Situation actuelle = CMU (régime CNTFS), optimisation proposée =
+      // LAMal — demande explicite du cabinet (cahier des charges point 3),
+      // pas "l'option la moins chère" (qui varie selon le profil).
+      const cmu = num(s.cmuAnnualCHF);
+      const lamal = num(s.lamalAnnualCHF);
+      if (!cmu || !lamal) return null;
+      return {
+        rows: [{ label: "Cotisation santé annuelle", current: cmu, projected: lamal, betterWhen: "lower" }],
+        currentLabel: "Situation actuelle",
+        projectedLabel: "Optimisation LAMal",
+        currentBadge: "CMU / CNTFS",
+        projectedBadge: "LAMal",
+      };
+    }
+    case "health_insurance_resident": {
+      const current = num(s.currentAnnualCHF);
+      const optimized = num(s.optimizedAnnualCHF);
+      if (!current || !optimized) return null;
+      return {
+        rows: [{ label: "Prime d'assurance maladie annuelle", current, projected: optimized, betterWhen: "lower" }],
+        currentLabel: "Situation actuelle",
+        projectedLabel: "Situation optimisée",
+      };
+    }
+    case "investment_compare": {
+      // Toujours Investissement A = "avant", Investissement B = "après" —
+      // même convention que CMU/LAMal ci-dessus (cahier des charges point
+      // 12), indépendamment de la stratégie gagnante (qui varie selon le
+      // profil et reste indiquée par ailleurs sur cette page).
+      const aNet = num(s.aFinalNet);
+      const bNet = num(s.bFinalNet);
+      if (!aNet || !bNet) return null;
+      const inputs = (entry.inputs ?? {}) as Record<string, unknown>;
+      const a = (inputs.a ?? {}) as Record<string, unknown>;
+      const b = (inputs.b ?? {}) as Record<string, unknown>;
+      const nameA = str(a.name) || "Investissement A";
+      const nameB = str(b.name) || "Investissement B";
+      return {
+        rows: [{ label: "Capital net final", current: aNet, projected: bNet, betterWhen: "higher" }],
+        currentLabel: nameA,
+        projectedLabel: nameB,
       };
     }
     default:
@@ -293,8 +344,8 @@ const EXPLAIN_FR: Partial<Record<SimulationKind, string>> = {
   director_compensation: "En tant que dirigeant actionnaire de votre société, la façon dont vous répartissez salaire, dividendes et réserves a un impact direct sur votre charge sociale et fiscale globale : salaire et dividendes ne sont pas imposés de la même manière. Ce calculateur simule plusieurs répartitions pour identifier celle qui vous est la plus avantageuse, dans le respect des règles fiscales applicables.",
   investment_compare: "Ce calculateur compare deux placements ou stratégies sur une durée donnée, en tenant compte des frais de gestion annuels et de l'impôt applicable à la sortie, pour déterminer lequel vous laisse le plus de capital net à l'échéance.",
   health_insurance_france: "En tant que frontalier résidant en France, vous pouvez choisir entre l'assurance maladie suisse (LAMal) et la couverture maladie universelle française (CMU). Ce choix doit être fait dans les 3 mois suivant le début de votre activité en Suisse, et vous engage pour longtemps : il mérite une comparaison chiffrée précise.",
+  health_insurance_resident: "En tant que résident en Suisse, votre prime d'assurance maladie de base (LAMal) et votre complémentaire varient fortement selon la caisse, la franchise et votre commune de domicile. Ce calculateur compare votre situation actuelle à une offre optimisée, pour chiffrer l'économie réalisable jusqu'à votre retraite.",
   overtime: "Si vous êtes frontalier sous l'accord franco-suisse de 1983, vos heures supplémentaires peuvent, sous certaines conditions, être partiellement exonérées d'impôt sur le revenu en France. Ce calculateur détermine le montant exonérable et l'économie fiscale réelle que cela représente pour vous.",
-  fx_claim: "Le fisc français convertit vos revenus suisses en euros avec un taux de change annuel moyen (taux AFC). Si le taux réel du jour de chaque versement vous était plus favorable, l'écart peut représenter un trop-payé d'impôt réclamable. Ce calculateur compare les deux taux, versement par versement.",
 };
 
 // Ordre de lecture demandé par le cabinet pour les simulations du dossier
@@ -1298,6 +1349,14 @@ function formatInputs(entry: HistoryEntry): Array<[string, string]> {
       pushStr(rows, "Situation civile", i.civilStatus === "married" ? "Marié·e / pacsé·e" : "Célibataire");
       pushIf(rows, "Enfants à charge", i.childrenCount);
       if (num(i.chfToEurRate)) rows.push(["Taux CHF→EUR", String(i.chfToEurRate)]);
+      pushIf(rows, "Années jusqu'à la retraite", i.yearsToRetirement);
+      break;
+    case "health_insurance_resident":
+      pushIfChf(rows, "Assurance de base actuelle (CHF/mois)", i.currentBaseMonthlyCHF);
+      pushIfChf(rows, "Complémentaire actuelle (CHF/mois)", i.currentComplementaryMonthlyCHF);
+      pushIfChf(rows, "Assurance de base optimisée (CHF/mois)", i.optimizedBaseMonthlyCHF);
+      pushIfChf(rows, "Complémentaire optimisée (CHF/mois)", i.optimizedComplementaryMonthlyCHF);
+      pushIf(rows, "Années jusqu'à la retraite", i.yearsToRetirement);
       break;
     case "overtime":
       pushStr(
@@ -1311,13 +1370,6 @@ function formatInputs(entry: HistoryEntry): Array<[string, string]> {
       pushStr(rows, "Situation civile", i.civilStatus === "married" ? "Marié·e / pacsé·e" : "Célibataire");
       pushIf(rows, "Enfants à charge", i.childrenCount);
       pushIfPct(rows, "Taux marginal IR FR estimé", i.estimatedFrenchMarginalRate);
-      break;
-    case "fx_claim":
-      pushIf(rows, "Année fiscale", i.taxYear);
-      pushStr(rows, "Devise", str(i.currency));
-      pushIfPct(rows, "Taux marginal d'impôt", i.marginalRate);
-      if (has(i.afcRate)) rows.push(["Taux AFC retenu", String(num(i.afcRate))]);
-      pushIf(rows, "Nombre de versements", i.transactionCount);
       break;
   }
   return rows;
@@ -1395,8 +1447,8 @@ export function formatMetrics(
       if (has(s.missingYears)) out.push({ label: "Années manquantes", value: String(num(s.missingYears)), tone: "warning" });
       break;
     case "vested_benefits":
-      if (has(s.recommendedFinalBalance)) out.push({ label: "Capital projeté (recommandé)", value: num(s.recommendedFinalBalance), tone: "primary" });
-      if (has(s.securityFinalBalance)) out.push({ label: "Capital projeté (sécurité)", value: num(s.securityFinalBalance) });
+      if (has(s.dynamicFinalBalance)) out.push({ label: "Capital projeté (dynamique)", value: num(s.dynamicFinalBalance), tone: "primary" });
+      if (has(s.currentFinalBalance)) out.push({ label: "Capital projeté (actuel — Supplétive)", value: num(s.currentFinalBalance) });
       break;
     case "cross_border":
       if (has(s.currentTax)) out.push({ label: "Charge fiscale actuelle", value: num(s.currentTax), tone: "warning" });
@@ -1432,6 +1484,24 @@ export function formatMetrics(
       if (has(s.savingsCHF)) out.push({ label: "Économie vs autre option", value: num(s.savingsCHF), tone: "success" });
       if (has(s.cmuAnnualCHF)) out.push({ label: "CMU", value: num(s.cmuAnnualCHF) });
       if (has(s.lamalAnnualCHF)) out.push({ label: "LAMal", value: num(s.lamalAnnualCHF) });
+      if (has(s.cmuToLamalCumulativeSavingsCHF) && num(s.yearsToRetirement) > 0)
+        out.push({
+          label: `Économie CMU → LAMal cumulée (${num(s.yearsToRetirement)} ans)`,
+          value: num(s.cmuToLamalCumulativeSavingsCHF),
+          tone: "success",
+        });
+      break;
+    }
+    case "health_insurance_resident": {
+      if (has(s.currentAnnualCHF)) out.push({ label: "Prime actuelle", value: num(s.currentAnnualCHF), tone: "warning" });
+      if (has(s.optimizedAnnualCHF)) out.push({ label: "Prime optimisée", value: num(s.optimizedAnnualCHF), tone: "success" });
+      if (has(s.annualSavingsCHF)) out.push({ label: "Économie annuelle", value: num(s.annualSavingsCHF), tone: "success" });
+      if (has(s.cumulativeSavingsCHF) && num(s.yearsToRetirement) > 0)
+        out.push({
+          label: `Économie cumulée (${num(s.yearsToRetirement)} ans)`,
+          value: num(s.cumulativeSavingsCHF),
+          tone: "success",
+        });
       break;
     }
     case "overtime": {
@@ -1439,13 +1509,6 @@ export function formatMetrics(
       if (has(s.taxSavings)) out.push({ label: "Économie fiscale (exonération FR)", value: num(s.taxSavings), tone: "success" });
       if (has(s.totalTaxOnOvertime)) out.push({ label: "Impôt total heures sup", value: num(s.totalTaxOnOvertime), tone: "warning" });
       if (has(s.overtimeCHF)) out.push({ label: "Heures sup brutes", value: num(s.overtimeCHF) });
-      break;
-    }
-    case "fx_claim": {
-      if (has(s.totalChfAfc)) out.push({ label: "CHF retenu (AFC)", value: num(s.totalChfAfc), tone: "warning" });
-      if (has(s.totalChfMarket)) out.push({ label: "CHF réel (marché)", value: num(s.totalChfMarket), tone: "primary" });
-      if (has(s.totalDeltaChf)) out.push({ label: "Écart en votre faveur", value: num(s.totalDeltaChf), tone: "success" });
-      if (has(s.estimatedTaxRefund)) out.push({ label: "Économie d'impôt estimée", value: num(s.estimatedTaxRefund), tone: "success" });
       break;
     }
   }
@@ -1465,10 +1528,10 @@ function drawSimpleChart(pdf: ReportPdf, entry: HistoryEntry) {
         };
       break;
     case "vested_benefits":
-      if (num(s.recommendedFinalBalance) && num(s.securityFinalBalance))
+      if (num(s.dynamicFinalBalance) && num(s.currentFinalBalance))
         pair = {
-          left: { label: "Sécurité", value: num(s.securityFinalBalance) },
-          right: { label: "Recommandée", value: num(s.recommendedFinalBalance) },
+          left: { label: "Actuel (Supplétive)", value: num(s.currentFinalBalance) },
+          right: { label: "Dynamique", value: num(s.dynamicFinalBalance) },
         };
       break;
     case "director_compensation":
@@ -1540,6 +1603,13 @@ function drawSimpleChart(pdf: ReportPdf, entry: HistoryEntry) {
           right: { label: "LAMal (Suisse)", value: num(s.lamalAnnualCHF) },
         };
       break;
+    case "health_insurance_resident":
+      if (num(s.currentAnnualCHF) && num(s.optimizedAnnualCHF))
+        pair = {
+          left: { label: "Actuel", value: num(s.currentAnnualCHF) },
+          right: { label: "Optimisé", value: num(s.optimizedAnnualCHF) },
+        };
+      break;
     case "overtime":
       if (num(s.overtimeCHF) && num(s.netOvertimeCHF))
         pair = {
@@ -1591,6 +1661,13 @@ function drawBarPair(
   a: { label: string; value: number },
   b: { label: string; value: number },
 ) {
+  // Réserve la place des 2 lignes avant de dessiner (rowH=9 + espacement 3
+  // entre les deux, voir le calcul de `y` plus bas) : cette fonction dessine
+  // directement via pdf.doc sans passer par une méthode du builder, donc
+  // sans ce garde-fou elle pouvait déborder silencieusement en bas de page
+  // (et, avec un titre de section juste au-dessus, le laisser orphelin —
+  // cahier des charges point 10).
+  pdf.ensureSpace(2 * (9 + 3) + 4);
   const { doc, margin, contentWidth } = pdf;
   const max = Math.max(a.value, b.value, 1);
   const valueW = 35;
@@ -1630,19 +1707,26 @@ function drawBarPair(
   pdf.cursorY = startY + 2 * (rowH + 3) + 4;
 }
 
-function buildComment(entry: HistoryEntry): string | null {
+export function buildComment(entry: HistoryEntry): string | null {
   const s = entry.summary ?? {};
   const i = entry.inputs ?? {};
   switch (entry.kind) {
     case "lpp": {
-      const cap = num(i.buybackCapacity);
+      // Montant du rachat EFFECTIVEMENT versé (actualBuyback), jamais
+      // buybackCapacity (la capacité maximale légale, un plafond, pas le
+      // montant réellement racheté) — les deux sont des champs distincts
+      // sauvegardés séparément par le calculateur (voir lpp.tsx). Utiliser
+      // la capacité ici affichait un montant de rachat supérieur à celui
+      // réellement simulé, et un taux de retour fiscal faux (rapporté au
+      // plafond plutôt qu'au montant racheté).
+      const actualBuyback = num(i.actualBuyback);
       const years = Math.max(1, num(i.buybackYears));
       const sav = num(s.totalTaxSavings);
       const proj = num(s.projectedBalance);
       if (!has(s.totalTaxSavings) && !has(s.projectedBalance)) return null;
-      if (sav > 0) {
-        const rate = ((sav / Math.max(1, cap)) * 100).toFixed(1).replace(".", ",");
-        return `Un rachat de ${formatCHF(cap)}, étalé sur ${years} an${years > 1 ? "s" : ""}, vous ferait économiser ${formatCHF(sav)} d'impôts au total, soit un retour fiscal moyen de ${rate} % du montant racheté. Concrètement, chaque franc versé dans votre 2e pilier réduit d'autant votre revenu imposable l'année du versement, tout en renforçant votre capital de prévoyance qui sera converti en rente ou retiré à la retraite. Point de vigilance : un rachat LPP bloque tout retrait en capital pendant les 3 années qui suivent (art. 79b al. 3 LPP), à anticiper si un achat immobilier ou un départ à l'étranger est envisagé sur cet horizon.`;
+      if (sav > 0 && actualBuyback > 0) {
+        const rate = ((sav / actualBuyback) * 100).toFixed(1).replace(".", ",");
+        return `Un rachat de ${formatCHF(actualBuyback)}, étalé sur ${years} an${years > 1 ? "s" : ""}, vous ferait économiser ${formatCHF(sav)} d'impôts au total, soit un retour fiscal moyen de ${rate} % du montant racheté. Concrètement, chaque franc versé dans votre 2e pilier réduit d'autant votre revenu imposable l'année du versement, tout en renforçant votre capital de prévoyance qui sera converti en rente ou retiré à la retraite. Point de vigilance : un rachat LPP bloque tout retrait en capital pendant les 3 années qui suivent (art. 79b al. 3 LPP), à anticiper si un achat immobilier ou un départ à l'étranger est envisagé sur cet horizon.`;
       }
       return `Votre capital LPP projeté à la retraite s'élève à ${formatCHF(proj)}, sur la base des paramètres saisis (âge, salaire assuré, rendement attendu). Aucun rachat n'a été simulé ici, ou celui-ci ne génère pas d'économie fiscale supplémentaire dans ce scénario ; une capacité de rachat existe peut-être encore, à vérifier sur votre certificat de prévoyance.`;
     }
@@ -1727,7 +1811,30 @@ function buildComment(entry: HistoryEntry): string | null {
       const recoLabel = reco === "LAMAL" ? "LAMal (Suisse)" : "CMU (France, gérée par le CNTFS via l'URSSAF)";
       const otherLabel = reco === "LAMAL" ? "CMU" : "LAMal";
       const savTxt = sav > 0 ? ` Cela représente pour vous une économie annuelle de ${formatCHF(sav)} par rapport à l'option ${otherLabel}.` : "";
-      return `Pour votre profil de frontalier, l'affiliation ${recoLabel} ressort comme la plus avantageuse, avec une cotisation annuelle estimée à ${formatCHF(cot)}.${savTxt} Ce calcul s'appuie sur les barèmes 2026 (PASS 47'100 EUR, taux CMU 8 %, abattement individuel de 25 % du PASS). Point de vigilance : le choix entre CMU et LAMal vous engage sur une période donnée et a des conséquences sur la couverture maladie de toute votre famille, à valider au cas par cas.${entry.note ? ` ${entry.note.trim()}` : ""}`;
+      const cumulative = num(s.cmuToLamalCumulativeSavingsCHF);
+      const years = num(s.yearsToRetirement);
+      const cumulativeTxt =
+        cumulative > 0 && years > 0
+          ? ` En passant de la CMU à la LAMal, l'économie cumulée jusqu'à la retraite (${years} ans) est estimée à ${formatCHF(cumulative)}.`
+          : "";
+      return `Pour votre profil de frontalier, l'affiliation ${recoLabel} ressort comme la plus avantageuse, avec une cotisation annuelle estimée à ${formatCHF(cot)}.${savTxt}${cumulativeTxt} Ce calcul s'appuie sur les barèmes 2026 (PASS 47'100 EUR, taux CMU 8 %, abattement individuel de 25 % du PASS). Point de vigilance : le choix entre CMU et LAMal vous engage sur une période donnée et a des conséquences sur la couverture maladie de toute votre famille, à valider au cas par cas.${entry.note ? ` ${entry.note.trim()}` : ""}`;
+    }
+    case "health_insurance_resident": {
+      const current = num(s.currentAnnualCHF);
+      const optimized = num(s.optimizedAnnualCHF);
+      const sav = num(s.annualSavingsCHF);
+      if (!has(s.currentAnnualCHF)) return entry.note?.trim() || null;
+      const cumulative = num(s.cumulativeSavingsCHF);
+      const years = num(s.yearsToRetirement);
+      const cumulativeTxt =
+        cumulative > 0 && years > 0
+          ? ` Sur ${years} ans jusqu'à la retraite, l'économie cumulée est estimée à ${formatCHF(cumulative)}.`
+          : "";
+      const savTxt =
+        sav > 0
+          ? ` En passant à l'offre optimisée, vous économisez ${formatCHF(sav)} par an (${formatCHF(current)} → ${formatCHF(optimized)}).${cumulativeTxt}`
+          : " La situation actuelle reste la plus avantageuse dans ce scénario, aucune économie identifiée avec l'offre optimisée saisie.";
+      return `Comparatif entre votre prime d'assurance maladie actuelle et une offre optimisée.${savTxt} Point de vigilance : les montants saisis doivent être vérifiés sur une offre réelle (caisse, franchise, commune de domicile) avant tout changement d'assureur.${entry.note ? ` ${entry.note.trim()}` : ""}`;
     }
     case "overtime": {
       const net = num(s.netOvertimeCHF);
@@ -1737,16 +1844,6 @@ function buildComment(entry: HistoryEntry): string | null {
       if (!has(s.overtimeCHF)) return entry.note?.trim() || null;
       const savTxt = sav > 0 ? ` L'exonération partielle côté français sur vos heures supplémentaires vous fait économiser ${formatCHF(sav)}.` : " Aucune exonération n'a été appliquée dans ce scénario, le statut fiscal retenu n'y ouvrant pas droit ou le seuil d'heures minimal n'étant pas atteint.";
       return `Sur ${formatCHF(brut)} d'heures supplémentaires brutes, l'imposition combinée Suisse/France atteint ${formatCHF(total)}, pour un montant net que vous percevez effectivement de ${formatCHF(net)}.${savTxt}${entry.note ? ` ${entry.note.trim()}` : ""}`;
-    }
-    case "fx_claim": {
-      const deltaChf = num(s.totalDeltaChf);
-      const refund = num(s.estimatedTaxRefund);
-      if (!has(s.totalDeltaChf)) return entry.note?.trim() || null;
-      const txt =
-        deltaChf > 0
-          ? `Le taux de change réel du marché vous était plus favorable que le taux AFC retenu par le fisc sur la période analysée, pour un écart cumulé de ${formatCHF(deltaChf)} et une économie d'impôt estimée de ${formatCHF(refund)}.`
-          : "Sur la période analysée, le taux AFC retenu par le fisc ne vous était pas défavorable, donc aucun trop-payé n'a été identifié.";
-      return `${txt} Une réclamation n'est admise que si chaque date de versement peut être justifiée (fiches de salaire, relevés bancaires).${entry.note ? ` ${entry.note.trim()}` : ""}`;
     }
     case "avs_ai": {
       const monthly = num(s.monthlyPension);
@@ -1937,9 +2034,61 @@ function drawComparisonPage(
       }
     }
   }
+  // CNTFS/CMU vs LAMal — avant = cotisation CMU actuellement payée, après =
+  // cotisation LAMal, exactement comme sur la page de détail
+  // (buildDerivedComparison), pour ne jamais afficher un écart différent
+  // d'une page à l'autre du même dossier (cahier des charges point 3).
+  const hif = pickLatestNonDismissed(entries, "health_insurance_france");
+  let hifCumulative: { amount: number; years: number } | null = null;
+  if (hif) {
+    const derived = buildDerivedComparison(hif);
+    if (derived) {
+      const r = derived.rows[0];
+      if (typeof r.current === "number" && typeof r.projected === "number") {
+        rows.push([r.label, formatCHF(r.current), formatCHF(r.projected), formatDelta(r.projected - r.current, r.format)]);
+        rowsGoodness.push(isRowGood(r, r.projected - r.current));
+      }
+    }
+    const cumulative = num(hif.summary?.cmuToLamalCumulativeSavingsCHF);
+    const years = num(hif.summary?.yearsToRetirement);
+    if (cumulative > 0 && years > 0) hifCumulative = { amount: cumulative, years };
+  }
+  // Caisse maladie résident — avant = prime actuelle, après = prime
+  // optimisée, même logique que CNTFS/LAMal ci-dessus (cahier des charges
+  // point 8).
+  const hir = pickLatestNonDismissed(entries, "health_insurance_resident");
+  let hirCumulative: { amount: number; years: number } | null = null;
+  if (hir) {
+    const derived = buildDerivedComparison(hir);
+    if (derived) {
+      const r = derived.rows[0];
+      if (typeof r.current === "number" && typeof r.projected === "number") {
+        rows.push([r.label, formatCHF(r.current), formatCHF(r.projected), formatDelta(r.projected - r.current, r.format)]);
+        rowsGoodness.push(isRowGood(r, r.projected - r.current));
+      }
+    }
+    const cumulative = num(hir.summary?.cumulativeSavingsCHF);
+    const years = num(hir.summary?.yearsToRetirement);
+    if (cumulative > 0 && years > 0) hirCumulative = { amount: cumulative, years };
+  }
+  // Comparateur d'investissements — avant = Investissement A, après =
+  // Investissement B, delta positif mis en évidence par la coloration
+  // habituelle de la colonne Delta (cahier des charges point 12), au lieu
+  // du fallback générique "-" / gain seul.
+  const ic = pickLatestNonDismissed(entries, "investment_compare");
+  if (ic) {
+    const derived = buildDerivedComparison(ic);
+    if (derived) {
+      const r = derived.rows[0];
+      if (typeof r.current === "number" && typeof r.projected === "number") {
+        rows.push([r.label, formatCHF(r.current), formatCHF(r.projected), formatDelta(r.projected - r.current, r.format)]);
+        rowsGoodness.push(isRowGood(r, r.projected - r.current));
+      }
+    }
+  }
   // Tous gains agrégés
   for (const e of entries) {
-    if (["lpp", "pillar3a", "canton_compare", "director_compensation", "retirement", "vested_benefits", "cross_border"].includes(e.kind)) continue;
+    if (["lpp", "pillar3a", "canton_compare", "director_compensation", "retirement", "vested_benefits", "cross_border", "health_insurance_france", "health_insurance_resident", "investment_compare"].includes(e.kind)) continue;
     if (e.gain_dismissed) continue;
     const g = extractGain(e);
     if (g.type === "none") continue;
@@ -1963,6 +2112,30 @@ function drawComparisonPage(
     pdf.paragraph(
       "La colonne « Delta » indique le gain net apporté par chaque optimisation, ponctuel pour un rachat ou un retrait, récurrent lorsqu'il s'agit d'une économie annuelle. Ces montants sont ensuite consolidés ci-dessous.",
       { muted: true, italic: true },
+    );
+  }
+
+  // Économie CMU → LAMal cumulée jusqu'à la retraite : mise en évidence
+  // dédiée (cahier des charges point 3 : "cette économie cumulée doit être
+  // particulièrement visible dans la synthèse finale"), séparée du total
+  // agrégé ci-dessous qui mélange des optimisations de nature différente.
+  if (hifCumulative) {
+    pdf.spacer(3);
+    drawLabeledHighlight(
+      pdf,
+      `ÉCONOMIE CMU → LAMAL CUMULÉE JUSQU'À LA RETRAITE (${hifCumulative.years} ANS)`,
+      hifCumulative.amount,
+    );
+  }
+
+  // Économie caisse maladie résident cumulée jusqu'à la retraite : même
+  // mise en évidence dédiée que CNTFS/LAMal (cahier des charges point 8).
+  if (hirCumulative) {
+    pdf.spacer(3);
+    drawLabeledHighlight(
+      pdf,
+      `ÉCONOMIE CAISSE MALADIE CUMULÉE JUSQU'À LA RETRAITE (${hirCumulative.years} ANS)`,
+      hirCumulative.amount,
     );
   }
 
@@ -2039,6 +2212,29 @@ function drawGainHighlight(pdf: ReportPdf, totals: Totals) {
       : "");
   const lines = doc.splitTextToSize(detail, contentWidth - 12) as string[];
   doc.text(lines, margin + 6, y + 28);
+  pdf.cursorY = y + h + 4;
+}
+
+// Encart de mise en évidence générique (même gabarit visuel que
+// drawGainHighlight), pour un montant unique isolé du total agrégé —
+// utilisé pour l'économie CMU → LAMal cumulée jusqu'à la retraite.
+function drawLabeledHighlight(pdf: ReportPdf, label: string, amount: number) {
+  const { doc, margin, contentWidth } = pdf;
+  const h = 26;
+  pdf.ensureSpace(h + 4);
+  const y = pdf.cursorY;
+  doc.setFillColor(236, 253, 245);
+  doc.setDrawColor(22, 163, 74);
+  doc.setLineWidth(0.6);
+  doc.roundedRect(margin, y, contentWidth, h, 2, 2, "FD");
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(10);
+  doc.setTextColor(22, 101, 52);
+  const labelLines = doc.splitTextToSize(label, contentWidth - 12) as string[];
+  doc.text(labelLines, margin + 6, y + 9);
+  doc.setFontSize(18);
+  doc.setTextColor(22, 163, 74);
+  doc.text(formatCHF(amount), margin + contentWidth - 6, y + h - 7, { align: "right" });
   pdf.cursorY = y + h + 4;
 }
 

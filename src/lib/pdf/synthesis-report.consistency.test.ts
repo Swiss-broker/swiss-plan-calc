@@ -30,6 +30,7 @@ import { formatCHF, formatPct } from "@/lib/format";
 import type { HistoryEntry, SimulationKind } from "@/lib/history/types";
 import { extractGain, pickLatestNonDismissed } from "@/lib/simulations/extract-gain";
 import {
+  buildComment,
   buildDerivedComparison,
   cantonCompareSummaryRow,
   computeTotals,
@@ -122,6 +123,8 @@ const FIXTURE_ENTRIES: HistoryEntry[] = [
     securityFinalBalance: 120_000,
     recommendedFinalBalance: 180_000,
     recommendedStrategy: "dynamic",
+    currentFinalBalance: 110_000,
+    dynamicFinalBalance: 180_000,
   }),
   makeEntry("avs_ai", {
     annualPension: 28_000,
@@ -139,18 +142,26 @@ const FIXTURE_ENTRIES: HistoryEntry[] = [
     savingsCHF: 800,
     cmuAnnualCHF: 3_200,
     lamalAnnualCHF: 4_000,
+    yearsToRetirement: 15,
+    cmuToLamalAnnualSavingsCHF: -800,
+    cmuToLamalMonthlySavingsCHF: -67,
+    cmuToLamalCumulativeSavingsCHF: -12_000,
+  }),
+  makeEntry("health_insurance_resident", {
+    currentMonthlyCHF: 400,
+    currentAnnualCHF: 4_800,
+    optimizedMonthlyCHF: 330,
+    optimizedAnnualCHF: 3_960,
+    monthlySavingsCHF: 70,
+    annualSavingsCHF: 840,
+    yearsToRetirement: 18,
+    cumulativeSavingsCHF: 15_120,
   }),
   makeEntry("overtime", {
     netOvertimeCHF: 5_000,
     taxSavings: 900,
     totalTaxOnOvertime: 100,
     overtimeCHF: 6_000,
-  }),
-  makeEntry("fx_claim", {
-    totalChfAfc: 20_000,
-    totalChfMarket: 20_700,
-    totalDeltaChf: 700,
-    estimatedTaxRefund: 300,
   }),
 ];
 
@@ -408,18 +419,18 @@ const CONSISTENCY_RULES: ConsistencyRule[] = [
   // ── vested_benefits ────────────────────────────────────────────────────
   {
     kind: "vested_benefits",
-    indicator: "Capital de libre passage — stratégie sécurité",
+    indicator: "Capital de libre passage — situation actuelle (Supplétive)",
     probes: [
       { section: "Résumé page 3 / Détail (buildDerivedComparison)", value: (e) => buildDerivedComparison(e)!.rows[0].current as number },
-      { section: "Détail · Résultats clés (formatMetrics)", value: (e) => metricValue(e, "Capital projeté (sécurité)") },
+      { section: "Détail · Résultats clés (formatMetrics)", value: (e) => metricValue(e, "Capital projeté (actuel — Supplétive)") },
     ],
   },
   {
     kind: "vested_benefits",
-    indicator: "Capital de libre passage — stratégie recommandée",
+    indicator: "Capital de libre passage — stratégie dynamique",
     probes: [
       { section: "Résumé page 3 / Détail (buildDerivedComparison)", value: (e) => buildDerivedComparison(e)!.rows[0].projected as number },
-      { section: "Détail · Résultats clés (formatMetrics)", value: (e) => metricValue(e, "Capital projeté (recommandé)") },
+      { section: "Détail · Résultats clés (formatMetrics)", value: (e) => metricValue(e, "Capital projeté (dynamique)") },
     ],
   },
   {
@@ -434,21 +445,67 @@ const CONSISTENCY_RULES: ConsistencyRule[] = [
     ],
   },
 
-  // ── investment_compare / health_insurance_france / overtime / fx_claim ─
-  // Ces 4 kinds n'ont pas de ligne dédiée dans "Résumé par catégorie" ni de
-  // buildDerivedComparison (pas de compareRows sauvegardé) : leur seule
+  // ── overtime ─────────────────────────────────────────────────────────────
+  // N'a pas de ligne dédiée dans "Résumé par catégorie" ni de
+  // buildDerivedComparison (pas de compareRows sauvegardé) : sa seule
   // section chiffrée hors détail est le bloc générique "Tous gains
   // agrégés" de la Synthèse globale et les Recommandations/Gain total, qui
   // appellent tous deux extractGain(e) directement sur le MÊME champ que
   // formatMetrics affiche sur la page de détail. Risque réel : un
   // renommage de champ mis à jour d'un côté (formatMetrics) mais pas de
   // l'autre (extractGain), ou l'inverse.
+
+  // ── investment_compare ───────────────────────────────────────────────────
+  // A désormais un buildDerivedComparison (avant = Investissement A, après =
+  // Investissement B, cahier des charges point 12) : vérifie la cohérence
+  // entre "Résumé par catégorie" / Détail page et la ligne dédiée de la
+  // Synthèse globale (drawComparisonPage).
+  {
+    kind: "investment_compare",
+    indicator: "Capital net · Fonds A (situation actuelle)",
+    probes: [
+      { section: "Résumé page 3 / Détail (buildDerivedComparison)", value: (e) => buildDerivedComparison(e)!.rows[0].current as number },
+      { section: "Détail · Résultats clés (formatMetrics)", value: (e) => metricValue(e, "Capital net · Fonds A") },
+    ],
+  },
+  {
+    kind: "investment_compare",
+    indicator: "Capital net · Fonds B (optimisation)",
+    probes: [
+      { section: "Résumé page 3 / Détail (buildDerivedComparison)", value: (e) => buildDerivedComparison(e)!.rows[0].projected as number },
+      { section: "Détail · Résultats clés (formatMetrics)", value: (e) => metricValue(e, "Capital net · Fonds B") },
+    ],
+  },
   {
     kind: "investment_compare",
     indicator: "Différence nette (gain identifié)",
     probes: [
       { section: "Recommandations / Gain total (extractGain)", value: (e) => extractGain(e).amount },
       { section: "Détail · Résultats clés (formatMetrics)", value: (e) => metricValue(e, "Différence nette") },
+    ],
+  },
+
+  // ── health_insurance_france ──────────────────────────────────────────────
+  // CMU/LAMal a bien un buildDerivedComparison (avant = CMU, après = LAMal,
+  // cahier des charges point 3) : vérifie que "Résumé par catégorie" /
+  // Détail page et la ligne dédiée de la Synthèse globale (drawComparisonPage)
+  // affichent les mêmes deux montants, et que l'économie cumulée jusqu'à la
+  // retraite mise en évidence provient du même champ que celui affiché sur
+  // la page de détail (formatMetrics).
+  {
+    kind: "health_insurance_france",
+    indicator: "Cotisation CMU (situation actuelle)",
+    probes: [
+      { section: "Résumé page 3 / Détail (buildDerivedComparison)", value: (e) => buildDerivedComparison(e)!.rows[0].current as number },
+      { section: "Détail · Résultats clés (formatMetrics)", value: (e) => metricValue(e, "CMU") },
+    ],
+  },
+  {
+    kind: "health_insurance_france",
+    indicator: "Cotisation LAMal (optimisation)",
+    probes: [
+      { section: "Résumé page 3 / Détail (buildDerivedComparison)", value: (e) => buildDerivedComparison(e)!.rows[0].projected as number },
+      { section: "Détail · Résultats clés (formatMetrics)", value: (e) => metricValue(e, "LAMal") },
     ],
   },
   {
@@ -459,6 +516,35 @@ const CONSISTENCY_RULES: ConsistencyRule[] = [
       { section: "Détail · Résultats clés (formatMetrics)", value: (e) => metricValue(e, "Économie vs autre option") },
     ],
   },
+  // ── health_insurance_resident ────────────────────────────────────────────
+  // Caisse maladie résident (cahier des charges point 8) : même garde-fou
+  // que CMU/LAMal ci-dessus (avant = prime actuelle, après = prime
+  // optimisée), pour ne jamais afficher un écart différent d'une page à
+  // l'autre du même dossier.
+  {
+    kind: "health_insurance_resident",
+    indicator: "Prime actuelle (situation actuelle)",
+    probes: [
+      { section: "Résumé page 3 / Détail (buildDerivedComparison)", value: (e) => buildDerivedComparison(e)!.rows[0].current as number },
+      { section: "Détail · Résultats clés (formatMetrics)", value: (e) => metricValue(e, "Prime actuelle") },
+    ],
+  },
+  {
+    kind: "health_insurance_resident",
+    indicator: "Prime optimisée",
+    probes: [
+      { section: "Résumé page 3 / Détail (buildDerivedComparison)", value: (e) => buildDerivedComparison(e)!.rows[0].projected as number },
+      { section: "Détail · Résultats clés (formatMetrics)", value: (e) => metricValue(e, "Prime optimisée") },
+    ],
+  },
+  {
+    kind: "health_insurance_resident",
+    indicator: "Économie annuelle (annualSavingsCHF)",
+    probes: [
+      { section: "Recommandations / Gain total (extractGain)", value: (e) => extractGain(e).amount },
+      { section: "Détail · Résultats clés (formatMetrics)", value: (e) => metricValue(e, "Économie annuelle") },
+    ],
+  },
   {
     kind: "overtime",
     indicator: "Économie fiscale annuelle (taxSavings)",
@@ -467,15 +553,6 @@ const CONSISTENCY_RULES: ConsistencyRule[] = [
       { section: "Détail · Résultats clés (formatMetrics)", value: (e) => metricValue(e, "Économie fiscale (exonération FR)") },
     ],
   },
-  {
-    kind: "fx_claim",
-    indicator: "Économie d'impôt estimée",
-    probes: [
-      { section: "Recommandations / Gain total (extractGain)", value: (e) => extractGain(e).amount },
-      { section: "Détail · Résultats clés (formatMetrics)", value: (e) => metricValue(e, "Économie d'impôt estimée") },
-    ],
-  },
-
   // ── avs_ai ─────────────────────────────────────────────────────────────
   // Volontairement absent de cette table : extractGain retourne toujours
   // "none" pour avs_ai (l'AVS ne permet pas de racheter des années
@@ -600,5 +677,42 @@ describe("formatDelta — respect du format de la ligne (chantier Taux effectif)
   it("retombe sur du CHF brut seulement quand aucun format n'est fourni", () => {
     const text = formatDelta(1000);
     expect(text).toBe(`+${formatCHF(1000)}`);
+  });
+});
+
+// ============================================================================
+// buildComment (LPP) — régression : le texte de recommandation citait
+// buybackCapacity (la capacité MAXIMALE de rachat, un plafond légal) comme
+// si c'était le montant du rachat réellement simulé, alors que lpp.tsx
+// sauvegarde ces deux montants séparément (buybackCapacity ET actualBuyback,
+// voir SaveSimulationButton dans lpp.tsx). Conséquences concrètes : le texte
+// annonçait un rachat plus gros que celui réellement simulé, et le "retour
+// fiscal moyen" (économie ÷ montant) était calculé sur le mauvais
+// dénominateur — jusqu'à plusieurs centaines de milliers de % quand la
+// capacité maximale dépassait largement le rachat réel.
+// ============================================================================
+describe("buildComment (lpp) — cite le rachat réellement simulé, jamais la capacité maximale", () => {
+  it("utilise actualBuyback (montant réellement racheté), pas buybackCapacity (plafond légal)", () => {
+    const entry = makeEntry(
+      "lpp",
+      { totalTaxSavings: 8_200, projectedBalance: 415_000 },
+      { buybackCapacity: 40_000, actualBuyback: 10_000, buybackYears: 3 },
+    );
+    const text = buildComment(entry);
+    expect(text).toContain(formatCHF(10_000));
+    expect(text).not.toContain(formatCHF(40_000));
+  });
+
+  it("ne produit jamais un taux de retour fiscal aberrant quand buybackCapacity vaut 0 (capacité déjà épuisée)", () => {
+    const entry = makeEntry(
+      "lpp",
+      { totalTaxSavings: 8_200, projectedBalance: 415_000 },
+      { buybackCapacity: 0, actualBuyback: 10_000, buybackYears: 3 },
+    );
+    const text = buildComment(entry) ?? "";
+    // 8'200 / 10'000 = 82%, jamais un ancien 820'000% (8'200 / 1, l'ancien
+    // repli sur Math.max(1, buybackCapacity=0)).
+    expect(text).toContain("82,0 %");
+    expect(text).not.toContain("820000");
   });
 });

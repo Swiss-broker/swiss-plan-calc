@@ -186,7 +186,12 @@ function LppCalc() {
       projectLPP({
         ...form,
         currentBalance: effectiveCurrentBalance,
-        yearlyBuyback: Math.round(actualBuybackCapped / Math.max(1, form.buybackYears)),
+        // Pas d'arrondi ici : un rachat de 10'000 CHF sur 3 ans doit rester
+        // exactement 10'000 au total (projection.totalBuybacks), pas
+        // 3'333 (arrondi) × 3 = 9'999. L'arrondi par année ne s'applique
+        // qu'à l'affichage année par année (voir yearly[].buyback dans
+        // projectLPP), jamais au cumul.
+        yearlyBuyback: actualBuybackCapped / Math.max(1, form.buybackYears),
         buybackYears: form.buybackYears,
         insuredSalaryCap: form.insuredSalaryCap,
       }),
@@ -242,9 +247,12 @@ function LppCalc() {
         betterWhen: "higher",
       },
       {
+        // Le montant saisi (actualBuybackCapped), pas projection.totalBuybacks :
+        // ce dernier re-somme l'annuité déjà arrondie (10'000 ÷ 3 ans = 3'333
+        // arrondi, ×3 = 9'999) au lieu de réafficher le total exact saisi.
         label: "Rachats cumulés",
         current: 0,
-        projected: projection.totalBuybacks,
+        projected: actualBuybackCapped,
         betterWhen: "higher",
       },
       {
@@ -1124,7 +1132,13 @@ function CertificatePensionsCard({
       title={t("calc.lpp.cert.card_title")}
       description={t("calc.lpp.cert.card_desc")}
     >
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      {/* Disposition 2×2 équilibrée (vieillesse/invalidité en ligne 1,
+          veuf-veuve/orphelin+enfant en ligne 2) plutôt que 3 blocs puis 2 sur
+          une grille à 3 colonnes, visuellement déséquilibrée. Rente d'enfant
+          et rente d'orphelin, deux prestations liées (enfant à charge d'un
+          parent vivant vs orphelin d'un parent décédé), sont réunies dans un
+          seul bloc pour obtenir exactement 4 cellules. */}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <CertBlock
           title={t("calc.lpp.cert.oldage_title")}
           amount={form.oldAgeAmount}
@@ -1144,68 +1158,6 @@ function CertificatePensionsCard({
           annual={disabilityAnnual}
         />
         <CertBlock
-          title={t("calc.lpp.cert.child_title")}
-          amountLabel={t("calc.lpp.cert.child_amount_label")}
-          amount={form.childAmount}
-          period={form.childPeriod}
-          onAmount={(v) => set("childAmount", v)}
-          onPeriod={(p) => set("childPeriod", p)}
-          monthly={childPerMonthly}
-          annual={childPerAnnual}
-          extra={
-            <div className="mt-2 space-y-1 rounded-md border border-border/60 bg-muted/30 p-2 text-[11px]">
-              <div>
-                {t("calc.lpp.cert.child_children_used", { n: childCount })}
-                {childCapped && (
-                  <span className="ml-1 text-warning">
-                    {" "}
-                    {t("calc.lpp.cert.orphan_cap_note")}
-                  </span>
-                )}
-              </div>
-              <div className="flex justify-between font-medium tabular-nums">
-                <span>{t("calc.lpp.cert.child_total_month")}</span>
-                <span>{formatCHF(childTotalMonthly)}</span>
-              </div>
-              <div className="flex justify-between font-medium tabular-nums">
-                <span>{t("calc.lpp.cert.child_total_year")}</span>
-                <span>{formatCHF(childTotalAnnual)}</span>
-              </div>
-            </div>
-          }
-        />
-        <CertBlock
-          title={t("calc.lpp.cert.orphan_title")}
-          amountLabel={t("calc.lpp.cert.orphan_amount_label")}
-          amount={form.orphanAmount}
-          period={form.orphanPeriod}
-          onAmount={(v) => set("orphanAmount", v)}
-          onPeriod={(p) => set("orphanPeriod", p)}
-          monthly={orphanPerMonthly}
-          annual={orphanPerAnnual}
-          extra={
-            <div className="mt-2 space-y-1 rounded-md border border-border/60 bg-muted/30 p-2 text-[11px]">
-              <div>
-                {t("calc.lpp.cert.orphan_children_used", { n: orphanCount })}
-                {orphanCapped && (
-                  <span className="ml-1 text-warning">
-                    {" "}
-                    {t("calc.lpp.cert.orphan_cap_note")}
-                  </span>
-                )}
-              </div>
-              <div className="flex justify-between font-medium tabular-nums">
-                <span>{t("calc.lpp.cert.orphan_total_month")}</span>
-                <span>{formatCHF(orphanTotalMonthly)}</span>
-              </div>
-              <div className="flex justify-between font-medium tabular-nums">
-                <span>{t("calc.lpp.cert.orphan_total_year")}</span>
-                <span>{formatCHF(orphanTotalAnnual)}</span>
-              </div>
-            </div>
-          }
-        />
-        <CertBlock
           title={t("calc.lpp.cert.widow_title")}
           amount={form.widowAmount}
           period={form.widowPeriod}
@@ -1214,6 +1166,74 @@ function CertificatePensionsCard({
           monthly={widowMonthly}
           annual={widowAnnual}
         />
+        <div className="rounded-xl border border-border bg-card p-4 space-y-4">
+          <CertBlock
+            bare
+            title={t("calc.lpp.cert.child_title")}
+            amountLabel={t("calc.lpp.cert.child_amount_label")}
+            amount={form.childAmount}
+            period={form.childPeriod}
+            onAmount={(v) => set("childAmount", v)}
+            onPeriod={(p) => set("childPeriod", p)}
+            monthly={childPerMonthly}
+            annual={childPerAnnual}
+            extra={
+              <div className="mt-2 space-y-1 rounded-md border border-border/60 bg-muted/30 p-2 text-[11px]">
+                <div>
+                  {t("calc.lpp.cert.child_children_used", { n: childCount })}
+                  {childCapped && (
+                    <span className="ml-1 text-warning">
+                      {" "}
+                      {t("calc.lpp.cert.orphan_cap_note")}
+                    </span>
+                  )}
+                </div>
+                <div className="flex justify-between font-medium tabular-nums">
+                  <span>{t("calc.lpp.cert.child_total_month")}</span>
+                  <span>{formatCHF(childTotalMonthly)}</span>
+                </div>
+                <div className="flex justify-between font-medium tabular-nums">
+                  <span>{t("calc.lpp.cert.child_total_year")}</span>
+                  <span>{formatCHF(childTotalAnnual)}</span>
+                </div>
+              </div>
+            }
+          />
+          <div className="border-t border-border/60 pt-4">
+            <CertBlock
+              bare
+              title={t("calc.lpp.cert.orphan_title")}
+              amountLabel={t("calc.lpp.cert.orphan_amount_label")}
+              amount={form.orphanAmount}
+              period={form.orphanPeriod}
+              onAmount={(v) => set("orphanAmount", v)}
+              onPeriod={(p) => set("orphanPeriod", p)}
+              monthly={orphanPerMonthly}
+              annual={orphanPerAnnual}
+              extra={
+                <div className="mt-2 space-y-1 rounded-md border border-border/60 bg-muted/30 p-2 text-[11px]">
+                  <div>
+                    {t("calc.lpp.cert.orphan_children_used", { n: orphanCount })}
+                    {orphanCapped && (
+                      <span className="ml-1 text-warning">
+                        {" "}
+                        {t("calc.lpp.cert.orphan_cap_note")}
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex justify-between font-medium tabular-nums">
+                    <span>{t("calc.lpp.cert.orphan_total_month")}</span>
+                    <span>{formatCHF(orphanTotalMonthly)}</span>
+                  </div>
+                  <div className="flex justify-between font-medium tabular-nums">
+                    <span>{t("calc.lpp.cert.orphan_total_year")}</span>
+                    <span>{formatCHF(orphanTotalAnnual)}</span>
+                  </div>
+                </div>
+              }
+            />
+          </div>
+        </div>
       </div>
 
       <div className="mt-5 rounded-lg border border-primary/30 bg-primary/5 p-4">
@@ -1265,6 +1285,7 @@ function CertBlock({
   monthly,
   annual,
   extra,
+  bare,
 }: {
   title: string;
   amountLabel?: string;
@@ -1275,10 +1296,13 @@ function CertBlock({
   monthly: number;
   annual: number;
   extra?: React.ReactNode;
+  /** Sans bordure/carte propre : pour nicher ce bloc dans un conteneur
+   *  partagé avec un autre CertBlock (ex. enfant + orphelin réunis). */
+  bare?: boolean;
 }) {
   const t = useT();
   return (
-    <div className="rounded-xl border border-border bg-card p-4 space-y-3">
+    <div className={bare ? "space-y-3" : "rounded-xl border border-border bg-card p-4 space-y-3"}>
       <div className="text-sm font-semibold text-foreground">{title}</div>
       <NumField
         label={amountLabel ?? t("calc.lpp.cert.amount_label")}

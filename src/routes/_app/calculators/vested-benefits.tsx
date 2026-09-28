@@ -117,6 +117,7 @@ function VestedBenefitsCalc() {
 
   const currentProjection = projections.find((p) => p.strategy.id === "current");
   const recommendedProjection = projections.find((p) => p.strategy.id === recommended);
+  const dynamicProjection = projections.find((p) => p.strategy.id === "dynamic");
   const gainVsCurrent =
     (recommendedProjection?.finalBalance ?? 0) - (currentProjection?.finalBalance ?? 0);
 
@@ -260,26 +261,50 @@ function VestedBenefitsCalc() {
       </div>
       </div>
 
+      {/* Situation actuelle (Supplétive) : mise en avant seule, au-dessus
+          des 3 stratégies de projection — pour ne jamais la confondre avec
+          une 4e option de placement au même niveau que les autres. */}
+      {currentProjection && (
+        <CalcCard className="border-2 border-destructive/30 bg-destructive/5">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Info className="h-5 w-5 text-destructive" />
+              <h4 className="font-semibold uppercase tracking-wide text-destructive">
+                {strategyLabel("current")}
+              </h4>
+            </div>
+            <span className="rounded-full bg-destructive/15 px-2 py-0.5 text-[10px] font-semibold uppercase text-destructive">
+              Situation actuelle
+            </span>
+          </div>
+          <p className="mt-1 text-xs text-muted-foreground">{strategyDesc("current")}</p>
+          <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
+            <MoneyTile label={t("calc.vested.final_balance")} value={currentProjection.finalBalance} tone="primary" big compact tip={t("calc.vested.tip.final_balance")} />
+            <MoneyTile label={t("calc.vested.net_gains")} value={currentProjection.totalGains} tone="success" big compact tip={t("calc.vested.tip.net_gains")} />
+            {currentProjection.estimatedExitTax !== undefined && (
+              <MoneyTile label={t("calc.vested.exit_tax")} value={currentProjection.estimatedExitTax} compact />
+            )}
+            {currentProjection.estimatedExitTax !== undefined && (
+              <MoneyTile label={t("calc.vested.net_after_tax")} value={currentProjection.finalBalance - currentProjection.estimatedExitTax} compact tone="success" />
+            )}
+          </div>
+        </CalcCard>
+      )}
+
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-          {projections.map((p) => {
+          {projections.filter((p) => p.strategy.id !== "current").map((p) => {
             const Icon = STRATEGY_ICONS[p.strategy.id];
             const isRecommended = p.strategy.id === recommended;
-            const isCurrent = p.strategy.id === "current";
             return (
-              <CalcCard key={p.strategy.id} className={isRecommended ? "ring-2 ring-primary/40" : isCurrent ? "ring-2 ring-destructive/30" : undefined}>
+              <CalcCard key={p.strategy.id} className={isRecommended ? "ring-2 ring-primary/40" : undefined}>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <Icon className={isCurrent ? "h-5 w-5 text-destructive" : "h-5 w-5 text-primary"} />
+                    <Icon className="h-5 w-5 text-primary" />
                     <h4 className="font-semibold">{strategyLabel(p.strategy.id)}</h4>
                   </div>
                   {isRecommended && (
                     <span className="rounded-full bg-primary/15 px-2 py-0.5 text-[10px] font-semibold uppercase text-primary">
                       {t("calc.vested.recommended_badge")}
-                    </span>
-                  )}
-                  {isCurrent && (
-                    <span className="rounded-full bg-destructive/15 px-2 py-0.5 text-[10px] font-semibold uppercase text-destructive">
-                      Situation actuelle
                     </span>
                   )}
                 </div>
@@ -346,13 +371,18 @@ function VestedBenefitsCalc() {
               (projections.find((p) => p.strategy.id === "security")?.finalBalance ?? 0),
             gainVsCurrent,
             yearsToRetirement: form.yearsToRetirement,
+            // Toujours "actuel = supplétive" vs "projeté = stratégie
+            // dynamique" dans le PDF, quelle que soit la stratégie
+            // effectivement "recommandée" pour cet horizon (qui peut être
+            // sécurité/modérée sur un horizon court) — demande explicite du
+            // cabinet pour la ligne "Libre passage" du dossier de synthèse.
             compareRows: [
               {
                 label: "Capital de libre passage projeté",
                 current: currentProjection?.finalBalance ?? 0,
-                projected: recommendedProjection?.finalBalance ?? 0,
+                projected: dynamicProjection?.finalBalance ?? 0,
                 betterWhen: "higher",
-                hint: `Actuel = taux Fondation supplétive LPP (${SUPPLETIVE_RATE}%/an) · Projeté = stratégie ${strategyLabel(recommended)}.`,
+                hint: `Actuel = taux Fondation supplétive LPP (${SUPPLETIVE_RATE}%/an) · Projeté = stratégie ${strategyLabel("dynamic")}.`,
               },
             ],
           }}

@@ -173,7 +173,6 @@ export const fr: Record<string, string> = {
   "calc.overtime.title": "Calculateur heures supp",
   "calc.overtime.desc":
     "Estime l'impact fiscal des heures supplémentaires pour les frontaliers français.",
-  "calc.fx_claim.title": "Réclamation taux de change",
   "calc.income_tax.title": "Impôt revenu & fortune",
   "calc.income_tax.desc":
     "IFD + ICC tous cantons, déductions standard suisses, taux marginal & effectif.",
@@ -485,9 +484,9 @@ export const fr: Record<string, string> = {
   "calc.tab.vested_benefits": "Libre passage",
   "calc.tab.director": "Comparateur dirigeant",
   "calc.tab.health_fr": "CMU / LAMal",
+  "calc.tab.health_resident": "Caisse maladie",
   "calc.tab.overtime": "Heures supp",
   "calc.tab.investment_compare": "Comparateur investissements",
-  "calc.tab.fx_claim": "Taux de change",
   "calc.tab.more": "Plus ▾",
 
   // === Historique des simulations ===

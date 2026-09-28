@@ -19,7 +19,7 @@ export function useConsolidationReferences(clientId: string | undefined) {
         .from("simulation_history")
         .select("*")
         .eq("client_id", clientId)
-        .in("kind", ["avs_ai", "lpp", "pillar3a"]);
+        .in("kind", ["avs_ai", "lpp", "pillar3a", "tax_global"]);
       if (error || !data) return {};
       return pickConsolidationReferences(data as unknown as HistoryEntry[]);
     },

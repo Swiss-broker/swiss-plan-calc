@@ -178,10 +178,10 @@ export function projectClientLPP(b: ClientBundle): ClientLppProjection | null {
   // qu'aucun paramètre n'ait été modifié.
   const yearsToRetire = Math.max(1, RETIREMENT_AGE_DEFAULT - age);
   const buybackYears = Math.min(yearsToRetire, deriveBuybackYears(plannedBuybacks));
-  const yearlyBuyback =
-    plannedBuybacksTotal > 0
-      ? Math.round(plannedBuybacksTotal / buybackYears)
-      : 0;
+  // Pas d'arrondi ici : le même défaut qu'au calculateur LPP produirait un
+  // "totalBuybacks" cumulé légèrement inférieur au montant réellement
+  // planifié (ex. 10'000 CHF / 3 ans → 3'333 arrondi × 3 = 9'999).
+  const yearlyBuyback = plannedBuybacksTotal > 0 ? plannedBuybacksTotal / buybackYears : 0;
 
   let proj: LPPProjectionResult;
   try {

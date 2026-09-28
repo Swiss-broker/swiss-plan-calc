@@ -13,9 +13,9 @@ export type SimulationKind =
   | "tou"
   | "director_compensation"
   | "health_insurance_france"
+  | "health_insurance_resident"
   | "overtime"
-  | "tax_global"
-  | "fx_claim";
+  | "tax_global";
 
 export interface HistoryEntry {
   id: string;
@@ -60,9 +60,9 @@ const KIND_LABELS_FR: Record<SimulationKind, string> = {
   tou: "TOU / Quasi-résident",
   director_compensation: "Rémunération dirigeant",
   health_insurance_france: "CNTFS / LAMal",
+  health_insurance_resident: "Caisse maladie résident",
   overtime: "Heures supp",
   tax_global: "Fiscal global",
-  fx_claim: "Réclamation taux de change",
 };
 
 // Proxy i18n : `KIND_LABELS[k]` reste valide partout, mais résout via t() au runtime.
@@ -87,7 +87,7 @@ export const KIND_ROUTES: Record<SimulationKind, string> = {
   tou: "/calculators/tou",
   director_compensation: "/calculators/director-compensation",
   health_insurance_france: "/calculators/health-insurance-france",
+  health_insurance_resident: "/calculators/health-insurance-resident",
   overtime: "/calculators/overtime",
   tax_global: "/calculators/tax-global",
-  fx_claim: "/calculators/fx-claim",
 };

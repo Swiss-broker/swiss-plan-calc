@@ -173,6 +173,11 @@ const GREEN_BORDER: [number, number, number] = [110, 231, 183];
 
 export class ReportPdf {
   private footerDrawnPages = new Set<number>();
+  // Titre de section en attente de dessin (voir section()/ensureSpace() plus
+  // bas) : jamais peint tant qu'on ne sait pas si le contenu qui le suit
+  // tient sur la page courante, pour ne jamais laisser un titre de chapitre
+  // seul en bas de page (cahier des charges point 10).
+  private pendingSection: { title: string; color?: [number, number, number] } | null = null;
   doc: jsPDF;
   cursorY = 0;
   margin = 15;
@@ -293,6 +298,16 @@ export class ReportPdf {
   }
 
   ensureSpace(needed: number) {
+    // Un titre de section est en file d'attente (voir section()) : on
+    // combine sa hauteur avec celle du contenu qui la demande dans UN SEUL
+    // calcul de place, puis on le peint une fois la page définitive connue.
+    // Sans ça, le bandeau se dessinait seul, son contenu constatait ensuite
+    // qu'il ne tenait pas et sautait seul à la page suivante, laissant un
+    // titre de chapitre orphelin en bas de page (cahier des charges point 10).
+    if (this.pendingSection !== null) {
+      this.flushPendingSection(needed);
+      return;
+    }
     if (this.cursorY + needed > this.pageHeight - 18) {
       this.doc.addPage();
       // On redessine l'en-tête (bandeau, logo, titre) à chaque nouvelle page
@@ -303,6 +318,29 @@ export class ReportPdf {
       this.drawHeader();
       this.cursorY = this.headerH + 10;
     }
+  }
+
+  /** Dessine le bandeau de section mis en attente par section(), en
+   *  réservant sa hauteur ET celle du contenu qui la demande (`extraNeeded`)
+   *  d'un seul bloc avant de décider s'il faut sauter de page. */
+  private flushPendingSection(extraNeeded: number) {
+    const pending = this.pendingSection;
+    if (pending === null) return;
+    this.pendingSection = null;
+    const barH = 9;
+    if (this.cursorY + barH + 5 + extraNeeded > this.pageHeight - 18) {
+      this.doc.addPage();
+      this.drawHeader();
+      this.cursorY = this.headerH + 10;
+    }
+    const { doc, margin, contentWidth } = this;
+    doc.setFillColor(...(pending.color ?? this.primary));
+    doc.rect(margin, this.cursorY - 6, contentWidth, barH, "F");
+    doc.setTextColor(255, 255, 255);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(13);
+    doc.text(pending.title, margin + 4, this.cursorY);
+    this.cursorY += 10;
   }
 /** Titre principal d'une page de calculateur (ex. "Pilier 3a"), visuellement
    * distinct des sous-titres de section (Paramètres, Résultats, Analyse...) :
@@ -334,25 +372,20 @@ export class ReportPdf {
     return this;
   }
 
-  section(title: string) {
-    title = sanitizePdfText(title);
-    // On réserve la place du bandeau ET d'un minimum de contenu qui doit
-    // suivre (au moins 2-3 lignes de texte ou une tuile). Avant ce correctif,
-    // seule la hauteur du bandeau était vérifiée : un titre de section
-    // pouvait donc s'afficher tout seul en bas de page, avec son contenu
-    // rejeté sur la page suivante (ex. "Analyse" orphelin, texte séparé).
-    this.ensureSpace(35);
-    const { doc, margin, contentWidth, primary } = this;
-    // Bandeau colore pleine largeur : rend le titre de la page (ex. "Fiscal global")
-    // immediatement identifiable, plus visible que l'en-tete repete en haut de chaque page.
-    const barH = 9;
-    doc.setFillColor(...primary);
-    doc.rect(margin, this.cursorY - 6, contentWidth, barH, "F");
-    doc.setTextColor(255, 255, 255);
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(13);
-    doc.text(title, margin + 4, this.cursorY);
-    this.cursorY += 10;
+  /** `opts.color` peint le bandeau dans une couleur dédiée au lieu de la
+   *  couleur primaire du courtier — sert à distinguer immédiatement deux
+   *  sujets comparés côte à côte (ex. Investissement A vs B, cahier des
+   *  charges point 11), pas pour un usage général. */
+  section(title: string, opts?: { color?: [number, number, number] }) {
+    // Ne dessine pas immédiatement : le bandeau est mis en attente et n'est
+    // peint que par le premier appel à ensureSpace() qui suit (déclenché par
+    // le contenu de cette section — table, kvTable, paragraph, metricsGrid,
+    // etc.), qui réserve alors bandeau + contenu en un seul bloc. Voir
+    // ensureSpace()/flushPendingSection() ci-dessus. Un section() qui n'a
+    // jamais été suivi du moindre contenu (rare) est flush ici avant d'en
+    // mettre un nouveau en attente, pour ne jamais perdre un titre.
+    if (this.pendingSection !== null) this.ensureSpace(0);
+    this.pendingSection = { title: sanitizePdfText(title), color: opts?.color };
     return this;
   }
 
@@ -474,9 +507,17 @@ export class ReportPdf {
 
   kvTable(rows: Array<[string, string]>) {
     const safeRows = rows.map(([k, v]) => [sanitizeCell(k), sanitizeCell(v)] as [string, string]);
+    // Réserve la place du tableau ENTIER avant de le dessiner : un tableau
+    // qui ne tient pas sur ce qui reste de la page passe intégralement à la
+    // suivante plutôt que d'être coupé au milieu (cahier des charges point
+    // 10). Estimation généreuse (8mm/ligne, cellPadding 1.5+1.5 + texte
+    // ~5mm) ; le filet de sécurité didDrawPage ci-dessous couvre les rares
+    // cas où le texte réel déborde malgré tout de cette estimation.
+    this.ensureSpace(rows.length * 8 + 4);
+    const startPage = this.doc.getCurrentPageInfo().pageNumber;
     autoTable(this.doc, {
       startY: this.cursorY,
-      margin: { left: this.margin, right: this.margin },
+      margin: { top: this.headerH + 10, left: this.margin, right: this.margin },
       head: [],
       body: safeRows as RowInput[],
       theme: "plain",
@@ -485,7 +526,13 @@ export class ReportPdf {
         0: { textColor: this.muted, cellWidth: this.contentWidth * 0.55 },
         1: { halign: "right", fontStyle: "bold", textColor: this.ink },
       },
-      didDrawPage: () => this.drawFooter(),
+      // Filet de sécurité : si le tableau doit malgré tout se scinder (texte
+      // plus long que prévu), chaque page ajoutée par autoTable lui-même
+      // reçoit quand même l'en-tête de marque, jamais une page nue.
+      didDrawPage: () => {
+        if (this.doc.getCurrentPageInfo().pageNumber > startPage) this.drawHeader();
+        this.drawFooter();
+      },
     });
     this.cursorY = (this.doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 4;
     return this;
@@ -562,13 +609,25 @@ export class ReportPdf {
       // afficherait en rouge une baisse d'impôt, qui est pourtant favorable.
       // Une entrée undefined retombe sur la coloration par signe.
       deltaGoodness?: Array<boolean | undefined>;
+      // Couleur d'accent par ligne (ex. une couleur par option comparée,
+      // Investissement A vs B — cahier des charges point 11) : teinte la
+      // première colonne (nom de la ligne) dans cette couleur, pour une
+      // distinction immédiatement visible sans dépendre de la légende.
+      // Une entrée undefined garde la couleur par défaut pour cette ligne.
+      rowAccentColors?: Array<[number, number, number] | undefined>;
     },
   ) {
     const safeHead = head.map(sanitizeCell);
     const safeBody = body.map((row) => row.map(sanitizeCell));
+    // Même principe que kvTable() : réserve la place du tableau ENTIER
+    // (en-tête + lignes) avant de le dessiner, pour qu'il passe en bloc à la
+    // page suivante plutôt que d'être coupé au milieu (cahier des charges
+    // point 10).
+    this.ensureSpace(10 + safeBody.length * 8.5 + 4);
+    const startPage = this.doc.getCurrentPageInfo().pageNumber;
     autoTable(this.doc, {
       startY: this.cursorY,
-      margin: { left: this.margin, right: this.margin },
+      margin: { top: this.headerH + 10, left: this.margin, right: this.margin },
       head: [safeHead],
       body: safeBody as RowInput[],
       theme: "striped",
@@ -579,6 +638,13 @@ export class ReportPdf {
         if (opts?.highlightLast && data.section === "body" && data.row.index === body.length - 1) {
           data.cell.styles.fontStyle = "bold";
           data.cell.styles.fillColor = tint(this.primary, 0.82);
+        }
+        if (opts?.rowAccentColors && data.section === "body" && data.column.index === 0) {
+          const color = opts.rowAccentColors[data.row.index];
+          if (color) {
+            data.cell.styles.textColor = color;
+            data.cell.styles.fontStyle = "bold";
+          }
         }
         // Colore une colonne d'écart (+X en vert, -X en rouge) selon le seul
         // signe déjà présent dans le texte formaté en amont (formatDelta) :
@@ -600,7 +666,14 @@ export class ReportPdf {
           }
         }
       },
-      didDrawPage: () => this.drawFooter(),
+      // Filet de sécurité : si le tableau doit malgré tout se scinder (texte
+      // plus long que prévu par l'estimation ci-dessus), chaque page ajoutée
+      // par autoTable lui-même reçoit quand même l'en-tête de marque, jamais
+      // une page nue.
+      didDrawPage: () => {
+        if (this.doc.getCurrentPageInfo().pageNumber > startPage) this.drawHeader();
+        this.drawFooter();
+      },
     });
     this.cursorY = (this.doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 4;
     return this;
@@ -976,6 +1049,10 @@ export class ReportPdf {
 
   /** Force le passage à une nouvelle page en redessinant l'en-tête standard. */
   newPage() {
+    // Flush un éventuel titre de section resté en attente sur la page qu'on
+    // quitte, plutôt que de le laisser réapparaître en haut de la nouvelle
+    // page une fois le prochain contenu dessiné.
+    if (this.pendingSection !== null) this.flushPendingSection(0);
     this.doc.addPage();
     this.drawHeader();
     this.cursorY = this.headerH + 10;
@@ -1064,6 +1141,9 @@ export class ReportPdf {
   }
 
   finalize() {
+    // Filet de sécurité : un section() jamais suivi du moindre contenu (fin
+    // de document) ne doit pas silencieusement disparaître.
+    if (this.pendingSection !== null) this.flushPendingSection(0);
     const total = this.doc.getNumberOfPages();
     for (let i = 1; i <= total; i++) {
       this.doc.setPage(i);

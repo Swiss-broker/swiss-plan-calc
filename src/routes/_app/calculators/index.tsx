@@ -52,7 +52,6 @@ const MODULES: ModuleDef[] = [
     links: [
       { to: "/calculators/tax-global", labelKey: "calc.global.title" },
       { to: "/calculators/overtime", labelKey: "calc.overtime.title" },
-      { to: "/calculators/fx-claim", labelKey: "calc.fx_claim.title" },
     ],
   },
   {
@@ -61,6 +60,7 @@ const MODULES: ModuleDef[] = [
     descKey: "calc.module.assurances.desc",
     links: [
       { to: "/calculators/health-insurance-france", labelKey: "calc.sublink.health_cmu_lamal" },
+      { to: "/calculators/health-insurance-resident", labelKey: "calc.tab.health_resident" },
       { href: "https://www.priminfo.admin.ch", labelKey: "calc.sublink.health_lamal_residents" },
     ],
   },

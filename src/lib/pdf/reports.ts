@@ -1014,6 +1014,55 @@ export function exportHealthFrancePdf(args: {
 }
 
 // ============================================================================
+// CAISSE MALADIE RÉSIDENT (LAMal actuel vs optimisé)
+// ============================================================================
+
+export function exportHealthResidentPdf(args: {
+  header?: Partial<PdfHeaderInfo>;
+  input: import("@/lib/health-resident").HealthResidentInput;
+  result: import("@/lib/health-resident").HealthResidentResult;
+}) {
+  const { input, result } = args;
+  const pdf = new ReportPdf({
+    title: "Caisse maladie résident",
+    subtitle: "Situation actuelle vs situation optimisée",
+    ...args.header,
+  } as PdfHeaderInfo);
+
+  pdf.situationBanner("COMPARATIF LAMAL · 2026");
+  pdf.section("Synthèse");
+  pdf.metricsGrid([
+    { label: "Prime actuelle (CHF/an)", value: result.currentAnnualCHF, tone: "warning" },
+    { label: "Prime optimisée (CHF/an)", value: result.optimizedAnnualCHF, tone: "success" },
+    { label: "Économie annuelle", value: result.annualSavingsCHF, tone: "success" },
+    ...(result.cumulativeSavingsCHF !== null
+      ? [{ label: `Économie cumulée (${result.yearsToRetirement} ans)`, value: result.cumulativeSavingsCHF, tone: "success" as const }]
+      : []),
+  ]);
+
+  pdf.section("Comparatif");
+  pdf.table(
+    ["Poste", "Actuel (CHF/mois)", "Optimisé (CHF/mois)"],
+    [
+      ["Assurance de base", formatCHF(input.currentBaseMonthlyCHF), formatCHF(input.optimizedBaseMonthlyCHF)],
+      ["Complémentaire", formatCHF(input.currentComplementaryMonthlyCHF), formatCHF(input.optimizedComplementaryMonthlyCHF)],
+      ["Total", formatCHF(result.currentMonthlyCHF), formatCHF(result.optimizedMonthlyCHF)],
+    ],
+  );
+
+  pdf.section("Notes");
+  for (const n of result.notes) pdf.paragraph(n);
+
+  pdf.section("Avertissements");
+  pdf.callout(
+    "Calcul indicatif basé sur les montants saisis par le conseiller. Les primes LAMal réelles varient selon la caisse maladie, la franchise et la commune de domicile : à valider sur une offre concrète avant tout changement d'assureur.",
+    "warning",
+  );
+
+  pdf.save(makeFilename("caisse_maladie_resident"));
+}
+
+// ============================================================================
 // HEURES SUPPLÉMENTAIRES FRONTALIERS
 // ============================================================================
 
@@ -1144,7 +1193,11 @@ export function exportInvestmentComparePdf(args: {
     ]);
   }
 
-  pdf.section(`Hypothèses · ${nameA}`);
+  // Deux couleurs distinctes pour A et B — mêmes couleurs que le graphique du
+  // calculateur en ligne (ligne pleine primaire pour A, ligne pointillée
+  // d'accent pour B) — pour que la distinction soit immédiatement
+  // compréhensible dans le PDF (cahier des charges point 11).
+  pdf.section(`Hypothèses · ${nameA}`, { color: pdf.primary });
   pdf.kvTable([
     ["Type de placement", INVESTMENT_TYPE_LABEL[a.input.type] ?? a.input.type],
     ["Capital initial", formatCHF(a.input.initialCapital)],
@@ -1155,7 +1208,7 @@ export function exportInvestmentComparePdf(args: {
     ["Impôt à la sortie", `${a.input.exitTaxRate.toFixed(1)} %`],
   ]);
 
-  pdf.section(`Hypothèses · ${nameB}`);
+  pdf.section(`Hypothèses · ${nameB}`, { color: pdf.accent });
   pdf.kvTable([
     ["Type de placement", INVESTMENT_TYPE_LABEL[b.input.type] ?? b.input.type],
     ["Capital initial", formatCHF(b.input.initialCapital)],
@@ -1173,7 +1226,7 @@ export function exportInvestmentComparePdf(args: {
       [nameA, formatCHF(a.totalContributed), formatCHF(a.finalGrossCapital), formatCHF(a.feesImpact), formatCHF(a.exitTax), formatCHF(a.finalNetCapital)],
       [nameB, formatCHF(b.totalContributed), formatCHF(b.finalGrossCapital), formatCHF(b.feesImpact), formatCHF(b.exitTax), formatCHF(b.finalNetCapital)],
     ],
-    { highlightLast: false },
+    { highlightLast: false, rowAccentColors: [pdf.primary, pdf.accent] },
   );
 
   pdf.section("Limites du modèle");
