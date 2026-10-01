@@ -17,6 +17,10 @@ export interface IncomeTaxInput {
   /** Surcharge facultative du multiplicateur communal (chef-lieu si non fourni) */
   communalMultiplier?: number;
   cantonalMultiplier?: number;
+  /** VS uniquement : indexation communale réelle (%, ex. 166 pour 166%) —
+   *  voir CCComputeOptions.vsIndexationPercent dans cantons.ts. Ignorée par
+   *  les autres cantons. */
+  vsIndexationPercent?: number;
   /** Statut civil */
   status: FilingStatus;
   confession?: "none" | "catholic" | "protestant" | "other";
@@ -343,6 +347,7 @@ export function computeIncomeTax(input: IncomeTaxInput): IncomeTaxBreakdown {
     confession: input.confession,
     cantonalMultiplier: input.cantonalMultiplier,
     communalMultiplier: input.communalMultiplier,
+    vsIndexationPercent: input.vsIndexationPercent,
     netWealth: input.netWealth ?? 0,
     childrenAges: input.childrenAges,
   });

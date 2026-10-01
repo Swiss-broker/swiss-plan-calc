@@ -11,11 +11,15 @@
 //   GE centimes additionnels, VD/FR/NE coefficient en % → valeur / 100
 //   JU quotité communale, VS coefficient communal (1.0-1.5) → valeur brute
 //
-// VS : le fichier source donne aussi une "indexation" (143%-176%) par
-// commune, un second paramètre du système fiscal valaisan (ajuste le
-// barème utilisé pour le taux, distinct du coefficient qui multiplie le
-// résultat) que le moteur actuel ne modélise pas — seul le coefficient
-// est utilisé ici, volontairement, en attendant d'intégrer l'indexation.
+// VS : en plus du coefficient, chaque commune a sa propre "indexation"
+// (143%-176%), un second paramètre officiel (Service cantonal des
+// contributions, page "Calcul du taux pour l'impôt communal") qui ajuste
+// le revenu déterminant le TAUX avant application du coefficient — voir
+// vsDeindexedReferenceIncome dans src/lib/tax/cantons.ts. Les 23 valeurs
+// ci-dessous ont été recoupées une à une (coefficient ET indexation) avec
+// le tableau officiel complet des 122 communes valaisannes (vs.ch/web/scc,
+// "Coefficients_Indexations_Communes_2022-2027", colonne 2026) : les 23
+// coefficients concordent exactement, confirmant aussi les indexations.
 //
 // JU : les 13 communes ci-dessous sont marquées "à recouper" (non encore
 // confirmées en recoupement direct du PDF communal complet) dans le
@@ -27,6 +31,8 @@ export interface CommunalMultiplierEntry {
   /** Commune fiscale 2026 réelle (après fusions) si différente de la clé. */
   fiscalCommune?: string;
   verified: "confirmed" | "provisional";
+  /** VS uniquement : indexation communale réelle 2026 (%, ex. 166 pour 166%). */
+  vsIndexationPercent?: number;
 }
 
 export const COMMUNAL_MULTIPLIERS: Record<string, Record<string, CommunalMultiplierEntry>> = {
@@ -109,29 +115,49 @@ export const COMMUNAL_MULTIPLIERS: Record<string, Record<string, CommunalMultipl
     "Yverdon-les-Bains": { multiplier: 0.75, verified: "confirmed" },
   },
   VS: {
-    Ardon: { multiplier: 1.3, verified: "confirmed" },
-    Bagnes: { multiplier: 1, fiscalCommune: "Val de Bagnes", verified: "confirmed" },
-    "Brigue-Glis": { multiplier: 1, fiscalCommune: "Brig/Glis", verified: "confirmed" },
-    Chamoson: { multiplier: 1.25, verified: "confirmed" },
-    Conthey: { multiplier: 1.2, verified: "confirmed" },
-    "Crans-Montana": { multiplier: 1.15, verified: "confirmed" },
-    Fully: { multiplier: 1.2, verified: "confirmed" },
-    Grimisuat: { multiplier: 1.25, verified: "confirmed" },
-    Hérémence: { multiplier: 1, verified: "confirmed" },
-    Martigny: { multiplier: 1.1, verified: "confirmed" },
-    Monthey: { multiplier: 1.2, verified: "confirmed" },
-    Naters: { multiplier: 1.1, verified: "confirmed" },
-    Nendaz: { multiplier: 1.3, verified: "confirmed" },
-    Riddes: { multiplier: 1.25, verified: "confirmed" },
-    "Saint-Maurice": { multiplier: 1.25, verified: "confirmed" },
-    Savièse: { multiplier: 1.15, verified: "confirmed" },
-    Saxon: { multiplier: 1.2, verified: "confirmed" },
-    Sierre: { multiplier: 1.2, verified: "confirmed" },
-    Verbier: { multiplier: 1, fiscalCommune: "Val de Bagnes", verified: "confirmed" },
-    Viège: { multiplier: 1.1, fiscalCommune: "Visp", verified: "confirmed" },
-    Vouvry: { multiplier: 1.25, verified: "confirmed" },
-    Vétroz: { multiplier: 1.15, verified: "confirmed" },
-    Zermatt: { multiplier: 1, verified: "confirmed" },
+    Ardon: { multiplier: 1.3, verified: "confirmed", vsIndexationPercent: 166 },
+    Bagnes: {
+      multiplier: 1,
+      fiscalCommune: "Val de Bagnes",
+      verified: "confirmed",
+      vsIndexationPercent: 176,
+    },
+    "Brigue-Glis": {
+      multiplier: 1,
+      fiscalCommune: "Brig/Glis",
+      verified: "confirmed",
+      vsIndexationPercent: 176,
+    },
+    Chamoson: { multiplier: 1.25, verified: "confirmed", vsIndexationPercent: 143 },
+    Conthey: { multiplier: 1.2, verified: "confirmed", vsIndexationPercent: 163 },
+    "Crans-Montana": { multiplier: 1.15, verified: "confirmed", vsIndexationPercent: 176 },
+    Fully: { multiplier: 1.2, verified: "confirmed", vsIndexationPercent: 165 },
+    Grimisuat: { multiplier: 1.25, verified: "confirmed", vsIndexationPercent: 163 },
+    Hérémence: { multiplier: 1, verified: "confirmed", vsIndexationPercent: 176 },
+    Martigny: { multiplier: 1.1, verified: "confirmed", vsIndexationPercent: 166 },
+    Monthey: { multiplier: 1.2, verified: "confirmed", vsIndexationPercent: 170 },
+    Naters: { multiplier: 1.1, verified: "confirmed", vsIndexationPercent: 176 },
+    Nendaz: { multiplier: 1.3, verified: "confirmed", vsIndexationPercent: 156 },
+    Riddes: { multiplier: 1.25, verified: "confirmed", vsIndexationPercent: 153 },
+    "Saint-Maurice": { multiplier: 1.25, verified: "confirmed", vsIndexationPercent: 163 },
+    Savièse: { multiplier: 1.15, verified: "confirmed", vsIndexationPercent: 156 },
+    Saxon: { multiplier: 1.2, verified: "confirmed", vsIndexationPercent: 166 },
+    Sierre: { multiplier: 1.2, verified: "confirmed", vsIndexationPercent: 161 },
+    Verbier: {
+      multiplier: 1,
+      fiscalCommune: "Val de Bagnes",
+      verified: "confirmed",
+      vsIndexationPercent: 176,
+    },
+    Viège: {
+      multiplier: 1.1,
+      fiscalCommune: "Visp",
+      verified: "confirmed",
+      vsIndexationPercent: 176,
+    },
+    Vouvry: { multiplier: 1.25, verified: "confirmed", vsIndexationPercent: 158 },
+    Vétroz: { multiplier: 1.15, verified: "confirmed", vsIndexationPercent: 163 },
+    Zermatt: { multiplier: 1, verified: "confirmed", vsIndexationPercent: 176 },
   },
   FR: {
     Belfaux: { multiplier: 0.84, verified: "confirmed" },
@@ -196,4 +222,19 @@ export function getCommunalMultiplier(
   if (!canton || !commune) return undefined;
   const entry = COMMUNAL_MULTIPLIERS[canton.toUpperCase()]?.[commune.trim()];
   return entry?.multiplier;
+}
+
+/**
+ * VS uniquement : indexation communale réelle pour une commune donnée, si
+ * connue. undefined pour tout autre canton, ou si la commune est absente de
+ * la liste → l'appelant garde le comportement existant (taux lu directement
+ * sur le revenu réel, sans dé-indexation).
+ */
+export function getVsIndexation(
+  canton: string | null | undefined,
+  commune: string | null | undefined,
+): number | undefined {
+  if (!canton || canton.toUpperCase() !== "VS" || !commune) return undefined;
+  const entry = COMMUNAL_MULTIPLIERS.VS?.[commune.trim()];
+  return entry?.vsIndexationPercent;
 }

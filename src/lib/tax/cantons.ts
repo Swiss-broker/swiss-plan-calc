@@ -203,6 +203,28 @@ function averageRatePercent(income: number, classes: AverageRateClass[], topRate
   return topRatePercent;
 }
 
+/**
+ * VS (Service cantonal des contributions, page "Calcul du taux pour l'impôt
+ * communal") : VS_COMMUNAL_CLASSES est valable pour un revenu non-indexé
+ * (100%). Pour une commune dont l'indexation réelle est connue, le revenu
+ * déterminant le taux est d'abord ramené à 100% par paliers de 10% (le
+ * dernier palier, partiel, utilise le reste < 10%), chaque division étant
+ * tronquée au franc (pas arrondie). Vérifié contre les deux exemples
+ * chiffrés officiels de la page (voir cantons.test.ts).
+ */
+export function vsDeindexedReferenceIncome(roundedIncome: number, indexationPercent: number): number {
+  let ref = roundedIncome;
+  let remaining = indexationPercent - 100;
+  while (remaining >= 10) {
+    ref = Math.floor(ref / 1.1);
+    remaining -= 10;
+  }
+  if (remaining > 0) {
+    ref = Math.floor(ref / (1 + remaining / 100));
+  }
+  return ref;
+}
+
 /** Taux marginal local (%) = d(income * taux(income) / 100) / d(income), pour l'affichage. */
 function marginalRatePercentFromClasses(income: number, classes: AverageRateClass[], topRatePercent: number): number {
   if (income < classes[0].incomeFrom) return 0;
@@ -825,6 +847,14 @@ export interface CCComputeOptions {
    *  âge connu (index absent du tableau) retombe sur le palier le plus bas.
    *  Ignorée par les autres cantons. */
   childrenAges?: Array<number | null>;
+  /** VS uniquement : indexation communale réelle (%, ex. 166 pour 166%),
+   *  Service cantonal des contributions, "Calcul du taux pour l'impôt
+   *  communal". Quand fournie, le revenu déterminant le TAUX communal est
+   *  d'abord "dé-indexé" (voir vsDeindexedReferenceIncome) avant d'être lu
+   *  sur VS_COMMUNAL_CLASSES — comportement officiel. Omise (chef-lieu par
+   *  défaut, calibration historique) : comportement inchangé, le taux est
+   *  lu directement sur le revenu réel. Ignorée par les autres cantons. */
+  vsIndexationPercent?: number;
 }
 
 export interface CCComputeResult {
@@ -1044,8 +1074,18 @@ export function computeCantonalCommunal(opts: CCComputeOptions): CCComputeResult
     // réduction -35% pour les couples mariés, multiplié ensuite par le
     // coefficient de la commune (1.0 à 1.5, chef-lieu Sion pris par défaut
     // via communalMultiplierCapital).
-    const communalRatePercent = averageRatePercent(vsAdjustedIncome, VS_COMMUNAL_CLASSES, VS_COMMUNAL_TOP_RATE_PERCENT);
-    let communalBase = (vsAdjustedIncome * communalRatePercent) / 100;
+    // Indexation communale réelle connue : revenu arrondi aux 100 CHF
+    // inférieurs (règle officielle), taux lu sur le revenu dé-indexé, taux
+    // appliqué au revenu arrondi. Sans indexation connue (chef-lieu par
+    // défaut) : comportement historique inchangé, taux lu directement sur
+    // le revenu réel non arrondi.
+    const vsRoundedIncome = Math.floor(vsAdjustedIncome / 100) * 100;
+    const vsRateReferenceIncome = opts.vsIndexationPercent
+      ? vsDeindexedReferenceIncome(vsRoundedIncome, opts.vsIndexationPercent)
+      : vsAdjustedIncome;
+    const vsCommunalBaseIncome = opts.vsIndexationPercent ? vsRoundedIncome : vsAdjustedIncome;
+    const communalRatePercent = averageRatePercent(vsRateReferenceIncome, VS_COMMUNAL_CLASSES, VS_COMMUNAL_TOP_RATE_PERCENT);
+    let communalBase = (vsCommunalBaseIncome * communalRatePercent) / 100;
     if (isMarried || isSingleParent) {
       const communalReduction = Math.min(4_500, Math.max(600, communalBase * 0.35));
       communalBase = Math.max(0, communalBase - communalReduction);

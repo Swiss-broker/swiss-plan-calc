@@ -196,6 +196,7 @@ export function computeStrategy(
     children: inputs.children ?? 0,
     confession: inputs.confession,
     communalMultiplier: inputs.directorCommunalMultiplier,
+    vsIndexationPercent: inputs.directorVsIndexationPercent,
   });
 
   const totalIncomeTax = ifd + cc.cantonal + cc.communal + cc.church;
@@ -304,6 +305,7 @@ export function computeStrategyFromAbsolute(
     children: inputs.children ?? 0,
     confession: inputs.confession,
     communalMultiplier: inputs.directorCommunalMultiplier,
+    vsIndexationPercent: inputs.directorVsIndexationPercent,
   });
   const totalIncomeTax = ifd + cc.cantonal + cc.communal + cc.church;
   const netCash = netSalary + dividendsPaid - totalIncomeTax;

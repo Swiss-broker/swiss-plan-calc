@@ -32,6 +32,9 @@ export interface TaxGlobalInput {
   canton: string;
   /** Surcharge facultative du multiplicateur communal (chef-lieu si non fourni). */
   communalMultiplier?: number;
+  /** VS uniquement : indexation communale réelle (%, ex. 166 pour 166%) —
+   *  voir CCComputeOptions.vsIndexationPercent dans src/lib/tax/cantons.ts. */
+  vsIndexationPercent?: number;
   countryOfResidence: string; // "CH", "FR", ...
   permit: "swiss" | "C" | "B" | "L" | "G" | "Ci" | "F" | "other";
   civilStatus: GlobalCivilStatus;

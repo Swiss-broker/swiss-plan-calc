@@ -61,6 +61,7 @@ export function toIncomeTaxInput(g: TaxGlobalInput): IncomeTaxInput {
   return {
     canton: g.canton,
     communalMultiplier: g.communalMultiplier,
+    vsIndexationPercent: g.vsIndexationPercent,
     status: toTaxStatus(g.civilStatus, g.children),
     confession: g.confession,
     children: g.children,

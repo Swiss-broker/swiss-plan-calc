@@ -71,7 +71,7 @@ import {
 import { cn } from "@/lib/utils";
 import { formatCHF } from "@/lib/format";
 import { getSelectableCantons, type SelectableCantonCode } from "@/lib/swiss/cantons";
-import { getCommunalMultiplier } from "@/lib/swiss/communal-multipliers";
+import { getCommunalMultiplier, getVsIndexation } from "@/lib/swiss/communal-multipliers";
 import {
   computeAllStrategies,
   computeStrategy,
@@ -188,6 +188,9 @@ function DirectorCompensationCalc() {
       directorCommunalMultiplier:
         getCommunalMultiplier(linkedClient?.canton, linkedClient?.commune) ??
         prev.directorCommunalMultiplier,
+      directorVsIndexationPercent:
+        getVsIndexation(linkedClient?.canton, linkedClient?.commune) ??
+        prev.directorVsIndexationPercent,
       status: (linkedClient?.civil_status as FilingStatus | undefined) ?? prev.status,
       children: Array.isArray(linkedClient?.children)
         ? linkedClient.children.length

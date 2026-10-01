@@ -26,6 +26,8 @@ export interface DirectorInputs {
   directorCanton: SelectableCantonCode;
   /** Surcharge éventuelle multiplicateur communal du dirigeant */
   directorCommunalMultiplier?: number;
+  /** VS uniquement : indexation communale réelle du dirigeant (%, ex. 166). */
+  directorVsIndexationPercent?: number;
   /** Statut civil du dirigeant */
   status: FilingStatus;
   /** Nombre d'enfants à charge */
