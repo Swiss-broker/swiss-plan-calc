@@ -60,6 +60,7 @@ function estimateLamalCH(g: TaxGlobalInput): number {
 export function toIncomeTaxInput(g: TaxGlobalInput): IncomeTaxInput {
   return {
     canton: g.canton,
+    communalMultiplier: g.communalMultiplier,
     status: toTaxStatus(g.civilStatus, g.children),
     confession: g.confession,
     children: g.children,

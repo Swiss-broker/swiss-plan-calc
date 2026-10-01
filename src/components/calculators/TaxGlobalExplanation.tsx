@@ -163,7 +163,14 @@ export function TaxGlobalExplanation({ form, result, client }: Props) {
                 <div className="my-2 border-t" />
                 <CalcLine label={`IFD (barème art. 36 LIFD) − rabais enfants`} value={inc.ifd} />
                 <CalcLine label={`Cantonal ${form.canton}`} value={inc.cantonal} />
-                <CalcLine label={`Communal (multiplicateur ${form.canton} chef-lieu)`} value={inc.communal} />
+                <CalcLine
+                  label={
+                    form.communalMultiplier !== undefined && client?.commune
+                      ? `Communal (multiplicateur réel de ${client.commune})`
+                      : `Communal (multiplicateur ${form.canton} chef-lieu, par défaut)`
+                  }
+                  value={inc.communal}
+                />
                 {inc.church > 0 && (
                   <CalcLine label={`Impôt église (${form.confession})`} value={inc.church} />
                 )}

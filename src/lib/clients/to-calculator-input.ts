@@ -15,6 +15,7 @@ import type { TaxStatusContext, WorkStatusContext } from "@/lib/optimizer";
 import { getTotalGrossIncomeOrUndef, getTotalGrossIncome } from "./income";
 import { estimateRetroactiveLppBalance, deriveBuybackYears } from "@/lib/lpp";
 import { getWorkStatusRules } from "./work-status-rules";
+import { getCommunalMultiplier } from "@/lib/swiss/communal-multipliers";
 
 /**
  * Estime la capacité de rachat LPP quand `lpp_max_buyback` est manquant ou = 0
@@ -136,6 +137,9 @@ export function toIncomeTaxInput(b: ClientBundle) {
   const children = parseChildren(b.client.children);
   return {
     canton: b.client.canton ?? undefined,
+    // Multiplicateur communal réel si la commune du client est connue et
+    // présente dans le tableau des coefficients (sinon chef-lieu par défaut).
+    communalMultiplier: getCommunalMultiplier(b.client.canton, b.client.commune),
     taxStatus: b.client.tax_status,
     status: mapStatus(b.client, children.some(ch => ch.in_household)),
     confession: mapConfession(b.client),
@@ -580,6 +584,9 @@ export function toTaxGlobalInput(b: ClientBundle) {
 
   return {
     canton: b.client.canton ?? undefined,
+    // Multiplicateur communal réel si la commune du client est connue et
+    // présente dans le tableau des coefficients (sinon chef-lieu par défaut).
+    communalMultiplier: getCommunalMultiplier(b.client.canton, b.client.commune),
     countryOfResidence: country,
     permit,
     civilStatus,

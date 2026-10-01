@@ -7,9 +7,9 @@ export const COMMUNES_BY_CANTON: Record<string, string[]> = {
     "Versoix", "Plan-les-Ouates", "Chêne-Bougeries", "Chêne-Bourg", "Grand-Saconnex",
     "Bernex", "Veyrier", "Cologny", "Pregny-Chambésy", "Satigny", "Collonge-Bellerive",
     "Confignon", "Vandœuvres", "Anières", "Bardonnex", "Choulex", "Corsier",
-    "Hermance", "Jussy", "Laconnex", "Meinier", "Perly-Certoux", "Plan-les-Ouates",
+    "Hermance", "Jussy", "Laconnex", "Meinier", "Perly-Certoux",
     "Presinge", "Puplinge", "Russin", "Soral", "Troinex", "Avully", "Avusy",
-    "Cartigny", "Céligny", "Chancy", "Choulex", "Dardagny", "Genthod",
+    "Cartigny", "Céligny", "Chancy", "Dardagny", "Genthod",
     "Gy", "Aire-la-Ville",
   ],
   VD: [

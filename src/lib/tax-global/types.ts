@@ -30,6 +30,8 @@ export type GlobalCivilStatus =
 export interface TaxGlobalInput {
   // === Identité & ménage ===
   canton: string;
+  /** Surcharge facultative du multiplicateur communal (chef-lieu si non fourni). */
+  communalMultiplier?: number;
   countryOfResidence: string; // "CH", "FR", ...
   permit: "swiss" | "C" | "B" | "L" | "G" | "Ci" | "F" | "other";
   civilStatus: GlobalCivilStatus;

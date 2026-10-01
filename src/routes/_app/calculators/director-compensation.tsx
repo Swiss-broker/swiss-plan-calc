@@ -71,6 +71,7 @@ import {
 import { cn } from "@/lib/utils";
 import { formatCHF } from "@/lib/format";
 import { getSelectableCantons, type SelectableCantonCode } from "@/lib/swiss/cantons";
+import { getCommunalMultiplier } from "@/lib/swiss/communal-multipliers";
 import {
   computeAllStrategies,
   computeStrategy,
@@ -182,6 +183,11 @@ function DirectorCompensationCalc() {
         (linkedCompany?.canton as SelectableCantonCode | undefined) ?? prev.companyCanton,
       directorCanton:
         (linkedClient?.canton as SelectableCantonCode | undefined) ?? prev.directorCanton,
+      // Multiplicateur communal réel si la commune du client est connue et
+      // présente dans le tableau des coefficients (sinon chef-lieu par défaut).
+      directorCommunalMultiplier:
+        getCommunalMultiplier(linkedClient?.canton, linkedClient?.commune) ??
+        prev.directorCommunalMultiplier,
       status: (linkedClient?.civil_status as FilingStatus | undefined) ?? prev.status,
       children: Array.isArray(linkedClient?.children)
         ? linkedClient.children.length

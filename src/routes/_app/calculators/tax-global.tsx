@@ -872,8 +872,17 @@ function TaxGlobalCalc() {
                 <MoneyTile
                   label={t("calc.global.tile.cantonal")}
                   value={result.income.cantonal + result.income.communal}
-                  tip={`Impôt cantonal + communal. Barème du canton ${form.canton} × coefficient cantonal × multiplicateur communal (chef-lieu par défaut tant que la commune réelle n'est pas résolue).${result.income.cantonSpecificNote ? " " + result.income.cantonSpecificNote : ""}`}
+                  tip={`Impôt cantonal + communal. Barème du canton ${form.canton} × coefficient cantonal × multiplicateur communal (${
+                    form.communalMultiplier !== undefined && client?.commune
+                      ? `commune ${client.commune}`
+                      : "chef-lieu cantonal par défaut, commune du client non reconnue ou non renseignée"
+                  }).${result.income.cantonSpecificNote ? " " + result.income.cantonSpecificNote : ""}`}
                 />
+                <div className="col-span-2 rounded-md border border-muted bg-muted/30 p-2 text-xs text-muted-foreground">
+                  {form.communalMultiplier !== undefined && client?.commune
+                    ? `Multiplicateur communal réel de ${client.commune} appliqué (coefficient 2026).`
+                    : `Multiplicateur communal du chef-lieu cantonal appliqué par défaut (commune du client non reconnue dans notre liste, ou fiche sans commune renseignée).`}
+                </div>
                 {result.income.cantonSpecificNote && (
                   <div className="col-span-2 rounded-md border border-primary/20 bg-primary/5 p-2 text-xs text-muted-foreground">
                     {result.income.cantonSpecificNote}
