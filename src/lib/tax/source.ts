@@ -17,6 +17,138 @@ import { interpolateGERate } from "./cross-border";
 
 export type SourceScale = "A" | "B" | "C" | "H";
 
+// =====================================================================
+// Barèmes IS Jura 2026 — officiels (jura.ch, Service des contributions,
+// "Barème B" / "Barème C", édition 2026)
+// [revenu_brut_mensuel_CHF, taux_%] — interpolation linéaire, même
+// mécanique que GE_IS_RATES_2026 (cross-border.ts), mais directement sur
+// le revenu MENSUEL (le barème jurassien est publié mois par mois, pas
+// annualisé). Limité à B0-B2/C0-C2 comme GE — au-delà de 2 enfants, la
+// réduction générique childReduction() prend le relais (voir
+// computeSourceTax). N'existe que pour B (marié monoactif) et C (marié
+// biactif) : le Jura ne nous a pas fourni de barème A (célibataire) ni H
+// (monoparental) — ceux-ci restent sur l'approximation générique.
+// =====================================================================
+const JU_IS_RATES_2026: Record<string, [number, number][]> = {
+  B0: [
+    [1_000, 0],
+    [2_000, 0],
+    [3_000, 1.51],
+    [4_000, 3.75],
+    [5_000, 5.85],
+    [6_000, 7.34],
+    [7_000, 8.89],
+    [8_000, 10.2],
+    [10_000, 12.12],
+    [12_000, 14.07],
+    [15_000, 16.72],
+    [18_000, 19.2],
+    [20_000, 20.55],
+    [25_000, 23.62],
+    [30_000, 25.8],
+  ],
+  B1: [
+    [1_000, 0],
+    [2_000, 0],
+    [3_000, 0.22],
+    [4_000, 1.85],
+    [5_000, 3.82],
+    [6_000, 5.42],
+    [7_000, 6.81],
+    [8_000, 8.21],
+    [10_000, 10.48],
+    [12_000, 12.5],
+    [15_000, 15.33],
+    [18_000, 17.88],
+    [20_000, 19.36],
+    [25_000, 22.56],
+    [30_000, 24.92],
+  ],
+  B2: [
+    [1_000, 0],
+    [2_000, 0],
+    [3_000, 0],
+    [4_000, 0.45],
+    [5_000, 2.06],
+    [6_000, 3.89],
+    [7_000, 5.23],
+    [8_000, 6.61],
+    [10_000, 8.89],
+    [12_000, 10.92],
+    [15_000, 13.96],
+    [18_000, 16.56],
+    [20_000, 18.17],
+    [25_000, 21.51],
+    [30_000, 24.04],
+  ],
+  C0: [
+    [1_000, 0],
+    [2_000, 2.28],
+    [3_000, 5.81],
+    [4_000, 8.68],
+    [5_000, 10.71],
+    [6_000, 12.44],
+    [7_000, 13.42],
+    [8_000, 14.39],
+    [10_000, 16.06],
+    [12_000, 17.57],
+    [15_000, 19.9],
+    [18_000, 22.05],
+    [20_000, 23.26],
+    [25_000, 25.57],
+    [30_000, 27.2],
+  ],
+  C1: [
+    [1_000, 0],
+    [2_000, 0.75],
+    [3_000, 4.27],
+    [4_000, 7.01],
+    [5_000, 9.14],
+    [6_000, 10.92],
+    [7_000, 12.06],
+    [8_000, 13.13],
+    [10_000, 14.96],
+    [12_000, 16.55],
+    [15_000, 18.98],
+    [18_000, 21.17],
+    [20_000, 22.48],
+    [25_000, 24.95],
+    [30_000, 26.69],
+  ],
+  C2: [
+    [1_000, 0],
+    [2_000, 0.04],
+    [3_000, 2.77],
+    [4_000, 5.55],
+    [5_000, 7.83],
+    [6_000, 9.45],
+    [7_000, 10.71],
+    [8_000, 11.89],
+    [10_000, 13.9],
+    [12_000, 15.55],
+    [15_000, 18.04],
+    [18_000, 20.28],
+    [20_000, 21.69],
+    [25_000, 24.33],
+    [30_000, 26.18],
+  ],
+};
+
+function interpolateJURate(monthlyGross: number, scaleKey: string): number {
+  const pts = JU_IS_RATES_2026[scaleKey];
+  if (!pts) return 0;
+  if (monthlyGross <= pts[0][0]) return 0;
+  if (monthlyGross >= pts[pts.length - 1][0]) return pts[pts.length - 1][1];
+  for (let i = 1; i < pts.length; i++) {
+    const [x0, y0] = pts[i - 1];
+    const [x1, y1] = pts[i];
+    if (monthlyGross <= x1) {
+      return y0 + ((monthlyGross - x0) / (x1 - x0)) * (y1 - y0);
+    }
+  }
+  return pts[pts.length - 1][1];
+}
+
 export interface SourceTaxOptions {
   /** Salaire brut mensuel CHF du contribuable (incl. 13e au prorata) */
   monthlyGross: number;
@@ -149,6 +281,16 @@ export function computeSourceTax(opts: SourceTaxOptions): SourceTaxResult {
     const determinationAnnual = determinationBase * 12;
     const baseRate = interpolateGERate(determinationAnnual, scaleKey);
     rate = Math.max(0, baseRate + churchAddition);
+  } else if (opts.canton === "JU" && (opts.scale === "B" || opts.scale === "C")) {
+    // Jura, barèmes B et C : vraies tables officielles jura.ch 2026
+    // (JU_IS_RATES_2026, directement sur le revenu mensuel, pas annualisé)
+    // au lieu de l'approximation générique courbe GE × coefficient 0.95.
+    // Barèmes A et H : pas de table officielle fournie pour le Jura, reste
+    // sur l'approximation générique (voir branche else ci-dessous).
+    const n = Math.min(opts.children ?? 0, 2);
+    const scaleKey = `${opts.scale}${n}`;
+    const baseRate = interpolateJURate(determinationBase, scaleKey);
+    rate = Math.max(0, baseRate + churchAddition);
   } else {
     const baseRateAtGE = baseRateGE(determinationBase, opts.scale);
     const cantonCoef = CANTON_SOURCE_COEF[opts.canton] ?? 0.95;
@@ -167,9 +309,10 @@ export function computeSourceTax(opts: SourceTaxOptions): SourceTaxResult {
   // Le taux est appliqué sur le revenu PROPRE du contribuable (pas le combiné)
   const monthlyTax = (monthly * rate) / 100;
 
-  const scaleSuffix = opts.scale === "A"
-    ? `A${Math.min(opts.children ?? 0, 5)}`
-    : `${opts.scale}${Math.min(opts.children ?? 0, 5)}`;
+  const scaleSuffix =
+    opts.scale === "A"
+      ? `A${Math.min(opts.children ?? 0, 5)}`
+      : `${opts.scale}${Math.min(opts.children ?? 0, 5)}`;
 
   return {
     rate: Math.round(rate * 100) / 100,
@@ -182,10 +325,7 @@ export function computeSourceTax(opts: SourceTaxOptions): SourceTaxResult {
 }
 
 /** Détermine automatiquement le barème à partir de la situation civile/familiale */
-export function inferSourceScale(
-  status: FilingStatus,
-  spouseEmployed: boolean,
-): SourceScale {
+export function inferSourceScale(status: FilingStatus, spouseEmployed: boolean): SourceScale {
   if (status === "single_with_children") return "H";
   if (status === "married") return spouseEmployed ? "C" : "B";
   return "A";
