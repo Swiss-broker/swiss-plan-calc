@@ -21,9 +21,11 @@
 // "Coefficients_Indexations_Communes_2022-2027", colonne 2026) : les 23
 // coefficients concordent exactement, confirmant aussi les indexations.
 //
-// JU : les 13 communes ci-dessous sont marquées "à recouper" (non encore
-// confirmées en recoupement direct du PDF communal complet) dans le
-// fichier source — verified: "provisional". À remplacer dès confirmation.
+// JU : les 13 quotités ci-dessous ont été recoupées une à une contre le
+// document officiel "Quotités d'impôt des communes et taux impôts 2026"
+// (jura.ch, Service des contributions) — 12/13 concordaient exactement ;
+// Le Noirmont était erroné dans la source initiale (1.30 au lieu de 1.70,
+// corrigé ici avec la valeur officielle).
 
 export interface CommunalMultiplierEntry {
   /** Multiplicateur décimal prêt à l'emploi (communalMultiplier). */
@@ -194,19 +196,21 @@ export const COMMUNAL_MULTIPLIERS: Record<string, Record<string, CommunalMultipl
     "Val-de-Travers": { multiplier: 0.76, verified: "confirmed" },
   },
   JU: {
-    Alle: { multiplier: 2.25, verified: "provisional" },
-    Bassecourt: { multiplier: 2.1, fiscalCommune: "Haute-Sorne", verified: "provisional" },
-    Boncourt: { multiplier: 1.55, verified: "provisional" },
-    Courrendlin: { multiplier: 2.25, verified: "provisional" },
-    Courroux: { multiplier: 2.15, verified: "provisional" },
-    Courtételle: { multiplier: 1.65, verified: "provisional" },
-    Develier: { multiplier: 1.95, verified: "provisional" },
-    "Le Noirmont": { multiplier: 1.3, verified: "provisional" },
-    "Les Breuleux": { multiplier: 1.3, verified: "provisional" },
-    Movelier: { multiplier: 2.25, verified: "provisional" },
-    Porrentruy: { multiplier: 2.05, verified: "provisional" },
-    Saignelégier: { multiplier: 2.3, verified: "provisional" },
-    Vicques: { multiplier: 2.2, fiscalCommune: "Val Terbi", verified: "provisional" },
+    Alle: { multiplier: 2.25, verified: "confirmed" },
+    Bassecourt: { multiplier: 2.1, fiscalCommune: "Haute-Sorne", verified: "confirmed" },
+    Boncourt: { multiplier: 1.55, verified: "confirmed" },
+    Courrendlin: { multiplier: 2.25, verified: "confirmed" },
+    Courroux: { multiplier: 2.15, verified: "confirmed" },
+    Courtételle: { multiplier: 1.65, verified: "confirmed" },
+    Develier: { multiplier: 1.95, verified: "confirmed" },
+    // Corrigé : 1.70 (document officiel 2026), la source initiale donnait
+    // 1.30 par erreur.
+    "Le Noirmont": { multiplier: 1.7, verified: "confirmed" },
+    "Les Breuleux": { multiplier: 1.3, verified: "confirmed" },
+    Movelier: { multiplier: 2.25, verified: "confirmed" },
+    Porrentruy: { multiplier: 2.05, verified: "confirmed" },
+    Saignelégier: { multiplier: 2.3, verified: "confirmed" },
+    Vicques: { multiplier: 2.2, fiscalCommune: "Val Terbi", verified: "confirmed" },
   },
 };
 
