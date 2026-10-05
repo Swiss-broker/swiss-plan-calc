@@ -95,6 +95,7 @@ export interface IncomeTaxBreakdown {
   deductions: {
     avs: number;
     ac: number;
+    anp: number;
     lpp: number;
     pillar3a: number;
     lppBuyback: number;
@@ -115,6 +116,8 @@ export interface IncomeTaxBreakdown {
   cantonal: number;
   communal: number;
   church: number;
+  /** Impôt personnel (taxe per capita) — GE uniquement pour l'instant, 0 ailleurs. */
+  personalTax: number;
   wealthTax: number;
   /** Détail des réductions cantonales spécifiques (ex. VS), affiché au courtier. */
   cantonSpecificNote?: string;
@@ -135,6 +138,16 @@ export const MEALS_FORFAIT_ANNUAL = 3_200;
 export const PROFESSIONAL_FORFAIT_RATE = 0.03; // 3% du salaire net
 export const PROFESSIONAL_FORFAIT_MIN = 2_000;
 export const PROFESSIONAL_FORFAIT_MAX = 4_000;
+/**
+ * Plafond cantonal du forfait "frais professionnels", si différent du
+ * plafond fédéral (PROFESSIONAL_FORFAIT_MAX) — voir le commentaire sur
+ * `professionalCantonalCap` dans computeIncomeTax. Vide pour l'instant :
+ * GE est identifié comme ayant un forfait différent (recoupement ESTV),
+ * mais la formule exacte n'a pas pu être déterminée avec confiance à
+ * partir d'un seul cas de référence. Ne pas remplir une valeur ici sans
+ * l'avoir vérifiée contre au moins deux cas de référence officiels.
+ */
+export const PROFESSIONAL_FORFAIT_CANTONAL_CAP_2026: Record<string, number> = {};
 /** Forfait fédéral assurance maladie (IFD) */
 export const HEALTH_INSURANCE_MAX_SINGLE = 1_800;
 export const HEALTH_INSURANCE_MAX_MARRIED = 3_600;
@@ -146,21 +159,41 @@ export const HEALTH_INSURANCE_PER_CHILD = 700;
  * cantonales, utilisées si l'utilisateur ne saisit pas ses primes réelles.
  * Format : { single, married, perChild }.
  */
+/**
+ * Corrigé le 05.10.2026 : l'ancienne table contenait des "valeurs
+ * indicatives" par canton, inventées sans source citée. Remplacées par la
+ * valeur STANDARD du calculateur officiel ESTV (swisstaxcalculator.estv.
+ * admin.ch, notice "Erläuterungen zu den Steuerberechnungen") : "si vous ne
+ * saisissez pas de valeurs individuelles, le calcul est effectué avec des
+ * valeurs standard [...] CHF 4560 par adulte [...] CHF 1200 par enfant.
+ * Source : Budget-conseil Suisse (budgetberatung.ch)". Vérifiée pour GE par
+ * recoupement contre deux cas de référence ESTV (avec/sans enfant, même
+ * salaire) : le calcul affiche bien -4'560 CHF (0 enfant) puis -5'760 CHF
+ * (1 enfant) sous "Déduction des primes d'assurance maladie" cantonale,
+ * SÉPARÉMENT du forfait fédéral (voir HEALTH_INSURANCE_MAX_SINGLE/MARRIED,
+ * plus bas, confirmé correct par le même recoupement). Appliquée ici comme
+ * valeur par défaut pour tous les cantons tant qu'un canton précis n'a pas
+ * été vérifié individuellement contre un cas de référence — préférable à
+ * l'ancienne table "indicative" sans source. married = 2 × single
+ * (hypothèse : le forfait officiel est documenté "par adulte", pas de
+ * cas de référence marié disponible pour confirmer l'absence de palier).
+ */
+const HEALTH_INSURANCE_CANTONAL_STANDARD_2026 = { single: 4_560, married: 9_120, perChild: 1_200 };
 export const HEALTH_INSURANCE_CANTONAL_2026: Record<
   string,
   { single: number; married: number; perChild: number }
 > = {
-  GE: { single: 2_400, married: 4_800, perChild: 1_200 },
-  VD: { single: 2_200, married: 4_400, perChild: 1_300 },
-  VS: { single: 2_200, married: 4_400, perChild: 1_100 },
-  FR: { single: 2_000, married: 4_000, perChild: 1_000 },
-  NE: { single: 2_300, married: 4_600, perChild: 1_200 },
-  JU: { single: 2_100, married: 4_200, perChild: 1_100 },
-  BE: { single: 2_600, married: 5_200, perChild: 1_400 },
-  ZH: { single: 2_600, married: 5_200, perChild: 1_300 },
-  BS: { single: 2_400, married: 4_800, perChild: 1_200 },
-  BL: { single: 2_400, married: 4_800, perChild: 1_200 },
-  TI: { single: 2_300, married: 4_600, perChild: 1_200 },
+  GE: HEALTH_INSURANCE_CANTONAL_STANDARD_2026,
+  VD: HEALTH_INSURANCE_CANTONAL_STANDARD_2026,
+  VS: HEALTH_INSURANCE_CANTONAL_STANDARD_2026,
+  FR: HEALTH_INSURANCE_CANTONAL_STANDARD_2026,
+  NE: HEALTH_INSURANCE_CANTONAL_STANDARD_2026,
+  JU: HEALTH_INSURANCE_CANTONAL_STANDARD_2026,
+  BE: HEALTH_INSURANCE_CANTONAL_STANDARD_2026,
+  ZH: HEALTH_INSURANCE_CANTONAL_STANDARD_2026,
+  BS: HEALTH_INSURANCE_CANTONAL_STANDARD_2026,
+  BL: HEALTH_INSURANCE_CANTONAL_STANDARD_2026,
+  TI: HEALTH_INSURANCE_CANTONAL_STANDARD_2026,
 };
 export const CHILDCARE_MAX_FEDERAL_2026 = 25_500;
 // Cotisations sociales 2026 (parts salarié)
@@ -171,6 +204,20 @@ export const AC_RATE = 0.011; // 1.1% jusqu'au plafond AC
  *  la formule ci-dessous si jamais réintroduite un jour par le législateur. */
 export const AC_COMPLEMENTARY_RATE = 0;
 export const AC_CEILING_2026 = 148_200; // Plafond AC 2026
+/** Cotisation accidents non professionnels (ANP/LAA, part salarié) : 100% à
+ *  charge de l'employé (contrairement aux accidents PROFESSIONNELS, à charge
+ *  de l'employeur). Taux fixe 0.4% (ne dépend pas de la loi mais du contrat
+ *  d'assurance de l'employeur — non indexé historiquement, confirmé par la
+ *  notice officielle ESTV "Erläuterungen zu den Steuerberechnungen" :
+ *  "Le montant de la contribution est fixé à 0,4 % (pas d'ajustement
+ *  historique car cette valeur dépend du contrat et n'est pas exigée par la
+ *  loi)"). Plafonné au salaire maximal LAA, identique au plafond AC.
+ *  Ajoutée le 05.10.2026 : absente du moteur jusqu'ici, confirmée manquante
+ *  par recoupement contre le calculateur officiel ESTV (320 CHF sur 80'000
+ *  CHF brut = 0.4%, ligne "Cotisations pour les accidents non
+ *  professionnels" systématiquement affichée par ESTV avant le revenu net). */
+export const ANP_RATE = 0.004;
+export const ANP_CEILING_2026 = AC_CEILING_2026;
 
 /**
  * Estime les cotisations sociales déductibles part salarié (AVS/AI/APG + AC + LPP).
@@ -189,11 +236,12 @@ export function estimateSocialContributions(
    *  plafond légal du plan (une valeur au-delà serait incohérente avec le
    *  plan sélectionné). */
   insuredSalaryOverride?: number,
-): { avs: number; ac: number; lpp: number } {
+): { avs: number; ac: number; anp: number; lpp: number } {
   const avs = grossSalary * AVS_AI_APG_RATE;
   const acBase = Math.min(grossSalary, AC_CEILING_2026) * AC_RATE;
   const acComp = Math.max(0, grossSalary - AC_CEILING_2026) * AC_COMPLEMENTARY_RATE;
   const ac = acBase + acComp;
+  const anp = Math.min(grossSalary, ANP_CEILING_2026) * ANP_RATE;
 
   // LPP : bonification (selon âge) × salaire coordonné, dont 50% part salarié.
   // Plafond du salaire assuré dépend du plan :
@@ -214,11 +262,11 @@ export function estimateSocialContributions(
     insuredSalaryOverride && insuredSalaryOverride > 0
       ? Math.min(insuredSalaryOverride, planCap)
       : computeLppInsuredSalary(grossSalary, planCap);
-  const creditRate = lppCreditRate(age) || 0.10;
+  const creditRate = lppCreditRate(age) || 0.1;
   const lppEmployerEmployee = coordinated * creditRate;
   const lpp = lppEmployerEmployee * 0.5;
 
-  return { avs: Math.round(avs), ac: Math.round(ac), lpp: Math.round(lpp) };
+  return { avs: Math.round(avs), ac: Math.round(ac), anp: Math.round(anp), lpp: Math.round(lpp) };
 }
 
 /**
@@ -244,9 +292,10 @@ export function computeIncomeTax(input: IncomeTaxInput): IncomeTaxBreakdown {
   );
   const spouseSocial = isMarried
     ? estimateSocialContributions(spouseSalary, input.spouseAge, input.spouseLppPlan)
-    : { avs: 0, ac: 0, lpp: 0 };
+    : { avs: 0, ac: 0, anp: 0, lpp: 0 };
   const avsTotal = social.avs + spouseSocial.avs;
   const acTotal = social.ac + spouseSocial.ac;
+  const anpTotal = social.anp + spouseSocial.anp;
   const lppTotal = social.lpp + spouseSocial.lpp;
 
   // 3a (plafonné)
@@ -254,27 +303,40 @@ export function computeIncomeTax(input: IncomeTaxInput): IncomeTaxBreakdown {
   const pillar3aCap = isMarried
     ? PILLAR_3A_MAX_2026_LPP + (spouseHasLPP ? PILLAR_3A_MAX_2026_LPP : 0)
     : PILLAR_3A_MAX_2026_LPP;
-  const pillar3a = Math.min(
-    input.pillar3aContributions ?? 0,
-    pillar3aCap,
-  );
+  const pillar3a = Math.min(input.pillar3aContributions ?? 0, pillar3aCap);
 
   // Rachat LPP (entièrement déductible)
   const lppBuyback = input.lppBuyback ?? 0;
 
-  // Frais professionnels : 3% du salaire NET (brut - AVS - AC - LPP), bornes 2'000 / 4'000
-  let professional = input.professionalExpenses ?? 0;
+  // Frais professionnels (forfait fédéral IFD, art. 26 LIFD, confirmé exact
+  // par recoupement ESTV) : 3% du salaire NET (brut - AVS - AC - ANP - LPP),
+  // bornes 2'000 / 4'000.
+  let professionalIFD = input.professionalExpenses ?? 0;
   if (!input.professionalExpenses) {
     const netSalary = Math.max(
       0,
-      grossSalary + spouseSalary - avsTotal - acTotal - lppTotal,
+      grossSalary + spouseSalary - avsTotal - acTotal - anpTotal - lppTotal,
     );
     const forfait = netSalary * PROFESSIONAL_FORFAIT_RATE;
-    professional = Math.max(
+    professionalIFD = Math.max(
       PROFESSIONAL_FORFAIT_MIN,
       Math.min(PROFESSIONAL_FORFAIT_MAX, forfait),
     );
   }
+  // Forfait CANTONAL : identifié le 05.10.2026 comme DIFFÉRENT du fédéral
+  // (recoupement ESTV GE : -1'817 CHF cantonal contre -2'156 CHF IFD pour le
+  // même salaire net de 71'883 CHF) — mais la formule cantonale exacte
+  // (taux ? plafond propre à GE ? base de calcul différente ?) n'a pas pu
+  // être déterminée de façon fiable à partir d'un seul cas de référence.
+  // Plutôt que de deviner un plafond et introduire une NOUVELLE valeur non
+  // vérifiée, le forfait cantonal reprend pour l'instant le forfait IFD
+  // (comportement historique, connu approximatif) — voir
+  // PROFESSIONAL_FORFAIT_CANTONAL_CAP_2026 pour ajouter un canton vérifié.
+  const professionalCantonalCap = PROFESSIONAL_FORFAIT_CANTONAL_CAP_2026[input.canton];
+  const professional =
+    professionalCantonalCap !== undefined && !input.professionalExpenses
+      ? Math.min(professionalIFD, professionalCantonalCap)
+      : professionalIFD;
 
   const commuting = Math.min(input.commutingExpenses ?? 0, COMMUTING_MAX_FEDERAL_2026);
   const meals = Math.min(input.mealExpenses ?? 0, MEALS_FORFAIT_ANNUAL);
@@ -282,20 +344,36 @@ export function computeIncomeTax(input: IncomeTaxInput): IncomeTaxBreakdown {
   const mortgage = input.mortgageInterest ?? 0;
   const realEstate = input.realEstateMaintenance ?? 0;
 
-  // Primes d'assurance maladie : forfait cantonal si dispo, sinon forfait fédéral
+  // Primes d'assurance maladie : CORRIGÉ le 05.10.2026 — le canton et la
+  // Confédération ont des plafonds LÉGAUX DIFFÉRENTS pour cette déduction
+  // (confirmé par recoupement ESTV : -4'560/-5'760 CHF côté canton GE contre
+  // -1'800/-2'500 CHF côté IFD pour le même profil). Jusqu'ici le moteur
+  // appliquait un seul plafond (le cantonal) aux deux bases imposables, ce
+  // qui gonflait l'IFD. Les deux valeurs sont calculées séparément ;
+  // `healthInsurance` (retourné dans `deductions`, pour l'affichage) reste
+  // la valeur cantonale, c'est celle qui pèse le plus sur le total affiché.
   const cantonalForfait = HEALTH_INSURANCE_CANTONAL_2026[input.canton];
-  const healthBase = cantonalForfait
+  const healthBaseCC = cantonalForfait
     ? isMarried
       ? cantonalForfait.married
       : cantonalForfait.single
     : isMarried
       ? HEALTH_INSURANCE_MAX_MARRIED
       : HEALTH_INSURANCE_MAX_SINGLE;
-  const perChild = cantonalForfait ? cantonalForfait.perChild : HEALTH_INSURANCE_PER_CHILD;
-  const healthChildren = (input.children ?? 0) * perChild;
+  const perChildCC = cantonalForfait ? cantonalForfait.perChild : HEALTH_INSURANCE_PER_CHILD;
+  const healthChildrenCC = (input.children ?? 0) * perChildCC;
   const healthInsurance = input.healthInsurancePremiums
-    ? Math.min(input.healthInsurancePremiums, healthBase + healthChildren)
-    : healthBase + healthChildren;
+    ? Math.min(input.healthInsurancePremiums, healthBaseCC + healthChildrenCC)
+    : healthBaseCC + healthChildrenCC;
+
+  // Plafond fédéral (art. 33 al. 1 let. g LIFD), toujours le même quel que
+  // soit le canton — confirmé exact par recoupement ESTV (1'800 single / 0
+  // enfant, 2'500 = 1'800+700 avec 1 enfant).
+  const healthBaseIFD = isMarried ? HEALTH_INSURANCE_MAX_MARRIED : HEALTH_INSURANCE_MAX_SINGLE;
+  const healthChildrenIFD = (input.children ?? 0) * HEALTH_INSURANCE_PER_CHILD;
+  const healthInsuranceIFD = input.healthInsurancePremiums
+    ? Math.min(input.healthInsurancePremiums, healthBaseIFD + healthChildrenIFD)
+    : healthBaseIFD + healthChildrenIFD;
 
   const childCare = Math.min(
     input.childCareCosts ?? 0,
@@ -313,6 +391,7 @@ export function computeIncomeTax(input: IncomeTaxInput): IncomeTaxBreakdown {
   const totalDeductions =
     avsTotal +
     acTotal +
+    anpTotal +
     lppTotal +
     pillar3a +
     lppBuyback +
@@ -327,11 +406,18 @@ export function computeIncomeTax(input: IncomeTaxInput): IncomeTaxBreakdown {
     donations;
 
   const taxableIncomeCC = Math.max(0, grossIncome - totalDeductions);
-  // IFD : déduction fédérale supplémentaire par enfant à charge (art. 35 LIFD)
-  // 6 700 CHF par enfant + rabais 259 CHF/enfant sur l'impôt après calcul.
-  const IFD_CHILD_INCOME_DEDUCTION = 6_700;
+  // IFD : base séparée de l'ICC depuis le 05.10.2026 — reprend les mêmes
+  // déductions que `totalDeductions` SAUF la prime maladie (plafond fédéral
+  // différent du cantonal, voir healthInsuranceIFD ci-dessus).
+  const totalDeductionsIFD =
+    totalDeductions - healthInsurance + healthInsuranceIFD - professional + professionalIFD;
+  // Déduction fédérale supplémentaire par enfant à charge (art. 35 LIFD),
+  // corrigée le 05.10.2026 : 6'700 → 6'800 CHF/enfant (valeur 2026 indexée,
+  // confirmée par recoupement ESTV) + rabais 263 CHF/enfant sur l'impôt
+  // après calcul (barème, appliqué plus bas via ifdChildRebate).
+  const IFD_CHILD_INCOME_DEDUCTION = 6_800;
   const ifdChildIncomeDed = (input.children ?? 0) * IFD_CHILD_INCOME_DEDUCTION;
-  const taxableIncomeIFD = Math.max(0, taxableIncomeCC - ifdChildIncomeDed);
+  const taxableIncomeIFD = Math.max(0, grossIncome - totalDeductionsIFD - ifdChildIncomeDed);
 
   // IFD
   const ifdGross = computeIFD(taxableIncomeIFD, input.status);
@@ -360,7 +446,7 @@ export function computeIncomeTax(input: IncomeTaxInput): IncomeTaxBreakdown {
     communalMultiplier: input.communalMultiplier,
   });
 
-  const totalIncomeTax = ifd + cc.cantonal + cc.communal + cc.church;
+  const totalIncomeTax = ifd + cc.cantonal + cc.communal + cc.church + cc.personalTax;
   const totalTax = totalIncomeTax + wealthTax;
   const effectiveRate = grossIncome > 0 ? (totalTax / grossIncome) * 100 : 0;
   const marginalRate = ifdMarginalRate(taxableIncomeIFD, input.status) + cc.marginalRate;
@@ -373,6 +459,7 @@ export function computeIncomeTax(input: IncomeTaxInput): IncomeTaxBreakdown {
     deductions: {
       avs: avsTotal,
       ac: acTotal,
+      anp: anpTotal,
       lpp: lppTotal,
       pillar3a,
       lppBuyback,
@@ -392,6 +479,7 @@ export function computeIncomeTax(input: IncomeTaxInput): IncomeTaxBreakdown {
     cantonal: cc.cantonal,
     communal: cc.communal,
     church: cc.church,
+    personalTax: cc.personalTax,
     wealthTax,
     cantonSpecificNote: cc.cantonSpecificNote,
     totalIncomeTax: Math.round(totalIncomeTax * 100) / 100,
@@ -403,10 +491,7 @@ export function computeIncomeTax(input: IncomeTaxInput): IncomeTaxBreakdown {
 }
 
 /** Compare deux scénarios (avant/après) et renvoie le delta */
-export function compareScenarios(
-  baseline: IncomeTaxBreakdown,
-  scenario: IncomeTaxBreakdown,
-) {
+export function compareScenarios(baseline: IncomeTaxBreakdown, scenario: IncomeTaxBreakdown) {
   return {
     deltaIFD: scenario.ifd - baseline.ifd,
     deltaCantonal: scenario.cantonal - baseline.cantonal,

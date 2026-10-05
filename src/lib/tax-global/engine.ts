@@ -82,6 +82,9 @@ export function toIncomeTaxInput(g: TaxGlobalInput): IncomeTaxInput {
     healthInsurancePremiums:
       (g.healthInsurancePremiums || 0) + (g.pillar3bContributions || 0) || undefined,
     childCareCosts: g.childCareCosts,
+    commutingExpenses: g.commutingExpenses,
+    mealExpenses: g.mealExpenses,
+    professionalExpenses: g.professionalExpenses,
     donations: g.donations,
     medicalExpenses: g.medicalExpenses,
     netWealth: g.netWealth,
@@ -116,7 +119,6 @@ export function computeTaxGlobal(g: TaxGlobalInput): TaxGlobalResult {
     },
   };
 
-
   // ─────────────────────── RÉSIDENT ORDINAIRE ───────────────────────
   if (det.regime === "resident_ordinary") {
     const incomeTaxInput = toIncomeTaxInput(g);
@@ -137,9 +139,8 @@ export function computeTaxGlobal(g: TaxGlobalInput): TaxGlobalResult {
         grossSalary: incomeTaxInput.grossSalary + g.foreignIncome,
       });
       // Taux effectif mondial
-      const worldwideEffectiveRate = grossWorldwide > 0
-        ? incomeWorldwide.totalTax / incomeWorldwide.grossIncome
-        : 0;
+      const worldwideEffectiveRate =
+        grossWorldwide > 0 ? incomeWorldwide.totalTax / incomeWorldwide.grossIncome : 0;
       // Impôt recalculé : taux mondial × revenu suisse uniquement
       const taxWithProgressivity = Math.round(grossSwiss * worldwideEffectiveRate);
       // On remplace uniquement le totalTax et l'effectiveRate
@@ -149,7 +150,11 @@ export function computeTaxGlobal(g: TaxGlobalInput): TaxGlobalResult {
         effectiveRate: grossSwiss > 0 ? (taxWithProgressivity / grossSwiss) * 100 : 0,
       };
       notes.push(
-        "Revenu étranger de " + g.foreignIncome.toLocaleString("fr-CH") + " CHF pris en compte pour la progressivité (art. 7 LIFD). Taux effectif mondial " + (worldwideEffectiveRate * 100).toFixed(1) + "% appliqué sur le revenu suisse uniquement.",
+        "Revenu étranger de " +
+          g.foreignIncome.toLocaleString("fr-CH") +
+          " CHF pris en compte pour la progressivité (art. 7 LIFD). Taux effectif mondial " +
+          (worldwideEffectiveRate * 100).toFixed(1) +
+          "% appliqué sur le revenu suisse uniquement.",
       );
     }
 
@@ -208,9 +213,7 @@ export function computeTaxGlobal(g: TaxGlobalInput): TaxGlobalResult {
     const source = computeSourceTax({
       monthlyGross: Math.round((g.grossSalary + g.bonus) / 12),
       spouseMonthlyGross:
-        couple && g.spouseEmployed
-          ? Math.round(g.spouseGrossSalary / 12)
-          : undefined,
+        couple && g.spouseEmployed ? Math.round(g.spouseGrossSalary / 12) : undefined,
       canton: g.canton,
       scale,
       children: g.children,
@@ -218,11 +221,7 @@ export function computeTaxGlobal(g: TaxGlobalInput): TaxGlobalResult {
     });
 
     const swissIncome =
-      g.grossSalary +
-      g.bonus +
-      (couple ? g.spouseGrossSalary : 0) +
-      g.otherIncome +
-      g.rentalIncome;
+      g.grossSalary + g.bonus + (couple ? g.spouseGrossSalary : 0) + g.otherIncome + g.rentalIncome;
     const worldwide = swissIncome + g.foreignIncome;
     const touEligibility = checkQuasiResident({
       worldwideIncome: worldwide,
@@ -363,7 +362,11 @@ export function computeTaxGlobal(g: TaxGlobalInput): TaxGlobalResult {
       chDeductionsTotal > 0
     ) {
       const swissIncome =
-        g.grossSalary + g.bonus + (couple ? g.spouseGrossSalary : 0) + g.otherIncome + g.rentalIncome;
+        g.grossSalary +
+        g.bonus +
+        (couple ? g.spouseGrossSalary : 0) +
+        g.otherIncome +
+        g.rentalIncome;
       const worldwide = swissIncome + g.foreignIncome;
       const eligibleTou = worldwide > 0 ? swissIncome / worldwide >= 0.9 : true;
       const ordinaryCH = computeIncomeTax(toIncomeTaxInput(g));
@@ -377,7 +380,7 @@ export function computeTaxGlobal(g: TaxGlobalInput): TaxGlobalResult {
           swissRate: Math.round((newSwiss / (g.grossSalary + g.bonus)) * 1000) / 10,
           totalTax: newTotal,
           totalRate: Math.round((newTotal / (g.grossSalary + g.bonus)) * 1000) / 10,
-          netAnnual: Math.round((g.grossSalary + g.bonus) - newTotal),
+          netAnnual: Math.round(g.grossSalary + g.bonus - newTotal),
           marginalRate: ordinaryCH.marginalRate,
         };
         cbNotes.push(
@@ -405,9 +408,14 @@ export function computeTaxGlobal(g: TaxGlobalInput): TaxGlobalResult {
         "Part étrangère : estimation du résidu d'impôt français après crédit (à valider avec la déclaration FR effective).",
       );
     }
-    if (g.otherIncome > 0 && (det.regime === "cross_border_ge" || det.regime === "cross_border_other")) {
+    if (
+      g.otherIncome > 0 &&
+      (det.regime === "cross_border_ge" || det.regime === "cross_border_other")
+    ) {
       cbNotes.push(
-        "Autres revenus suisses (" + g.otherIncome.toLocaleString("fr-CH") + " CHF : dividendes, revenus locatifs suisses) : non soumis à la retenue source mensuelle. Feront l objet d une rectification IS en fin d année — un solde d impôt supplémentaire sera probablement dû.",
+        "Autres revenus suisses (" +
+          g.otherIncome.toLocaleString("fr-CH") +
+          " CHF : dividendes, revenus locatifs suisses) : non soumis à la retenue source mensuelle. Feront l objet d une rectification IS en fin d année — un solde d impôt supplémentaire sera probablement dû.",
       );
     }
     return {

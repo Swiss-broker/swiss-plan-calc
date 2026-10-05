@@ -5,7 +5,14 @@ import { z } from "zod";
 import { Sparkles, Info, ArrowRight, Download, Camera } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
-import { CalcCard, MoneyTile, PctTile, Row, InfoLabel, HelpDot } from "@/components/calculators/CalcUI";
+import {
+  CalcCard,
+  MoneyTile,
+  PctTile,
+  Row,
+  InfoLabel,
+  HelpDot,
+} from "@/components/calculators/CalcUI";
 import { ClientLinkBanner } from "@/components/calculators/ClientLinkBanner";
 import { ClientPrefillBadge, ClientWealthCheck } from "@/components/calculators/ClientPrefillBadge";
 import { NumField as BaseNumField } from "@/components/ui/num-field";
@@ -50,7 +57,6 @@ import {
   CrossSimulationReuseBanner,
   type ReuseProvenance,
 } from "@/components/calculators/CrossSimulationReuseBanner";
-
 
 type FxCurrency = "CHF" | Currency;
 
@@ -111,7 +117,7 @@ function TaxGlobalCalc() {
   useEffect(() => {
     if (!simId || !savedInputs) return;
     if (loadedSimRef.current === simId) return;
-    setForm((prev) => ({ ...prev, ...savedInputs } as TaxGlobalInput));
+    setForm((prev) => ({ ...prev, ...savedInputs }) as TaxGlobalInput);
     loadedSimRef.current = simId;
     // Le comparateur Avant/Après doit repartir de LA SIMULATION RECHARGÉE
     // comme base, pas du formulaire vide par défaut capturé au premier
@@ -205,11 +211,12 @@ function TaxGlobalCalc() {
 
   // Synchronise foreignIncome (toujours en CHF dans le moteur).
   useEffect(() => {
-    const chf = fxCurrency === "CHF"
-      ? Math.round(fxAmount)
-      : fxRate && fxAmount
-        ? Math.round((fxCurrency === "JPY" ? fxAmount / 100 : fxAmount) * fxRate)
-        : 0;
+    const chf =
+      fxCurrency === "CHF"
+        ? Math.round(fxAmount)
+        : fxRate && fxAmount
+          ? Math.round((fxCurrency === "JPY" ? fxAmount / 100 : fxAmount) * fxRate)
+          : 0;
     if (chf !== form.foreignIncome) {
       set("foreignIncome", chf);
     }
@@ -228,15 +235,51 @@ function TaxGlobalCalc() {
   const [guideOpen, setGuideOpen] = useState(false);
   const guideSteps: GuideStep[] = [
     { title: t("calc.global.guide.s1.title"), body: t("calc.global.guide.s1.body") },
-    { target: "global-gross-salary", title: t("calc.global.guide.s2.title"), body: t("calc.global.guide.s2.body") },
-    { target: "global-other-income", title: t("calc.global.guide.s3.title"), body: t("calc.global.guide.s3.body") },
-    { target: "global-rental-income", title: t("calc.global.guide.s4.title"), body: t("calc.global.guide.s4.body") },
-    { target: "global-imputed-rent", title: t("calc.global.guide.s5.title"), body: t("calc.global.guide.s5.body") },
-    { target: "global-foreign-income", title: t("calc.global.guide.s6.title"), body: t("calc.global.guide.s6.body") },
-    { target: "global-net-wealth", title: t("calc.global.guide.s7.title"), body: t("calc.global.guide.s7.body") },
-    { target: "global-deductions", title: t("calc.global.guide.s8.title"), body: t("calc.global.guide.s8.body") },
-    { target: "global-frontalier-fx", title: t("calc.global.guide.s9.title"), body: t("calc.global.guide.s9.body") },
-    { target: "global-results", title: t("calc.global.guide.s10.title"), body: t("calc.global.guide.s10.body") },
+    {
+      target: "global-gross-salary",
+      title: t("calc.global.guide.s2.title"),
+      body: t("calc.global.guide.s2.body"),
+    },
+    {
+      target: "global-other-income",
+      title: t("calc.global.guide.s3.title"),
+      body: t("calc.global.guide.s3.body"),
+    },
+    {
+      target: "global-rental-income",
+      title: t("calc.global.guide.s4.title"),
+      body: t("calc.global.guide.s4.body"),
+    },
+    {
+      target: "global-imputed-rent",
+      title: t("calc.global.guide.s5.title"),
+      body: t("calc.global.guide.s5.body"),
+    },
+    {
+      target: "global-foreign-income",
+      title: t("calc.global.guide.s6.title"),
+      body: t("calc.global.guide.s6.body"),
+    },
+    {
+      target: "global-net-wealth",
+      title: t("calc.global.guide.s7.title"),
+      body: t("calc.global.guide.s7.body"),
+    },
+    {
+      target: "global-deductions",
+      title: t("calc.global.guide.s8.title"),
+      body: t("calc.global.guide.s8.body"),
+    },
+    {
+      target: "global-frontalier-fx",
+      title: t("calc.global.guide.s9.title"),
+      body: t("calc.global.guide.s9.body"),
+    },
+    {
+      target: "global-results",
+      title: t("calc.global.guide.s10.title"),
+      body: t("calc.global.guide.s10.body"),
+    },
   ];
   return (
     <div className="space-y-6">
@@ -247,8 +290,16 @@ function TaxGlobalCalc() {
         currentPillar3aContributions={form.pillar3aContributions ?? 0}
         onApply={applyReuse}
       />
-      <GuideMode open={guideOpen} onClose={() => setGuideOpen(false)} steps={guideSteps} title={t("calc.global.guide.title")} guideId="calc-tax-global" />
-      <div className="flex justify-end"><GuideToggleButton onClick={() => setGuideOpen(true)} /></div>
+      <GuideMode
+        open={guideOpen}
+        onClose={() => setGuideOpen(false)}
+        steps={guideSteps}
+        title={t("calc.global.guide.title")}
+        guideId="calc-tax-global"
+      />
+      <div className="flex justify-end">
+        <GuideToggleButton onClick={() => setGuideOpen(true)} />
+      </div>
       {client && <ClientLinkBanner client={client} />}
 
       {/* Hero */}
@@ -288,7 +339,8 @@ function TaxGlobalCalc() {
             Définir comme base
           </Button>
           <p className="text-xs opacity-80">
-            Fige la situation actuelle du client comme référence « avant », avant d'ajuster les champs d'optimisation/déduction ci-dessous.
+            Fige la situation actuelle du client comme référence « avant », avant d'ajuster les
+            champs d'optimisation/déduction ci-dessous.
           </p>
         </div>
       </CalcCard>
@@ -315,7 +367,10 @@ function TaxGlobalCalc() {
                           ))}
                         </SelectContent>
                       </Select>
-                      <ClientPrefillBadge show={!!prefill?.canton && form.canton === prefill.canton} clientName={client ? `${client.first_name} ${client.last_name}` : undefined} />
+                      <ClientPrefillBadge
+                        show={!!prefill?.canton && form.canton === prefill.canton}
+                        clientName={client ? `${client.first_name} ${client.last_name}` : undefined}
+                      />
                     </Field>
                     <Field label={t("calc.global.field.country")}>
                       <Select
@@ -364,7 +419,10 @@ function TaxGlobalCalc() {
                           <SelectItem value="F">Permis F</SelectItem>
                         </SelectContent>
                       </Select>
-                      <ClientPrefillBadge show={!!prefill?.permit && form.permit === prefill.permit} clientName={client ? `${client.first_name} ${client.last_name}` : undefined} />
+                      <ClientPrefillBadge
+                        show={!!prefill?.permit && form.permit === prefill.permit}
+                        clientName={client ? `${client.first_name} ${client.last_name}` : undefined}
+                      />
                     </Field>
                     <Field label={t("calc.global.field.civil_status")}>
                       <Select
@@ -394,7 +452,10 @@ function TaxGlobalCalc() {
                           <SelectItem value="widowed">{t("enum.civil_status.widowed")}</SelectItem>
                         </SelectContent>
                       </Select>
-                      <ClientPrefillBadge show={!!prefill?.civilStatus && form.civilStatus === prefill.civilStatus} clientName={client ? `${client.first_name} ${client.last_name}` : undefined} />
+                      <ClientPrefillBadge
+                        show={!!prefill?.civilStatus && form.civilStatus === prefill.civilStatus}
+                        clientName={client ? `${client.first_name} ${client.last_name}` : undefined}
+                      />
                     </Field>
                     <NumField
                       label={t("calc.global.field.children")}
@@ -422,7 +483,10 @@ function TaxGlobalCalc() {
                       value={form.age ?? 40}
                       onChange={(v) => set("age", v)}
                     />
-                      <ClientPrefillBadge show={!!prefill?.age && form.age === prefill.age} clientName={client ? `${client.first_name} ${client.last_name}` : undefined} />
+                    <ClientPrefillBadge
+                      show={!!prefill?.age && form.age === prefill.age}
+                      clientName={client ? `${client.first_name} ${client.last_name}` : undefined}
+                    />
                     {isCouple && (
                       <Field label={t("calc.global.field.spouse_employed")}>
                         <div className="flex h-10 items-center">
@@ -446,7 +510,7 @@ function TaxGlobalCalc() {
                 <AccordionTrigger>{t("calc.global.section.income")}</AccordionTrigger>
                 <AccordionContent>
                   <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                     <div data-guide="global-gross-salary">
+                    <div data-guide="global-gross-salary">
                       <NumField
                         label={t("calc.global.field.gross_salary")}
                         value={form.grossSalary}
@@ -455,7 +519,10 @@ function TaxGlobalCalc() {
                         tip="Salaire annuel brut figurant sur le certificat de salaire (case 1/8), avant déductions sociales (AVS, AI, AC, LPP)."
                       />
                     </div>
-                      <ClientPrefillBadge show={!!prefill?.grossSalary && form.grossSalary === prefill.grossSalary} clientName={client ? `${client.first_name} ${client.last_name}` : undefined} />
+                    <ClientPrefillBadge
+                      show={!!prefill?.grossSalary && form.grossSalary === prefill.grossSalary}
+                      clientName={client ? `${client.first_name} ${client.last_name}` : undefined}
+                    />
                     <NumField
                       label={t("calc.global.field.bonus")}
                       value={form.bonus}
@@ -463,7 +530,10 @@ function TaxGlobalCalc() {
                       suffix="CHF"
                       tip="Gratifications, 13e salaire, part variable. Imposés comme le salaire ordinaire."
                     />
-                      <ClientPrefillBadge show={!!prefill?.bonus && form.bonus === prefill.bonus} clientName={client ? `${client.first_name} ${client.last_name}` : undefined} />
+                    <ClientPrefillBadge
+                      show={!!prefill?.bonus && form.bonus === prefill.bonus}
+                      clientName={client ? `${client.first_name} ${client.last_name}` : undefined}
+                    />
                     {isCouple && (
                       <NumField
                         label={t("calc.global.field.spouse_salary")}
@@ -473,7 +543,7 @@ function TaxGlobalCalc() {
                         tip="Salaire brut annuel du conjoint. Cumulé au revenu du ménage en taxation ordinaire."
                       />
                     )}
-                   <div data-guide="global-other-income">
+                    <div data-guide="global-other-income">
                       <NumField
                         label={t("calc.global.field.other_income")}
                         value={form.otherIncome}
@@ -483,15 +553,15 @@ function TaxGlobalCalc() {
                       />
                     </div>
                     <div data-guide="global-rental-income">
-                       <div data-guide="global-rental-income">
-                      <NumField
-                        label={t("calc.global.field.rental_income")}
-                        value={form.rentalIncome}
-                        onChange={(v) => set("rentalIncome", v)}
-                        suffix="CHF"
-                        tip="Loyers nets perçus d'immeubles loués (avant entretien et intérêts hypothécaires, qui se déclarent en déductions). S'ajoutent au revenu imposable."
-                      />
-                    </div>
+                      <div data-guide="global-rental-income">
+                        <NumField
+                          label={t("calc.global.field.rental_income")}
+                          value={form.rentalIncome}
+                          onChange={(v) => set("rentalIncome", v)}
+                          suffix="CHF"
+                          tip="Loyers nets perçus d'immeubles loués (avant entretien et intérêts hypothécaires, qui se déclarent en déductions). S'ajoutent au revenu imposable."
+                        />
+                      </div>
                     </div>
                     <div data-guide="global-imputed-rent">
                       <NumField
@@ -504,7 +574,10 @@ function TaxGlobalCalc() {
                     </div>
 
                     {/* ── Revenus étrangers avec conversion devise ── */}
-                    <div className="sm:col-span-2 space-y-2 rounded-md border border-border/50 bg-muted/20 p-3" data-guide="global-foreign-income">
+                    <div
+                      className="sm:col-span-2 space-y-2 rounded-md border border-border/50 bg-muted/20 p-3"
+                      data-guide="global-foreign-income"
+                    >
                       <div className="flex items-center gap-1.5">
                         <Label className="text-xs font-semibold">
                           {t("calc.global.field.foreign_income")}
@@ -513,7 +586,9 @@ function TaxGlobalCalc() {
                       </div>
                       <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
                         <div className="space-y-1.5">
-                          <Label className="text-xs font-medium text-muted-foreground">Devise</Label>
+                          <Label className="text-xs font-medium text-muted-foreground">
+                            Devise
+                          </Label>
                           <Select
                             value={fxCurrency}
                             onValueChange={(v) => setFxCurrency(v as FxCurrency)}
@@ -550,9 +625,7 @@ function TaxGlobalCalc() {
                                 <SelectValue />
                               </SelectTrigger>
                               <SelectContent>
-                                <SelectItem value="afc">
-                                  AFC officiel {form.taxYear}
-                                </SelectItem>
+                                <SelectItem value="afc">AFC officiel {form.taxYear}</SelectItem>
                                 <SelectItem value="market">Marché du jour</SelectItem>
                               </SelectContent>
                             </Select>
@@ -564,7 +637,8 @@ function TaxGlobalCalc() {
                           {fxRate == null ? (
                             fxSource === "afc" ? (
                               <span className="text-amber-600">
-                                ⚠️ Taux AFC non publié pour {fxCurrency} en {form.taxYear}. Sélectionnez « Marché du jour ».
+                                ⚠️ Taux AFC non publié pour {fxCurrency} en {form.taxYear}.
+                                Sélectionnez « Marché du jour ».
                               </span>
                             ) : fxMarketLoading ? (
                               "Chargement du taux marché…"
@@ -573,13 +647,17 @@ function TaxGlobalCalc() {
                             )
                           ) : (
                             <>
-                              → <strong className="text-foreground">{formatCHF(form.foreignIncome)}</strong>{" "}
+                              →{" "}
+                              <strong className="text-foreground">
+                                {formatCHF(form.foreignIncome)}
+                              </strong>{" "}
                               <span className="opacity-70">
                                 (taux {fxRate.toFixed(4)}
                                 {fxCurrency === "JPY" && " / 100 JPY"} ·{" "}
                                 {fxSource === "afc"
                                   ? `AFC ${form.taxYear}`
-                                  : `marché ${fxMarketDate ?? ""}`})
+                                  : `marché ${fxMarketDate ?? ""}`}
+                                )
                               </span>
                             </>
                           )}
@@ -604,18 +682,44 @@ function TaxGlobalCalc() {
                       </span>
                     </div>
                     <ul className="mt-2 space-y-0.5 text-xs text-muted-foreground">
-                      <li className="flex justify-between"><span>Salaire principal</span><span className="tabular-nums">{formatCHF(form.grossSalary)}</span></li>
-                      {form.bonus > 0 && <li className="flex justify-between"><span>+ Bonus / 13e</span><span className="tabular-nums">{formatCHF(form.bonus)}</span></li>}
+                      <li className="flex justify-between">
+                        <span>Salaire principal</span>
+                        <span className="tabular-nums">{formatCHF(form.grossSalary)}</span>
+                      </li>
+                      {form.bonus > 0 && (
+                        <li className="flex justify-between">
+                          <span>+ Bonus / 13e</span>
+                          <span className="tabular-nums">{formatCHF(form.bonus)}</span>
+                        </li>
+                      )}
                       {form.spouseGrossSalary > 0 &&
                         computeGrossForRegime({ ...form, spouseGrossSalary: 0 }, result.regime) !==
                           computeGrossForRegime(form, result.regime) && (
-                          <li className="flex justify-between"><span>+ Salaire conjoint</span><span className="tabular-nums">{formatCHF(form.spouseGrossSalary)}</span></li>
+                          <li className="flex justify-between">
+                            <span>+ Salaire conjoint</span>
+                            <span className="tabular-nums">
+                              {formatCHF(form.spouseGrossSalary)}
+                            </span>
+                          </li>
                         )}
-                      {form.otherIncome > 0 && <li className="flex justify-between"><span>+ Autres revenus</span><span className="tabular-nums">{formatCHF(form.otherIncome)}</span></li>}
-                      {form.rentalIncome > 0 && <li className="flex justify-between"><span>+ Revenus locatifs</span><span className="tabular-nums">{formatCHF(form.rentalIncome)}</span></li>}
+                      {form.otherIncome > 0 && (
+                        <li className="flex justify-between">
+                          <span>+ Autres revenus</span>
+                          <span className="tabular-nums">{formatCHF(form.otherIncome)}</span>
+                        </li>
+                      )}
+                      {form.rentalIncome > 0 && (
+                        <li className="flex justify-between">
+                          <span>+ Revenus locatifs</span>
+                          <span className="tabular-nums">{formatCHF(form.rentalIncome)}</span>
+                        </li>
+                      )}
                       {form.imputedRent > 0 && (
                         <li className="flex justify-between italic">
-                          <span>+ Valeur locative <span className="opacity-60">(imposable, hors cash)</span></span>
+                          <span>
+                            + Valeur locative{" "}
+                            <span className="opacity-60">(imposable, hors cash)</span>
+                          </span>
                           <span className="tabular-nums">{formatCHF(form.imputedRent)}</span>
                         </li>
                       )}
@@ -624,7 +728,11 @@ function TaxGlobalCalc() {
                           <span>
                             + Revenus étrangers{" "}
                             <span className="opacity-60">
-                              (progressivité uniquement{fxCurrency !== "CHF" && fxAmount > 0 ? ` · ${fxAmount.toLocaleString("fr-CH")} ${fxCurrency}` : ""})
+                              (progressivité uniquement
+                              {fxCurrency !== "CHF" && fxAmount > 0
+                                ? ` · ${fxAmount.toLocaleString("fr-CH")} ${fxCurrency}`
+                                : ""}
+                              )
                             </span>
                           </span>
                           <span className="tabular-nums">{formatCHF(form.foreignIncome)}</span>
@@ -635,13 +743,14 @@ function TaxGlobalCalc() {
                 </AccordionContent>
               </AccordionItem>
 
-
-
               {showFortune && (
                 <AccordionItem value="wealth">
                   <AccordionTrigger>{t("calc.global.section.wealth")}</AccordionTrigger>
                   <AccordionContent>
-                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2" data-guide="global-net-wealth">
+                    <div
+                      className="grid grid-cols-1 gap-4 sm:grid-cols-2"
+                      data-guide="global-net-wealth"
+                    >
                       <div className="space-y-1">
                         <NumField
                           label={t("calc.global.field.net_wealth")}
@@ -652,7 +761,9 @@ function TaxGlobalCalc() {
                         <ClientWealthCheck
                           value={form.netWealth}
                           clientValue={prefill?.netWealth}
-                          clientName={client ? `${client.first_name} ${client.last_name}` : undefined}
+                          clientName={
+                            client ? `${client.first_name} ${client.last_name}` : undefined
+                          }
                         />
                       </div>
                     </div>
@@ -670,34 +781,54 @@ function TaxGlobalCalc() {
                       if (reg === "cross_border_fr_1983") {
                         return (
                           <div className="rounded-md border border-destructive/40 bg-destructive/5 p-3 text-xs text-destructive">
-                            <strong>Accord 1983 — imposition en France.</strong> Le salaire suisse est imposé au barème français. Les cotisations sociales obligatoires (AVS, AI, LPP obligatoire) sont déductibles en France. En revanche, le 3a, les rachats LPP volontaires et l'entretien immobilier suisse ne réduisent pas l'assiette française. Les frais de garde, dons et intérêts d'emprunt résidence principale FR restent déductibles. Vérifiez chaque poste ci-dessous.
+                            <strong>Accord 1983 — imposition en France.</strong> Le salaire suisse
+                            est imposé au barème français. Les cotisations sociales obligatoires
+                            (AVS, AI, LPP obligatoire) sont déductibles en France. En revanche, le
+                            3a, les rachats LPP volontaires et l'entretien immobilier suisse ne
+                            réduisent pas l'assiette française. Les frais de garde, dons et intérêts
+                            d'emprunt résidence principale FR restent déductibles. Vérifiez chaque
+                            poste ci-dessous.
                           </div>
                         );
                       }
                       if (reg === "cross_border_ge" || reg === "cross_border_other") {
                         return (
                           <div className="rounded-md border border-amber-500/40 bg-amber-500/5 p-3 text-xs text-amber-800 dark:text-amber-300">
-                            <strong>Frontalier, déductions CH appliquées via TOU / rectification IS.</strong> Sans démarche auprès de l'AFC, l'impôt à la source reste calculé sur le brut. La simulation ci-dessous montre l'effet POTENTIEL des déductions si la démarche est effectuée.
+                            <strong>
+                              Frontalier, déductions CH appliquées via TOU / rectification IS.
+                            </strong>{" "}
+                            Sans démarche auprès de l'AFC, l'impôt à la source reste calculé sur le
+                            brut. La simulation ci-dessous montre l'effet POTENTIEL des déductions
+                            si la démarche est effectuée.
                           </div>
                         );
                       }
                       if (reg === "source_taxed") {
                         return (
                           <div className="rounded-md border border-amber-500/40 bg-amber-500/5 p-3 text-xs text-amber-800 dark:text-amber-300">
-                            <strong>Imposé à la source.</strong> Si au moins 90 % de vos revenus mondiaux proviennent de Suisse (quasi-résident), vous pouvez demander la TOU pour faire valoir vos déductions effectives (3a, rachat LPP, intérêts hypothécaires). Sinon, une rectification IS reste possible pour certaines déductions. La simulation montre l'effet après déductions.
+                            <strong>Imposé à la source.</strong> Si au moins 90 % de vos revenus
+                            mondiaux proviennent de Suisse (quasi-résident), vous pouvez demander la
+                            TOU pour faire valoir vos déductions effectives (3a, rachat LPP,
+                            intérêts hypothécaires). Sinon, une rectification IS reste possible pour
+                            certaines déductions. La simulation montre l'effet après déductions.
                           </div>
                         );
                       }
                       if (reg === "tou") {
                         return (
                           <div className="rounded-md border border-success/40 bg-success/5 p-3 text-xs text-success">
-                            <strong>Quasi-résident éligible TOU.</strong> Les déductions saisies s'appliquent sur demande de Taxation Ordinaire Ultérieure (à déposer avant le 31 mars de l'année suivante).
+                            <strong>Quasi-résident éligible TOU.</strong> Les déductions saisies
+                            s'appliquent sur demande de Taxation Ordinaire Ultérieure (à déposer
+                            avant le 31 mars de l'année suivante).
                           </div>
                         );
                       }
                       return null;
                     })()}
-                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2" data-guide="global-deductions">
+                    <div
+                      className="grid grid-cols-1 gap-4 sm:grid-cols-2"
+                      data-guide="global-deductions"
+                    >
                       <NumField
                         label={t("calc.global.field.pillar_3a")}
                         value={form.pillar3aContributions}
@@ -762,6 +893,37 @@ function TaxGlobalCalc() {
                         tip={deductionTip(result.regime, "donations")}
                       />
                     </div>
+                    {/* Frais professionnels effectifs : par défaut le moteur applique un
+                        forfait automatique (3% du net, borné 2'000-4'000 CHF). Ces trois
+                        champs ne servent qu'à saisir le réel quand il dépasse ce forfait
+                        — laissés à 0, le forfait s'applique sans rien changer. */}
+                    <p className="mt-4 text-xs font-medium text-muted-foreground">
+                      Frais professionnels effectifs (optionnel — si plus élevés que le forfait
+                      automatique 3% du salaire net, bornes 2'000-4'000 CHF)
+                    </p>
+                    <div className="mt-1.5 grid grid-cols-1 gap-4 sm:grid-cols-2">
+                      <NumField
+                        label="Frais de déplacement domicile-travail"
+                        value={form.commutingExpenses ?? 0}
+                        onChange={(v) => set("commutingExpenses", v)}
+                        suffix="CHF"
+                        tip="Frais de transport effectifs entre le domicile et le lieu de travail. Plafond fédéral 3'300 CHF/an. Laissé à 0 : inclus dans le forfait frais professionnels automatique."
+                      />
+                      <NumField
+                        label="Frais de repas hors domicile"
+                        value={form.mealExpenses ?? 0}
+                        onChange={(v) => set("mealExpenses", v)}
+                        suffix="CHF"
+                        tip="Frais de repas effectifs si l'employeur ne subventionne pas la cantine. Plafond 3'200 CHF/an. Laissé à 0 : inclus dans le forfait frais professionnels automatique."
+                      />
+                      <NumField
+                        label="Autres frais professionnels effectifs"
+                        value={form.professionalExpenses ?? 0}
+                        onChange={(v) => set("professionalExpenses", v)}
+                        suffix="CHF"
+                        tip="Remplace ENTIÈREMENT le forfait automatique 3% (2'000-4'000 CHF) si saisi — à n'utiliser que si le total de vos frais professionnels réels (hors déplacement/repas ci-dessus) dépasse le forfait."
+                      />
+                    </div>
                     <Pillar3bInfoTile
                       canton={form.canton}
                       civilStatus={form.civilStatus}
@@ -771,12 +933,14 @@ function TaxGlobalCalc() {
                 </AccordionContent>
               </AccordionItem>
 
-
               {showFrontalierBlock && (
                 <AccordionItem value="frontalier">
                   <AccordionTrigger>{t("calc.global.section.frontalier")}</AccordionTrigger>
                   <AccordionContent>
-                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2" data-guide="global-frontalier-fx">
+                    <div
+                      className="grid grid-cols-1 gap-4 sm:grid-cols-2"
+                      data-guide="global-frontalier-fx"
+                    >
                       <NumField
                         label={t("calc.global.field.eur_chf")}
                         value={form.eurChfRate}
@@ -787,9 +951,10 @@ function TaxGlobalCalc() {
                             eurChfRate: eurChf,
                             // Maintien automatique de la cohérence :
                             // 1 EUR = X CHF  ⇒  1 CHF = 1/X EUR
-                            chfToEurRate: eurChf > 0
-                              ? Math.round((1 / eurChf) * 10000) / 10000
-                              : f.chfToEurRate,
+                            chfToEurRate:
+                              eurChf > 0
+                                ? Math.round((1 / eurChf) * 10000) / 10000
+                                : f.chfToEurRate,
                           }));
                         }}
                         step={0.01}
@@ -935,6 +1100,13 @@ function TaxGlobalCalc() {
                   value={result.income.church}
                   tip="Impôt ecclésiastique cantonal, appliqué uniquement si la confession est catholique ou protestante. Taux variable par canton (généralement 5–15 % de l'impôt cantonal)."
                 />
+                {result.income.personalTax > 0 && (
+                  <MoneyTile
+                    label="Impôt personnel"
+                    value={result.income.personalTax}
+                    tip="Taxe fixe per capita (25 CHF/personne seule à GE, 50 CHF estimé/couple — non vérifié). Modélisée uniquement pour Genève pour l'instant, d'autres cantons appliquent une taxe similaire non encore intégrée."
+                  />
+                )}
               </div>
             </CalcCard>
           )}
@@ -955,12 +1127,18 @@ function TaxGlobalCalc() {
                 />
               </Row>
               {result.touEligibility && form.canton === "GE" && (
-                <div className={`mt-3 rounded-md border p-3 text-sm ${!result.touEligibility.eligibleForTOU && result.touEligibility.swissShare < 90 ? "border-destructive/40 bg-destructive/5" : "border-border"}`}>
-                  {!result.touEligibility.eligibleForTOU && result.touEligibility.swissShare < 90 && (
-                    <p className="mb-2 font-semibold text-destructive text-xs">
-                      ⚠️ Non éligible à la TOU : seulement {result.touEligibility.swissShare}% de vos revenus mondiaux proviennent de Suisse (seuil requis : 90%). Les déductions TOU ne s'appliquent pas. Réduisez vos revenus étrangers ou vérifiez votre situation avec un fiscaliste.
-                    </p>
-                  )}
+                <div
+                  className={`mt-3 rounded-md border p-3 text-sm ${!result.touEligibility.eligibleForTOU && result.touEligibility.swissShare < 90 ? "border-destructive/40 bg-destructive/5" : "border-border"}`}
+                >
+                  {!result.touEligibility.eligibleForTOU &&
+                    result.touEligibility.swissShare < 90 && (
+                      <p className="mb-2 font-semibold text-destructive text-xs">
+                        ⚠️ Non éligible à la TOU : seulement {result.touEligibility.swissShare}% de
+                        vos revenus mondiaux proviennent de Suisse (seuil requis : 90%). Les
+                        déductions TOU ne s'appliquent pas. Réduisez vos revenus étrangers ou
+                        vérifiez votre situation avec un fiscaliste.
+                      </p>
+                    )}
                   <div className="flex items-center gap-2">
                     {result.touEligibility.eligibleForTOU ? (
                       <Badge className="bg-success text-success-foreground">
@@ -982,7 +1160,6 @@ function TaxGlobalCalc() {
                   )}
                 </div>
               )}
-              
             </CalcCard>
           )}
 
@@ -1035,7 +1212,8 @@ function TaxGlobalCalc() {
           {scenarios.length > 1 && (
             <CalcCard title="Pistes d'optimisation">
               <p className="text-xs text-muted-foreground">
-                Quelques leviers courants, testés automatiquement à partir de votre situation actuelle (référence : {formatCHF(result.totalTaxCHF)} d'impôt total).
+                Quelques leviers courants, testés automatiquement à partir de votre situation
+                actuelle (référence : {formatCHF(result.totalTaxCHF)} d'impôt total).
               </p>
               <ul className="mt-3 space-y-2">
                 {scenarios
@@ -1044,7 +1222,9 @@ function TaxGlobalCalc() {
                     <li
                       key={s.id}
                       className={`flex items-center justify-between gap-3 rounded-md border p-2.5 text-sm ${
-                        s.id === bestScenario?.id ? "border-success/40 bg-success/5" : "border-border"
+                        s.id === bestScenario?.id
+                          ? "border-success/40 bg-success/5"
+                          : "border-border"
                       }`}
                     >
                       <div>
@@ -1063,17 +1243,19 @@ function TaxGlobalCalc() {
                               : "text-muted-foreground"
                         }`}
                       >
-                        {s.deltaVsBaseline === 0 ? "—" : `${s.deltaVsBaseline < 0 ? "-" : "+"}${formatCHF(Math.abs(s.deltaVsBaseline))}`}
+                        {s.deltaVsBaseline === 0
+                          ? "—"
+                          : `${s.deltaVsBaseline < 0 ? "-" : "+"}${formatCHF(Math.abs(s.deltaVsBaseline))}`}
                       </span>
                     </li>
                   ))}
               </ul>
               <p className="mt-3 text-[11px] text-muted-foreground">
-                Écart sur l'impôt total annuel, à situation constante par ailleurs. Simulation indicative, pas un engagement contractuel.
+                Écart sur l'impôt total annuel, à situation constante par ailleurs. Simulation
+                indicative, pas un engagement contractuel.
               </p>
             </CalcCard>
           )}
-
         </div>
       </div>
 
@@ -1081,8 +1263,12 @@ function TaxGlobalCalc() {
       <TaxGlobalCompareCard form={form} result={result} baseline={baseline} />
 
       {/* TRANSPARENCE : comment ce résultat est calculé */}
-      <TaxGlobalExplanation form={form} result={result} client={client} reuseProvenance={reuseProvenance} />
-
+      <TaxGlobalExplanation
+        form={form}
+        result={result}
+        client={client}
+        reuseProvenance={reuseProvenance}
+      />
 
       <div className="flex flex-wrap justify-end gap-2">
         <SaveSimulationButton
@@ -1105,13 +1291,15 @@ function TaxGlobalCalc() {
             // ne peut reprendre que ce seul résultat courant, sans référence
             // "avant" ni garantie que c'est bien le scénario optimisé final
             // qui a été saisi au moment de la sauvegarde.
-            compareRows: taxGlobalCompareRows.map(({ label, current, projected, format, betterWhen }) => ({
-              label,
-              current,
-              projected,
-              format,
-              betterWhen,
-            })),
+            compareRows: taxGlobalCompareRows.map(
+              ({ label, current, projected, format, betterWhen }) => ({
+                label,
+                current,
+                projected,
+                format,
+                betterWhen,
+              }),
+            ),
             // Traçabilité : champs repris d'une simulation d'un autre
             // calculateur plutôt que du profil de base du client (bandeau
             // "Simulation plus récente trouvée" ci-dessus) — repris tel quel
@@ -1141,13 +1329,40 @@ function deductionTip(
     | "donations",
 ): React.ReactNode {
   const ch = {
-    pillar3a: "3e pilier A, plafond 2026 : 7 258 CHF (affilié LPP) ou 36 288 CHF (non-affilié, max 20 % du revenu).",
+    pillar3a:
+      "3e pilier A, plafond 2026 : 7 258 CHF (affilié LPP) ou 36 288 CHF (non-affilié, max 20 % du revenu).",
     lpp: "Rachat LPP, déduit du revenu imposable l'année du versement. Blocage 3 ans avant tout retrait en capital (art. 79b LPP).",
     mortgage: "Intérêts hypothécaires, entièrement déductibles du revenu imposable.",
-    maintenance: (<div className="space-y-2 text-[11px]"><p className="font-semibold">Frais d'entretien immobilier — forfait ou frais réels</p><p>Forfait : 10 % de la valeur locative (bien occupé) ou 10–20 % du loyer brut (bien loué). Frais réels si supérieurs.</p><p className="font-semibold text-success">Déductibles ✅</p><ul className="list-disc pl-3 space-y-0.5 text-muted-foreground"><li>Réfection toiture, chaudière, fenêtres</li><li>Ravalement façade, peinture, entretien courant</li><li>Améliorations énergétiques (isolation, solaire, pompe à chaleur)</li></ul><p className="font-semibold text-destructive">Non déductibles ❌</p><ul className="list-disc pl-3 space-y-0.5 text-muted-foreground"><li>Extension, nouvelle pièce, piscine</li><li>Travaux augmentant la valeur du bien</li><li>Achat du terrain</li></ul><p className="text-[10px] text-muted-foreground">Règle clé : entretien = conserver la valeur → déductible. Amélioration = augmenter la valeur → non déductible.</p></div>),
-    health: "Primes LAMal + LCA, déductibles dans la limite du forfait cantonal (variable, ex : 2 400 CHF célib. GE / 4 800 CHF couple).",
+    maintenance: (
+      <div className="space-y-2 text-[11px]">
+        <p className="font-semibold">Frais d'entretien immobilier — forfait ou frais réels</p>
+        <p>
+          Forfait : 10 % de la valeur locative (bien occupé) ou 10–20 % du loyer brut (bien loué).
+          Frais réels si supérieurs.
+        </p>
+        <p className="font-semibold text-success">Déductibles ✅</p>
+        <ul className="list-disc pl-3 space-y-0.5 text-muted-foreground">
+          <li>Réfection toiture, chaudière, fenêtres</li>
+          <li>Ravalement façade, peinture, entretien courant</li>
+          <li>Améliorations énergétiques (isolation, solaire, pompe à chaleur)</li>
+        </ul>
+        <p className="font-semibold text-destructive">Non déductibles ❌</p>
+        <ul className="list-disc pl-3 space-y-0.5 text-muted-foreground">
+          <li>Extension, nouvelle pièce, piscine</li>
+          <li>Travaux augmentant la valeur du bien</li>
+          <li>Achat du terrain</li>
+        </ul>
+        <p className="text-[10px] text-muted-foreground">
+          Règle clé : entretien = conserver la valeur → déductible. Amélioration = augmenter la
+          valeur → non déductible.
+        </p>
+      </div>
+    ),
+    health:
+      "Primes LAMal + LCA, déductibles dans la limite du forfait cantonal (variable, ex : 2 400 CHF célib. GE / 4 800 CHF couple).",
     childcare: "Frais de garde, max 25 500 CHF/enfant côté IFD, plafonds cantonaux variables.",
-    pillar3b: "3e pilier B (assurance-vie / épargne libre), agrégé aux primes santé, déductible dans le plafond commun cantonal.",
+    pillar3b:
+      "3e pilier B (assurance-vie / épargne libre), agrégé aux primes santé, déductible dans le plafond commun cantonal.",
     donations: "Dons à organismes d'utilité publique, déductibles jusqu'à 20 % du revenu net.",
   }[kind];
 
@@ -1157,7 +1372,8 @@ function deductionTip(
   if (regime === "source_taxed") {
     return (
       <span>
-        ⚠️ <strong>Non automatique en IS.</strong> Pour appliquer : demander la TOU (si quasi-résident ≥ 90 % revenus CH) ou une rectification IS auprès de l'AFC. {ch}
+        ⚠️ <strong>Non automatique en IS.</strong> Pour appliquer : demander la TOU (si
+        quasi-résident ≥ 90 % revenus CH) ou une rectification IS auprès de l'AFC. {ch}
       </span>
     );
   }
@@ -1165,14 +1381,17 @@ function deductionTip(
     if (kind === "mortgage" || kind === "childcare" || kind === "donations") {
       return (
         <span>
-          ⚠️ <strong>Côté FR :</strong> déductible de l'assiette française (impact direct sur l'impôt FR).<br />
+          ⚠️ <strong>Côté FR :</strong> déductible de l'assiette française (impact direct sur
+          l'impôt FR).
+          <br />
           ⚠️ <strong>Côté CH :</strong> appliqué uniquement via TOU GE ou rectification IS. {ch}
         </span>
       );
     }
     return (
       <span>
-        ⚠️ <strong>Frontalier GE :</strong> déductible uniquement via démarche TOU ou rectification IS auprès de l'AFC. Sans démarche, aucun effet sur l'IS. Non déductible côté FR. {ch}
+        ⚠️ <strong>Frontalier GE :</strong> déductible uniquement via démarche TOU ou rectification
+        IS auprès de l'AFC. Sans démarche, aucun effet sur l'IS. Non déductible côté FR. {ch}
       </span>
     );
   }
@@ -1180,19 +1399,20 @@ function deductionTip(
     if (kind === "mortgage" || kind === "childcare" || kind === "donations") {
       return (
         <span>
-          ✅ <strong>Déductible côté France</strong> (intérêts résidence principale FR, garde, dons à organismes FR). Réduit directement l'assiette du barème français.
+          ✅ <strong>Déductible côté France</strong> (intérêts résidence principale FR, garde, dons
+          à organismes FR). Réduit directement l'assiette du barème français.
         </span>
       );
     }
     return (
       <span>
-        ❌ <strong>NON déductible</strong> sous accord 1983 (imposition exclusive France). La saisie est ignorée par le moteur. {ch}
+        ❌ <strong>NON déductible</strong> sous accord 1983 (imposition exclusive France). La saisie
+        est ignorée par le moteur. {ch}
       </span>
     );
   }
   return ch;
 }
-
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (

@@ -29,7 +29,6 @@ export function toFrenchStatus(s: GlobalCivilStatus): "single" | "married" {
   return isCoupleStatus(s) ? "married" : "single";
 }
 
-
 export function detectRegime(input: TaxGlobalInput): RegimeDetection {
   const country = (input.countryOfResidence || "").toUpperCase();
   const permit = input.permit;
@@ -95,7 +94,6 @@ export function detectRegime(input: TaxGlobalInput): RegimeDetection {
   };
 }
 
-
 export function createDefaultInput(): TaxGlobalInput {
   return {
     canton: "GE",
@@ -122,7 +120,7 @@ export function createDefaultInput(): TaxGlobalInput {
     healthInsurancePremiums: 0,
     childCareCosts: 0,
     donations: 0,
-  medicalExpenses: 0,
+    medicalExpenses: 0,
     eurChfRate: 0.95,
     chfToEurRate: 1.05,
     taxYear: 2026,

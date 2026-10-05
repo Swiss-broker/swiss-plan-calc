@@ -76,6 +76,12 @@ export interface TaxGlobalInput {
   childCareCosts: number;
   donations: number;
   medicalExpenses: number;
+  /** Frais de déplacement domicile-travail effectifs (sinon forfait implicite). */
+  commutingExpenses?: number;
+  /** Frais de repas hors domicile effectifs (sinon forfait implicite). */
+  mealExpenses?: number;
+  /** Frais professionnels effectifs, si supérieurs au forfait 3%/2'000-4'000. */
+  professionalExpenses?: number;
 
   // === Frontaliers ===
   eurChfRate: number;

@@ -61,6 +61,12 @@ export interface CantonTaxScale {
   single: BracketStep[];
   married: BracketStep[];
   cantonalMultiplier: number;
+  /** Quotité cantonale de la FORTUNE, si elle diffère de `cantonalMultiplier`
+   *  (revenu) — voir le cas GE où les deux ont divergé après correction du
+   *  multiplicateur revenu (05.10.2026). Absent : `cantonalMultiplier` sert
+   *  aux deux (comportement historique, inchangé pour tous les cantons sauf
+   *  GE). */
+  wealthCantonalMultiplier?: number;
   communalMultiplierCapital: number;
   churchRateCatholic?: number;
   churchRateProtestant?: number;
@@ -760,14 +766,29 @@ export const CANTON_SCALES: Record<string, CantonTaxScale> = {
     // computeCantonalCommunal, plus besoin de splittingMode.
     single: GE_SINGLE,
     married: GE_SINGLE,
-    // Quotité cantonale "brute" (48,5% = 47,5% + 1% aide/soins à domicile,
-    // Art. 2 LCACant), correcte telle quelle pour la fortune. Pour le
-    // revenu, la réduction de 12% (Art. 1 LDIRPP) est appliquée séparément
-    // dans computeCantonalCommunal (cantonal uniquement, pas le communal).
-    // Coefficient communal chef-lieu confirmé par l'AFC ("Taux et
-    // coefficients d'impôts", état 01/2026).
-    cantonalMultiplier: 0.485,
+    // Quotité cantonale du REVENU : 147,5% — corrigé le 05.10.2026, l'ancienne
+    // valeur (0.485, soit 48,5%) était fausse d'un facteur ~3 : vérifiée par
+    // recoupement contre DEUX cas de référence du calculateur officiel ESTV
+    // (swisstaxcalculator.estv.admin.ch, GE/Genève, 80'000 CHF brut, avec et
+    // sans enfant), qui affiche explicitement "Revenu canton : 147.50%" dans
+    // son détail "Coefficients d'impôt appliqués". Confirmé aussi par
+    // cohérence : GE était le SEUL canton de cette table sous 100% (les
+    // voisins directs, VD 155%/FR 96%/NE 124%, sont tous dans cette
+    // fourchette), et 0.485 donnait un taux marginal cantonal+communal
+    // culminant à ~17% au lieu des ~45% connus pour Genève à haut revenu.
+    // Pour le revenu, la réduction de 12% (Art. 1 LDIRPP) est appliquée
+    // séparément dans computeCantonalCommunal (cantonal uniquement, pas le
+    // communal). Coefficient communal chef-lieu confirmé par l'AFC ("Taux et
+    // coefficients d'impôts", état 01/2026) ET par le 45.49% affiché par
+    // l'ESTV pour la commune de Genève — non corrigé.
+    cantonalMultiplier: 1.475,
     communalMultiplierCapital: 0.455,
+    // Quotité cantonale de la FORTUNE : ancienne valeur (0.485) conservée
+    // séparément ici, PAS CORRIGÉE — contrairement au revenu, elle n'a été
+    // vérifiée contre aucun cas de référence à fortune non nulle (les deux
+    // cas ESTV disponibles avaient fortune nette = 0 CHF). Ne pas supprimer
+    // ce champ sans un cas de référence à fortune positive.
+    wealthCantonalMultiplier: 0.485,
     // Contribution religieuse volontaire (CRV, Art. 5 LLE) : GE n'a pas
     // d'impôt ecclésiastique obligatoire, mais un système opt-in par
     // organisation religieuse enrôlée. Les 3 organisations enrôlées en 2024
@@ -775,7 +796,10 @@ export const CANTON_SCALES: Record<string, CantonTaxScale> = {
     // (+ 6% sur la fortune, non modélisé ici, et CHF 10 forfaitaires).
     churchRateCatholic: 0.16,
     churchRateProtestant: 0.16,
-    childDeduction: 13_000,
+    // Corrigé le 05.10.2026 : 13'000 → 13'698 CHF/enfant (valeur 2026
+    // indexée), confirmée par recoupement contre le calculateur officiel
+    // ESTV ("Déduction pour enfants" cantonale = -13'698 CHF pour 1 enfant).
+    childDeduction: 13_698,
     marriedDeduction: 0,
     wealthScale: GE_WEALTH_SCALE,
     // Déductions sociales fortune Art. 58 al. 1 LIPP + Art. 16 RCEPF,
@@ -931,6 +955,11 @@ export interface CCComputeResult {
   cantonal: number;
   communal: number;
   church: number;
+  /** Impôt personnel (taxe fixe per capita, indépendante du revenu) — ajouté
+   *  le 05.10.2026 pour GE uniquement (seul canton vérifié contre un cas de
+   *  référence ESTV : 25 CHF/personne seule). Absent (0) pour les autres
+   *  cantons de cette table, non vérifié. */
+  personalTax: number;
   total: number;
   marginalRate: number;
   scale: CantonTaxScale;
@@ -1207,6 +1236,18 @@ export function computeCantonalCommunal(opts: CCComputeOptions): CCComputeResult
     church = simple * scale.churchRateProtestant;
   }
 
+  // Impôt personnel (taxe fixe per capita, Art. 42 LIPP pour GE) : ajouté
+  // le 05.10.2026, confirmé 25 CHF/personne seule par recoupement ESTV
+  // (ligne "Impôt personnel" distincte du cantonal/communal/paroissial/IFD,
+  // incluse dans le total). Valeur couple (50 CHF = 2×25) EXTRAPOLÉE, non
+  // vérifiée contre un cas de référence marié. Autres cantons : non
+  // modélisé (0), cette taxe existe dans plusieurs cantons mais seul GE a
+  // été vérifié.
+  let personalTax = 0;
+  if (opts.canton === "GE") {
+    personalTax = isMarried ? 50 : 25;
+  }
+
   let marginalBracket = bracketScale[0];
   for (const b of bracketScale) {
     if (marginalReference >= b.from) marginalBracket = b;
@@ -1219,7 +1260,8 @@ export function computeCantonalCommunal(opts: CCComputeOptions): CCComputeResult
     cantonal: Math.round(cantonal * 100) / 100,
     communal: Math.round(communal * 100) / 100,
     church: Math.round(church * 100) / 100,
-    total: Math.round((cantonal + communal + church) * 100) / 100,
+    personalTax,
+    total: Math.round((cantonal + communal + church + personalTax) * 100) / 100,
     marginalRate,
     scale,
     cantonSpecificNote: notes.length > 0 ? notes.join(" · ") : undefined,
@@ -1254,7 +1296,8 @@ export function computeWealthTax(opts: WealthComputeOptions): number {
     simple = applySimpleScale(taxable, scale.wealthScale);
   }
 
-  let cantonalMult = opts.cantonalMultiplier ?? scale.cantonalMultiplier;
+  let cantonalMult =
+    opts.cantonalMultiplier ?? scale.wealthCantonalMultiplier ?? scale.cantonalMultiplier;
   if (opts.canton === "FR" && opts.cantonalMultiplier === undefined) {
     // FR : quotité cantonale de la fortune = 100% (Art. 1 al. 2 LCA2026),
     // différente de celle du revenu (96%, Art. 1 al. 1 LCA2026) stockée
