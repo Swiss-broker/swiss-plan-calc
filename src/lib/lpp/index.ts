@@ -109,7 +109,12 @@ export interface LPPProjectionResult {
   /** Détail année par année */
   yearly: Array<{
     age: number;
+    /** Salaire COORDONNÉ projeté cette année-là (après coordination et
+     *  plafonnement, avant application du plancher légal) — pas le
+     *  salaire brut, qui n'est pas connu par cette fonction. */
     salary: number;
+    /** Salaire coordonné effectivement utilisé pour la bonification (après
+     *  plancher légal de 3'780 CHF et plafonnement). */
     coordinated: number;
     credit: number;
     interest: number;
@@ -134,24 +139,36 @@ export function projectLPP(input: LPPProjectionInput): LPPProjectionResult {
   let balance = input.currentBalance;
   let balanceNoYield = input.currentBalance;
   let balanceGross = input.currentBalance;
-  let salary = input.insuredSalary;
+  // input.insuredSalary est DÉJÀ le salaire coordonné (après déduction de
+  // coordination 26'460 CHF et plafonnement) — c'est ce que produit
+  // computeLppInsuredSalary() et ce que contient le certificat de
+  // prévoyance (client_pension.lpp_insured_salary). La déduction de
+  // coordination ne doit donc PAS être réappliquée ici : avant ce
+  // correctif, elle l'était une seconde fois à chaque année de la
+  // projection, sous-estimant le salaire coordonné (et donc le capital
+  // projeté) d'environ 40% dans un cas typique — voir cantons.ts/SCOPE.md
+  // pour la convention équivalente côté arrondis, et computeIncomeTax
+  // (tax/income.ts) qui utilise déjà ce même champ correctement, sans
+  // re-déduire.
+  let coordinatedSalary = input.insuredSalary;
   let totalFees = 0;
   let totalBuybacks = 0;
   const yearly: LPPProjectionResult["yearly"] = [];
 
   const insuredCap = Math.max(0, input.insuredSalaryCap ?? LPP_MAX_INSURED_SALARY_2026);
+  // Plafond du salaire coordonné lui-même (pas du brut) : sert à borner la
+  // croissance simulée du salaire coordonné au fil des années.
+  const coordinatedCap = Math.max(0, insuredCap - LPP_COORDINATION_DEDUCTION_2026);
 
   for (let i = 0; i < yearsToRetire; i++) {
     const age = input.currentAge + i;
-    // Salaire coordonné avec plancher légal (3'780 CHF), sauf si le salarié
-    // est sous le seuil d'entrée LPP (pas de LPP du tout dans ce cas).
+    // Plancher légal (3'780 CHF), sauf si le salarié n'est pas assujetti à
+    // la LPP (salaire coordonné nul ou négatif en entrée — déjà déterminé
+    // en amont par computeLppInsuredSalary selon le seuil d'entrée brut).
     const coordinated =
-      salary < LPP_MIN_ANNUAL_SALARY_2026
+      coordinatedSalary <= 0
         ? 0
-        : Math.max(
-            LPP_MIN_COORDINATED_SALARY_2026,
-            Math.min(salary, insuredCap) - LPP_COORDINATION_DEDUCTION_2026,
-          );
+        : Math.max(LPP_MIN_COORDINATED_SALARY_2026, Math.min(coordinatedSalary, coordinatedCap));
     const creditRate = lppCreditRate(age) + extraCredit;
     const credit = coordinated * creditRate;
     const grossInterest = balance * grossReturn;
@@ -167,7 +184,7 @@ export function projectLPP(input: LPPProjectionInput): LPPProjectionResult {
 
     yearly.push({
       age: age + 1,
-      salary,
+      salary: Math.round(coordinatedSalary),
       coordinated,
       credit: Math.round(credit),
       interest: Math.round(interest),
@@ -176,7 +193,7 @@ export function projectLPP(input: LPPProjectionInput): LPPProjectionResult {
       balance: Math.round(balance),
       balanceNoYield: Math.round(balanceNoYield),
     });
-    salary *= 1 + salaryGrowth;
+    coordinatedSalary *= 1 + salaryGrowth;
   }
 
   const annualPension = balance * conversionRate;
@@ -268,10 +285,7 @@ export function simulateBuybackPlan(input: LPPBuybackPlanInput): LPPBuybackPlanR
     baselineMarginalRate: baseline.marginalRate,
     baselineTaxableIncome: baseline.taxableIncomeCC,
     yearly,
-    averageReturn:
-      totalBought > 0
-        ? Math.round((totalSavings / totalBought) * 1000) / 10
-        : 0,
+    averageReturn: totalBought > 0 ? Math.round((totalSavings / totalBought) * 1000) / 10 : 0,
   };
 }
 
@@ -380,11 +394,11 @@ export function capitalWithdrawalTax(opts: {
     GE: 0.062,
     VD: 0.058,
     FR: 0.054,
-    NE: 0.060,
+    NE: 0.06,
     JU: 0.055,
-    VS: 0.050,
+    VS: 0.05,
     ZG: 0.025,
-    SZ: 0.030,
+    SZ: 0.03,
   };
   const cantonalRate = CANTON_LUMP_SUM_RATE[opts.canton] ?? 0.045;
   const cantonalApprox = opts.capital * cantonalRate;
@@ -394,4 +408,3 @@ export function capitalWithdrawalTax(opts: {
     total: Math.round(ifdReduced + cantonalApprox),
   };
 }
-

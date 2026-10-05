@@ -312,7 +312,7 @@ export function exportLppPdf(args: {
   if (sample[sample.length - 1] !== projection.yearly[projection.yearly.length - 1])
     sample.push(projection.yearly[projection.yearly.length - 1]);
   pdf.table(
-    ["Âge", "Salaire", "Bonification", "Intérêts nets", "Frais", "Capital"],
+    ["Âge", "Salaire coordonné", "Bonification", "Intérêts nets", "Frais", "Capital"],
     sample.map((y) => [
       String(y.age),
       formatCHF(y.salary),
