@@ -7,16 +7,13 @@
 // par le moteur (`result.trace` + `result.income.deductions`).
 
 import { Info, FileSearch, ListChecks, AlertTriangle, BookOpen } from "lucide-react";
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Badge } from "@/components/ui/badge";
 import { CalcCard } from "@/components/calculators/CalcUI";
 import { formatCHF } from "@/lib/format";
 import type { TaxGlobalInput, TaxGlobalResult } from "@/lib/tax-global/types";
 import type { Client } from "@/lib/clients/types";
+import { isCoupleStatus } from "@/lib/tax-global/profile";
 
 interface Props {
   form: TaxGlobalInput;
@@ -35,9 +32,7 @@ export function TaxGlobalExplanation({ form, result, client }: Props) {
           <div className="flex items-center gap-2">
             <FileSearch className="h-5 w-5 text-primary" />
             <div>
-              <h3 className="text-base font-bold">
-                Comment ce résultat est calculé
-              </h3>
+              <h3 className="text-base font-bold">Comment ce résultat est calculé</h3>
               <p className="text-xs text-muted-foreground">
                 Régime, sources des données, chaîne de calcul, hypothèses et limites
               </p>
@@ -80,45 +75,109 @@ export function TaxGlobalExplanation({ form, result, client }: Props) {
                   </tr>
                 </thead>
                 <tbody className="divide-y">
-                  <DataRow label="Salaire brut" value={formatCHF(form.grossSalary)} source={client ? "✅ fiche client" : "⚠️ saisie"} />
-                  <DataRow label="Bonus" value={formatCHF(form.bonus)} source={client ? "✅ fiche client" : "⚠️ saisie"} />
+                  <DataRow
+                    label="Salaire brut"
+                    value={formatCHF(form.grossSalary)}
+                    source={client ? "✅ fiche client" : "⚠️ saisie"}
+                  />
+                  <DataRow
+                    label="Bonus"
+                    value={formatCHF(form.bonus)}
+                    source={client ? "✅ fiche client" : "⚠️ saisie"}
+                  />
                   {form.spouseGrossSalary > 0 && (
-                    <DataRow label="Salaire conjoint" value={formatCHF(form.spouseGrossSalary)} source={client ? "✅ fiche client" : "⚠️ saisie"} />
+                    <DataRow
+                      label="Salaire conjoint"
+                      value={formatCHF(form.spouseGrossSalary)}
+                      source={client ? "✅ fiche client" : "⚠️ saisie"}
+                    />
                   )}
                   {form.otherIncome > 0 && (
-                    <DataRow label="Autres revenus" value={formatCHF(form.otherIncome)} source={client ? "✅ fiche client" : "⚠️ saisie"} />
+                    <DataRow
+                      label="Autres revenus"
+                      value={formatCHF(form.otherIncome)}
+                      source={client ? "✅ fiche client" : "⚠️ saisie"}
+                    />
                   )}
                   {form.rentalIncome > 0 && (
-                    <DataRow label="Loyers perçus" value={formatCHF(form.rentalIncome)} source="✅ patrimoine client" />
+                    <DataRow
+                      label="Loyers perçus"
+                      value={formatCHF(form.rentalIncome)}
+                      source="✅ patrimoine client"
+                    />
                   )}
                   {form.imputedRent > 0 && (
-                    <DataRow label="Valeur locative" value={formatCHF(form.imputedRent)} source="✅ patrimoine client" />
+                    <DataRow
+                      label="Valeur locative"
+                      value={formatCHF(form.imputedRent)}
+                      source="✅ patrimoine client"
+                    />
                   )}
                   {form.foreignIncome > 0 && (
-                    <DataRow label="Revenu étranger" value={formatCHF(form.foreignIncome)} source="⚠️ saisie (non persisté)" />
+                    <DataRow
+                      label="Revenu étranger"
+                      value={formatCHF(form.foreignIncome)}
+                      source="⚠️ saisie (non persisté)"
+                    />
                   )}
                   {form.netWealth > 0 && (
-                    <DataRow label="Fortune nette" value={formatCHF(form.netWealth)} source="✅ Σ patrimoine client − dettes" />
+                    <DataRow
+                      label="Fortune nette"
+                      value={formatCHF(form.netWealth)}
+                      source="✅ Σ patrimoine client − dettes"
+                    />
                   )}
-                  <DataRow label="3e pilier A versé" value={formatCHF(form.pillar3aContributions)} source={client ? "✅ prévoyance client" : "⚠️ saisie"} />
-                  <DataRow label="Rachat LPP (effectué + planifié)" value={formatCHF(form.lppBuyback)} source={client ? "✅ prévoyance client" : "⚠️ saisie"} />
+                  <DataRow
+                    label="3e pilier A versé"
+                    value={formatCHF(form.pillar3aContributions)}
+                    source={client ? "✅ prévoyance client" : "⚠️ saisie"}
+                  />
+                  <DataRow
+                    label="Rachat LPP (effectué + planifié)"
+                    value={formatCHF(form.lppBuyback)}
+                    source={client ? "✅ prévoyance client" : "⚠️ saisie"}
+                  />
                   {form.mortgageInterest > 0 && (
-                    <DataRow label="Intérêts hypothécaires" value={formatCHF(form.mortgageInterest)} source="✅ patrimoine client" />
+                    <DataRow
+                      label="Intérêts hypothécaires"
+                      value={formatCHF(form.mortgageInterest)}
+                      source="✅ patrimoine client"
+                    />
                   )}
                   {form.realEstateMaintenance > 0 && (
-                    <DataRow label="Entretien immobilier" value={formatCHF(form.realEstateMaintenance)} source="✅ patrimoine client" />
+                    <DataRow
+                      label="Entretien immobilier"
+                      value={formatCHF(form.realEstateMaintenance)}
+                      source="✅ patrimoine client"
+                    />
                   )}
                   {form.healthInsurancePremiums > 0 && (
-                    <DataRow label="Primes maladie" value={formatCHF(form.healthInsurancePremiums)} source="⚠️ saisie (non persisté)" />
+                    <DataRow
+                      label="Primes maladie"
+                      value={formatCHF(form.healthInsurancePremiums)}
+                      source="⚠️ saisie (non persisté)"
+                    />
                   )}
                   {form.childCareCosts > 0 && (
-                    <DataRow label="Frais de garde" value={formatCHF(form.childCareCosts)} source="⚠️ saisie (non persisté)" />
+                    <DataRow
+                      label="Frais de garde"
+                      value={formatCHF(form.childCareCosts)}
+                      source="⚠️ saisie (non persisté)"
+                    />
                   )}
                   {form.pillar3bContributions > 0 && (
-                    <DataRow label="3e pilier B" value={formatCHF(form.pillar3bContributions)} source="⚠️ saisie (non persisté)" />
+                    <DataRow
+                      label="3e pilier B"
+                      value={formatCHF(form.pillar3bContributions)}
+                      source="⚠️ saisie (non persisté)"
+                    />
                   )}
                   {form.donations > 0 && (
-                    <DataRow label="Dons" value={formatCHF(form.donations)} source="⚠️ saisie (non persisté)" />
+                    <DataRow
+                      label="Dons"
+                      value={formatCHF(form.donations)}
+                      source="⚠️ saisie (non persisté)"
+                    />
                   )}
                 </tbody>
               </table>
@@ -131,13 +190,22 @@ export function TaxGlobalExplanation({ form, result, client }: Props) {
               <div className="rounded-md border bg-muted/30 p-3 font-mono text-xs">
                 <CalcLine label="Revenu brut total" value={inc.grossIncome} />
                 <CalcLine label="− AVS/AI/APG (5.3%)" value={-inc.deductions.avs} />
-                <CalcLine label="− AC (1.1% jusqu'à 148 200, +0.5% au-delà)" value={-inc.deductions.ac} />
-                <CalcLine label="− LPP part salarié (selon âge et plan)" value={-inc.deductions.lpp} />
+                <CalcLine
+                  label="− AC (1.1% jusqu'à 148 200, +0.5% au-delà)"
+                  value={-inc.deductions.ac}
+                />
+                <CalcLine
+                  label="− LPP part salarié (selon âge et plan)"
+                  value={-inc.deductions.lpp}
+                />
                 <CalcLine label="− 3e pilier A" value={-inc.deductions.pillar3a} />
                 {inc.deductions.lppBuyback > 0 && (
                   <CalcLine label="− Rachat LPP" value={-inc.deductions.lppBuyback} />
                 )}
-                <CalcLine label="− Frais pro (forfait 3% net, min 2 000 / max 4 000)" value={-inc.deductions.professional} />
+                <CalcLine
+                  label="− Frais pro (forfait 3% net, min 2 000 / max 4 000)"
+                  value={-inc.deductions.professional}
+                />
                 {inc.deductions.commuting > 0 && (
                   <CalcLine label="− Trajets (max 3 300 IFD)" value={-inc.deductions.commuting} />
                 )}
@@ -150,7 +218,10 @@ export function TaxGlobalExplanation({ form, result, client }: Props) {
                 {inc.deductions.realEstate > 0 && (
                   <CalcLine label="− Entretien immobilier" value={-inc.deductions.realEstate} />
                 )}
-                <CalcLine label="− Primes santé (forfait cantonal / IFD)" value={-inc.deductions.healthInsurance} />
+                <CalcLine
+                  label="− Primes santé (forfait cantonal / IFD)"
+                  value={-inc.deductions.healthInsurance}
+                />
                 {inc.deductions.childCare > 0 && (
                   <CalcLine label="− Frais de garde" value={-inc.deductions.childCare} />
                 )}
@@ -159,14 +230,22 @@ export function TaxGlobalExplanation({ form, result, client }: Props) {
                 )}
                 <div className="my-2 border-t" />
                 <CalcLine label="= Revenu imposable ICC" value={inc.taxableIncomeCC} bold />
-                <CalcLine label="= Revenu imposable IFD (après déduction enfants 6 700/ea)" value={inc.taxableIncomeIFD} bold />
+                <CalcLine
+                  label="= Revenu imposable IFD (après déduction enfants 6 700/ea)"
+                  value={inc.taxableIncomeIFD}
+                  bold
+                />
                 <div className="my-2 border-t" />
                 <CalcLine label={`IFD (barème art. 36 LIFD) − rabais enfants`} value={inc.ifd} />
                 <CalcLine label={`Cantonal ${form.canton}`} value={inc.cantonal} />
                 <CalcLine
                   label={
                     form.communalMultiplier !== undefined && client?.commune
-                      ? `Communal (multiplicateur réel de ${client.commune})`
+                      ? `Communal (multiplicateur réel de ${client.commune}${
+                          form.vsIndexationPercent !== undefined
+                            ? `, indexation ${form.vsIndexationPercent}%`
+                            : ""
+                        })`
                       : `Communal (multiplicateur ${form.canton} chef-lieu, par défaut)`
                   }
                   value={inc.communal}
@@ -174,24 +253,67 @@ export function TaxGlobalExplanation({ form, result, client }: Props) {
                 {inc.church > 0 && (
                   <CalcLine label={`Impôt église (${form.confession})`} value={inc.church} />
                 )}
-                {inc.wealthTax > 0 && (
-                  <CalcLine label="Impôt fortune" value={inc.wealthTax} />
-                )}
+                {form.netWealth > 0 &&
+                  (() => {
+                    const married = isCoupleStatus(form.civilStatus);
+                    const exemption = married
+                      ? inc.cantonalDetail.scale.wealthExemptionMarried
+                      : inc.cantonalDetail.scale.wealthExemptionSingle;
+                    const taxableWealth = Math.max(0, form.netWealth - exemption);
+                    return (
+                      <>
+                        <div className="my-2 border-t" />
+                        <CalcLine label="Fortune nette déclarée" value={form.netWealth} />
+                        <CalcLine
+                          label={`− Exonération (${married ? "marié" : "célibataire"})`}
+                          value={-exemption}
+                        />
+                        <CalcLine label="= Fortune imposable" value={taxableWealth} bold />
+                        <CalcLine label="Impôt fortune" value={inc.wealthTax} />
+                      </>
+                    );
+                  })()}
                 <div className="my-2 border-t" />
                 <CalcLine label="TOTAL impôt" value={inc.totalTax} bold tone="warning" />
+                <div className="my-2 border-t" />
+                <CalcLine
+                  label="Taux marginal ICC (prochain franc gagné, canton + commune)"
+                  value={inc.cantonalDetail.marginalRate}
+                  text={`${inc.cantonalDetail.marginalRate.toFixed(2)}%`}
+                />
+                <CalcLine
+                  label="Taux marginal global (IFD + ICC)"
+                  value={inc.marginalRate}
+                  text={`${inc.marginalRate.toFixed(2)}%`}
+                />
               </div>
             </Section>
           )}
 
           {/* 3bis. Source : décomposition succincte */}
           {result.source && (
-            <Section icon={<ListChecks className="h-4 w-4" />} title="3. Chaîne de calcul (impôt à la source)">
+            <Section
+              icon={<ListChecks className="h-4 w-4" />}
+              title="3. Chaîne de calcul (impôt à la source)"
+            >
               <div className="rounded-md border bg-muted/30 p-3 font-mono text-xs">
-                <CalcLine label={`Salaire mensuel brut`} value={Math.round((form.grossSalary + form.bonus) / 12)} />
-                <CalcLine label={`Barème IS appliqué`} value={NaN} text={result.source.scaleUsed ?? "—"} />
+                <CalcLine
+                  label={`Salaire mensuel brut`}
+                  value={Math.round((form.grossSalary + form.bonus) / 12)}
+                />
+                <CalcLine
+                  label={`Barème IS appliqué`}
+                  value={NaN}
+                  text={result.source.scaleUsed ?? "—"}
+                />
                 <CalcLine label={`Taux IS (moyen)`} value={NaN} text={`${result.source.rate}%`} />
                 <div className="my-2 border-t" />
-                <CalcLine label="Impôt à la source annuel" value={result.source.annualTax} bold tone="warning" />
+                <CalcLine
+                  label="Impôt à la source annuel"
+                  value={result.source.annualTax}
+                  bold
+                  tone="warning"
+                />
                 {result.touComparison && (
                   <CalcLine
                     label="Impôt ordinaire si TOU"
@@ -205,15 +327,35 @@ export function TaxGlobalExplanation({ form, result, client }: Props) {
 
           {/* 3ter. Frontalier */}
           {result.crossBorder && (
-            <Section icon={<ListChecks className="h-4 w-4" />} title="3. Chaîne de calcul (frontalier)">
+            <Section
+              icon={<ListChecks className="h-4 w-4" />}
+              title="3. Chaîne de calcul (frontalier)"
+            >
               <div className="rounded-md border bg-muted/30 p-3 font-mono text-xs">
                 <CalcLine label={`Salaire brut annuel`} value={form.grossSalary + form.bonus} />
-                <CalcLine label={`Taux EUR→CHF utilisé`} value={NaN} text={form.eurChfRate.toFixed(4)} />
+                <CalcLine
+                  label={`Taux EUR→CHF utilisé`}
+                  value={NaN}
+                  text={form.eurChfRate.toFixed(4)}
+                />
                 <div className="my-2 border-t" />
-                <CalcLine label="Part suisse (IS canton de travail)" value={result.crossBorder.swissTax} text={`${result.crossBorder.swissRate}%`} />
-                <CalcLine label="Part étrangère (résidu après crédit, estimation)" value={result.crossBorder.foreignTax} text={`${result.crossBorder.foreignRate}%`} />
+                <CalcLine
+                  label="Part suisse (IS canton de travail)"
+                  value={result.crossBorder.swissTax}
+                  text={`${result.crossBorder.swissRate}%`}
+                />
+                <CalcLine
+                  label="Part étrangère (résidu après crédit, estimation)"
+                  value={result.crossBorder.foreignTax}
+                  text={`${result.crossBorder.foreignRate}%`}
+                />
                 <div className="my-2 border-t" />
-                <CalcLine label="TOTAL impôt" value={result.crossBorder.totalTax} bold tone="warning" />
+                <CalcLine
+                  label="TOTAL impôt"
+                  value={result.crossBorder.totalTax}
+                  bold
+                  tone="warning"
+                />
                 {result.health && (
                   <CalcLine
                     label={`Santé (recommandé : ${result.health.recommended})`}
