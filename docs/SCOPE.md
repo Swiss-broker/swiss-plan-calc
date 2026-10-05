@@ -66,6 +66,56 @@ Dans `src/lib/swiss/cantons.test.ts` (et fichiers dérivés) :
 ### f) Mettre à jour ce document
 Ajouter une ligne dans le tableau ci-dessus, retirer le canton de la liste "à venir" dans l'encart roadmap du comparateur (`canton-compare.tsx`) et dans les libellés marketing.
 
+## Procédure de mise à jour annuelle (nouvelle année fiscale)
+
+**État actuel, à bien comprendre avant de commencer** : le moteur ne gère
+qu'UNE SEULE année fiscale à la fois — `computeIFD`, `CANTON_SCALES`,
+`JU_IS_RATES_2026`, etc. n'ont pas de paramètre "année" ; ce sont les
+barèmes 2026, point. Passer à 2027 veut dire REMPLACER ces valeurs, pas
+en ajouter une version parallèle consultable. Si le besoin se présente un
+jour de recalculer un ancien dossier client sur le barème d'une année
+révolue (ex. un contrôle fiscal 2026 fait en 2028), le moteur ne le
+permettra pas tel quel — ça demanderait de vrais barèmes versionnés par
+année (voir le `tax_year` de la base Supabase, prévu mais non câblé).
+Ce qui suit est donc un garde-fou pour éviter d'écraser 2026 PAR ERREUR
+en mettant à jour pour 2027, pas une solution de versionnement complète.
+
+### Avant de toucher un seul chiffre
+1. `npx vitest run` doit être 100% vert. Si ce n'est pas le cas, régler
+   d'abord (ne jamais mettre à jour une année fiscale sur une base de
+   tests déjà rouge — impossible de distinguer ensuite "régression
+   introduite par la mise à jour" de "problème préexistant").
+2. Committer et pousser l'état actuel (le dernier commit "année 2026"
+   doit être retrouvable dans l'historique git — c'est la sauvegarde,
+   pas un fichier `.backup` à maintenir à la main).
+
+### Pendant la mise à jour
+3. Mettre à jour les constantes (`IFD_SINGLE_2026` → nouvelles valeurs
+   2027, `CANTON_SCALES`, `JU_IS_RATES_2026`, `COMMUNAL_MULTIPLIERS`,
+   etc.) avec leurs sources officielles en commentaire, exactement comme
+   pour les barèmes 2026 déjà en place.
+4. Relancer `npx vitest run`. Les tests qui échouent maintenant ne sont
+   PAS un bug — ce sont `reference-cases.test.ts`, `brackets.test.ts`,
+   `cantons.test.ts`, `source.test.ts` qui réagissent normalement à des
+   barèmes qui ont changé. Pour chacun, vérifier le nouvel écart contre
+   une source officielle, puis régénérer consciemment la valeur attendue
+   (jamais juste "faire passer le test" sans avoir vérifié le nouveau
+   chiffre — voir l'avertissement en tête de `reference-cases.test.ts`).
+5. Un test qui reste VERT après une mise à jour de barème pour le canton
+   concerné est suspect : soit le test ne couvre pas vraiment ce barème,
+   soit la constante n'a pas été mise à jour au bon endroit.
+
+### Après la mise à jour
+6. Renommer les constantes `_2026` en `_2027` partout où c'est le cas
+   (cohérence du nom avec le contenu — ne pas laisser une constante
+   `IFD_SINGLE_2026` contenir des valeurs 2027).
+7. Mettre à jour le commentaire de calibration en tête de `cantons.ts`
+   (date, méthode, nombre de cas de référence) s'il y a eu une nouvelle
+   campagne de calibration.
+8. Un commit séparé par canton/barème touché plutôt qu'un seul commit
+   générique "mise à jour 2027" — ça permet de retrouver facilement quel
+   commit a changé quel chiffre si un écart est signalé plus tard.
+
 ## Règles d'invariance (garde-fous)
 
 1. **Aucun composant UI ne doit importer `CANTONS` directement** pour afficher des options de sélection. Toujours passer par `getSelectableCantons()` ou `getComparableCantons()`.
