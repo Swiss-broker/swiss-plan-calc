@@ -14,16 +14,27 @@ import { formatCHF } from "@/lib/format";
 import type { TaxGlobalInput, TaxGlobalResult } from "@/lib/tax-global/types";
 import type { Client } from "@/lib/clients/types";
 import { isCoupleStatus } from "@/lib/tax-global/profile";
+import type { ReuseProvenance } from "@/components/calculators/CrossSimulationReuseBanner";
 
 interface Props {
   form: TaxGlobalInput;
   result: TaxGlobalResult;
   client?: Client | null;
+  /** Champs repris d'une simulation d'un autre calculateur (bandeau
+   *  "Simulation plus récente trouvée") plutôt que du profil de base —
+   *  affichés ici comme leur propre source, distincte de "fiche client". */
+  reuseProvenance?: ReuseProvenance[];
 }
 
-export function TaxGlobalExplanation({ form, result, client }: Props) {
+export function TaxGlobalExplanation({ form, result, client, reuseProvenance }: Props) {
   const trace = result.trace;
   const inc = result.income;
+  const reuseByField = new Map((reuseProvenance ?? []).map((p) => [p.field, p]));
+  const sourceLabel = (field: ReuseProvenance["field"], defaultSource: string) => {
+    const p = reuseByField.get(field);
+    if (!p) return defaultSource;
+    return `🔄 simulation ${p.simTitle ? `« ${p.simTitle} » ` : ""}du ${new Date(p.date).toLocaleDateString("fr-CH")}`;
+  };
 
   return (
     <CalcCard>
@@ -130,12 +141,18 @@ export function TaxGlobalExplanation({ form, result, client }: Props) {
                   <DataRow
                     label="3e pilier A versé"
                     value={formatCHF(form.pillar3aContributions)}
-                    source={client ? "✅ prévoyance client" : "⚠️ saisie"}
+                    source={sourceLabel(
+                      "pillar3aContributions",
+                      client ? "✅ prévoyance client" : "⚠️ saisie",
+                    )}
                   />
                   <DataRow
                     label="Rachat LPP (effectué + planifié)"
                     value={formatCHF(form.lppBuyback)}
-                    source={client ? "✅ prévoyance client" : "⚠️ saisie"}
+                    source={sourceLabel(
+                      "lppBuyback",
+                      client ? "✅ prévoyance client" : "⚠️ saisie",
+                    )}
                   />
                   {form.mortgageInterest > 0 && (
                     <DataRow

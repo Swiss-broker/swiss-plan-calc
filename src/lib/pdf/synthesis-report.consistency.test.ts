@@ -716,3 +716,48 @@ describe("buildComment (lpp) — cite le rachat réellement simulé, jamais la c
     expect(text).not.toContain("820000");
   });
 });
+
+// ============================================================================
+// buildComment (tax_global) — traçabilité des valeurs reprises d'une
+// simulation d'un autre calculateur (bandeau "Simulation plus récente
+// trouvée" dans tax-global.tsx), plutôt que du profil de base du client.
+// Sans cette mention explicite dans le PDF, un montant de rachat LPP ou de
+// cotisation 3a affiché ne correspond à rien de visible dans la fiche
+// client — exactement la confusion remontée côté utilisateur.
+// ============================================================================
+describe("buildComment (tax_global) — mentionne les valeurs reprises d'une autre simulation", () => {
+  it("cite la simulation source et le montant quand reusedSimulations est présent", () => {
+    const entry = makeEntry("tax_global", {
+      totalTaxCHF: 18_000,
+      netAnnualCHF: 82_000,
+      effectiveRate: 18,
+      marginalRate: 30,
+      regimeLabel: "Résident, taxation ordinaire",
+      reusedSimulations: [
+        {
+          field: "lppBuyback",
+          label: "Rachat LPP",
+          value: 15_000,
+          date: "2026-10-03T00:00:00.000Z",
+          simTitle: "Rachat progressif 3 ans",
+        },
+      ],
+    });
+    const text = buildComment(entry) ?? "";
+    expect(text).toContain(formatCHF(15_000));
+    expect(text).toContain("Rachat LPP");
+    expect(text).toContain("plutôt que du profil de base du client");
+  });
+
+  it("ne mentionne rien quand aucune valeur n'a été reprise (cas normal)", () => {
+    const entry = makeEntry("tax_global", {
+      totalTaxCHF: 18_000,
+      netAnnualCHF: 82_000,
+      effectiveRate: 18,
+      marginalRate: 30,
+      regimeLabel: "Résident, taxation ordinaire",
+    });
+    const text = buildComment(entry) ?? "";
+    expect(text).not.toContain("profil de base du client");
+  });
+});

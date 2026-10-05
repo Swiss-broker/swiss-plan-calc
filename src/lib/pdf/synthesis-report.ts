@@ -1870,7 +1870,23 @@ export function buildComment(entry: HistoryEntry): string | null {
       if (!has(s.totalTaxCHF)) return null;
       const regimeTxt = regimeLabel ? ` selon le régime fiscal détecté pour votre situation : ${regimeLabel}` : "";
       const foreignTxt = foreignShare > 0 ? ` Une part de ${formatCHF(foreignShare)} relève d'un revenu de source étrangère, prise en compte uniquement pour déterminer votre taux d'imposition applicable (méthode d'exemption avec réserve de progressivité), sans être elle-même imposée en Suisse.` : "";
-      return `Votre charge fiscale totale estimée s'élève à ${formatCHF(total)} par an${regimeTxt}, pour un revenu net disponible de ${formatCHF(net)}. Votre taux effectif ressort à ${formatPct(eff)} de votre revenu brut, tandis que votre taux marginal de ${formatPct(marg)} indique la charge fiscale sur le prochain franc que vous gagnez, un repère utile pour évaluer l'intérêt d'une déduction supplémentaire (3a, rachat LPP).${foreignTxt} Cette estimation se base sur les barèmes 2026 et votre situation déclarée ; elle doit être confirmée par votre déclaration fiscale officielle.`;
+      // Traçabilité : si ce calcul a repris un montant (rachat LPP, cotisation
+      // 3a) d'une simulation plus récente sur un autre calculateur plutôt que
+      // du profil de base du client, le dire explicitement ici — sans ça, un
+      // chiffre du PDF ne correspond à rien de visible dans la fiche client,
+      // ce qui a été une source de confusion (voir TaxGlobalExplanation.tsx
+      // pour l'équivalent affiché à l'écran).
+      const reused = Array.isArray(s.reusedSimulations) ? (s.reusedSimulations as Array<Record<string, unknown>>) : [];
+      const reusedTxt = reused.length > 0
+        ? " " + reused.map((r) => {
+            const label = str(r.label) ?? "une valeur";
+            const value = num(r.value);
+            const date = str(r.date);
+            const dateTxt = date ? ` du ${new Date(date).toLocaleDateString("fr-CH")}` : "";
+            return `${label} repris d'une simulation${dateTxt} (${formatCHF(value)}), plutôt que du profil de base du client.`;
+          }).join(" ")
+        : "";
+      return `Votre charge fiscale totale estimée s'élève à ${formatCHF(total)} par an${regimeTxt}, pour un revenu net disponible de ${formatCHF(net)}. Votre taux effectif ressort à ${formatPct(eff)} de votre revenu brut, tandis que votre taux marginal de ${formatPct(marg)} indique la charge fiscale sur le prochain franc que vous gagnez, un repère utile pour évaluer l'intérêt d'une déduction supplémentaire (3a, rachat LPP).${foreignTxt}${reusedTxt} Cette estimation se base sur les barèmes 2026 et votre situation déclarée ; elle doit être confirmée par votre déclaration fiscale officielle.`;
     }
     case "cross_border":
     case "tou":

@@ -46,6 +46,10 @@ import type { TaxGlobalInput } from "@/lib/tax-global/types";
 import { SUPPORTED_CURRENCIES, getAfcRate, type Currency } from "@/lib/fx/sources";
 import { fetchMarketRates } from "@/lib/fx/fetch.functions";
 import { CrossCalcImpactBanner } from "@/components/calculators/CrossCalcImpactBanner";
+import {
+  CrossSimulationReuseBanner,
+  type ReuseProvenance,
+} from "@/components/calculators/CrossSimulationReuseBanner";
 
 
 type FxCurrency = "CHF" | Currency;
@@ -85,8 +89,26 @@ function TaxGlobalCalc() {
     loadedSimRef.current = simId;
   }, [simId, savedInputs]);
 
-  const set = <K extends keyof TaxGlobalInput>(k: K, v: TaxGlobalInput[K]) =>
+  // Traçabilité : quand un champ reprend une simulation d'un autre
+  // calculateur (bandeau ci-dessous) plutôt que le profil de base du
+  // client, on garde la provenance pour l'afficher à l'écran (panneau
+  // "Comment ce résultat est calculé") ET la transmettre telle quelle dans
+  // la simulation sauvegardée, pour que le PDF de synthèse reprenne
+  // exactement la même explication — jamais un chiffre sans origine visible.
+  const [reuseProvenance, setReuseProvenance] = useState<ReuseProvenance[]>([]);
+
+  const set = <K extends keyof TaxGlobalInput>(k: K, v: TaxGlobalInput[K]) => {
     setForm((f) => ({ ...f, [k]: v }));
+    // Une modification manuelle du champ invalide la provenance "simulation
+    // reprise" affichée pour ce champ, sauf si c'est applyReuse() lui-même
+    // qui vient de poser exactement cette valeur.
+    setReuseProvenance((prev) => prev.filter((p) => !(p.field === k && p.value !== v)));
+  };
+
+  const applyReuse = (provenance: ReuseProvenance) => {
+    set(provenance.field, provenance.value as TaxGlobalInput[typeof provenance.field]);
+    setReuseProvenance((prev) => [...prev.filter((p) => p.field !== provenance.field), provenance]);
+  };
 
   // Base de comparaison ("avant") du comparateur Avant/Après, pilotée par le
   // bouton "Définir comme base" du bandeau ci-dessous (en haut de page,
@@ -210,6 +232,12 @@ function TaxGlobalCalc() {
   return (
     <div className="space-y-6">
       <CrossCalcImpactBanner calculator="tax-global" clientId={clientId} />
+      <CrossSimulationReuseBanner
+        clientId={clientId}
+        currentLppBuyback={form.lppBuyback ?? 0}
+        currentPillar3aContributions={form.pillar3aContributions ?? 0}
+        onApply={applyReuse}
+      />
       <GuideMode open={guideOpen} onClose={() => setGuideOpen(false)} steps={guideSteps} title={t("calc.global.guide.title")} guideId="calc-tax-global" />
       <div className="flex justify-end"><GuideToggleButton onClick={() => setGuideOpen(true)} /></div>
       {client && <ClientLinkBanner client={client} />}
@@ -1044,7 +1072,7 @@ function TaxGlobalCalc() {
       <TaxGlobalCompareCard form={form} result={result} baseline={baseline} />
 
       {/* TRANSPARENCE : comment ce résultat est calculé */}
-      <TaxGlobalExplanation form={form} result={result} client={client} />
+      <TaxGlobalExplanation form={form} result={result} client={client} reuseProvenance={reuseProvenance} />
 
 
       <div className="flex flex-wrap justify-end gap-2">
@@ -1075,6 +1103,13 @@ function TaxGlobalCalc() {
               format,
               betterWhen,
             })),
+            // Traçabilité : champs repris d'une simulation d'un autre
+            // calculateur plutôt que du profil de base du client (bandeau
+            // "Simulation plus récente trouvée" ci-dessus) — repris tel quel
+            // par le PDF de synthèse (buildComment, cas "tax_global") pour
+            // que le document explique d'où vient chaque chiffre, jamais un
+            // montant sans origine visible.
+            reusedSimulations: reuseProvenance,
           }}
           defaultTitle={`Fiscal global ${form.canton} · ${result.regimeLabel}`}
         />
