@@ -54,6 +54,7 @@ function makeEntry(kind: SimulationKind, summary: Record<string, unknown>, input
     id: `fixture-${kind}`,
     broker_id: "broker-fixture",
     client_id: "client-fixture",
+    case_id: null,
     kind,
     title: `Fixture ${kind}`,
     note: null,

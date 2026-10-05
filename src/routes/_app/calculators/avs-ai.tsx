@@ -40,6 +40,7 @@ import { CrossCalcImpactBanner } from "@/components/calculators/CrossCalcImpactB
 
 const searchSchema = z.object({
   clientId: fallback(z.string().uuid().optional(), undefined),
+  caseId: fallback(z.string().uuid().optional(), undefined),
   // Nouveau : identifie une sauvegarde précise à recharger dans le formulaire.
   simId: fallback(z.string().uuid().optional(), undefined),
 });

@@ -94,6 +94,7 @@ import { useLoadSavedSimulation } from "@/hooks/useLoadSavedSimulation";
 
 const searchSchema = z.object({
   clientId: fallback(z.string().uuid().optional(), undefined),
+  caseId: fallback(z.string().uuid().optional(), undefined),
   companyId: fallback(z.string().uuid().optional(), undefined),
   simId: fallback(z.string().uuid().optional(), undefined),
 });

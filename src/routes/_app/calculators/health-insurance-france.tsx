@@ -35,6 +35,7 @@ import { formatCHF } from "@/lib/format";
 
 const searchSchema = z.object({
   clientId: fallback(z.string().uuid().optional(), undefined),
+  caseId: fallback(z.string().uuid().optional(), undefined),
   simId: fallback(z.string().uuid().optional(), undefined),
 });
 

@@ -18,11 +18,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { useBrokerPdfHeader } from "@/hooks/useBrokerPdfHeader";
-import {
-  type Client,
-  type ClientPension,
-  type ClientAssets,
-} from "@/lib/clients/types";
+import { type Client, type ClientPension, type ClientAssets } from "@/lib/clients/types";
 import type { Company } from "@/lib/companies/types";
 import type { HistoryEntry } from "@/lib/history/types";
 import { KIND_LABELS } from "@/lib/history/types";
@@ -30,6 +26,10 @@ import { extractGain } from "@/lib/simulations/extract-gain";
 import { exportSynthesisReportPdf } from "@/lib/pdf/synthesis-report";
 import { checkSynthesisConsistency } from "@/lib/pdf/consistency-check";
 import { formatCHF } from "@/lib/format";
+import { useClientCases } from "@/hooks/useClientCases";
+
+/** Sentinel pour le dossier virtuel "Historique" (simulations sans case_id). */
+const NO_CASE = "__none__";
 
 interface Props {
   open: boolean;
@@ -40,6 +40,8 @@ interface Props {
 
 export function SynthesisReportModal({ open, onOpenChange, clientId, entries }: Props) {
   const header = useBrokerPdfHeader();
+  const { cases } = useClientCases(clientId);
+  const [selectedCaseIds, setSelectedCaseIds] = useState<Set<string>>(new Set());
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [includeCharts, setIncludeCharts] = useState(true);
   const [customNote, setCustomNote] = useState("");
@@ -59,6 +61,7 @@ export function SynthesisReportModal({ open, onOpenChange, clientId, entries }: 
   useEffect(() => {
     if (!open) return;
     setSelected(new Set());
+    setSelectedCaseIds(new Set());
     setLoadingClient(true);
     (async () => {
       try {
@@ -86,9 +89,32 @@ export function SynthesisReportModal({ open, onOpenChange, clientId, entries }: 
     })();
   }, [open, clientId, entries]);
 
-  const allChecked = entries.length > 0 && selected.size === entries.length;
+  // Historique (avant dossiers) : simulations sans case_id, groupées sous un
+  // dossier virtuel plutôt que jamais perdues — voir ClientCasesTab.
+  const historyEntries = useMemo(() => entries.filter((e) => !e.case_id), [entries]);
+  const hasCaseFilter = cases.length > 0 || historyEntries.length > 0;
+
+  const toggleCase = (id: string) => {
+    setSelected(new Set());
+    setSelectedCaseIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  // Simulations couvertes par les dossiers cochés ci-dessus. Sans filtre de
+  // dossier applicable (client sans dossier ni historique), on retombe sur
+  // le comportement d'avant cette fonctionnalité : toutes les simulations.
+  const visibleEntries = useMemo(() => {
+    if (!hasCaseFilter) return entries;
+    return entries.filter((e) => selectedCaseIds.has(e.case_id ?? NO_CASE));
+  }, [entries, selectedCaseIds, hasCaseFilter]);
+
+  const allChecked = visibleEntries.length > 0 && selected.size === visibleEntries.length;
   const toggleAll = () => {
-    setSelected(allChecked ? new Set() : new Set(entries.map((e) => e.id)));
+    setSelected(allChecked ? new Set() : new Set(visibleEntries.map((e) => e.id)));
   };
   const toggleOne = (id: string) => {
     setSelected((prev) => {
@@ -172,30 +198,95 @@ export function SynthesisReportModal({ open, onOpenChange, clientId, entries }: 
               </p>
             </section>
 
+            {/* Section 1bis · dossiers */}
+            {hasCaseFilter && (
+              <section>
+                <h4 className="mb-2 text-sm font-semibold">Dossiers à inclure</h4>
+                <p className="mb-2 text-xs text-muted-foreground">
+                  Choisissez un ou plusieurs dossiers : seules leurs simulations seront proposées
+                  ci-dessous.
+                </p>
+                <ul className="space-y-2">
+                  {cases.map((c) => {
+                    const count = entries.filter((e) => e.case_id === c.id).length;
+                    return (
+                      <li
+                        key={c.id}
+                        className="flex items-center gap-3 rounded-lg border bg-card p-3"
+                      >
+                        <Checkbox
+                          checked={selectedCaseIds.has(c.id)}
+                          onCheckedChange={() => toggleCase(c.id)}
+                        />
+                        <div className="flex-1 min-w-0">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span className="text-sm font-medium">{c.title}</span>
+                            <Badge
+                              variant={c.status === "open" ? "default" : "secondary"}
+                              className="text-[10px]"
+                            >
+                              {c.status === "open" ? "Ouvert" : "Terminé"}
+                            </Badge>
+                          </div>
+                        </div>
+                        <span className="text-xs text-muted-foreground">
+                          {count} simulation{count > 1 ? "s" : ""}
+                        </span>
+                      </li>
+                    );
+                  })}
+                  {historyEntries.length > 0 && (
+                    <li className="flex items-center gap-3 rounded-lg border border-dashed bg-card p-3">
+                      <Checkbox
+                        checked={selectedCaseIds.has(NO_CASE)}
+                        onCheckedChange={() => toggleCase(NO_CASE)}
+                      />
+                      <div className="flex-1 min-w-0">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="text-sm font-medium text-foreground/80">
+                            Historique (avant dossiers)
+                          </span>
+                          <Badge variant="secondary" className="text-[10px]">
+                            Automatique
+                          </Badge>
+                        </div>
+                      </div>
+                      <span className="text-xs text-muted-foreground">
+                        {historyEntries.length} simulation{historyEntries.length > 1 ? "s" : ""}
+                      </span>
+                    </li>
+                  )}
+                </ul>
+              </section>
+            )}
+
             {/* Section 2 · simulations */}
             <section>
               <div className="mb-2 flex items-center justify-between">
                 <h4 className="text-sm font-semibold">Simulations à inclure</h4>
-                {entries.length > 0 && (
+                {visibleEntries.length > 0 && (
                   <Button type="button" variant="ghost" size="sm" onClick={toggleAll}>
                     {allChecked ? "Tout décocher" : "Tout sélectionner"}
                   </Button>
                 )}
               </div>
-              {entries.length > 0 && (
+              {visibleEntries.length > 0 && (
                 <p className="mb-2 text-xs text-muted-foreground">
-                  Chaque simulation reprend les chiffres de sa <strong>dernière sauvegarde</strong> (date affichée
-                  ci-dessous), pas ce qui est actuellement affiché à l'écran dans le calculateur. Si vous avez modifié
-                  une simulation depuis, ouvrez-la et cliquez sur « Sauvegarder » avant de générer ce dossier.
+                  Chaque simulation reprend les chiffres de sa <strong>dernière sauvegarde</strong>{" "}
+                  (date affichée ci-dessous), pas ce qui est actuellement affiché à l'écran dans le
+                  calculateur. Si vous avez modifié une simulation depuis, ouvrez-la et cliquez sur
+                  « Sauvegarder » avant de générer ce dossier.
                 </p>
               )}
-              {entries.length === 0 ? (
+              {visibleEntries.length === 0 ? (
                 <div className="rounded-lg border border-dashed bg-card p-4 text-sm text-muted-foreground">
-                  Aucune simulation à inclure · lancez d'abord un calculateur depuis cette fiche.
+                  {hasCaseFilter && selectedCaseIds.size === 0
+                    ? "Sélectionnez au moins un dossier ci-dessus pour voir ses simulations."
+                    : "Aucune simulation à inclure · lancez d'abord un calculateur depuis cette fiche."}
                 </div>
               ) : (
                 <ul className="space-y-2">
-                  {entries.map((e) => {
+                  {visibleEntries.map((e) => {
                     const g = extractGain(e);
                     const checked = selected.has(e.id);
                     return (
@@ -285,7 +376,10 @@ export function SynthesisReportModal({ open, onOpenChange, clientId, entries }: 
               ))}
             </ul>
             <label className="mt-2 flex items-center gap-2 text-xs font-medium">
-              <Checkbox checked={warningsAcknowledged} onCheckedChange={(v) => setWarningsAcknowledged(v === true)} />
+              <Checkbox
+                checked={warningsAcknowledged}
+                onCheckedChange={(v) => setWarningsAcknowledged(v === true)}
+              />
               J'ai vérifié ces points et je souhaite générer le PDF malgré tout
             </label>
           </div>

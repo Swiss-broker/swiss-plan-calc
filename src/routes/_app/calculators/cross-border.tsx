@@ -4,6 +4,7 @@ import { z } from "zod";
 
 const searchSchema = z.object({
   clientId: fallback(z.string().uuid().optional(), undefined),
+  caseId: fallback(z.string().uuid().optional(), undefined),
 });
 
 export const Route = createFileRoute("/_app/calculators/cross-border")({

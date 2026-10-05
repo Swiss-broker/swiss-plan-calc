@@ -46,13 +46,20 @@ export function SaveSimulationButton({
   const [note, setNote] = useState("");
   const [clientId, setClientId] = useState<string>("none");
   const [tagsRaw, setTagsRaw] = useState("");
+  // Dossier actif (?caseId=xxx, posé par ClientCalculatorBar quand un
+  // calculateur est ouvert depuis une fiche client avec un dossier actif) —
+  // rattaché automatiquement, aucun sélecteur manuel : on est "dans" le
+  // dossier, tout ce qu'on enregistre y va. Absent en usage autonome
+  // (menu latéral, sans client).
+  const [caseId, setCaseId] = useState<string | null>(null);
 
-  // Pré-remplir depuis l'URL si on est lancé depuis une fiche client (?clientId=xxx)
+  // Pré-remplir depuis l'URL si on est lancé depuis une fiche client (?clientId=xxx&caseId=yyy)
   useEffect(() => {
     if (typeof window === "undefined") return;
     const params = new URLSearchParams(window.location.search);
     const cid = params.get("clientId");
     if (cid) setClientId(cid);
+    setCaseId(params.get("caseId"));
   }, []);
 
   const { data: clients = [] } = useQuery({
@@ -79,6 +86,7 @@ export function SaveSimulationButton({
       const payload = {
         broker_id: user.id,
         client_id: clientId === "none" ? null : clientId,
+        case_id: caseId,
         kind: kind as never,
         title: title.trim() || (defaultTitle ?? t("save_sim.default_title")),
         note: note.trim() || null,
@@ -122,7 +130,9 @@ export function SaveSimulationButton({
         </DialogHeader>
         <div className="space-y-4 py-2">
           <div className="space-y-1.5">
-            <Label className="text-xs font-medium text-muted-foreground">{t("save_sim.field.title")}</Label>
+            <Label className="text-xs font-medium text-muted-foreground">
+              {t("save_sim.field.title")}
+            </Label>
             <Input
               value={title}
               onChange={(e) => setTitle(e.target.value)}
@@ -130,7 +140,9 @@ export function SaveSimulationButton({
             />
           </div>
           <div className="space-y-1.5">
-            <Label className="text-xs font-medium text-muted-foreground">{t("save_sim.field.note")}</Label>
+            <Label className="text-xs font-medium text-muted-foreground">
+              {t("save_sim.field.note")}
+            </Label>
             <Textarea
               rows={3}
               value={note}
@@ -140,20 +152,31 @@ export function SaveSimulationButton({
           </div>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div className="space-y-1.5">
-              <Label className="text-xs font-medium text-muted-foreground">{t("save_sim.field.client")}</Label>
-              <Select value={clientId} onValueChange={setClientId}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">{t("save_sim.client.none")}</SelectItem>
-                  {clients.map((c) => (
-                    <SelectItem key={c.id} value={c.id}>
-                      {c.last_name} {c.first_name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Label className="text-xs font-medium text-muted-foreground">
+                {t("save_sim.field.client")}
+              </Label>
+              {caseId ? (
+                <div className="flex h-9 items-center rounded-md border bg-muted/40 px-3 text-sm text-muted-foreground">
+                  {clients.find((c) => c.id === clientId)
+                    ? `${clients.find((c) => c.id === clientId)?.last_name} ${clients.find((c) => c.id === clientId)?.first_name}`
+                    : t("save_sim.client.none")}
+                  <span className="ml-auto text-[10px]">Dossier actif</span>
+                </div>
+              ) : (
+                <Select value={clientId} onValueChange={setClientId}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">{t("save_sim.client.none")}</SelectItem>
+                    {clients.map((c) => (
+                      <SelectItem key={c.id} value={c.id}>
+                        {c.last_name} {c.first_name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
             </div>
             <div className="space-y-1.5">
               <Label className="text-xs font-medium text-muted-foreground">

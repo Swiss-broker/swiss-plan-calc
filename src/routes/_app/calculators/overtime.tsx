@@ -39,6 +39,7 @@ import { GuideMode, GuideToggleButton, type GuideStep } from "@/components/calcu
 
 const searchSchema = z.object({
   clientId: fallback(z.string().uuid().optional(), undefined),
+  caseId: fallback(z.string().uuid().optional(), undefined),
   simId: fallback(z.string().uuid().optional(), undefined),
 });
 

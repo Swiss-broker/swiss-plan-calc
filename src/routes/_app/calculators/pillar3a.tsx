@@ -46,6 +46,7 @@ export const PILLAR3A_OLD_AGE_ANNUITY_YEARS = 25;
 
 const searchSchema = z.object({
   clientId: fallback(z.string().uuid().optional(), undefined),
+  caseId: fallback(z.string().uuid().optional(), undefined),
   simId: fallback(z.string().uuid().optional(), undefined),
 });
 

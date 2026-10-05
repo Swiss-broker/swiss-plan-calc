@@ -73,6 +73,7 @@ import { AlertTriangle, Building2, ClipboardList, MessageSquare, Sparkles, ListC
 import { AiAnalysis } from "@/components/ai/AiAnalysis";
 import { AiConversationsTab } from "@/components/ai/AiConversationsTab";
 import { SessionSummaryTab } from "@/components/clients/SessionSummaryTab";
+import { ClientCasesTab } from "@/components/clients/ClientCasesTab";
 import { NextAppointmentCard } from "@/components/appointments/NextAppointmentCard";
 import { EmailsTab } from "@/components/clients/EmailsTab";
 import { FollowUpTab } from "@/components/clients/FollowUpTab";
@@ -93,11 +94,16 @@ const CLIENT_TABS = [
   "documents",
   "emails",
   "followup",
+  "cases",
 ] as const;
 type ClientTab = (typeof CLIENT_TABS)[number];
 
 const searchSchema = z.object({
   tab: fallback(z.enum(CLIENT_TABS).optional(), undefined),
+  // Dossier actif (voir ClientCalculatorBar) : persisté dans l'URL pour
+  // survivre à un rechargement de page, et transmis tel quel aux
+  // calculateurs ouverts depuis cette fiche (?clientId=X&caseId=Y).
+  caseId: fallback(z.string().uuid().optional(), undefined),
 });
 
 export const Route = createFileRoute("/_app/clients/$clientId")({
@@ -110,7 +116,7 @@ function ClientDetailPage() {
   const t = useT();
   const { setActiveClient, setActiveBundle } = useActiveClient();
   const { clientId } = Route.useParams();
-  const { tab } = Route.useSearch();
+  const { tab, caseId } = Route.useSearch();
   const { user } = useAuth();
   const navigate = useNavigate({ from: Route.fullPath });
   const qc = useQueryClient();
@@ -406,7 +412,16 @@ function ClientDetailPage() {
         <AiAnalysis client={client} pension={pension} assets={assets} />
       </div>
       <div className="mt-4">
-        <ClientCalculatorBar client={client} />
+        <ClientCalculatorBar
+          client={client}
+          activeCaseId={caseId}
+          onSelectCase={(id) =>
+            navigate({
+              search: (prev: z.infer<typeof searchSchema>) => ({ ...prev, caseId: id }),
+              replace: true,
+            })
+          }
+        />
       </div>
 
       <Tabs
@@ -421,6 +436,10 @@ function ClientDetailPage() {
       >
         <TabsList className="flex h-auto w-full flex-wrap justify-start gap-1 bg-muted p-1">
           <TabsTrigger value="overview">Synthèse</TabsTrigger>
+          <TabsTrigger value="cases" className="gap-1">
+            <FolderOpen className="h-3.5 w-3.5" />
+            Dossiers
+          </TabsTrigger>
           <TabsTrigger value="session" className="gap-1">
             <ClipboardList className="h-3.5 w-3.5" />
             Synthèse RDV
@@ -456,6 +475,23 @@ function ClientDetailPage() {
             Suivi RDV
           </TabsTrigger>
         </TabsList>
+
+        <TabsContent value="cases" className="mt-4">
+          <ClientCasesTab
+            clientId={clientId}
+            activeCaseId={caseId}
+            onSelectCase={(id) =>
+              navigate({
+                search: (prev: z.infer<typeof searchSchema>) => ({
+                  ...prev,
+                  caseId: id,
+                  tab: "overview",
+                }),
+                replace: true,
+              })
+            }
+          />
+        </TabsContent>
 
         <TabsContent value="session" className="mt-4">
           <SessionSummaryTab

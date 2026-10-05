@@ -70,6 +70,7 @@ function makeEntry(kind: SimulationKind, summary: Record<string, unknown>): Hist
     id: `entry-${kind}`,
     broker_id: "b",
     client_id: "test",
+    case_id: null,
     kind,
     title: kind,
     note: null,

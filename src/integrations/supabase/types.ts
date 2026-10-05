@@ -516,6 +516,54 @@ export type Database = {
           },
         ]
       }
+      client_cases: {
+        Row: {
+          broker_id: string
+          client_id: string
+          closed_at: string | null
+          created_at: string
+          id: string
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          broker_id: string
+          client_id: string
+          closed_at?: string | null
+          created_at?: string
+          id?: string
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          broker_id?: string
+          client_id?: string
+          closed_at?: string | null
+          created_at?: string
+          id?: string
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_cases_broker_id_fkey"
+            columns: ["broker_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_cases_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       client_document_links: {
         Row: {
           broker_id: string
@@ -1583,6 +1631,7 @@ export type Database = {
       simulation_history: {
         Row: {
           broker_id: string
+          case_id: string | null
           client_id: string | null
           created_at: string
           gain_dismissed: boolean
@@ -1598,6 +1647,7 @@ export type Database = {
         }
         Insert: {
           broker_id: string
+          case_id?: string | null
           client_id?: string | null
           created_at?: string
           gain_dismissed?: boolean
@@ -1613,6 +1663,7 @@ export type Database = {
         }
         Update: {
           broker_id?: string
+          case_id?: string | null
           client_id?: string | null
           created_at?: string
           gain_dismissed?: boolean
@@ -1626,7 +1677,15 @@ export type Database = {
           title?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "simulation_history_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "client_cases"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       simulation_shares: {
         Row: {

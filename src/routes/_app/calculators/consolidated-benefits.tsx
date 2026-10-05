@@ -26,6 +26,7 @@ import type { Client, ClientPension, ClientAssets } from "@/lib/clients/types";
 
 const searchSchema = z.object({
   clientId: fallback(z.string().uuid().optional(), undefined),
+  caseId: fallback(z.string().uuid().optional(), undefined),
 });
 
 export const Route = createFileRoute("/_app/calculators/consolidated-benefits")({

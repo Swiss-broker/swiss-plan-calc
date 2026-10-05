@@ -21,6 +21,10 @@ export interface HistoryEntry {
   id: string;
   broker_id: string;
   client_id: string | null;
+  // Dossier auquel appartient la simulation (NULL = enregistrée avant la
+  // fonctionnalité dossiers, ou depuis le menu latéral hors fiche client —
+  // traitée côté app comme faisant partie du dossier virtuel "Historique").
+  case_id: string | null;
   kind: SimulationKind;
   title: string;
   note: string | null;
