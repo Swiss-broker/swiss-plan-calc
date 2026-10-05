@@ -38,31 +38,43 @@ export interface CantonTaxScale {
 // Barème officiel de l'impôt sur la fortune valaisan (Art. 60 LF), propre au
 // canton (voir VS_CANTONAL_CLASSES / VS_COMMUNAL_CLASSES pour le revenu).
 // Source primaire : Feuille cantonale Valais, AFC.
+//
+// Les taux officiels sont en POUR-MILLE (1‰ à 3‰, confirmé par la Feuille
+// cantonale Valais de l'AFC et plusieurs sources indépendantes — un impôt
+// sur la fortune de 1-3% par an n'existe dans aucun canton suisse, le taux
+// le plus élevé du pays — Genève — plafonne autour de 0.4%, voir
+// GE_WEALTH_SCALE ci-dessus). Stockés ici divisés par 10 (0.10‰→0.30‰
+// devient 0.10%→0.30%) pour rester compatibles avec applySimpleScale, qui
+// divise `rate` par 100 (convention % commune à tous les autres barèmes).
+// Corrigé le 05.10.2026 : les taux étaient stockés tels quels (1.0 à 3.0),
+// soit COMMUNES appliquant un taux dix fois trop élevé pour toute fortune
+// ne tombant pas exactement sur un seuil de palier — détecté par le test
+// de cohérence structurelle brackets.test.ts.
 const VS_WEALTH_SCALE: BracketStep[] = [
-  { from: 0, base: 0, rate: 1.0 },
-  { from: 11_000, base: 10, rate: 1.2 },
-  { from: 21_000, base: 24, rate: 1.3 },
-  { from: 31_000, base: 39, rate: 1.5 },
-  { from: 51_000, base: 75, rate: 1.7 },
-  { from: 101_000, base: 170, rate: 1.9 },
-  { from: 201_000, base: 380, rate: 2.0 },
-  { from: 301_000, base: 600, rate: 2.1 },
-  { from: 401_000, base: 840, rate: 2.2 },
-  { from: 501_000, base: 1_100, rate: 2.26 },
-  { from: 601_000, base: 1_356, rate: 2.32 },
-  { from: 701_000, base: 1_624, rate: 2.38 },
-  { from: 801_000, base: 1_904, rate: 2.44 },
-  { from: 901_000, base: 2_196, rate: 2.5 },
-  { from: 1_001_000, base: 2_500, rate: 2.55 },
-  { from: 1_101_000, base: 2_805, rate: 2.6 },
-  { from: 1_201_000, base: 3_120, rate: 2.65 },
-  { from: 1_301_000, base: 3_445, rate: 2.7 },
-  { from: 1_401_000, base: 3_780, rate: 2.75 },
-  { from: 1_501_000, base: 4_125, rate: 2.8 },
-  { from: 1_601_000, base: 4_480, rate: 2.85 },
-  { from: 1_701_000, base: 4_845, rate: 2.9 },
-  { from: 1_801_000, base: 5_220, rate: 2.95 },
-  { from: 1_901_000, base: 5_605, rate: 3.0 },
+  { from: 0, base: 0, rate: 0.1 },
+  { from: 11_000, base: 10, rate: 0.12 },
+  { from: 21_000, base: 24, rate: 0.13 },
+  { from: 31_000, base: 39, rate: 0.15 },
+  { from: 51_000, base: 75, rate: 0.17 },
+  { from: 101_000, base: 170, rate: 0.19 },
+  { from: 201_000, base: 380, rate: 0.2 },
+  { from: 301_000, base: 600, rate: 0.21 },
+  { from: 401_000, base: 840, rate: 0.22 },
+  { from: 501_000, base: 1_100, rate: 0.226 },
+  { from: 601_000, base: 1_356, rate: 0.232 },
+  { from: 701_000, base: 1_624, rate: 0.238 },
+  { from: 801_000, base: 1_904, rate: 0.244 },
+  { from: 901_000, base: 2_196, rate: 0.25 },
+  { from: 1_001_000, base: 2_500, rate: 0.255 },
+  { from: 1_101_000, base: 2_805, rate: 0.26 },
+  { from: 1_201_000, base: 3_120, rate: 0.265 },
+  { from: 1_301_000, base: 3_445, rate: 0.27 },
+  { from: 1_401_000, base: 3_780, rate: 0.275 },
+  { from: 1_501_000, base: 4_125, rate: 0.28 },
+  { from: 1_601_000, base: 4_480, rate: 0.285 },
+  { from: 1_701_000, base: 4_845, rate: 0.29 },
+  { from: 1_801_000, base: 5_220, rate: 0.295 },
+  { from: 1_901_000, base: 5_605, rate: 0.3 },
 ];
 
 // Barème officiel unique vaudois (Art. 47 al. 1 LI, 2026, montants indexés).
@@ -125,8 +137,8 @@ const GE_SINGLE: BracketStep[] = [
   { from: 127_297, base: 14_053.61, rate: 15 },
   { from: 171_231, base: 20_643.71, rate: 15.6 },
   { from: 193_762, base: 24_158.54, rate: 15.8 },
-  { from: 277_125, base: 37_329.90, rate: 16 },
-  { from: 295_150, base: 40_213.90, rate: 16.8 },
+  { from: 277_125, base: 37_329.9, rate: 16 },
+  { from: 295_150, base: 40_213.9, rate: 16.8 },
   { from: 415_688, base: 60_464.28, rate: 17.6 },
   { from: 651_131, base: 101_902.25, rate: 18 },
 ];
@@ -182,7 +194,7 @@ const VS_MARRIED: BracketStep[] = [{ from: 0, base: 0, rate: 0 }];
 // cas spéciaux "FR"/"VS" dans computeCantonalCommunal, qui utilisent
 // averageRatePercent/marginalRatePercentFromClasses ci-dessous au lieu de
 // applySimpleScale.
-interface AverageRateClass {
+export interface AverageRateClass {
   incomeFrom: number;
   incomeTo: number;
   rateFromPercent: number;
@@ -190,7 +202,11 @@ interface AverageRateClass {
 }
 
 /** Taux moyen (%) applicable à la totalité du revenu, par interpolation linéaire dans la classe. */
-function averageRatePercent(income: number, classes: AverageRateClass[], topRatePercent: number): number {
+export function averageRatePercent(
+  income: number,
+  classes: AverageRateClass[],
+  topRatePercent: number,
+): number {
   if (income < classes[0].incomeFrom) return 0;
   const last = classes[classes.length - 1];
   if (income > last.incomeTo) return topRatePercent;
@@ -212,7 +228,10 @@ function averageRatePercent(income: number, classes: AverageRateClass[], topRate
  * tronquée au franc (pas arrondie). Vérifié contre les deux exemples
  * chiffrés officiels de la page (voir cantons.test.ts).
  */
-export function vsDeindexedReferenceIncome(roundedIncome: number, indexationPercent: number): number {
+export function vsDeindexedReferenceIncome(
+  roundedIncome: number,
+  indexationPercent: number,
+): number {
   let ref = roundedIncome;
   let remaining = indexationPercent - 100;
   while (remaining >= 10) {
@@ -226,7 +245,11 @@ export function vsDeindexedReferenceIncome(roundedIncome: number, indexationPerc
 }
 
 /** Taux marginal local (%) = d(income * taux(income) / 100) / d(income), pour l'affichage. */
-function marginalRatePercentFromClasses(income: number, classes: AverageRateClass[], topRatePercent: number): number {
+function marginalRatePercentFromClasses(
+  income: number,
+  classes: AverageRateClass[],
+  topRatePercent: number,
+): number {
   if (income < classes[0].incomeFrom) return 0;
   const last = classes[classes.length - 1];
   if (income > last.incomeTo) return topRatePercent;
@@ -242,19 +265,19 @@ function marginalRatePercentFromClasses(income: number, classes: AverageRateClas
 
 // Art. 37 al. 1 LICD, barème détaillé 2026. Source primaire : Feuille
 // cantonale Fribourg, AFC, état février 2026.
-const FR_INCOME_CLASSES: AverageRateClass[] = [
-  { incomeFrom: 5_200, incomeTo: 17_499, rateFromPercent: 1.0000, rateToPercent: 4.1598 },
+export const FR_INCOME_CLASSES: AverageRateClass[] = [
+  { incomeFrom: 5_200, incomeTo: 17_499, rateFromPercent: 1.0, rateToPercent: 4.1598 },
   { incomeFrom: 17_500, incomeTo: 31_399, rateFromPercent: 4.1745, rateToPercent: 6.2031 },
   { incomeFrom: 31_400, incomeTo: 48_299, rateFromPercent: 6.2139, rateToPercent: 8.0283 },
   { incomeFrom: 48_300, incomeTo: 63_799, rateFromPercent: 8.0352, rateToPercent: 9.0978 },
   { incomeFrom: 63_800, incomeTo: 77_599, rateFromPercent: 9.1042, rateToPercent: 9.981 },
-  { incomeFrom: 77_600, incomeTo: 102_099, rateFromPercent: 9.9846, rateToPercent: 10.8630 },
+  { incomeFrom: 77_600, incomeTo: 102_099, rateFromPercent: 9.9846, rateToPercent: 10.863 },
   { incomeFrom: 102_100, incomeTo: 128_699, rateFromPercent: 10.8662, rateToPercent: 11.7142 },
   { incomeFrom: 128_700, incomeTo: 155_999, rateFromPercent: 11.7172, rateToPercent: 12.5332 },
   { incomeFrom: 156_000, incomeTo: 180_999, rateFromPercent: 12.5355, rateToPercent: 13.1082 },
   { incomeFrom: 181_000, incomeTo: 207_099, rateFromPercent: 13.1097, rateToPercent: 13.4997 },
 ];
-const FR_TOP_RATE_PERCENT = 13.5; // dès 207'100 CHF, taux plafond fixe
+export const FR_TOP_RATE_PERCENT = 13.5; // dès 207'100 CHF, taux plafond fixe
 
 // Déduction pour enfant valaisanne (Art. 31 al. 1 let. b LF, montants
 // indexés 2026) — DÉPEND DE L'ÂGE de chaque enfant, contrairement au modèle
@@ -283,7 +306,7 @@ function vsChildDeductionForAge(age: number | null | undefined): number {
 // définitives — le VS n'a pas de multiple annuel, ce barème est directement
 // applicable comme pour l'IFD). Source primaire : Feuille cantonale Valais,
 // AFC, état février 2026.
-const VS_CANTONAL_CLASSES: AverageRateClass[] = [
+export const VS_CANTONAL_CLASSES: AverageRateClass[] = [
   { incomeFrom: 0, incomeTo: 6_300, rateFromPercent: 2.0, rateToPercent: 2.0 },
   { incomeFrom: 6_300, incomeTo: 12_700, rateFromPercent: 2.0, rateToPercent: 2.7992 },
   { incomeFrom: 12_700, incomeTo: 19_000, rateFromPercent: 2.7992, rateToPercent: 3.6915 },
@@ -293,8 +316,8 @@ const VS_CANTONAL_CLASSES: AverageRateClass[] = [
   { incomeFrom: 50_800, incomeTo: 63_500, rateFromPercent: 7.6975, rateToPercent: 8.9974 },
   { incomeFrom: 63_500, incomeTo: 76_200, rateFromPercent: 8.9974, rateToPercent: 10.4963 },
   { incomeFrom: 76_200, incomeTo: 88_900, rateFromPercent: 10.4963, rateToPercent: 11.7962 },
-  { incomeFrom: 88_900, incomeTo: 101_600, rateFromPercent: 11.7962, rateToPercent: 12.9960 },
-  { incomeFrom: 101_600, incomeTo: 114_300, rateFromPercent: 12.9960, rateToPercent: 13.2989 },
+  { incomeFrom: 88_900, incomeTo: 101_600, rateFromPercent: 11.7962, rateToPercent: 12.996 },
+  { incomeFrom: 101_600, incomeTo: 114_300, rateFromPercent: 12.996, rateToPercent: 13.2989 },
   { incomeFrom: 114_300, incomeTo: 127_000, rateFromPercent: 13.2989, rateToPercent: 13.4992 },
   { incomeFrom: 127_000, incomeTo: 139_700, rateFromPercent: 13.4992, rateToPercent: 13.5498 },
   { incomeFrom: 139_700, incomeTo: 152_400, rateFromPercent: 13.5498, rateToPercent: 13.5998 },
@@ -303,16 +326,16 @@ const VS_CANTONAL_CLASSES: AverageRateClass[] = [
   { incomeFrom: 177_800, incomeTo: 190_500, rateFromPercent: 13.6997, rateToPercent: 13.7497 },
   { incomeFrom: 190_500, incomeTo: 203_200, rateFromPercent: 13.7497, rateToPercent: 13.7997 },
   { incomeFrom: 203_200, incomeTo: 215_900, rateFromPercent: 13.7997, rateToPercent: 13.8497 },
-  { incomeFrom: 215_900, incomeTo: 228_700, rateFromPercent: 13.8497, rateToPercent: 13.9000 },
-  { incomeFrom: 228_700, incomeTo: 241_400, rateFromPercent: 13.9000, rateToPercent: 13.9500 },
-  { incomeFrom: 241_400, incomeTo: 254_100, rateFromPercent: 13.9500, rateToPercent: 14.0 },
+  { incomeFrom: 215_900, incomeTo: 228_700, rateFromPercent: 13.8497, rateToPercent: 13.9 },
+  { incomeFrom: 228_700, incomeTo: 241_400, rateFromPercent: 13.9, rateToPercent: 13.95 },
+  { incomeFrom: 241_400, incomeTo: 254_100, rateFromPercent: 13.95, rateToPercent: 14.0 },
 ];
-const VS_CANTONAL_TOP_RATE_PERCENT = 14.0;
+export const VS_CANTONAL_TOP_RATE_PERCENT = 14.0;
 
 // Art. 178 al. 1 LF, barème communal détaillé 2026 (tarif de base ; chaque
 // commune applique ensuite son propre coefficient 1.0–1.5, voir
 // communalMultiplierCapital). Source : idem ci-dessus.
-const VS_COMMUNAL_CLASSES: AverageRateClass[] = [
+export const VS_COMMUNAL_CLASSES: AverageRateClass[] = [
   { incomeFrom: 0, incomeTo: 5_000, rateFromPercent: 2.0, rateToPercent: 2.0 },
   { incomeFrom: 5_000, incomeTo: 10_000, rateFromPercent: 2.0, rateToPercent: 2.7 },
   { incomeFrom: 10_000, incomeTo: 15_000, rateFromPercent: 2.7, rateToPercent: 3.6 },
@@ -336,7 +359,7 @@ const VS_COMMUNAL_CLASSES: AverageRateClass[] = [
   { incomeFrom: 180_000, incomeTo: 190_000, rateFromPercent: 9.9, rateToPercent: 9.95 },
   { incomeFrom: 190_000, incomeTo: 200_000, rateFromPercent: 9.95, rateToPercent: 10.0 },
 ];
-const VS_COMMUNAL_TOP_RATE_PERCENT = 10.0;
+export const VS_COMMUNAL_TOP_RATE_PERCENT = 10.0;
 
 // Barème officiel de l'impôt sur la fortune fribourgeois (Art. 62 al. 1a
 // LICD) : particularité, le taux DIMINUE dans la dernière tranche
@@ -380,12 +403,12 @@ const BE_MARRIED: BracketStep[] = [
 // Source primaire : Feuille cantonale Jura, AFC, état février 2026.
 const JU_MARRIED: BracketStep[] = [
   { from: 0, base: 0, rate: 0 },
-  { from: 12_600, base: 0, rate: 0.880 },
+  { from: 12_600, base: 0, rate: 0.88 },
   { from: 18_800, base: 54.56, rate: 2.269 },
   { from: 28_100, base: 265.58, rate: 3.242 },
   { from: 48_400, base: 923.74, rate: 4.122 },
   { from: 90_600, base: 2_663.23, rate: 4.771 },
-  { from: 203_100, base: 8_030.00, rate: 5.697 },
+  { from: 203_100, base: 8_030.0, rate: 5.697 },
   { from: 437_600, base: 21_390.97, rate: 5.789 },
 ];
 
@@ -407,11 +430,11 @@ const JU_SINGLE: BracketStep[] = [
 // gérée à part dans computeWealthTax, pas via wealthExemptionSingle/Married
 // qui représente la déduction sociale (Art. 47 LI).
 const JU_WEALTH_SCALE: BracketStep[] = [
-  { from: 0, base: 0, rate: 0.50 },
+  { from: 0, base: 0, rate: 0.5 },
   { from: 112_000, base: 560, rate: 0.75 },
   { from: 449_000, base: 3_087.5, rate: 0.95 },
-  { from: 842_000, base: 6_821, rate: 1.10 },
-  { from: 1_685_000, base: 16_094, rate: 1.20 },
+  { from: 842_000, base: 6_821, rate: 1.1 },
+  { from: 1_685_000, base: 16_094, rate: 1.2 },
 ];
 
 // Barème officiel neuchâtelois du revenu, en vigueur depuis le 1er janvier
@@ -452,9 +475,9 @@ const NE_SCALE: BracketStep[] = [
 // commun à ce fichier (applySimpleScale divise par 100, pas 1000).
 const NE_WEALTH_SCALE: BracketStep[] = [
   { from: 0, base: 0, rate: 0 },
-  { from: 50_000, base: 0, rate: 0.30 },
-  { from: 200_000, base: 450, rate: 0.40 },
-  { from: 350_000, base: 1_050, rate: 0.50 },
+  { from: 50_000, base: 0, rate: 0.3 },
+  { from: 200_000, base: 450, rate: 0.4 },
+  { from: 350_000, base: 1_050, rate: 0.5 },
   { from: 500_000, base: 1_800, rate: 0.36 },
 ];
 
@@ -470,22 +493,22 @@ const NE_WEALTH_SCALE: BracketStep[] = [
 // Source primaire : Feuille cantonale Schwyz, AFC, état février 2026.
 const SZ_BASE_CLASSES: BracketStep[] = [
   { from: 0, base: 0, rate: 0.25 },
-  { from: 1_500, base: 3.75, rate: 0.50 },
+  { from: 1_500, base: 3.75, rate: 0.5 },
   { from: 2_800, base: 10.25, rate: 0.75 },
-  { from: 3_900, base: 18.5, rate: 1.00 },
+  { from: 3_900, base: 18.5, rate: 1.0 },
   { from: 4_900, base: 28.5, rate: 1.25 },
-  { from: 5_900, base: 41, rate: 1.50 },
+  { from: 5_900, base: 41, rate: 1.5 },
   { from: 7_000, base: 57.5, rate: 1.75 },
-  { from: 8_300, base: 80.25, rate: 2.00 },
+  { from: 8_300, base: 80.25, rate: 2.0 },
   { from: 10_100, base: 116.25, rate: 2.25 },
-  { from: 12_500, base: 170.25, rate: 2.50 },
+  { from: 12_500, base: 170.25, rate: 2.5 },
   { from: 16_100, base: 260.25, rate: 2.75 },
-  { from: 22_000, base: 422.5, rate: 3.00 },
+  { from: 22_000, base: 422.5, rate: 3.0 },
   { from: 30_200, base: 668.5, rate: 3.25 },
-  { from: 40_700, base: 1_009.75, rate: 3.50 },
+  { from: 40_700, base: 1_009.75, rate: 3.5 },
   { from: 52_300, base: 1_415.75, rate: 3.65 },
-  { from: 61_600, base: 1_755.20, rate: 3.90 },
-  { from: 258_800, base: 9_446.00, rate: 3.65 },
+  { from: 61_600, base: 1_755.2, rate: 3.9 },
+  { from: 258_800, base: 9_446.0, rate: 3.65 },
 ];
 
 // §36a StG : "§36 s'applique aussi à l'impôt cantonal, avec un palier
@@ -496,8 +519,8 @@ const SZ_BASE_CLASSES: BracketStep[] = [
 // cas spécial "SZ" dans computeCantonalCommunal.
 const SZ_KANTON_CLASSES: BracketStep[] = [
   ...SZ_BASE_CLASSES.slice(0, -1),
-  { from: 258_800, base: 9_446.00, rate: 7.00 },
-  { from: 433_500, base: 21_675.00, rate: 5.00 },
+  { from: 258_800, base: 9_446.0, rate: 7.0 },
+  { from: 433_500, base: 21_675.0, rate: 5.0 },
 ];
 
 // §48 al. 1 StG : taux unique 0.6‰ (rate converti en ÷10 pour ce fichier,
@@ -631,7 +654,7 @@ export const CANTON_SCALES: Record<string, CantonTaxScale> = {
     // chef-lieu Fribourg (80%, identique revenu/fortune) confirmé par
     // l'AFC ("Taux et coefficients d'impôts", état 01/2026).
     cantonalMultiplier: 0.96,
-    communalMultiplierCapital: 0.80,
+    communalMultiplierCapital: 0.8,
     // Impôt ecclésiastique chef-lieu Fribourg 2026 (même source AFC) :
     // catholique romain 9%, réformé 7% (le code précédent avait 10%/10%).
     churchRateCatholic: 0.09,
@@ -724,7 +747,7 @@ export const CANTON_SCALES: Record<string, CantonTaxScale> = {
     // Quotité cantonale et coefficient communal Delémont 2026, confirmés
     // par le document AFC "Taux et coefficients d'impôts" (état 01/2026).
     cantonalMultiplier: 2.85,
-    communalMultiplierCapital: 1.90,
+    communalMultiplierCapital: 1.9,
     // Impôt ecclésiastique chef-lieu Delémont 2026 (même source AFC).
     churchRateCatholic: 0.064,
     churchRateProtestant: 0.081,
@@ -960,7 +983,11 @@ export function computeCantonalCommunal(opts: CCComputeOptions): CCComputeResult
     }
     vsAdjustedIncome = Math.max(0, opts.taxableIncome - vsChildDeduction);
 
-    const ratePercent = averageRatePercent(vsAdjustedIncome, VS_CANTONAL_CLASSES, VS_CANTONAL_TOP_RATE_PERCENT);
+    const ratePercent = averageRatePercent(
+      vsAdjustedIncome,
+      VS_CANTONAL_CLASSES,
+      VS_CANTONAL_TOP_RATE_PERCENT,
+    );
     const base = (vsAdjustedIncome * ratePercent) / 100;
     bracketScale = scale.single;
     marginalReference = vsAdjustedIncome;
@@ -1001,8 +1028,8 @@ export function computeCantonalCommunal(opts: CCComputeOptions): CCComputeResult
       (isMarried ? 70_000 : 35_000) -
       opts.taxableIncome +
       (opts.children ?? 0) * 25_000 -
-      0.10 * (opts.netWealth ?? 0);
-    szEntlastungsabzug = 0.30 * Math.max(0, reliefBase);
+      0.1 * (opts.netWealth ?? 0);
+    szEntlastungsabzug = 0.3 * Math.max(0, reliefBase);
     szAdjustedForCommunal = Math.max(0, adjusted - personalDeduction - szEntlastungsabzug);
     bracketScale = SZ_KANTON_CLASSES;
     if (isMarried) {
@@ -1033,7 +1060,6 @@ export function computeCantonalCommunal(opts: CCComputeOptions): CCComputeResult
     simple = applySimpleScale(adjusted, bracketScale);
     marginalReference = adjusted;
   }
-  
 
   // Sélection du bon facteur de calibration selon le profil
   let calibration: number;
@@ -1046,7 +1072,7 @@ export function computeCantonalCommunal(opts: CCComputeOptions): CCComputeResult
   }
   simple = simple * calibration;
 
- const cantonalMult = opts.cantonalMultiplier ?? scale.cantonalMultiplier;
+  const cantonalMult = opts.cantonalMultiplier ?? scale.cantonalMultiplier;
   const communalMult = opts.communalMultiplier ?? scale.communalMultiplierCapital;
 
   let cantonal = simple * cantonalMult;
@@ -1084,7 +1110,11 @@ export function computeCantonalCommunal(opts: CCComputeOptions): CCComputeResult
       ? vsDeindexedReferenceIncome(vsRoundedIncome, opts.vsIndexationPercent)
       : vsAdjustedIncome;
     const vsCommunalBaseIncome = opts.vsIndexationPercent ? vsRoundedIncome : vsAdjustedIncome;
-    const communalRatePercent = averageRatePercent(vsRateReferenceIncome, VS_COMMUNAL_CLASSES, VS_COMMUNAL_TOP_RATE_PERCENT);
+    const communalRatePercent = averageRatePercent(
+      vsRateReferenceIncome,
+      VS_COMMUNAL_CLASSES,
+      VS_COMMUNAL_TOP_RATE_PERCENT,
+    );
     let communalBase = (vsCommunalBaseIncome * communalRatePercent) / 100;
     if (isMarried || isSingleParent) {
       const communalReduction = Math.min(4_500, Math.max(600, communalBase * 0.35));
@@ -1105,14 +1135,18 @@ export function computeCantonalCommunal(opts: CCComputeOptions): CCComputeResult
   }
   const notes: string[] = [];
   if (vsMarriedReduction > 0) {
-    notes.push(`Réduction couple marié, -35% (entre 600 et 4'500 CHF chacun) : -${Math.round(vsMarriedReduction)} CHF sur le cantonal et -${Math.round(vsCommunalMarriedReduction)} CHF sur le communal`);
+    notes.push(
+      `Réduction couple marié, -35% (entre 600 et 4'500 CHF chacun) : -${Math.round(vsMarriedReduction)} CHF sur le cantonal et -${Math.round(vsCommunalMarriedReduction)} CHF sur le communal`,
+    );
   }
   if (opts.canton === "VS" && (opts.children ?? 0) > 0) {
     // Art. 31a LF : rabais direct sur l'impôt cantonal, jusqu'à 300 CHF par
     // enfant, distinct de la déduction du revenu (Art. 31 al. 1 let. b).
     const rebate = Math.min(cantonal, (opts.children ?? 0) * 300);
     cantonal = Math.max(0, cantonal - rebate);
-    notes.push(`Rabais enfants (${opts.children} enfant${(opts.children ?? 0) > 1 ? "s" : ""} à 300 CHF max chacun) : -${Math.round(rebate)} CHF sur le cantonal uniquement`);
+    notes.push(
+      `Rabais enfants (${opts.children} enfant${(opts.children ?? 0) > 1 ? "s" : ""} à 300 CHF max chacun) : -${Math.round(rebate)} CHF sur le cantonal uniquement`,
+    );
   }
   if (opts.canton === "SZ" && szEntlastungsabzug > 0) {
     notes.push(
@@ -1187,7 +1221,10 @@ export function computeWealthTax(opts: WealthComputeOptions): number {
     // fortune, en plus du barème principal ci-dessus — "il n'est perçu
     // aucun centime additionnel [communal] sur cet impôt supplémentaire".
     const supplementary = applySimpleScale(taxable, GE_WEALTH_SUPPLEMENTARY_SCALE);
-    return Math.round((simple * (cantonalMult + communalMult) + supplementary * cantonalMult) * 100) / 100;
+    return (
+      Math.round((simple * (cantonalMult + communalMult) + supplementary * cantonalMult) * 100) /
+      100
+    );
   }
 
   return Math.round(simple * (cantonalMult + communalMult) * 100) / 100;

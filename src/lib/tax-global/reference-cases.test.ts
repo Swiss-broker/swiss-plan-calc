@@ -241,12 +241,14 @@ const REFERENCE_CASES: ReferenceCase[] = [
       netWealth: 300000,
     },
     expected: {
-      totalTaxCHF: 39558.6,
-      effectiveRate: 26.4,
+      // Régénéré le 05.10.2026 : correction du barème de fortune VS
+      // (taux stockés en % au lieu de ‰, voir cantons.ts VS_WEALTH_SCALE).
+      totalTaxCHF: 37517.4,
+      effectiveRate: 25,
       ifd: 5226.15,
       cantonal: 17705.81,
       communal: 13560.64,
-      wealthTax: 3066,
+      wealthTax: 1024.8,
     },
   },
   {
