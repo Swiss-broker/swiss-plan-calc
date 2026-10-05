@@ -7,6 +7,53 @@
 //   - calibrationFactorMarried : marié (conjoint 50'000 CHF), 0/1/2 enfants (moyenne)
 //   - calibrationFactorSingleParent : célibataire 1 et 2 enfants (moyenne)
 // Multiplicateurs cantonaux/communaux corrigés d'après les coefficients AFC.
+//
+// =====================================================================
+// RÈGLES D'ARRONDI DU MOTEUR FISCAL — RÉFÉRENCE CENTRALE
+// (s'applique à cantons.ts, ifd.ts, income.ts, source.ts)
+// =====================================================================
+//
+// PRINCIPE GÉNÉRAL : on arrondit UNIQUEMENT le résultat final de chaque
+// composante d'impôt (cantonal, communal, église, fortune, IFD, taux
+// source, total) — jamais les montants intermédiaires d'un calcul en
+// plusieurs étapes (revenu ajusté, base avant multiplicateur, etc.).
+// Méthode : Math.round(x * 100) / 100 (arrondi au centime le plus proche,
+// demi vers le haut) — voir CCComputeResult, IncomeTaxBreakdown,
+// SourceTaxResult pour les champs concernés.
+//
+// EXCEPTIONS DOCUMENTÉES (règles officielles, pas des approximations) :
+//   - IFD (ifd.ts, computeIFD) : arrondi à 0.05 CHF À LA BAISSE
+//     (Math.floor(tax * 20) / 20), pas au centime — règle fédérale
+//     explicite (art. 36 LIFD), appliquée une seule fois sur le résultat
+//     final (pas de paliers intermédiaires à arrondir, l'IFD n'a qu'un
+//     seul calcul direct).
+//   - VS, dé-indexation communale (vsDeindexedReferenceIncome) : chaque
+//     palier de 10% d'indexation est tronqué au franc (Math.floor), et le
+//     revenu réel est arrondi aux 100 CHF inférieurs avant application du
+//     taux (vsRoundedIncome) — ce sont DEUX arrondis intermédiaires
+//     officiels (Service cantonal des contributions VS, page "Calcul du
+//     taux pour l'impôt communal"), vérifiés au centime contre les
+//     exemples chiffrés officiels (voir cantons.test.ts). Seul cas du
+//     moteur où un arrondi intermédiaire est à la fois officiel et
+//     nécessaire au résultat final correct.
+//
+// MONTANTS NON FISCAUX ARRONDIS AU FRANC (ne sont pas des impôts, donc
+// hors du principe "résultat final uniquement") :
+//   - income.ts : estimation des cotisations sociales (AVS/AC/LPP) et
+//     seuil de déductibilité des frais médicaux (5% du revenu brut) —
+//     arrondis au CHF entier pour l'affichage, ce sont des montants
+//     d'entrée du calcul, pas une sortie fiscale.
+//
+// LIMITE CONNUE, NON CORRIGÉE (risque évalué négligeable) : Math.round
+// sur un nombre à virgule flottante binaire peut mal arrondir une valeur
+// tombant exactement sur une frontière de centime non représentable en
+// binaire (ex. littéralement 1.005). Après les multiplications en chaîne
+// de ce moteur (calibrationFactor, multiplicateurs communaux à 3-4
+// décimales, taux de barème), retomber exactement sur une telle frontière
+// est empiriquement très rare — testé sur un échantillon de 200'000
+// valeurs simulées, aucun cas trouvé. Pas de passage à une librairie
+// Decimal pour l'instant ; à revisiter si un écart d'un centime est un
+// jour observé dans un cas réel.
 
 import type { BracketStep, FilingStatus } from "./ifd";
 
