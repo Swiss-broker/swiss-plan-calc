@@ -79,6 +79,32 @@ function TaxGlobalCalc() {
     ) => void,
   );
 
+  // Base de comparaison ("avant") du comparateur Avant/Après, pilotée par le
+  // bouton "Définir comme base" du bandeau ci-dessous (en haut de page,
+  // juste après la saisie de la situation actuelle) — plus besoin de
+  // descendre jusqu'au comparateur pour la fixer avant d'ajuster les champs
+  // d'optimisation/déduction. Déclarée AVANT le rechargement de simId
+  // ci-dessous, qui doit pouvoir forcer une resynchronisation.
+  const [baseline, setBaselineState] = useState<TaxGlobalInput>(form);
+  const baselineInitializedRef = useRef(false);
+  const baselineClientRef = useRef<string | undefined>(clientId);
+  useEffect(() => {
+    if (baselineClientRef.current !== clientId) {
+      baselineClientRef.current = clientId;
+      setBaselineState(form);
+      baselineInitializedRef.current = true;
+      return;
+    }
+    // Première hydratation : si la base est encore le default et le form a
+    // été peuplé par le prefill, on resynchronise une seule fois.
+    if (!baselineInitializedRef.current) {
+      setBaselineState(form);
+      baselineInitializedRef.current = true;
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [clientId, form.grossSalary, form.canton, form.permit, form.civilStatus]);
+  const setBaseline = () => setBaselineState(form);
+
   // Rechargement d'un brouillon sauvegardé : ne s'applique qu'une fois par
   // simId, pour ne pas écraser les modifications faites après le chargement.
   const loadedSimRef = useRef<string | undefined>(undefined);
@@ -87,6 +113,14 @@ function TaxGlobalCalc() {
     if (loadedSimRef.current === simId) return;
     setForm((prev) => ({ ...prev, ...savedInputs } as TaxGlobalInput));
     loadedSimRef.current = simId;
+    // Le comparateur Avant/Après doit repartir de LA SIMULATION RECHARGÉE
+    // comme base, pas du formulaire vide par défaut capturé au premier
+    // rendu (avant même que savedInputs ne soit disponible) — sans ce
+    // reset, baseline restait figée sur le défaut et le comparateur /
+    // tout ce qui en dépend (dont la sauvegarde ultérieure des
+    // compareRows dans le PDF) affichait des écarts qui ne correspondaient
+    // à rien de réel.
+    baselineInitializedRef.current = false;
   }, [simId, savedInputs]);
 
   // Traçabilité : quand un champ reprend une simulation d'un autre
@@ -109,31 +143,6 @@ function TaxGlobalCalc() {
     set(provenance.field, provenance.value as TaxGlobalInput[typeof provenance.field]);
     setReuseProvenance((prev) => [...prev.filter((p) => p.field !== provenance.field), provenance]);
   };
-
-  // Base de comparaison ("avant") du comparateur Avant/Après, pilotée par le
-  // bouton "Définir comme base" du bandeau ci-dessous (en haut de page,
-  // juste après la saisie de la situation actuelle) — plus besoin de
-  // descendre jusqu'au comparateur pour la fixer avant d'ajuster les champs
-  // d'optimisation/déduction.
-  const [baseline, setBaselineState] = useState<TaxGlobalInput>(form);
-  const baselineInitializedRef = useRef(false);
-  const baselineClientRef = useRef<string | undefined>(clientId);
-  useEffect(() => {
-    if (baselineClientRef.current !== clientId) {
-      baselineClientRef.current = clientId;
-      setBaselineState(form);
-      baselineInitializedRef.current = true;
-      return;
-    }
-    // Première hydratation : si la base est encore le default et le form a
-    // été peuplé par le prefill, on resynchronise une seule fois.
-    if (!baselineInitializedRef.current) {
-      setBaselineState(form);
-      baselineInitializedRef.current = true;
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [clientId, form.grossSalary, form.canton, form.permit, form.civilStatus]);
-  const setBaseline = () => setBaselineState(form);
 
   const result = useMemo(() => computeTaxGlobal(form), [form]);
   // Même paire "avant/après" que celle affichée dans TaxGlobalCompareCard,
