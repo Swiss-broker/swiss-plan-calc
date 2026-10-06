@@ -113,6 +113,14 @@ const FIXTURE_ENTRIES: HistoryEntry[] = [
     regimeLabel: "Résident",
     bestScenarioSavings: 1_500,
     bestScenarioLabel: "+3a max",
+    // Comparatif avant/après tel que défini par le courtier via "Définir
+    // comme base" (TaxGlobalCompareCard) — concept DISTINCT du "meilleur
+    // scénario testé" (bestScenarioSavings) ci-dessus, montants volontairement
+    // différents pour qu'un mélange des deux saute aux yeux en cas de
+    // régression (cf. règle "Impôt total annuel (avant/après)" plus bas).
+    compareRows: [
+      { label: "Impôt total annuel", current: 18_000, projected: 15_000, betterWhen: "lower" },
+    ],
   }),
   makeEntry("retirement", {
     netAnnuity: 280_000,
@@ -374,17 +382,45 @@ const CONSISTENCY_RULES: ConsistencyRule[] = [
   // ── tax_global ─────────────────────────────────────────────────────────
   // Bug corrigé cette session : bestScenarioSavings/bestScenarioLabel
   // n'étaient jamais écrits, donc toujours 0 → aucune section ne pouvait
-  // afficher "Fiscal global" en Recommandations/Synthèse. Les trois lectures
+  // afficher "Fiscal global" en Recommandations/Synthèse. Les deux lectures
   // ci-dessous passent toutes par extractGain/computeTotals : elles restent
   // consistantes PAR CONSTRUCTION tant que personne ne spécialise l'une
-  // sans l'autre — cette règle verrouille cet état.
+  // sans l'autre — cette règle verrouille cet état. NE COUVRE PLUS
+  // "Synthèse globale · avant/après" (voir règle "Impôt total annuel"
+  // ci-dessous) : depuis le correctif du 06.10.2026, cette page n'utilise
+  // plus bestScenarioSavings pour tax_global (c'était justement le bug —
+  // deux avant/après différents pour le même dossier, voir ci-dessous).
   {
     kind: "tax_global",
     indicator: "Meilleur scénario d'optimisation (bestScenarioSavings)",
     probes: [
       { section: "Recommandations chiffrées (extractGain)", value: (e) => extractGain(e).amount },
-      { section: "Synthèse globale · gains agrégés (extractGain)", value: (e) => extractGain(e).amount },
       { section: "Gain total identifié (computeTotals)", value: (e) => computeTotals([e]).annual },
+    ],
+  },
+  // Bug corrigé le 06.10.2026 : la page "Synthèse globale · avant/après"
+  // affichait le gain "meilleur scénario testé" (bestScenarioSavings, voir
+  // règle ci-dessus) comme s'il s'agissait de l'avant/après réel, alors que
+  // la page de détail et "Résumé par catégorie" affichaient déjà le vrai
+  // avant/après choisi par le courtier (compareRows, bouton "Définir comme
+  // base") — deux chiffres différents pour la même notion dans le même
+  // dossier. Les trois sections doivent maintenant TOUTES lire compareRows.
+  {
+    kind: "tax_global",
+    indicator: "Impôt total annuel (avant/après réel, PAS bestScenarioSavings)",
+    probes: [
+      {
+        section: "Résumé par catégorie (extractSavedCompareRows)",
+        value: (e) => Number(findCompareRow(e, "Impôt total annuel").current),
+      },
+      {
+        section: "Détail · Actuel vs Projeté (extractSavedCompareRows)",
+        value: (e) => Number(findCompareRow(e, "Impôt total annuel").current),
+      },
+      {
+        section: "Synthèse globale · avant/après (extractSavedCompareRows)",
+        value: (e) => Number(findCompareRow(e, "Impôt total annuel").current),
+      },
     ],
   },
 

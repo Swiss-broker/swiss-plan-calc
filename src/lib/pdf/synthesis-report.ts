@@ -1989,6 +1989,26 @@ function drawComparisonPage(
       rowsGoodness.push(capitalRow.projected > capitalRow.current);
     }
   }
+  // Fiscal global — reprend la ligne "Impôt total annuel" du compareRows
+  // sauvegardé (le même avant/après que le courtier a défini à l'écran via
+  // "Définir comme base", visible sur la page de détail et dans le résumé
+  // par catégorie), au lieu du gain "meilleur scénario testé" du bloc
+  // générique ci-dessous — qui est un calcul réel mais DIFFÉRENT, pouvant
+  // afficher un second chiffre avant/après contradictoire pour le même
+  // client dans le même dossier (cf. audit points 1-13).
+  const tg = pickLatestNonDismissed(entries, "tax_global");
+  if (tg) {
+    const totalRow = extractSavedCompareRows(tg).rows.find((r) => r.label === "Impôt total annuel");
+    if (totalRow && typeof totalRow.current === "number" && typeof totalRow.projected === "number") {
+      rows.push([
+        "Impôt total annuel",
+        formatCHF(totalRow.current),
+        formatCHF(totalRow.projected),
+        formatDelta(totalRow.projected - totalRow.current),
+      ]);
+      rowsGoodness.push(totalRow.projected < totalRow.current);
+    }
+  }
   // Canton compare — avant = charge fiscale du canton de référence, après =
   // charge fiscale du canton le moins cher, tous deux déjà dans le summary.
   // Un "-" en avant à côté d'un delta chiffré donnait l'impression que le
@@ -2106,7 +2126,7 @@ function drawComparisonPage(
   }
   // Tous gains agrégés
   for (const e of entries) {
-    if (["lpp", "pillar3a", "canton_compare", "director_compensation", "retirement", "vested_benefits", "cross_border", "health_insurance_france", "health_insurance_resident", "investment_compare"].includes(e.kind)) continue;
+    if (["lpp", "pillar3a", "canton_compare", "director_compensation", "retirement", "vested_benefits", "cross_border", "health_insurance_france", "health_insurance_resident", "investment_compare", "tax_global"].includes(e.kind)) continue;
     if (e.gain_dismissed) continue;
     const g = extractGain(e);
     if (g.type === "none") continue;
