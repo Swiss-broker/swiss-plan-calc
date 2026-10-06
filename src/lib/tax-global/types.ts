@@ -50,6 +50,9 @@ export interface TaxGlobalInput {
   /** Salaire assuré LPP exact (certificat de prévoyance, fiche client) —
    *  remplace l'estimation par formule quand fourni. */
   lppInsuredSalary?: number;
+  /** Statut d'activité (fiche client) — utilisé uniquement pour décider du
+   *  traitement de `familyAllowances` (voir ce champ). */
+  workStatus?: "employee" | "self_employed" | "mixed" | "retired" | "unemployed" | "student" | "director";
 
   // === Revenus ===
   grossSalary: number;
@@ -59,6 +62,14 @@ export interface TaxGlobalInput {
   rentalIncome: number;
   imputedRent: number;
   foreignIncome: number;
+  /** Allocations familiales annuelles déclarées par le client (CHF/an),
+   *  saisies telles quelles par le courtier pendant l'entretien. Pour un
+   *  salarié, légalement déjà comprises dans le salaire brut (chiffre 1 du
+   *  certificat de salaire, confirmé ESTV) : affichées à titre de repère,
+   *  JAMAIS rajoutées au revenu imposable (sinon double-comptage). Pour un
+   *  indépendant (pas de certificat de salaire), elles sont un revenu
+   *  distinct et réel : ajoutées au revenu imposable. Voir `workStatus`. */
+  familyAllowances: number;
 
   // === Patrimoine ===
   netWealth: number;
@@ -115,6 +126,13 @@ export interface TaxGlobalResult {
   swissShareCHF: number;
   /** Part étrangère (impôt pays de résidence) */
   foreignShareCHF: number;
+  /** Allocations familiales annuelles saisies sur la fiche client (CHF),
+   *  affichées à titre de repère quel que soit le statut du client. */
+  familyAllowancesCHF: number;
+  /** true si `familyAllowancesCHF` a été ajouté au revenu imposable
+   *  (indépendant, pas de salaire qui les inclurait déjà) ; false si
+   *  seulement informatif (salarié, déjà compris dans le salaire brut). */
+  familyAllowancesIncludedInIncome: boolean;
   effectiveRate: number;
   marginalRate: number;
   notes: string[];

@@ -1524,6 +1524,11 @@ export const fr: Record<string, string> = {
   "wizard.field.bonus": "Bonus / 13e",
   "wizard.field.other_income": "Autres revenus",
   "wizard.field.other_income.retired": "Autres revenus (loyers, dividendes…)",
+  "wizard.field.family_allowances": "Allocations familiales (annuel)",
+  "wizard.field.family_allowances.hint.salaried":
+    "Montant déjà compris dans le salaire brut (chiffre 1 du certificat de salaire) — saisi ici uniquement pour l'afficher séparément, pas rajouté au calcul.",
+  "wizard.field.family_allowances.hint.self_employed":
+    "Pas de certificat de salaire pour un indépendant : ce montant est un revenu distinct, ajouté au calcul fiscal.",
   "wizard.field.civil_status": "État civil",
   "wizard.spouse.title": "Conjoint",
   "wizard.spouse.first_name": "Prénom du conjoint",
@@ -1863,6 +1868,7 @@ export const fr: Record<string, string> = {
   "calc.global.field.bonus": "Bonus",
   "calc.global.field.spouse_salary": "Salaire brut conjoint",
   "calc.global.field.other_income": "Autres revenus d'activité",
+  "calc.global.field.family_allowances": "Allocations familiales (annuel)",
   "calc.global.field.rental_income": "Revenus locatifs",
   "calc.global.field.imputed_rent": "Valeur locative",
   "calc.global.field.foreign_income": "Revenus étrangers",

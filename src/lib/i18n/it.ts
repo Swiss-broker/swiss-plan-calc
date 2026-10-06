@@ -1448,6 +1448,11 @@ export const it: Record<string, string> = {
   "wizard.field.bonus": "Bonus / 13°",
   "wizard.field.other_income": "Altri redditi",
   "wizard.field.other_income.retired": "Altri redditi (affitti, dividendi…)",
+  "wizard.field.family_allowances": "Assegni familiari (annuo)",
+  "wizard.field.family_allowances.hint.salaried":
+    "Già compreso nel salario lordo (cifra 1 del certificato di salario) — inserito qui solo per mostrarlo separatamente, non aggiunto al calcolo.",
+  "wizard.field.family_allowances.hint.self_employed":
+    "Nessun certificato di salario per un indipendente: questo importo è un reddito distinto, aggiunto al calcolo fiscale.",
   "wizard.field.civil_status": "Stato civile",
   "wizard.spouse.title": "Coniuge",
   "wizard.spouse.first_name": "Nome del coniuge",
@@ -1818,6 +1823,7 @@ export const it: Record<string, string> = {
   "calc.global.field.bonus": "Bonus",
   "calc.global.field.spouse_salary": "Salario lordo coniuge",
   "calc.global.field.other_income": "Altri redditi da lavoro",
+  "calc.global.field.family_allowances": "Assegni familiari (annuo)",
   "calc.global.field.rental_income": "Redditi locativi",
   "calc.global.field.imputed_rent": "Valore locativo",
   "calc.global.field.foreign_income": "Redditi esteri",

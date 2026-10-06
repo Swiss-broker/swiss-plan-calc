@@ -1453,6 +1453,11 @@ export const de: Record<string, string> = {
   "wizard.field.bonus": "Bonus / 13.",
   "wizard.field.other_income": "Übrige Einkünfte",
   "wizard.field.other_income.retired": "Übrige Einkünfte (Mieten, Dividenden…)",
+  "wizard.field.family_allowances": "Familienzulagen (jährlich)",
+  "wizard.field.family_allowances.hint.salaried":
+    "Bereits im Bruttolohn enthalten (Ziffer 1 des Lohnausweises) — hier nur zur separaten Anzeige erfasst, nicht zur Berechnung hinzugefügt.",
+  "wizard.field.family_allowances.hint.self_employed":
+    "Kein Lohnausweis bei Selbstständigen: dieser Betrag ist ein eigenständiges Einkommen und wird zur Steuerberechnung hinzugefügt.",
   "wizard.field.civil_status": "Zivilstand",
   "wizard.spouse.title": "Ehepartner",
   "wizard.spouse.first_name": "Vorname Ehepartner",
@@ -1830,6 +1835,7 @@ export const de: Record<string, string> = {
   "calc.global.field.bonus": "Bonus",
   "calc.global.field.spouse_salary": "Bruttolohn Ehepartner",
   "calc.global.field.other_income": "Weitere Erwerbseinkommen",
+  "calc.global.field.family_allowances": "Familienzulagen (jährlich)",
   "calc.global.field.rental_income": "Mieteinnahmen",
   "calc.global.field.imputed_rent": "Eigenmietwert",
   "calc.global.field.foreign_income": "Ausländische Einkommen",

@@ -1043,6 +1043,7 @@ export type Database = {
           date_of_birth: string | null
           email: string | null
           employer: string | null
+          family_allowances: number | null
           first_name: string
           gender: Database["public"]["Enums"]["gender"] | null
           gross_annual_salary: number | null
@@ -1094,6 +1095,7 @@ export type Database = {
           date_of_birth?: string | null
           email?: string | null
           employer?: string | null
+          family_allowances?: number | null
           first_name: string
           gender?: Database["public"]["Enums"]["gender"] | null
           gross_annual_salary?: number | null
@@ -1145,6 +1147,7 @@ export type Database = {
           date_of_birth?: string | null
           email?: string | null
           employer?: string | null
+          family_allowances?: number | null
           first_name?: string
           gender?: Database["public"]["Enums"]["gender"] | null
           gross_annual_salary?: number | null

@@ -135,6 +135,12 @@ interface FormState {
   gross_annual_salary: string;
   bonus: string;
   other_income: string;
+  // Allocations familiales annuelles déclarées par le client (CHF/an) : pour
+  // un salarié, déjà comprises dans gross_annual_salary (chiffre 1 du
+  // certificat de salaire, confirmé ESTV) — affichées à titre de repère
+  // dans les calculateurs, jamais rajoutées. Pour un indépendant, revenu
+  // distinct, ajouté au calcul fiscal (voir Fiscal Global).
+  family_allowances: string;
   // Devise de saisie des revenus du client (salaire + bonus + autres
   // revenus) : gross_annual_salary/bonus/other_income restent TOUJOURS
   // stockés en CHF (c'est ce que lisent tous les calculateurs) — currency
@@ -206,6 +212,7 @@ function initialForm(initial?: WizardInitialData): FormState {
     gross_annual_salary: c?.gross_annual_salary?.toString() ?? "",
     bonus: c?.bonus?.toString() ?? "",
     other_income: c?.other_income?.toString() ?? "",
+    family_allowances: c?.family_allowances?.toString() ?? "",
     income_currency: (c?.income_currency as "CHF" | "EUR" | null) ?? "CHF",
     income_conversion_rate: c?.income_conversion_rate?.toString() ?? "",
     civil_status: c?.civil_status ?? "single",
@@ -450,6 +457,7 @@ export function ClientWizard({ initial, mode, clientId }: ClientWizardProps) {
         gross_annual_salary: num(form.gross_annual_salary),
         bonus: num(form.bonus),
         other_income: num(form.other_income),
+        family_allowances: num(form.family_allowances),
         // gross_annual_salary/bonus/other_income restent en CHF (voir plus
         // haut) : ces deux champs ne servent qu'à ré-afficher le montant en
         // EUR tel que saisi, jamais lus par les calculateurs.
@@ -1240,6 +1248,24 @@ function StepActivity({ form, update }: StepProps) {
           id="oi"
           value={chfToDisplay(form.other_income, form.income_currency, form.income_conversion_rate)}
           onChange={(v) => update("other_income", displayToChf(v, form.income_currency, form.income_conversion_rate))}
+          suffix={form.income_currency}
+        />
+      </Field>
+      <Field
+        label={t("wizard.field.family_allowances")}
+        htmlFor="fa"
+        hint={
+          rules.isSelfEmployed
+            ? t("wizard.field.family_allowances.hint.self_employed")
+            : t("wizard.field.family_allowances.hint.salaried")
+        }
+      >
+        <NumField
+          id="fa"
+          value={chfToDisplay(form.family_allowances, form.income_currency, form.income_conversion_rate)}
+          onChange={(v) =>
+            update("family_allowances", displayToChf(v, form.income_currency, form.income_conversion_rate))
+          }
           suffix={form.income_currency}
         />
       </Field>

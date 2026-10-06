@@ -9,6 +9,21 @@ import { computeHealthFrance } from "@/lib/health-france";
 import { detectRegime, toTaxStatus, toFrenchStatus, isCoupleStatus } from "./profile";
 import type { TaxGlobalInput, TaxGlobalResult, Regime } from "./types";
 
+/** Indépendant (ou activité mixte) : pas de certificat de salaire qui
+ *  inclurait déjà les allocations familiales dans un salaire brut — c'est
+ *  donc un revenu distinct à ajouter. Salarié : déjà comprises dans
+ *  `grossSalary` (chiffre 1 du certificat de salaire, confirmé ESTV), donc
+ *  jamais rajoutées (sinon double-comptage). */
+export function isSelfEmployedStatus(ws: TaxGlobalInput["workStatus"]): boolean {
+  return ws === "self_employed" || ws === "mixed";
+}
+
+/** Montant d'allocations familiales à ajouter au revenu imposable — 0 pour
+ *  un salarié (déjà dans le salaire brut, voir `isSelfEmployedStatus`). */
+function addableFamilyAllowances(g: TaxGlobalInput): number {
+  return isSelfEmployedStatus(g.workStatus) ? g.familyAllowances || 0 : 0;
+}
+
 /** Revenu brut cash de référence (valeur locative exclue, c'est un revenu fictif).
  *  Exportée pour que l'écran du calculateur (accordéon "Revenu brut total")
  *  affiche exactement ce total, régime par régime, au lieu d'une somme
@@ -18,6 +33,7 @@ import type { TaxGlobalInput, TaxGlobalResult, Regime } from "./types";
  *  source/TOU) — deux totaux "revenu brut" différents sur le même écran. */
 export function computeGrossForRegime(g: TaxGlobalInput, regime: Regime): number {
   const couple = isCoupleStatus(g.civilStatus);
+  const familyAllowances = addableFamilyAllowances(g);
   switch (regime) {
     case "resident_ordinary":
       return (
@@ -25,7 +41,8 @@ export function computeGrossForRegime(g: TaxGlobalInput, regime: Regime): number
         g.bonus +
         (couple ? g.spouseGrossSalary : 0) +
         g.otherIncome +
-        g.rentalIncome
+        g.rentalIncome +
+        familyAllowances
       );
     case "source_taxed":
     case "tou":
@@ -34,14 +51,15 @@ export function computeGrossForRegime(g: TaxGlobalInput, regime: Regime): number
         g.bonus +
         (couple && g.spouseEmployed ? g.spouseGrossSalary : 0) +
         g.otherIncome +
-        g.rentalIncome
+        g.rentalIncome +
+        familyAllowances
       );
     case "cross_border_ge":
     case "cross_border_fr_1983":
     case "cross_border_other":
-      return g.grossSalary + g.bonus + g.otherIncome + g.rentalIncome;
+      return g.grossSalary + g.bonus + g.otherIncome + g.rentalIncome + familyAllowances;
     default:
-      return g.grossSalary + g.bonus + g.otherIncome + g.rentalIncome;
+      return g.grossSalary + g.bonus + g.otherIncome + g.rentalIncome + familyAllowances;
   }
 }
 
@@ -71,7 +89,10 @@ export function toIncomeTaxInput(g: TaxGlobalInput): IncomeTaxInput {
     lppInsuredSalary: g.lppInsuredSalary,
     grossSalary: g.grossSalary + g.bonus,
     spouseGrossSalary: isCoupleStatus(g.civilStatus) ? g.spouseGrossSalary : 0,
-    otherIncome: g.otherIncome,
+    // Allocations familiales : ajoutées ici uniquement pour un indépendant
+    // (addableFamilyAllowances renvoie 0 pour un salarié, déjà comprises
+    // dans grossSalary — voir isSelfEmployedStatus).
+    otherIncome: g.otherIncome + addableFamilyAllowances(g),
     rentalIncome: g.rentalIncome,
     imputedRent: g.imputedRent,
     pillar3aContributions: g.pillar3aContributions,
@@ -118,6 +139,15 @@ export function computeTaxGlobal(g: TaxGlobalInput): TaxGlobalResult {
         worldwide > 0 ? Math.round((swissTotalIncome / worldwide) * 1000) / 10 : 100,
     },
   };
+  const familyAllowancesCHF = g.familyAllowances || 0;
+  const familyAllowancesIncludedInIncome = isSelfEmployedStatus(g.workStatus);
+  if (familyAllowancesCHF > 0) {
+    notes.push(
+      familyAllowancesIncludedInIncome
+        ? `Dont ${familyAllowancesCHF.toLocaleString("fr-CH")} CHF d'allocations familiales : ajoutées au revenu imposable (indépendant, pas de certificat de salaire qui les inclurait déjà).`
+        : `Dont ${familyAllowancesCHF.toLocaleString("fr-CH")} CHF d'allocations familiales, déjà comprises dans le salaire brut saisi (chiffre 1 du certificat de salaire) — non rajoutées.`,
+    );
+  }
 
   // ─────────────────────── RÉSIDENT ORDINAIRE ───────────────────────
   if (det.regime === "resident_ordinary") {
@@ -175,6 +205,8 @@ export function computeTaxGlobal(g: TaxGlobalInput): TaxGlobalResult {
       netAnnualCHF: Math.max(0, gross - income.totalTax - lamal),
       swissShareCHF: income.totalTax,
       foreignShareCHF: 0,
+      familyAllowancesCHF,
+      familyAllowancesIncludedInIncome,
       effectiveRate: rate(income.totalTax, gross),
       marginalRate: income.marginalRate,
       notes,
@@ -285,6 +317,8 @@ export function computeTaxGlobal(g: TaxGlobalInput): TaxGlobalResult {
       netAnnualCHF: Math.max(0, gross - total - lamal),
       swissShareCHF: total,
       foreignShareCHF: 0,
+      familyAllowancesCHF,
+      familyAllowancesIncludedInIncome,
       effectiveRate: rate(total, gross),
       marginalRate: marginal,
       notes,
@@ -429,6 +463,8 @@ export function computeTaxGlobal(g: TaxGlobalInput): TaxGlobalResult {
       netAnnualCHF: Math.max(0, gross - totalTax - social),
       swissShareCHF: displayedCrossBorder.swissTax,
       foreignShareCHF: displayedCrossBorder.foreignTax,
+      familyAllowancesCHF,
+      familyAllowancesIncludedInIncome,
       effectiveRate: rate(totalTax, gross),
       marginalRate: displayedCrossBorder.marginalRate,
       notes: [...notes, ...cbNotes],
@@ -469,6 +505,8 @@ export function computeTaxGlobal(g: TaxGlobalInput): TaxGlobalResult {
     netAnnualCHF: 0,
     swissShareCHF: 0,
     foreignShareCHF: 0,
+    familyAllowancesCHF: 0,
+    familyAllowancesIncludedInIncome: false,
     effectiveRate: 0,
     marginalRate: 0,
     notes: [

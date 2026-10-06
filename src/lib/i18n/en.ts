@@ -1448,6 +1448,11 @@ export const en: Record<string, string> = {
   "wizard.field.bonus": "Bonus / 13th",
   "wizard.field.other_income": "Other income",
   "wizard.field.other_income.retired": "Other income (rent, dividends…)",
+  "wizard.field.family_allowances": "Family allowances (annual)",
+  "wizard.field.family_allowances.hint.salaried":
+    "Already included in the gross salary (box 1 of the salary certificate) — entered here only to show it separately, not added to the calculation.",
+  "wizard.field.family_allowances.hint.self_employed":
+    "No salary certificate for a self-employed person: this is a separate income, added to the tax calculation.",
   "wizard.field.civil_status": "Civil status",
   "wizard.spouse.title": "Spouse",
   "wizard.spouse.first_name": "Spouse first name",
@@ -1817,6 +1822,7 @@ export const en: Record<string, string> = {
   "calc.global.field.bonus": "Bonus",
   "calc.global.field.spouse_salary": "Spouse gross salary",
   "calc.global.field.other_income": "Other employment income",
+  "calc.global.field.family_allowances": "Family allowances (annual)",
   "calc.global.field.rental_income": "Rental income",
   "calc.global.field.imputed_rent": "Imputed rent",
   "calc.global.field.foreign_income": "Foreign income",

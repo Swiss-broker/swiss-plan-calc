@@ -553,6 +553,26 @@ function TaxGlobalCalc() {
                         tip="Revenus accessoires : jetons de présence, indemnités, activité indépendante secondaire, rentes imposables. S'ajoutent au revenu brut."
                       />
                     </div>
+                    <div data-guide="global-family-allowances">
+                      <NumField
+                        label={t("calc.global.field.family_allowances")}
+                        value={form.familyAllowances}
+                        onChange={(v) => set("familyAllowances", v)}
+                        suffix="CHF"
+                        tip={
+                          form.workStatus === "self_employed" || form.workStatus === "mixed"
+                            ? "Pas de certificat de salaire pour un indépendant : ce montant est un revenu distinct, ajouté au revenu imposable."
+                            : "Montant déjà compris dans le salaire brut ci-dessus (chiffre 1 du certificat de salaire) — saisi ici uniquement pour l'afficher séparément dans les résultats, jamais rajouté au calcul."
+                        }
+                      />
+                    </div>
+                    <ClientPrefillBadge
+                      show={
+                        !!prefill?.familyAllowances &&
+                        form.familyAllowances === prefill.familyAllowances
+                      }
+                      clientName={client ? `${client.first_name} ${client.last_name}` : undefined}
+                    />
                     <div data-guide="global-rental-income">
                       <div data-guide="global-rental-income">
                         <NumField

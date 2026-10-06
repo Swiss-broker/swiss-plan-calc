@@ -601,10 +601,12 @@ export function toTaxGlobalInput(b: ClientBundle) {
     childrenAges: children.map(ch => ageFromDob(ch.date_of_birth)),
     confession,
     age: ageFromDob(b.client.date_of_birth) ?? undefined,
+    workStatus: b.client.work_status ?? undefined,
     grossSalary: numOrUndef(b.client.gross_annual_salary),
     bonus: numOrUndef(b.client.bonus),
     spouseGrossSalary: numOrUndef(b.client.spouse_gross_annual_salary),
     otherIncome: numOrUndef(b.client.other_income),
+    familyAllowances: numOrUndef(b.client.family_allowances),
     rentalIncome: rentalIncome || undefined,
     imputedRent: imputedRent || undefined,
     // foreignIncome / healthInsurancePremiums / childCareCosts / donations :
