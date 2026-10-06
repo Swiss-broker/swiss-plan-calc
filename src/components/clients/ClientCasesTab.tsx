@@ -41,10 +41,18 @@ export function ClientCasesTab({
   clientId,
   activeCaseId,
   onSelectCase,
+  onCreateCase,
 }: {
   clientId: string;
   activeCaseId: string | undefined;
   onSelectCase: (caseId: string | undefined) => void;
+  /** Appelé UNIQUEMENT quand un NOUVEAU dossier vient d'être créé depuis cet
+   *  onglet (jamais pour l'ouverture d'un dossier existant via "Ouvrir") —
+   *  même rôle que onCreateCase sur ClientCalculatorBar : rediriger vers le
+   *  calculateur Budget pour que le budget soit toujours établi en premier,
+   *  quel que soit l'endroit de la fiche depuis lequel le dossier a été
+   *  créé. Si absent, retombe sur le comportement onSelectCase habituel. */
+  onCreateCase?: (caseId: string) => void;
 }) {
   const { cases, isLoading } = useClientCases(clientId);
   const { data: counts } = useSimCountsByCase(clientId);
@@ -59,7 +67,8 @@ export function ClientCasesTab({
     if (!title) return;
     createCase.mutate(title, {
       onSuccess: (created) => {
-        onSelectCase(created.id);
+        if (onCreateCase) onCreateCase(created.id);
+        else onSelectCase(created.id);
         setShowNewCaseForm(false);
         setNewCaseName("");
       },

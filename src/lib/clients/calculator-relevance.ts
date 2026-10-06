@@ -20,7 +20,8 @@ export type CalcRoute =
   | "/calculators/director-compensation"
   | "/calculators/health-insurance-france"
   | "/calculators/overtime"
-  | "/calculators/consolidated-benefits";
+  | "/calculators/consolidated-benefits"
+  | "/calculators/budget";
 
 export interface Relevance {
   relevant: boolean;
@@ -81,6 +82,7 @@ export function getCalculatorRelevance(c: Client, route: CalcRoute): Relevance {
     case "/calculators/canton-compare":
     case "/calculators/investment-compare":
     case "/calculators/consolidated-benefits":
+    case "/calculators/budget":
       return OK;
 
     case "/calculators/health-insurance-france":

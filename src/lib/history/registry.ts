@@ -143,6 +143,14 @@ export function extractKpis(kind: SimulationKind, summary: SummaryShape): Histor
         { label: "Régime", value: String(summary.regimeLabel ?? summary.regime ?? "—") },
         { label: "Économie optimisations", value: num(summary.bestScenarioSavings), unit: "CHF" },
       ];
+    case "budget":
+      return [
+        { label: "Marge actuelle", value: num(summary.currentMarginCHF), unit: "CHF" },
+        { label: "Marge optimisée", value: num(summary.optimizedMarginCHF), unit: "CHF" },
+        { label: "Total optimisations", value: num(summary.totalMonthlyOptimizationCHF), unit: "CHF" },
+        { label: "Revenus mensuels", value: num(summary.totalMonthlyIncomeCHF), unit: "CHF" },
+        { label: "Charges mensuelles", value: num(summary.totalMonthlyExpensesCHF), unit: "CHF" },
+      ];
   }
 }
 
@@ -154,6 +162,7 @@ export async function regeneratePdf(
   kind: SimulationKind,
   inputs: InputsShape,
   brokerEmail: string | undefined,
+  summary?: SummaryShape,
 ): Promise<void> {
   const header = { brokerEmail };
   switch (kind) {
@@ -449,6 +458,30 @@ export async function regeneratePdf(
       const tgInput = inputs as unknown as Parameters<typeof computeTaxGlobal>[0];
       const result = computeTaxGlobal(tgInput);
       exportTaxGlobalPdf({ header, input: tgInput, result });
+      return;
+    }
+    case "budget": {
+      // Jamais recalculé à partir des `inputs` seuls : le détail des
+      // optimisations dépend des AUTRES simulations du dossier au moment
+      // de la sauvegarde, et pourrait changer si on le recalculait "live"
+      // ici (nouvelles simulations ajoutées depuis) — on relit donc
+      // exactement le `summary` figé, comme le PDF de synthèse.
+      const { exportBudgetPdf } = await import("@/lib/pdf/reports");
+      const s = (summary ?? {}) as Record<string, unknown>;
+      exportBudgetPdf({
+        header,
+        input: inputs as unknown as import("@/lib/budget").BudgetInput,
+        result: {
+          totalMonthlyIncomeCHF: num(s.totalMonthlyIncomeCHF),
+          totalMonthlyExpensesCHF: num(s.totalMonthlyExpensesCHF),
+          currentMarginCHF: num(s.currentMarginCHF),
+          optimizations: Array.isArray(s.optimizations)
+            ? (s.optimizations as import("@/lib/budget").BudgetOptimizationItem[])
+            : [],
+          totalMonthlyOptimizationCHF: num(s.totalMonthlyOptimizationCHF),
+          optimizedMarginCHF: num(s.optimizedMarginCHF),
+        },
+      });
       return;
     }
     case "cross_border":

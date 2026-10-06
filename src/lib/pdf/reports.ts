@@ -1084,6 +1084,74 @@ export function exportHealthResidentPdf(args: {
 }
 
 // ============================================================================
+// BUDGET (actuel vs optimisé)
+// ============================================================================
+
+export function exportBudgetPdf(args: {
+  header?: Partial<PdfHeaderInfo>;
+  input: import("@/lib/budget").BudgetInput;
+  result: import("@/lib/budget").BudgetResult;
+}) {
+  const { input, result } = args;
+  const pdf = new ReportPdf({
+    title: "Budget",
+    subtitle: "Budget actuel vs budget optimisé",
+    ...args.header,
+  } as PdfHeaderInfo);
+
+  pdf.situationBanner("BUDGET MENSUEL · ACTUEL VS OPTIMISÉ");
+  pdf.section("Synthèse");
+  pdf.metricsGrid([
+    { label: "Marge actuelle (CHF/mois)", value: result.currentMarginCHF, tone: "primary" },
+    { label: "Marge optimisée (CHF/mois)", value: result.optimizedMarginCHF, tone: "success" },
+    { label: "Total optimisations (CHF/mois)", value: result.totalMonthlyOptimizationCHF, tone: "success" },
+  ]);
+
+  pdf.section("Revenus mensuels");
+  pdf.table(
+    ["Poste", "CHF/mois"],
+    [
+      ["Salaire net", formatCHF(input.netSalaryMonthlyCHF)],
+      ["Salaire net conjoint", formatCHF(input.spouseNetSalaryMonthlyCHF)],
+      ["Revenus locatifs", formatCHF(input.rentalIncomeMonthlyCHF)],
+      ["Autres revenus", formatCHF(input.otherIncomeMonthlyCHF)],
+      ["Total revenus", formatCHF(result.totalMonthlyIncomeCHF)],
+    ],
+  );
+
+  pdf.section("Charges mensuelles");
+  pdf.table(
+    ["Poste", "CHF/mois"],
+    [
+      ["Logement", formatCHF(input.housingMonthlyCHF)],
+      ["Assurance maladie", formatCHF(input.healthInsuranceMonthlyCHF)],
+      ["Crédits / leasing", formatCHF(input.loansMonthlyCHF)],
+      ["Pension alimentaire versée", formatCHF(input.alimonyPaidMonthlyCHF)],
+      ["Autres charges", formatCHF(input.otherExpensesMonthlyCHF)],
+      ["Total charges", formatCHF(result.totalMonthlyExpensesCHF)],
+    ],
+  );
+
+  pdf.section("Détail des optimisations identifiées");
+  if (result.optimizations.length === 0) {
+    pdf.paragraph("Aucune optimisation identifiée dans ce dossier au moment de cette sauvegarde.");
+  } else {
+    pdf.table(
+      ["Optimisation", "CHF/mois"],
+      result.optimizations.map((o) => [o.label, formatCHF(Math.round(o.monthlyCHF))]),
+    );
+  }
+
+  pdf.section("Avertissements");
+  pdf.callout(
+    "Budget établi à partir des montants saisis par le conseiller avec le client. Le budget optimisé reprend les économies mensuelles récurrentes déjà identifiées dans ce dossier au moment de cette sauvegarde ; il ne tient pas compte de simulations enregistrées après coup.",
+    "warning",
+  );
+
+  pdf.save(makeFilename("budget"));
+}
+
+// ============================================================================
 // HEURES SUPPLÉMENTAIRES FRONTALIERS
 // ============================================================================
 

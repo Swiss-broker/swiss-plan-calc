@@ -159,6 +159,8 @@ export const it: Record<string, string> = {
   "calc.lpp.desc":
     "Proiezione capitale di pensionamento, piano di riscatto scaglionato, risparmio fiscale.",
   "calc.pillar3a.title": "Pilastro 3a & 3b",
+  "calc.consolidated.title": "Prestazioni consolidate",
+  "calc.budget.title": "Budget",
   "calc.pillar3a.desc":
     "3a (deducibile, plafond 7'258 CHF) e 3b (libero, non deducibile). Proiezione e prelievo scaglionato.",
   "calc.vested.title": "Libero passaggio",
@@ -1773,6 +1775,9 @@ export const it: Record<string, string> = {
   "calc.lpp.cert.per_month_short": "/mese",
   "calc.lpp.cert.per_year_short": "/anno",
 
+  "calc.module.budget.title": "Budget",
+  "calc.module.budget.desc":
+    "Margine mensile attuale e ottimizzato, da stabilire all'inizio dell'appuntamento",
   "calc.module.prevoyance.title": "Previdenza",
   "calc.module.prevoyance.desc":
     "Percorso 1° → 2° → 3° pilastro, proiezione pensione completa",

@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import {
+  Wallet,
   ShieldCheck,
   Coins,
   HeartPulse,
@@ -32,6 +33,12 @@ type ModuleDef = {
 };
 
 const MODULES: ModuleDef[] = [
+  {
+    icon: Wallet,
+    titleKey: "calc.module.budget.title",
+    descKey: "calc.module.budget.desc",
+    links: [{ to: "/calculators/budget", labelKey: "calc.budget.title" }],
+  },
   {
     icon: ShieldCheck,
     titleKey: "calc.module.prevoyance.title",

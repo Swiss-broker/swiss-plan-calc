@@ -130,7 +130,7 @@ function SharedSimulationPage() {
   const handlePdf = async () => {
     if (!data) return;
     try {
-      await regeneratePdf(data.kind, data.inputs, data.broker_display ?? undefined);
+      await regeneratePdf(data.kind, data.inputs, data.broker_display ?? undefined, data.summary);
       toast.success("PDF généré");
     } catch (e) {
       toast.error((e as Error).message);

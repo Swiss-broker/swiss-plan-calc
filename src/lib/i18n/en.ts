@@ -159,6 +159,8 @@ export const en: Record<string, string> = {
   "calc.lpp.desc":
     "Projection of retirement capital, staggered buyback plan, tax savings.",
   "calc.pillar3a.title": "Pillar 3a & 3b",
+  "calc.consolidated.title": "Consolidated benefits",
+  "calc.budget.title": "Budget",
   "calc.pillar3a.desc":
     "Pillar 3a (deductible, cap CHF 7,258) and 3b (free, non-deductible). Projection and staggered withdrawal.",
   "calc.vested.title": "Vested benefits",
@@ -1773,6 +1775,9 @@ export const en: Record<string, string> = {
   "calc.lpp.cert.per_month_short": "/mo",
   "calc.lpp.cert.per_year_short": "/yr",
 
+  "calc.module.budget.title": "Budget",
+  "calc.module.budget.desc":
+    "Current and optimized monthly margin, to be established right at the start of the appointment",
   "calc.module.prevoyance.title": "Pension planning",
   "calc.module.prevoyance.desc":
     "1st → 2nd → 3rd pillar journey, complete retirement projection",

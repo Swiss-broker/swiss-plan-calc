@@ -172,6 +172,14 @@ const FIXTURE_ENTRIES: HistoryEntry[] = [
     totalTaxOnOvertime: 100,
     overtimeCHF: 6_000,
   }),
+  makeEntry("budget", {
+    totalMonthlyIncomeCHF: 9_000,
+    totalMonthlyExpensesCHF: 6_200,
+    currentMarginCHF: 2_800,
+    optimizations: [{ label: "Versement 3a 7'000 CHF", monthlyCHF: 175, sourceKind: "pillar3a" }],
+    totalMonthlyOptimizationCHF: 175,
+    optimizedMarginCHF: 2_975,
+  }),
 ];
 
 const FIXTURE_BY_KIND = new Map(FIXTURE_ENTRIES.map((e) => [e.kind, e]));
@@ -597,6 +605,30 @@ const CONSISTENCY_RULES: ConsistencyRule[] = [
   // kind n'a ni compareRows ni buildDerivedComparison → sa seule apparition
   // chiffrée dans tout le PDF est la page de détail (formatMetrics). Une
   // seule vue = aucune incohérence inter-sections possible par construction.
+
+  // ── budget ─────────────────────────────────────────────────────────────
+  // Calculateur Budget : marge actuelle et marge optimisée doivent afficher
+  // le même chiffre sur sa page de détail (formatMetrics) et dans "Résumé
+  // page 3" / "Synthèse globale" (buildDerivedComparison, utilisé par les
+  // deux). extractGain retourne toujours "none" pour budget — il agrège
+  // des gains déjà comptés individuellement ailleurs (voir extract-gain.ts),
+  // les compter aussi ici ferait du double comptage dans "Gain total identifié".
+  {
+    kind: "budget",
+    indicator: "Marge actuelle (currentMarginCHF)",
+    probes: [
+      { section: "Résumé page 3 / Synthèse globale (buildDerivedComparison)", value: (e) => buildDerivedComparison(e)!.rows[0].current as number },
+      { section: "Détail · Résultats clés (formatMetrics)", value: (e) => metricValue(e, "Marge actuelle (CHF/mois)") },
+    ],
+  },
+  {
+    kind: "budget",
+    indicator: "Marge optimisée (optimizedMarginCHF)",
+    probes: [
+      { section: "Résumé page 3 / Synthèse globale (buildDerivedComparison)", value: (e) => buildDerivedComparison(e)!.rows[0].projected as number },
+      { section: "Détail · Résultats clés (formatMetrics)", value: (e) => metricValue(e, "Marge optimisée (CHF/mois)") },
+    ],
+  },
 ];
 
 describe("Cohérence inter-sections du PDF de synthèse (CONSISTENCY_RULES)", () => {

@@ -421,6 +421,16 @@ function ClientDetailPage() {
               replace: true,
             })
           }
+          onCreateCase={(id) =>
+            // Un dossier qui vient d'être créé n'a encore aucune simulation :
+            // on redirige directement vers le calculateur Budget pour que le
+            // budget soit toujours établi EN PREMIER dans le rendez-vous,
+            // avant toute autre simulation (voir src/lib/budget.ts).
+            navigate({
+              to: "/calculators/budget",
+              search: { clientId, caseId: id },
+            })
+          }
         />
       </div>
 
@@ -488,6 +498,15 @@ function ClientDetailPage() {
                   tab: "overview",
                 }),
                 replace: true,
+              })
+            }
+            onCreateCase={(id) =>
+              // Même logique que ClientCalculatorBar.onCreateCase ci-dessus :
+              // un dossier créé depuis l'onglet "Dossiers" doit, lui aussi,
+              // rediriger directement vers le calculateur Budget.
+              navigate({
+                to: "/calculators/budget",
+                search: { clientId, caseId: id },
               })
             }
           />

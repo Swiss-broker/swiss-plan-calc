@@ -161,6 +161,7 @@ export const de: Record<string, string> = {
     "Projektion Altersguthaben, gestaffelter Einkaufsplan, Steuerersparnis.",
   "calc.pillar3a.title": "Säule 3a & 3b",
   "calc.consolidated.title": "Konsolidierte Leistungen",
+  "calc.budget.title": "Budget",
   "calc.pillar3a.desc":
     "3a (abzugsfähig, Maximum 7'258 CHF) und 3b (frei, nicht abzugsfähig). Projektion und gestaffelter Bezug.",
   "calc.vested.title": "Freizügigkeit",
@@ -1786,6 +1787,9 @@ export const de: Record<string, string> = {
   "calc.lpp.cert.per_month_short": "/Mt.",
   "calc.lpp.cert.per_year_short": "/Jahr",
 
+  "calc.module.budget.title": "Budget",
+  "calc.module.budget.desc":
+    "Aktuelle und optimierte monatliche Marge, ganz zu Beginn des Termins zu erstellen",
   "calc.module.prevoyance.title": "Vorsorge",
   "calc.module.prevoyance.desc":
     "Weg 1. → 2. → 3. Säule, vollständige Rentenprojektion",

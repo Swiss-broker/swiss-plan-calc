@@ -159,6 +159,7 @@ export const fr: Record<string, string> = {
     "Projection capital retraite, plan de rachat étalé, économie fiscale.",
   "calc.pillar3a.title": "3e pilier A & B",
   "calc.consolidated.title": "Prestations consolidées",
+  "calc.budget.title": "Budget",
   "calc.pillar3a.desc":
     "3a (déductible, plafond 7'258 CHF) et 3b (libre, non déductible). Projection et retrait étalé.",
   "calc.vested.title": "Libre passage",
@@ -1818,7 +1819,10 @@ export const fr: Record<string, string> = {
   "calc.group.decision.desc":
     "Comparateur cantonal, rente vs capital, comparateur d'investissements",
 
-  // === Index calculateurs, modules v2 (5 modules) ===
+  // === Index calculateurs, modules v2 (6 modules) ===
+  "calc.module.budget.title": "Budget",
+  "calc.module.budget.desc":
+    "Marge mensuelle actuelle et optimisée, à établir en tout début de rendez-vous",
   "calc.module.prevoyance.title": "Prévoyance",
   "calc.module.prevoyance.desc":
     "Parcours 1er → 2e → 3e pilier, projection retraite complète",

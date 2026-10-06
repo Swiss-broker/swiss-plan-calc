@@ -236,6 +236,24 @@ export function buildDerivedComparison(entry: HistoryEntry): DerivedComparison |
         projectedLabel: nameB,
       };
     }
+    case "budget": {
+      const current = num(s.currentMarginCHF);
+      const optimized = num(s.optimizedMarginCHF);
+      if (!has(s.currentMarginCHF)) return null;
+      return {
+        rows: [
+          {
+            label: "Marge mensuelle",
+            current,
+            projected: optimized,
+            format: "chf_per_month",
+            betterWhen: "higher",
+          },
+        ],
+        currentLabel: "Budget actuel",
+        projectedLabel: "Budget optimisé",
+      };
+    }
     default:
       return null;
   }
@@ -346,6 +364,7 @@ const EXPLAIN_FR: Partial<Record<SimulationKind, string>> = {
   health_insurance_france: "En tant que frontalier résidant en France, vous pouvez choisir entre l'assurance maladie suisse (LAMal) et la couverture maladie universelle française (CMU). Ce choix doit être fait dans les 3 mois suivant le début de votre activité en Suisse, et vous engage pour longtemps : il mérite une comparaison chiffrée précise.",
   health_insurance_resident: "En tant que résident en Suisse, votre prime d'assurance maladie de base (LAMal) et votre complémentaire varient fortement selon la caisse, la franchise et votre commune de domicile. Ce calculateur compare votre situation actuelle à une offre optimisée, pour chiffrer l'économie réalisable jusqu'à votre retraite.",
   overtime: "Si vous êtes frontalier sous l'accord franco-suisse de 1983, vos heures supplémentaires peuvent, sous certaines conditions, être partiellement exonérées d'impôt sur le revenu en France. Ce calculateur détermine le montant exonérable et l'économie fiscale réelle que cela représente pour vous.",
+  budget: "Votre budget mensuel compare vos revenus à vos charges pour déterminer votre marge disponible. Ce calculateur chiffre d'abord votre marge actuelle, telle qu'elle est aujourd'hui, puis votre marge optimisée une fois intégrées les économies mensuelles récurrentes identifiées grâce aux autres simulations réalisées avec vous lors de ce même rendez-vous.",
 };
 
 // Ordre de lecture demandé par le cabinet pour les simulations du dossier
@@ -991,6 +1010,33 @@ function drawConsolidatedBenefitsPage(
   }
 }
 
+// Détail ligne par ligne des optimisations mensuelles déjà intégrées au
+// budget optimisé (voir src/lib/budget.ts) — jamais recalculé ici, une
+// retranscription fidèle du tableau `summary.optimizations` figé au moment
+// de la sauvegarde. Sarah : "il faut pouvoir parer à toutes les
+// éventualités", donc toujours affiché poste par poste, même quand le total
+// net ne change presque pas.
+function drawBudgetOptimizationDetail(pdf: ReportPdf, entry: HistoryEntry) {
+  if (entry.kind !== "budget") return;
+  const s = (entry.summary ?? {}) as Record<string, unknown>;
+  const optimizations = Array.isArray(s.optimizations)
+    ? (s.optimizations as Array<Record<string, unknown>>)
+    : [];
+  pdf.spacer(3);
+  pdf.section("Détail des optimisations identifiées");
+  if (optimizations.length === 0) {
+    pdf.paragraph("Aucune optimisation identifiée dans ce dossier au moment de cette sauvegarde.", {
+      muted: true,
+      italic: true,
+    });
+    return;
+  }
+  pdf.table(
+    ["Optimisation", "CHF/mois"],
+    optimizations.map((o) => [str(o.label) ?? "—", formatCHF(Math.round(num(o.monthlyCHF)))]),
+  );
+}
+
 // ============================================================================
 // SIMULATION (1 page par simulation)
 // ============================================================================
@@ -1070,6 +1116,9 @@ function drawSimulationPage(pdf: ReportPdf, entry: HistoryEntry, includeCharts: 
       }),
     });
   }
+
+  // Section 2ter · détail des optimisations (budget uniquement)
+  drawBudgetOptimizationDetail(pdf, entry);
 
   // Section 3 · graphique simplifié si pertinent — reprend les mêmes lignes
   // que le comparatif ci-dessus quand elles existent (aucune valeur
@@ -1168,6 +1217,11 @@ function drawComparisonSpread(
     const amountTxt = gain.type === "annual" ? `${formatCHF(gain.amount)} par an` : formatCHF(gain.amount);
     pdf.callout(`Ce que vous gagnez : ${amountTxt}.${gain.details ? ` ${gain.details}` : ""}`, "accent");
   }
+
+  // Détail des optimisations (budget uniquement) : on relit la sauvegarde
+  // "projetée", la plus récente des deux, donc celle qui a eu le temps
+  // d'intégrer les optimisations identifiées entre-temps.
+  drawBudgetOptimizationDetail(pdf, projected);
 
   const baseComment = buildComment(baseline);
   if (baseComment) pdf.paragraph(baseComment, { muted: true });
@@ -1509,6 +1563,12 @@ export function formatMetrics(
       if (has(s.taxSavings)) out.push({ label: "Économie fiscale (exonération FR)", value: num(s.taxSavings), tone: "success" });
       if (has(s.totalTaxOnOvertime)) out.push({ label: "Impôt total heures sup", value: num(s.totalTaxOnOvertime), tone: "warning" });
       if (has(s.overtimeCHF)) out.push({ label: "Heures sup brutes", value: num(s.overtimeCHF) });
+      break;
+    }
+    case "budget": {
+      if (has(s.currentMarginCHF)) out.push({ label: "Marge actuelle (CHF/mois)", value: num(s.currentMarginCHF), tone: "warning" });
+      if (has(s.optimizedMarginCHF)) out.push({ label: "Marge optimisée (CHF/mois)", value: num(s.optimizedMarginCHF), tone: "success" });
+      if (has(s.totalMonthlyOptimizationCHF)) out.push({ label: "Total optimisations (CHF/mois)", value: num(s.totalMonthlyOptimizationCHF), tone: "success" });
       break;
     }
   }
@@ -1893,6 +1953,17 @@ export function buildComment(entry: HistoryEntry): string | null {
     case "income_tax":
     case "source_tax":
       return entry.note?.trim() || null;
+    case "budget": {
+      const current = num(s.currentMarginCHF);
+      const optimized = num(s.optimizedMarginCHF);
+      const gain = num(s.totalMonthlyOptimizationCHF);
+      if (!has(s.currentMarginCHF)) return null;
+      const gainTxt =
+        gain > 0
+          ? ` En intégrant les économies mensuelles récurrentes identifiées lors de ce rendez-vous, votre marge optimisée passe à ${formatCHF(optimized)} par mois, soit ${formatCHF(gain)} de plus chaque mois.`
+          : " Aucune économie mensuelle récurrente n'était encore identifiée au moment de cette sauvegarde.";
+      return `Votre marge mensuelle actuelle (revenus moins charges) s'élève à ${formatCHF(current)}.${gainTxt} Ce budget reprend les montants saisis avec vous en entretien ; il doit être mis à jour si votre situation de revenus ou de charges évolue.${entry.note ? ` ${entry.note.trim()}` : ""}`;
+    }
     default:
       return null;
   }
@@ -2124,9 +2195,24 @@ function drawComparisonPage(
       }
     }
   }
+  // Budget — avant = marge mensuelle actuelle, après = marge mensuelle
+  // optimisée, telle que sauvegardée par le calculateur Budget (jamais
+  // recalculée ici, voir drawBudgetOptimizationDetail pour le détail poste
+  // par poste de chaque optimisation, affiché sur sa page de simulation).
+  const budget = pickLatestNonDismissed(entries, "budget");
+  if (budget) {
+    const derived = buildDerivedComparison(budget);
+    if (derived) {
+      const r = derived.rows[0];
+      if (typeof r.current === "number" && typeof r.projected === "number") {
+        rows.push([r.label, formatSplitValue(r.current, r.format), formatSplitValue(r.projected, r.format), formatDelta(r.projected - r.current, r.format)]);
+        rowsGoodness.push(isRowGood(r, r.projected - r.current));
+      }
+    }
+  }
   // Tous gains agrégés
   for (const e of entries) {
-    if (["lpp", "pillar3a", "canton_compare", "director_compensation", "retirement", "vested_benefits", "cross_border", "health_insurance_france", "health_insurance_resident", "investment_compare", "tax_global"].includes(e.kind)) continue;
+    if (["lpp", "pillar3a", "canton_compare", "director_compensation", "retirement", "vested_benefits", "cross_border", "health_insurance_france", "health_insurance_resident", "investment_compare", "tax_global", "budget"].includes(e.kind)) continue;
     if (e.gain_dismissed) continue;
     const g = extractGain(e);
     if (g.type === "none") continue;

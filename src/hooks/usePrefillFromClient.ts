@@ -21,6 +21,7 @@ import {
   toHealthInsuranceResidentInput,
   toOvertimeInput,
   toTaxGlobalInput,
+  toBudgetInput,
   stripUndefined,
   type ClientBundle,
 } from "@/lib/clients/to-calculator-input";
@@ -41,7 +42,8 @@ export type CalculatorKind =
   | "health-insurance-france"
   | "health-insurance-resident"
   | "overtime"
-  | "tax-global";
+  | "tax-global"
+  | "budget";
 
 const MAPPERS = {
   "income-tax": toIncomeTaxInput,
@@ -59,6 +61,7 @@ const MAPPERS = {
   "health-insurance-resident": toHealthInsuranceResidentInput,
   overtime: toOvertimeInput,
   "tax-global": toTaxGlobalInput,
+  budget: toBudgetInput,
 } as const;
 
 export interface PrefillResult<K extends CalculatorKind> {

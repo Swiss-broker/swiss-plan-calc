@@ -520,6 +520,24 @@ export function toOvertimeInput(b: ClientBundle) {
 }
 
 // ──────────────────────────────────────────────────────────────────────────
+// BUDGET (revenus / charges mensuels, établi en début de rendez-vous)
+// ──────────────────────────────────────────────────────────────────────────
+export function toBudgetInput(b: ClientBundle) {
+  // Même estimation "net ≈ 80% du brut" que toOvertimeInput ci-dessus — un
+  // point de départ réaliste à ajuster en direct avec le client, jamais une
+  // valeur fiscalement engageante (pas de calcul d'impôt ici).
+  const main = getTotalGrossIncomeOrUndef(b.client);
+  const spouse = numOrUndef(b.client.spouse_gross_annual_salary);
+  const netSalaryMonthlyCHF = main !== undefined ? Math.round((main * 0.8) / 12) : undefined;
+  const spouseNetSalaryMonthlyCHF =
+    spouse !== undefined ? Math.round((spouse * 0.8) / 12) : undefined;
+  return {
+    netSalaryMonthlyCHF,
+    spouseNetSalaryMonthlyCHF,
+  };
+}
+
+// ──────────────────────────────────────────────────────────────────────────
 // CALCULATEUR FISCAL GLOBAL
 // ──────────────────────────────────────────────────────────────────────────
 export function toTaxGlobalInput(b: ClientBundle) {

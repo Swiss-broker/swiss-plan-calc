@@ -20,6 +20,7 @@ import {
   Lock,
   Plus,
   ChevronDown,
+  Wallet,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import type { Client } from "@/lib/clients/types";
@@ -54,6 +55,7 @@ type CalcChip = {
 };
 
 const CHIPS: CalcChip[] = [
+  { to: "/calculators/budget", kind: "budget", label: "Budget", icon: Wallet },
   { to: "/calculators/tax-global", kind: "income_tax", label: "Fiscalité globale", icon: Receipt },
   { to: "/calculators/avs-ai", kind: "avs_ai", label: "1er pilier AVS/AI", icon: HeartHandshake },
   { to: "/calculators/lpp", kind: "lpp", label: "2e pilier LPP & rachats", icon: Landmark },
@@ -123,6 +125,7 @@ export function ClientCalculatorBar({
   client,
   activeCaseId,
   onSelectCase,
+  onCreateCase,
 }: {
   client: Client;
   /** Dossier actif (depuis l'URL, ?caseId=...) — tant qu'aucun n'est actif,
@@ -131,6 +134,12 @@ export function ClientCalculatorBar({
    *  plat pour ce client. */
   activeCaseId: string | undefined;
   onSelectCase: (caseId: string | undefined) => void;
+  /** Appelé UNIQUEMENT quand un NOUVEAU dossier vient d'être créé (jamais
+   *  pour la sélection d'un dossier existant) — permet de rediriger
+   *  directement vers le calculateur Budget, pour que le budget soit
+   *  toujours établi en premier dans un dossier fraîchement créé. Si
+   *  absent, retombe sur le comportement onSelectCase habituel. */
+  onCreateCase?: (caseId: string) => void;
 }) {
   const { data: latestByKind } = useLatestSimsByKind(client.id);
   const { cases } = useClientCases(client.id);
@@ -148,7 +157,8 @@ export function ClientCalculatorBar({
     if (!title) return;
     createCase.mutate(title, {
       onSuccess: (created) => {
-        onSelectCase(created.id);
+        if (onCreateCase) onCreateCase(created.id);
+        else onSelectCase(created.id);
         setShowNewCaseForm(false);
         setNewCaseName("");
       },
