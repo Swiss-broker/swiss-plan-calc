@@ -11,6 +11,10 @@ import {
 import { LPP_2026 } from "@/lib/lpp/parameters-2026";
 import { lppCreditRate, computeLppInsuredSalary } from "@/lib/lpp";
 
+/** Statut d'activité (fiche client), aligné sur l'enum DB `work_status`. */
+export type WorkStatusForTax =
+  "employee" | "self_employed" | "mixed" | "retired" | "unemployed" | "student" | "director";
+
 export interface IncomeTaxInput {
   /** Code canton */
   canton: string;
@@ -43,6 +47,15 @@ export interface IncomeTaxInput {
   lppInsuredSalary?: number;
   /** Confession du conjoint (impacte la part paroissiale couple) */
   spouseConfession?: "none" | "catholic" | "protestant" | "other";
+  /** Statut d'activité du contribuable (fiche client) — un indépendant suit
+   *  des règles de cotisations sociales et de déductions très différentes
+   *  d'un salarié (voir `estimateSocialContributions` et `computeIncomeTax`
+   *  : barème AVS dégressif au lieu du taux fixe salarié, pas d'AC/ANP/LPP
+   *  automatiques, pas de forfait "frais professionnels" 3% — réservé aux
+   *  salariés, art. 26 LIFD —, plafond 3a "sans LPP" 20%/36'288 CHF au lieu
+   *  de 7'258 CHF). Scope v1 : s'applique au contribuable principal
+   *  uniquement, pas au conjoint (toujours traité comme salarié). */
+  workStatus?: WorkStatusForTax;
 
   // Revenus bruts
   grossSalary: number;
@@ -232,10 +245,72 @@ export const ANP_RATE = 0.004;
 export const ANP_CEILING_2026 = AC_CEILING_2026;
 
 /**
+ * Barème dégressif AVS/AI/APG 2026 pour les INDÉPENDANTS (Art. 21 RAVS) —
+ * taux de cotisation total (AVS 8.1% + AI 1.4% + APG 0.5% = 10% au taux
+ * plein) réduit par palier sous CHF 60'500 de revenu net, jusqu'à une
+ * cotisation minimale forfaitaire de 530 CHF sous 10'100 CHF. Contrairement
+ * au salarié (taux fixe 5.3%, part salarié seulement — l'employeur paie
+ * l'autre moitié), l'indépendant paie SEUL la totalité, mais à un taux
+ * réduit sur les revenus modestes. Source : barème officiel 2026 d'une
+ * caisse de compensation AVS (circulaire NODE AVS, état 01.2026), cohérent
+ * avec la fiche officielle ahv-iv.ch 2.02 (mêmes bornes 10'100/60'500 et
+ * mêmes taux extrêmes 5.371%/10%).
+ */
+const AVS_SELF_EMPLOYED_MIN_INCOME_2026 = 10_100;
+const AVS_SELF_EMPLOYED_MIN_CONTRIBUTION_2026 = 530;
+const AVS_SELF_EMPLOYED_FULL_RATE_THRESHOLD_2026 = 60_500;
+const AVS_SELF_EMPLOYED_FULL_RATE = 0.1;
+const AVS_SELF_EMPLOYED_DEGRESSIVE_BRACKETS_2026: Array<{ upTo: number; rate: number }> = [
+  { upTo: 17_600, rate: 0.05371 },
+  { upTo: 23_000, rate: 0.05494 },
+  { upTo: 25_500, rate: 0.05617 },
+  { upTo: 28_000, rate: 0.05741 },
+  { upTo: 30_500, rate: 0.05864 },
+  { upTo: 33_000, rate: 0.05987 },
+  { upTo: 35_500, rate: 0.06235 },
+  { upTo: 38_000, rate: 0.06481 },
+  { upTo: 40_500, rate: 0.06728 },
+  { upTo: 43_000, rate: 0.06976 },
+  { upTo: 45_500, rate: 0.07222 },
+  { upTo: 48_000, rate: 0.07469 },
+  { upTo: 50_500, rate: 0.0784 },
+  { upTo: 53_000, rate: 0.08209 },
+  { upTo: 55_500, rate: 0.0858 },
+  { upTo: 58_000, rate: 0.08951 },
+  { upTo: 60_500, rate: 0.09321 },
+];
+
+/** Cotisation AVS/AI/APG d'un indépendant (barème dégressif ci-dessus),
+ *  appliquée au revenu net de l'activité indépendante. */
+export function avsAiApgSelfEmployed(netSelfEmploymentIncome: number): number {
+  if (netSelfEmploymentIncome <= 0) return 0;
+  if (netSelfEmploymentIncome < AVS_SELF_EMPLOYED_MIN_INCOME_2026) {
+    return AVS_SELF_EMPLOYED_MIN_CONTRIBUTION_2026;
+  }
+  // > (strict) et non >= : le dernier palier dégressif ("58'000 à 60'500
+  // CHF : 9.321%") couvre 60'500 inclus — le taux plein ne s'applique
+  // qu'au-delà.
+  if (netSelfEmploymentIncome > AVS_SELF_EMPLOYED_FULL_RATE_THRESHOLD_2026) {
+    return Math.round(netSelfEmploymentIncome * AVS_SELF_EMPLOYED_FULL_RATE);
+  }
+  const bracket = AVS_SELF_EMPLOYED_DEGRESSIVE_BRACKETS_2026.find(
+    (b) => netSelfEmploymentIncome <= b.upTo,
+  );
+  const rate = bracket ? bracket.rate : AVS_SELF_EMPLOYED_FULL_RATE;
+  return Math.round(netSelfEmploymentIncome * rate);
+}
+
+/**
  * Estime les cotisations sociales déductibles part salarié (AVS/AI/APG + AC + LPP).
  * - AVS/AI/APG : 5.3% du salaire brut (sans plafond)
  * - AC : 1.1% jusqu'à 148'200 + 0.5% au-delà (cotisation de solidarité)
  * - LPP : bonification selon âge × salaire coordonné × 50% (part salarié)
+ *
+ * Indépendant (`workStatus` "self_employed"/"mixed") : règles totalement
+ * différentes — AVS au barème dégressif (voir avsAiApgSelfEmployed), pas
+ * d'AC (non éligible aux prestations chômage), pas d'ANP automatique (pas
+ * de cotisation salariale, assurance privée non modélisée), pas de LPP
+ * automatique (affiliation facultative, jamais déduite ici par défaut).
  */
 export function estimateSocialContributions(
   grossSalary: number,
@@ -248,7 +323,11 @@ export function estimateSocialContributions(
    *  plafond légal du plan (une valeur au-delà serait incohérente avec le
    *  plan sélectionné). */
   insuredSalaryOverride?: number,
+  workStatus?: IncomeTaxInput["workStatus"],
 ): { avs: number; ac: number; anp: number; lpp: number } {
+  if (workStatus === "self_employed" || workStatus === "mixed") {
+    return { avs: avsAiApgSelfEmployed(grossSalary), ac: 0, anp: 0, lpp: 0 };
+  }
   const avs = grossSalary * AVS_AI_APG_RATE;
   const acBase = Math.min(grossSalary, AC_CEILING_2026) * AC_RATE;
   const acComp = Math.max(0, grossSalary - AC_CEILING_2026) * AC_COMPLEMENTARY_RATE;
@@ -295,12 +374,18 @@ export function computeIncomeTax(input: IncomeTaxInput): IncomeTaxBreakdown {
 
   const grossIncome = grossSalary + spouseSalary + bonus + otherIncome + rental + imputed;
 
-  // Cotisations sociales obligatoires part salarié (déductibles à 100%)
+  // Cotisations sociales obligatoires (déductibles à 100%) — le statut
+  // d'activité n'est appliqué qu'au contribuable principal (scope v1, voir
+  // IncomeTaxInput.workStatus) ; le conjoint reste toujours traité comme
+  // salarié.
+  const isSelfEmployedPrimary =
+    input.workStatus === "self_employed" || input.workStatus === "mixed";
   const social = estimateSocialContributions(
     grossSalary,
     input.age,
     input.lppPlan,
     input.lppInsuredSalary,
+    input.workStatus,
   );
   const spouseSocial = isMarried
     ? estimateSocialContributions(spouseSalary, input.spouseAge, input.spouseLppPlan)
@@ -310,11 +395,17 @@ export function computeIncomeTax(input: IncomeTaxInput): IncomeTaxBreakdown {
   const anpTotal = social.anp + spouseSocial.anp;
   const lppTotal = social.lpp + spouseSocial.lpp;
 
-  // 3a (plafonné)
+  // 3a (plafonné) — indépendant sans LPP (scope v1 : LPP indépendant
+  // toujours 0, voir estimateSocialContributions) : plafond "sans LPP"
+  // (20% du revenu net de l'activité indépendante, max 36'288 CHF) au lieu
+  // du plafond salarié affilié LPP (7'258 CHF).
+  const netSelfEmploymentIncome = Math.max(0, grossSalary - social.avs);
   const spouseHasLPP = isMarried && (input.spouseGrossSalary ?? 0) > 0;
-  const pillar3aCap = isMarried
-    ? PILLAR_3A_MAX_2026_LPP + (spouseHasLPP ? PILLAR_3A_MAX_2026_LPP : 0)
-    : PILLAR_3A_MAX_2026_LPP;
+  const pillar3aCap = isSelfEmployedPrimary
+    ? Math.min(PILLAR_3A_MAX_2026_NO_LPP, netSelfEmploymentIncome * 0.2)
+    : isMarried
+      ? PILLAR_3A_MAX_2026_LPP + (spouseHasLPP ? PILLAR_3A_MAX_2026_LPP : 0)
+      : PILLAR_3A_MAX_2026_LPP;
   const pillar3a = Math.min(input.pillar3aContributions ?? 0, pillar3aCap);
 
   // Rachat LPP (entièrement déductible)
@@ -322,13 +413,16 @@ export function computeIncomeTax(input: IncomeTaxInput): IncomeTaxBreakdown {
 
   // Frais professionnels (forfait fédéral IFD, art. 26 LIFD, confirmé exact
   // par recoupement ESTV) : 3% du salaire NET (brut - AVS - AC - ANP - LPP),
-  // bornes 2'000 / 4'000.
+  // bornes 2'000 / 4'000. RÉSERVÉ AUX SALARIÉS : un indépendant déduit ses
+  // VRAIES charges d'exploitation (saisies via `professionalExpenses`), pas
+  // un forfait sur son bénéfice net — jamais de calcul automatique ici pour
+  // isSelfEmployedPrimary (reste à 0 si rien n'est saisi).
   const netSalaryForForfait = Math.max(
     0,
     grossSalary + spouseSalary - avsTotal - acTotal - anpTotal - lppTotal,
   );
   let professionalIFD = input.professionalExpenses ?? 0;
-  if (!input.professionalExpenses) {
+  if (!input.professionalExpenses && !isSelfEmployedPrimary) {
     const forfait = netSalaryForForfait * PROFESSIONAL_FORFAIT_RATE;
     professionalIFD = Math.max(
       PROFESSIONAL_FORFAIT_MIN,
@@ -340,10 +434,11 @@ export function computeIncomeTax(input: IncomeTaxInput): IncomeTaxBreakdown {
   // indépendamment de l'IFD, PAS une simple troncature de professionalIFD
   // (qui est déjà borné par le plancher fédéral 2'000, plus haut que le
   // plancher cantonal GE de 640 CHF). Pour les cantons non encore
-  // vérifiés, reprend le forfait IFD (comportement historique).
+  // vérifiés, reprend le forfait IFD (comportement historique). Idem
+  // réservé aux salariés.
   const cantonalBounds = PROFESSIONAL_FORFAIT_CANTONAL_BOUNDS_2026[input.canton];
   let professional = professionalIFD;
-  if (cantonalBounds && !input.professionalExpenses) {
+  if (cantonalBounds && !input.professionalExpenses && !isSelfEmployedPrimary) {
     const forfaitCantonal = netSalaryForForfait * PROFESSIONAL_FORFAIT_RATE;
     professional = Math.max(cantonalBounds.min, Math.min(cantonalBounds.max, forfaitCantonal));
   }

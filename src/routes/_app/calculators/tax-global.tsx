@@ -513,11 +513,19 @@ function TaxGlobalCalc() {
                   <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                     <div data-guide="global-gross-salary">
                       <NumField
-                        label={t("calc.global.field.gross_salary")}
+                        label={
+                          form.workStatus === "self_employed" || form.workStatus === "mixed"
+                            ? t("wizard.field.salary.self")
+                            : t("calc.global.field.gross_salary")
+                        }
                         value={form.grossSalary}
                         onChange={(v) => set("grossSalary", v)}
                         suffix="CHF"
-                        tip="Salaire annuel brut figurant sur le certificat de salaire (case 1/8), avant déductions sociales (AVS, AI, AC, LPP)."
+                        tip={
+                          form.workStatus === "self_employed" || form.workStatus === "mixed"
+                            ? "Revenu net de l'activité indépendante (bénéfice après charges d'exploitation réelles, avant AVS) — pas de certificat de salaire pour un indépendant, donc pas de forfait frais pro automatique ni de part salarié AC/LPP."
+                            : "Salaire annuel brut figurant sur le certificat de salaire (case 1/8), avant déductions sociales (AVS, AI, AC, LPP)."
+                        }
                       />
                     </div>
                     <ClientPrefillBadge
@@ -938,11 +946,19 @@ function TaxGlobalCalc() {
                         tip="Frais de repas effectifs si l'employeur ne subventionne pas la cantine. Plafond 3'200 CHF/an. Laissé à 0 : inclus dans le forfait frais professionnels automatique."
                       />
                       <NumField
-                        label="Autres frais professionnels effectifs"
+                        label={
+                          form.workStatus === "self_employed" || form.workStatus === "mixed"
+                            ? "Charges d'exploitation réelles"
+                            : "Autres frais professionnels effectifs"
+                        }
                         value={form.professionalExpenses ?? 0}
                         onChange={(v) => set("professionalExpenses", v)}
                         suffix="CHF"
-                        tip="Remplace ENTIÈREMENT le forfait automatique 3% (2'000-4'000 CHF) si saisi — à n'utiliser que si le total de vos frais professionnels réels (hors déplacement/repas ci-dessus) dépasse le forfait."
+                        tip={
+                          form.workStatus === "self_employed" || form.workStatus === "mixed"
+                            ? "Indépendant : pas de forfait 3% automatique (réservé aux salariés, art. 26 LIFD). Saisissez ici le total de vos charges d'exploitation réelles (loyer professionnel, matériel, sous-traitance...) pour qu'elles soient déduites."
+                            : "Remplace ENTIÈREMENT le forfait automatique 3% (2'000-4'000 CHF) si saisi — à n'utiliser que si le total de vos frais professionnels réels (hors déplacement/repas ci-dessus) dépasse le forfait."
+                        }
                       />
                     </div>
                     <Pillar3bInfoTile

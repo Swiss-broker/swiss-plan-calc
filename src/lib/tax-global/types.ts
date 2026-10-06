@@ -2,7 +2,7 @@
 // Unifie les inputs des 4 moteurs (income, source, cross-border, tou, health-france)
 // dans une seule structure, et expose un résultat consolidé.
 
-import type { IncomeTaxBreakdown } from "@/lib/tax/income";
+import type { IncomeTaxBreakdown, WorkStatusForTax } from "@/lib/tax/income";
 import type { SourceTaxResult } from "@/lib/tax/source";
 import type { CrossBorderResult } from "@/lib/tax/cross-border";
 import type { QuasiResidentResult, TOUComparisonResult } from "@/lib/tax/tou";
@@ -50,9 +50,10 @@ export interface TaxGlobalInput {
   /** Salaire assuré LPP exact (certificat de prévoyance, fiche client) —
    *  remplace l'estimation par formule quand fourni. */
   lppInsuredSalary?: number;
-  /** Statut d'activité (fiche client) — utilisé uniquement pour décider du
-   *  traitement de `familyAllowances` (voir ce champ). */
-  workStatus?: "employee" | "self_employed" | "mixed" | "retired" | "unemployed" | "student" | "director";
+  /** Statut d'activité (fiche client) — utilisé pour `familyAllowances`
+   *  (voir ce champ) et pour tout le traitement indépendant côté moteur
+   *  (voir IncomeTaxInput.workStatus dans @/lib/tax/income). */
+  workStatus?: WorkStatusForTax;
 
   // === Revenus ===
   grossSalary: number;

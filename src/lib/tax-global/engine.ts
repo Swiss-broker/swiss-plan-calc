@@ -85,6 +85,7 @@ export function toIncomeTaxInput(g: TaxGlobalInput): IncomeTaxInput {
     children: g.children,
     childrenAges: g.childrenAges,
     age: g.age,
+    workStatus: g.workStatus,
     lppPlan: g.lppPlan,
     lppInsuredSalary: g.lppInsuredSalary,
     grossSalary: g.grossSalary + g.bonus,
