@@ -74,6 +74,12 @@ export interface IncomeTaxInput {
   lppBuyback?: number;
   /** Frais professionnels effectifs (sinon forfait calculé) */
   professionalExpenses?: number;
+  /** Frais professionnels liés à une activité accessoire (2e emploi
+   *  salarié, distincte de l'activité principale) — déduction séparée du
+   *  forfait "frais professionnels" ci-dessus, jamais calculée
+   *  automatiquement (pas de forfait fiable sans un vrai cas de référence,
+   *  voir income.ts § forfait cantonal). Saisie manuelle uniquement. */
+  secondaryActivityExpenses?: number;
   /** Trajets domicile-travail (CHF) */
   commutingExpenses?: number;
   /** Repas hors domicile (CHF) */
@@ -84,12 +90,25 @@ export interface IncomeTaxInput {
   realEstateMaintenance?: number;
   /** Primes d'assurance maladie + LCA */
   healthInsurancePremiums?: number;
+  /** Réduction individuelle des primes (subside maladie) perçue dans
+   *  l'année — vient réduire la déduction `healthInsurancePremiums`
+   *  (puisque la prime nette réellement payée est plus basse), avant
+   *  application des plafonds canton/IFD. */
+  healthInsuranceSubsidy?: number;
   /** Frais de garde (CHF) · par enfant ouvert au max légal */
   childCareCosts?: number;
   /** Frais médicaux (au-delà de 5% du revenu net — IFD + ICC) */
   medicalExpenses?: number;
   /** Donations à but utilité publique */
   donations?: number;
+  /** Charges de location — déduction cantonale ne concernant QUE VD et ZG
+   *  (confirmé par l'infobulle officielle ESTV : "pertinente uniquement
+   *  pour les cantons de Vaud et de Zoug"), ignorée pour tout autre
+   *  canton. Saisie manuelle uniquement, jamais de valeur par défaut
+   *  devinée (ESTV propose 25% du revenu si rien n'est saisi, mais la
+   *  base légale exacte n'a pas été vérifiée — on laisse le courtier
+   *  saisir le vrai montant plutôt que de deviner ce forfait). */
+  rentalCharges?: number;
 
   // Patrimoine
   netWealth?: number;
@@ -113,6 +132,7 @@ export interface IncomeTaxBreakdown {
     pillar3a: number;
     lppBuyback: number;
     professional: number;
+    secondaryActivity: number;
     commuting: number;
     meals: number;
     mortgage: number;
@@ -121,6 +141,7 @@ export interface IncomeTaxBreakdown {
     childCare: number;
     medical: number;
     donations: number;
+    rentalCharges: number;
     children: number;
     married: number;
   };
@@ -443,6 +464,12 @@ export function computeIncomeTax(input: IncomeTaxInput): IncomeTaxBreakdown {
     professional = Math.max(cantonalBounds.min, Math.min(cantonalBounds.max, forfaitCantonal));
   }
 
+  // Frais professionnels activité accessoire — déduction distincte du
+  // forfait principal ci-dessus (2e emploi salarié), toujours saisie à la
+  // main, jamais de forfait automatique (pas de cas de référence vérifié
+  // pour une formule fiable). Même montant canton et IFD.
+  const secondaryActivity = input.secondaryActivityExpenses ?? 0;
+
   const commuting = Math.min(input.commutingExpenses ?? 0, COMMUTING_MAX_FEDERAL_2026);
   const meals = Math.min(input.mealExpenses ?? 0, MEALS_FORFAIT_ANNUAL);
 
@@ -467,8 +494,15 @@ export function computeIncomeTax(input: IncomeTaxInput): IncomeTaxBreakdown {
       : HEALTH_INSURANCE_MAX_SINGLE;
   const perChildCC = cantonalForfait ? cantonalForfait.perChild : HEALTH_INSURANCE_PER_CHILD;
   const healthChildrenCC = (input.children ?? 0) * perChildCC;
+  // Réduction individuelle des primes (subside) : vient réduire la prime
+  // réellement payée AVANT application du plafond — un subside ne peut pas
+  // faire passer la déduction sous 0.
+  const healthSubsidy = input.healthInsuranceSubsidy ?? 0;
+  const netPremiumsPaid = input.healthInsurancePremiums
+    ? Math.max(0, input.healthInsurancePremiums - healthSubsidy)
+    : 0;
   const healthInsurance = input.healthInsurancePremiums
-    ? Math.min(input.healthInsurancePremiums, healthBaseCC + healthChildrenCC)
+    ? Math.min(netPremiumsPaid, healthBaseCC + healthChildrenCC)
     : healthBaseCC + healthChildrenCC;
 
   // Plafond fédéral (art. 33 al. 1 let. g LIFD), toujours le même quel que
@@ -477,7 +511,7 @@ export function computeIncomeTax(input: IncomeTaxInput): IncomeTaxBreakdown {
   const healthBaseIFD = isMarried ? HEALTH_INSURANCE_MAX_MARRIED : HEALTH_INSURANCE_MAX_SINGLE;
   const healthChildrenIFD = (input.children ?? 0) * HEALTH_INSURANCE_PER_CHILD;
   const healthInsuranceIFD = input.healthInsurancePremiums
-    ? Math.min(input.healthInsurancePremiums, healthBaseIFD + healthChildrenIFD)
+    ? Math.min(netPremiumsPaid, healthBaseIFD + healthChildrenIFD)
     : healthBaseIFD + healthChildrenIFD;
 
   const childCare = Math.min(
@@ -493,6 +527,11 @@ export function computeIncomeTax(input: IncomeTaxInput): IncomeTaxBreakdown {
   const childrenDed = 0; // intégré au calcul cantonal
   const marriedDed = 0; // intégré au calcul cantonal
 
+  // Charges de location — déduction CANTONALE uniquement, ne concernant que
+  // VD et ZG (voir IncomeTaxInput.rentalCharges), jamais l'IFD.
+  const rentalCharges =
+    input.canton === "VD" || input.canton === "ZG" ? (input.rentalCharges ?? 0) : 0;
+
   const totalDeductions =
     avsTotal +
     acTotal +
@@ -501,6 +540,7 @@ export function computeIncomeTax(input: IncomeTaxInput): IncomeTaxBreakdown {
     pillar3a +
     lppBuyback +
     professional +
+    secondaryActivity +
     commuting +
     meals +
     mortgage +
@@ -508,14 +548,21 @@ export function computeIncomeTax(input: IncomeTaxInput): IncomeTaxBreakdown {
     healthInsurance +
     childCare +
     medical +
-    donations;
+    donations +
+    rentalCharges;
 
   const taxableIncomeCC = Math.max(0, grossIncome - totalDeductions);
   // IFD : base séparée de l'ICC depuis le 05.10.2026 — reprend les mêmes
   // déductions que `totalDeductions` SAUF la prime maladie (plafond fédéral
-  // différent du cantonal, voir healthInsuranceIFD ci-dessus).
+  // différent du cantonal, voir healthInsuranceIFD ci-dessus) et SAUF les
+  // charges de location (purement cantonales, VD/ZG).
   const totalDeductionsIFD =
-    totalDeductions - healthInsurance + healthInsuranceIFD - professional + professionalIFD;
+    totalDeductions -
+    healthInsurance +
+    healthInsuranceIFD -
+    professional +
+    professionalIFD -
+    rentalCharges;
   // Déduction fédérale supplémentaire par enfant à charge (art. 35 LIFD),
   // corrigée le 05.10.2026 : 6'700 → 6'800 CHF/enfant (valeur 2026 indexée,
   // confirmée par recoupement ESTV) + rabais 263 CHF/enfant sur l'impôt
@@ -569,6 +616,7 @@ export function computeIncomeTax(input: IncomeTaxInput): IncomeTaxBreakdown {
       pillar3a,
       lppBuyback,
       professional,
+      secondaryActivity,
       commuting,
       meals,
       mortgage,
@@ -577,6 +625,7 @@ export function computeIncomeTax(input: IncomeTaxInput): IncomeTaxBreakdown {
       childCare,
       medical,
       donations,
+      rentalCharges,
       children: childrenDed,
       married: marriedDed,
     },

@@ -896,6 +896,22 @@ function TaxGlobalCalc() {
                         tip={deductionTip(result.regime, "health")}
                       />
                       <NumField
+                        label="Réduction individuelle des primes (subside)"
+                        value={form.healthInsuranceSubsidy ?? 0}
+                        onChange={(v) => set("healthInsuranceSubsidy", v)}
+                        suffix="CHF"
+                        tip="Subside maladie perçu dans l'année (aide au paiement des primes). Vient réduire la prime nette réellement payée, donc la déduction ci-dessus — laissé à 0 si vous n'en touchez pas."
+                      />
+                      {(form.canton === "VD" || form.canton === "ZG") && (
+                        <NumField
+                          label="Charges de location"
+                          value={form.rentalCharges ?? 0}
+                          onChange={(v) => set("rentalCharges", v)}
+                          suffix="CHF"
+                          tip="Déduction spécifique aux cantons de Vaud et de Zoug uniquement (confirmé par le simulateur officiel ESTV). Laissez à 0 si vous n'avez pas de charges de location à déclarer."
+                        />
+                      )}
+                      <NumField
                         label={t("calc.global.field.child_care")}
                         value={form.childCareCosts}
                         onChange={(v) => set("childCareCosts", v)}
@@ -961,6 +977,13 @@ function TaxGlobalCalc() {
                             ? "Indépendant : pas de forfait 3% automatique (réservé aux salariés, art. 26 LIFD). Saisissez ici le total de vos charges d'exploitation réelles (loyer professionnel, matériel, sous-traitance...) pour qu'elles soient déduites."
                             : "Remplace ENTIÈREMENT le forfait automatique 3% (2'000-4'000 CHF) si saisi — à n'utiliser que si le total de vos frais professionnels réels (hors déplacement/repas ci-dessus) dépasse le forfait."
                         }
+                      />
+                      <NumField
+                        label="Frais pro. activité accessoire"
+                        value={form.secondaryActivityExpenses ?? 0}
+                        onChange={(v) => set("secondaryActivityExpenses", v)}
+                        suffix="CHF"
+                        tip="Frais professionnels liés à un 2e emploi salarié (distinct de l'activité principale ci-dessus), par exemple utile pour un revenu accessoire indépendant. Déduction séparée, toujours saisie à la main (pas de forfait automatique)."
                       />
                     </div>
                     <Pillar3bInfoTile

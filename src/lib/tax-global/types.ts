@@ -94,6 +94,15 @@ export interface TaxGlobalInput {
   mealExpenses?: number;
   /** Frais professionnels effectifs, si supérieurs au forfait 3%/2'000-4'000. */
   professionalExpenses?: number;
+  /** Frais professionnels liés à une activité accessoire (2e emploi
+   *  salarié) — déduction distincte, toujours saisie à la main. */
+  secondaryActivityExpenses?: number;
+  /** Réduction individuelle des primes (subside maladie) perçue dans
+   *  l'année — réduit la déduction `healthInsurancePremiums`. */
+  healthInsuranceSubsidy?: number;
+  /** Charges de location — déduction cantonale ne concernant que VD et ZG
+   *  (confirmé ESTV), ignorée pour tout autre canton. */
+  rentalCharges?: number;
 
   // === Frontaliers ===
   eurChfRate: number;

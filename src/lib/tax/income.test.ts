@@ -83,3 +83,84 @@ describe("computeIncomeTax — indépendant (workStatus self_employed)", () => {
     expect(result.deductions.professional).toBeGreaterThan(0);
   });
 });
+
+describe("computeIncomeTax — frais pro. activité accessoire, subside maladie, charges de location", () => {
+  it("frais pro. activité accessoire : déduction distincte, toujours saisie à la main", () => {
+    const result = computeIncomeTax({
+      canton: "VD",
+      status: "single",
+      grossSalary: 80_000,
+      secondaryActivityExpenses: 1_500,
+    });
+    expect(result.deductions.secondaryActivity).toBe(1_500);
+    // Base 0 par défaut : n'apparaît pas tant que rien n'est saisi.
+    const baseline = computeIncomeTax({ canton: "VD", status: "single", grossSalary: 80_000 });
+    expect(baseline.deductions.secondaryActivity).toBe(0);
+  });
+
+  it("réduction individuelle des primes : réduit la prime nette déductible, jamais sous 0", () => {
+    const withoutSubsidy = computeIncomeTax({
+      canton: "VD",
+      status: "single",
+      grossSalary: 80_000,
+      healthInsurancePremiums: 5_000,
+    });
+    const withSubsidy = computeIncomeTax({
+      canton: "VD",
+      status: "single",
+      grossSalary: 80_000,
+      healthInsurancePremiums: 5_000,
+      healthInsuranceSubsidy: 2_000,
+    });
+    expect(withSubsidy.deductions.healthInsurance).toBeLessThan(
+      withoutSubsidy.deductions.healthInsurance,
+    );
+    // Subside supérieur aux primes versées : la déduction ne devient jamais négative.
+    const subsidyExceedsPremiums = computeIncomeTax({
+      canton: "VD",
+      status: "single",
+      grossSalary: 80_000,
+      healthInsurancePremiums: 1_000,
+      healthInsuranceSubsidy: 5_000,
+    });
+    expect(subsidyExceedsPremiums.deductions.healthInsurance).toBe(0);
+  });
+
+  it("charges de location : déductible à Vaud et Zoug uniquement, ignorée ailleurs", () => {
+    const vd = computeIncomeTax({
+      canton: "VD",
+      status: "single",
+      grossSalary: 80_000,
+      rentalCharges: 3_000,
+    });
+    expect(vd.deductions.rentalCharges).toBe(3_000);
+
+    const zg = computeIncomeTax({
+      canton: "ZG",
+      status: "single",
+      grossSalary: 80_000,
+      rentalCharges: 3_000,
+    });
+    expect(zg.deductions.rentalCharges).toBe(3_000);
+
+    const ge = computeIncomeTax({
+      canton: "GE",
+      status: "single",
+      grossSalary: 80_000,
+      rentalCharges: 3_000,
+    });
+    expect(ge.deductions.rentalCharges).toBe(0);
+  });
+
+  it("charges de location : déduction cantonale uniquement, jamais appliquée à l'IFD", () => {
+    const withRental = computeIncomeTax({
+      canton: "VD",
+      status: "single",
+      grossSalary: 80_000,
+      rentalCharges: 3_000,
+    });
+    const withoutRental = computeIncomeTax({ canton: "VD", status: "single", grossSalary: 80_000 });
+    expect(withRental.taxableIncomeCC).toBe(withoutRental.taxableIncomeCC - 3_000);
+    expect(withRental.taxableIncomeIFD).toBeCloseTo(withoutRental.taxableIncomeIFD, 6);
+  });
+});
