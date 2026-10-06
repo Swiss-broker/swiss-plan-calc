@@ -28,10 +28,17 @@
 //   3. Forfait assurance maladie : séparé canton/IFD, GE 2'400 → 4'560
 //   4. Déduction enfant : GE 13'000 → 13'698, IFD 6'700 → 6'800
 //   5. Impôt personnel GE (25 CHF/personne seule) : ajouté
-// Le résultat GE (80'000 CHF, single, 0 enfant) converge maintenant à ~1%
-// du calculateur officiel (10'322.98 CHF vs 10'453 CHF ESTV) — l'écart
-// résiduel vient du forfait "frais professionnels" cantonal GE (non
-// résolu, voir le commentaire sur `professional` dans income.ts).
+//
+// Re-régénérées le 06.10.2026 pour les 4 cas GE : forfait "frais
+// professionnels" CANTONAL corrigé (voir
+// PROFESSIONAL_FORFAIT_CANTONAL_BOUNDS_2026 dans income.ts) — jusqu'ici le
+// moteur réutilisait par erreur la valeur IFD (plafond 4'000 CHF) comme
+// déduction cantonale, alors que GE a ses propres bornes 640/1'817 CHF
+// (recoupées contre un cas de référence ESTV officiel avec 2 enfants,
+// fourni par l'utilisatrice : -1'817 CHF cantonal confirmé exact pour un
+// salaire net de 71'883 CHF). Le cas GE 80'000 CHF single/0 enfant
+// converge maintenant à ~0.5% du calculateur officiel (10'401.54 CHF vs
+// 10'453 CHF ESTV), contre ~1.3% avant ce correctif.
 
 import { describe, expect, it } from "vitest";
 import { computeTaxGlobal } from "./engine";
@@ -58,11 +65,11 @@ const REFERENCE_CASES: ReferenceCase[] = [
     desc: "GE \u2014 C\u00e9libataire, sans enfant, 80'000 CHF",
     overrides: { canton: "GE", civilStatus: "single", children: 0, grossSalary: 80000 },
     expected: {
-      totalTaxCHF: 10322.98,
-      effectiveRate: 12.9,
+      totalTaxCHF: 10401.54,
+      effectiveRate: 13,
       ifd: 907.65,
-      cantonal: 6953.02,
-      communal: 2437.31,
+      cantonal: 7011.19,
+      communal: 2457.7,
       wealthTax: 0,
     },
   },
@@ -77,11 +84,11 @@ const REFERENCE_CASES: ReferenceCase[] = [
       grossSalary: 100000,
     },
     expected: {
-      totalTaxCHF: 8100.51,
-      effectiveRate: 8.1,
+      totalTaxCHF: 8278.75,
+      effectiveRate: 8.3,
       ifd: 1112.45,
-      cantonal: 5137.25,
-      communal: 1800.81,
+      cantonal: 5269.23,
+      communal: 1847.07,
       wealthTax: 0,
     },
   },
@@ -96,11 +103,11 @@ const REFERENCE_CASES: ReferenceCase[] = [
       grossSalary: 120000,
     },
     expected: {
-      totalTaxCHF: 5400.88,
-      effectiveRate: 4.5,
+      totalTaxCHF: 5676.38,
+      effectiveRate: 4.7,
       ifd: 709.7,
-      cantonal: 3436.54,
-      communal: 1204.64,
+      cantonal: 3640.53,
+      communal: 1276.15,
       wealthTax: 0,
     },
   },
@@ -115,11 +122,11 @@ const REFERENCE_CASES: ReferenceCase[] = [
       netWealth: 300000,
     },
     expected: {
-      totalTaxCHF: 30407.5,
-      effectiveRate: 20.3,
+      totalTaxCHF: 30981.52,
+      effectiveRate: 20.7,
       ifd: 5209.15,
-      cantonal: 18388.97,
-      communal: 6446.06,
+      cantonal: 18814,
+      communal: 6595.05,
       wealthTax: 338.32,
     },
   },

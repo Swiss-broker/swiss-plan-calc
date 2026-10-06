@@ -139,15 +139,27 @@ export const PROFESSIONAL_FORFAIT_RATE = 0.03; // 3% du salaire net
 export const PROFESSIONAL_FORFAIT_MIN = 2_000;
 export const PROFESSIONAL_FORFAIT_MAX = 4_000;
 /**
- * Plafond cantonal du forfait "frais professionnels", si différent du
- * plafond fédéral (PROFESSIONAL_FORFAIT_MAX) — voir le commentaire sur
- * `professionalCantonalCap` dans computeIncomeTax. Vide pour l'instant :
- * GE est identifié comme ayant un forfait différent (recoupement ESTV),
- * mais la formule exacte n'a pas pu être déterminée avec confiance à
- * partir d'un seul cas de référence. Ne pas remplir une valeur ici sans
- * l'avoir vérifiée contre au moins deux cas de référence officiels.
+ * Bornes CANTONALES du forfait "frais professionnels" (même taux 3% que
+ * l'IFD, mais min/max propres au canton — différents du fédéral
+ * PROFESSIONAL_FORFAIT_MIN/MAX). Corrigé le 06.10.2026 : GE ajouté avec
+ * min 640 / max 1'817 CHF, confirmé par recoupement contre le calculateur
+ * officiel ESTV (-1'817 CHF cantonal pour un salaire net de 71'883 CHF,
+ * contre -2'156 CHF IFD pour le même salaire — l'ancien moteur appliquait
+ * à tort la valeur IFD aux deux bases, surestimant la déduction cantonale
+ * d'environ 339 CHF). Plafond 1'817 confirmé exact par ce cas réel ; le
+ * plancher 640 CHF est repris de sources tierces convergentes (AFC-GE,
+ * cabinets fiscaux genevois) mais n'a pas encore été vérifié contre un
+ * cas de référence à bas revenu — à confirmer dès qu'un tel cas est
+ * disponible. Vide pour les autres cantons tant qu'ils n'ont pas été
+ * vérifiés individuellement (retombent alors sur la valeur IFD, comme
+ * avant).
  */
-export const PROFESSIONAL_FORFAIT_CANTONAL_CAP_2026: Record<string, number> = {};
+export const PROFESSIONAL_FORFAIT_CANTONAL_BOUNDS_2026: Record<
+  string,
+  { min: number; max: number }
+> = {
+  GE: { min: 640, max: 1_817 },
+};
 /** Forfait fédéral assurance maladie (IFD) */
 export const HEALTH_INSURANCE_MAX_SINGLE = 1_800;
 export const HEALTH_INSURANCE_MAX_MARRIED = 3_600;
@@ -311,32 +323,30 @@ export function computeIncomeTax(input: IncomeTaxInput): IncomeTaxBreakdown {
   // Frais professionnels (forfait fédéral IFD, art. 26 LIFD, confirmé exact
   // par recoupement ESTV) : 3% du salaire NET (brut - AVS - AC - ANP - LPP),
   // bornes 2'000 / 4'000.
+  const netSalaryForForfait = Math.max(
+    0,
+    grossSalary + spouseSalary - avsTotal - acTotal - anpTotal - lppTotal,
+  );
   let professionalIFD = input.professionalExpenses ?? 0;
   if (!input.professionalExpenses) {
-    const netSalary = Math.max(
-      0,
-      grossSalary + spouseSalary - avsTotal - acTotal - anpTotal - lppTotal,
-    );
-    const forfait = netSalary * PROFESSIONAL_FORFAIT_RATE;
+    const forfait = netSalaryForForfait * PROFESSIONAL_FORFAIT_RATE;
     professionalIFD = Math.max(
       PROFESSIONAL_FORFAIT_MIN,
       Math.min(PROFESSIONAL_FORFAIT_MAX, forfait),
     );
   }
-  // Forfait CANTONAL : identifié le 05.10.2026 comme DIFFÉRENT du fédéral
-  // (recoupement ESTV GE : -1'817 CHF cantonal contre -2'156 CHF IFD pour le
-  // même salaire net de 71'883 CHF) — mais la formule cantonale exacte
-  // (taux ? plafond propre à GE ? base de calcul différente ?) n'a pas pu
-  // être déterminée de façon fiable à partir d'un seul cas de référence.
-  // Plutôt que de deviner un plafond et introduire une NOUVELLE valeur non
-  // vérifiée, le forfait cantonal reprend pour l'instant le forfait IFD
-  // (comportement historique, connu approximatif) — voir
-  // PROFESSIONAL_FORFAIT_CANTONAL_CAP_2026 pour ajouter un canton vérifié.
-  const professionalCantonalCap = PROFESSIONAL_FORFAIT_CANTONAL_CAP_2026[input.canton];
-  const professional =
-    professionalCantonalCap !== undefined && !input.professionalExpenses
-      ? Math.min(professionalIFD, professionalCantonalCap)
-      : professionalIFD;
+  // Forfait CANTONAL : même taux 3%, mais bornes min/max propres au canton
+  // (voir PROFESSIONAL_FORFAIT_CANTONAL_BOUNDS_2026) — recalculé
+  // indépendamment de l'IFD, PAS une simple troncature de professionalIFD
+  // (qui est déjà borné par le plancher fédéral 2'000, plus haut que le
+  // plancher cantonal GE de 640 CHF). Pour les cantons non encore
+  // vérifiés, reprend le forfait IFD (comportement historique).
+  const cantonalBounds = PROFESSIONAL_FORFAIT_CANTONAL_BOUNDS_2026[input.canton];
+  let professional = professionalIFD;
+  if (cantonalBounds && !input.professionalExpenses) {
+    const forfaitCantonal = netSalaryForForfait * PROFESSIONAL_FORFAIT_RATE;
+    professional = Math.max(cantonalBounds.min, Math.min(cantonalBounds.max, forfaitCantonal));
+  }
 
   const commuting = Math.min(input.commutingExpenses ?? 0, COMMUTING_MAX_FEDERAL_2026);
   const meals = Math.min(input.mealExpenses ?? 0, MEALS_FORFAIT_ANNUAL);
