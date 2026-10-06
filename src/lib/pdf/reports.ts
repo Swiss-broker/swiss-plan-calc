@@ -983,6 +983,26 @@ export function exportHealthFrancePdf(args: {
     { label: `Abattement ${input.taxYear} (EUR)`, value: result.abatementEUR },
   ]);
 
+  // Économie CMU → LAMal (mensuelle/annuelle/cumulée) : même donnée que le
+  // bloc dédié de la synthèse globale (cahier des charges point 3), ajoutée
+  // ici aussi pour que ce PDF individuel reste cohérent avec elle.
+  if (result.cmuToLamalAnnualSavingsCHF !== 0) {
+    pdf.section("Économie CMU → LAMal");
+    pdf.metricsGrid([
+      { label: "Économie mensuelle", value: result.cmuToLamalMonthlySavingsCHF, tone: "success" },
+      { label: "Économie annuelle", value: result.cmuToLamalAnnualSavingsCHF, tone: "success" },
+      ...(result.cmuToLamalCumulativeSavingsCHF !== null
+        ? [
+            {
+              label: `Économie cumulée (${result.yearsToRetirement} ans)`,
+              value: result.cmuToLamalCumulativeSavingsCHF,
+              tone: "success" as const,
+            },
+          ]
+        : []),
+    ]);
+  }
+
   pdf.section("Profil");
   pdf.kvTable([
     ["Salaire suisse brut", formatCHF(input.swissGrossSalaryCHF)],
@@ -1034,6 +1054,7 @@ export function exportHealthResidentPdf(args: {
   pdf.metricsGrid([
     { label: "Prime actuelle (CHF/an)", value: result.currentAnnualCHF, tone: "warning" },
     { label: "Prime optimisée (CHF/an)", value: result.optimizedAnnualCHF, tone: "success" },
+    { label: "Économie mensuelle", value: result.monthlySavingsCHF, tone: "success" },
     { label: "Économie annuelle", value: result.annualSavingsCHF, tone: "success" },
     ...(result.cumulativeSavingsCHF !== null
       ? [{ label: `Économie cumulée (${result.yearsToRetirement} ans)`, value: result.cumulativeSavingsCHF, tone: "success" as const }]

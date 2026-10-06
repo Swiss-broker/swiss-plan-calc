@@ -2055,7 +2055,7 @@ function drawComparisonPage(
   // (buildDerivedComparison), pour ne jamais afficher un écart différent
   // d'une page à l'autre du même dossier (cahier des charges point 3).
   const hif = pickLatestNonDismissed(entries, "health_insurance_france");
-  let hifCumulative: { amount: number; years: number } | null = null;
+  let hifCumulative: { amount: number; years: number; monthly: number } | null = null;
   if (hif) {
     const derived = buildDerivedComparison(hif);
     if (derived) {
@@ -2067,13 +2067,14 @@ function drawComparisonPage(
     }
     const cumulative = num(hif.summary?.cmuToLamalCumulativeSavingsCHF);
     const years = num(hif.summary?.yearsToRetirement);
-    if (cumulative > 0 && years > 0) hifCumulative = { amount: cumulative, years };
+    const monthly = num(hif.summary?.cmuToLamalMonthlySavingsCHF);
+    if (cumulative > 0 && years > 0) hifCumulative = { amount: cumulative, years, monthly };
   }
   // Caisse maladie résident — avant = prime actuelle, après = prime
   // optimisée, même logique que CNTFS/LAMal ci-dessus (cahier des charges
   // point 8).
   const hir = pickLatestNonDismissed(entries, "health_insurance_resident");
-  let hirCumulative: { amount: number; years: number } | null = null;
+  let hirCumulative: { amount: number; years: number; monthly: number } | null = null;
   if (hir) {
     const derived = buildDerivedComparison(hir);
     if (derived) {
@@ -2085,7 +2086,8 @@ function drawComparisonPage(
     }
     const cumulative = num(hir.summary?.cumulativeSavingsCHF);
     const years = num(hir.summary?.yearsToRetirement);
-    if (cumulative > 0 && years > 0) hirCumulative = { amount: cumulative, years };
+    const monthly = num(hir.summary?.monthlySavingsCHF);
+    if (cumulative > 0 && years > 0) hirCumulative = { amount: cumulative, years, monthly };
   }
   // Comparateur d'investissements — avant = Investissement A, après =
   // Investissement B, delta positif mis en évidence par la coloration
@@ -2141,6 +2143,9 @@ function drawComparisonPage(
       pdf,
       `ÉCONOMIE CMU → LAMAL CUMULÉE JUSQU'À LA RETRAITE (${hifCumulative.years} ANS)`,
       hifCumulative.amount,
+      hifCumulative.monthly > 0
+        ? `Soit ${formatCHF(hifCumulative.monthly)} / mois`
+        : undefined,
     );
   }
 
@@ -2152,6 +2157,9 @@ function drawComparisonPage(
       pdf,
       `ÉCONOMIE CAISSE MALADIE CUMULÉE JUSQU'À LA RETRAITE (${hirCumulative.years} ANS)`,
       hirCumulative.amount,
+      hirCumulative.monthly > 0
+        ? `Soit ${formatCHF(hirCumulative.monthly)} / mois`
+        : undefined,
     );
   }
 
@@ -2234,9 +2242,17 @@ function drawGainHighlight(pdf: ReportPdf, totals: Totals) {
 // Encart de mise en évidence générique (même gabarit visuel que
 // drawGainHighlight), pour un montant unique isolé du total agrégé —
 // utilisé pour l'économie CMU → LAMal cumulée jusqu'à la retraite.
-function drawLabeledHighlight(pdf: ReportPdf, label: string, amount: number) {
+/** `subtext` optionnel : économie mensuelle affichée sous le libellé (ex.
+ *  "Soit 108 CHF / mois"), en plus du montant cumulé mis en avant — cette
+ *  donnée existe déjà dans le résumé sauvegardé par les calculateurs CMU/
+ *  LAMal et Caisse maladie résident mais n'était montrée qu'à l'écran, pas
+ *  dans le PDF (cahier des charges points 3 et 8). */
+function drawLabeledHighlight(pdf: ReportPdf, label: string, amount: number, subtext?: string) {
   const { doc, margin, contentWidth } = pdf;
-  const h = 26;
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(10);
+  const labelLines = doc.splitTextToSize(label, contentWidth - 12) as string[];
+  const h = 18 + labelLines.length * 4.2 + (subtext ? 5 : 0);
   pdf.ensureSpace(h + 4);
   const y = pdf.cursorY;
   doc.setFillColor(236, 253, 245);
@@ -2246,8 +2262,13 @@ function drawLabeledHighlight(pdf: ReportPdf, label: string, amount: number) {
   doc.setFont("helvetica", "bold");
   doc.setFontSize(10);
   doc.setTextColor(22, 101, 52);
-  const labelLines = doc.splitTextToSize(label, contentWidth - 12) as string[];
   doc.text(labelLines, margin + 6, y + 9);
+  if (subtext) {
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(8);
+    doc.setTextColor(22, 101, 52);
+    doc.text(subtext, margin + 6, y + 9 + labelLines.length * 4.2 + 3);
+  }
   doc.setFontSize(18);
   doc.setTextColor(22, 163, 74);
   doc.text(formatCHF(amount), margin + contentWidth - 6, y + h - 7, { align: "right" });
