@@ -10,8 +10,11 @@ import {
   consolidatePensionBenefits,
   consolidateOptimizedBenefits,
   getConsolidatedCapitals,
+  getOptimizedConsolidatedCapitals,
   PENSION_EVENT_LABELS,
   type ConsolidatedBenefits,
+  type ConsolidatedCapitals,
+  type ConsolidatedItem,
   type ConsolidatedScenario,
   type PensionEvent,
 } from "@/lib/pension-consolidation";
@@ -41,6 +44,10 @@ export function ConsolidatedBenefitsCard({ bundle }: Props) {
   const current = useMemo(() => consolidatePensionBenefits(bundle, refs), [bundle, refs]);
   const optimized = useMemo(() => consolidateOptimizedBenefits(bundle, refs), [bundle, refs]);
   const capitals = useMemo(() => getConsolidatedCapitals(bundle, refs), [bundle, refs]);
+  const optimizedCapitals = useMemo(
+    () => getOptimizedConsolidatedCapitals(bundle, refs),
+    [bundle, refs],
+  );
   const [tab, setTab] = useState<PensionEvent>("retirement");
 
   return (
@@ -66,6 +73,9 @@ export function ConsolidatedBenefitsCard({ bundle }: Props) {
           isEstimate={capitals.pillar3aProjectedIsEstimate}
         />
       </div>
+
+      <CapitalTaxCompare current={capitals} optimized={optimizedCapitals} />
+
       <Tabs value={tab} onValueChange={(v) => setTab(v as PensionEvent)}>
         <TabsList className="grid w-full grid-cols-3">
           {(Object.keys(PENSION_EVENT_LABELS) as PensionEvent[]).map((ev) => {
@@ -86,6 +96,10 @@ export function ConsolidatedBenefitsCard({ bundle }: Props) {
       </Tabs>
     </DashboardCard>
   );
+}
+
+function sumByPillar(items: ConsolidatedItem[], pillar: "LPP" | "3A"): number {
+  return items.filter((i) => i.pillar === pillar).reduce((s, i) => s + i.annual, 0);
 }
 
 function SplitPanel({
@@ -124,9 +138,14 @@ function SplitPanel({
       projected: opt.pillar1.totalAnnual,
     },
     {
-      label: "2e pilier + 3a",
-      current: cur.pillar2.totalAnnual,
-      projected: opt.pillar2.totalAnnual,
+      label: "2e pilier (LPP)",
+      current: sumByPillar(cur.pillar2.items, "LPP"),
+      projected: sumByPillar(opt.pillar2.items, "LPP"),
+    },
+    {
+      label: "3e pilier A",
+      current: sumByPillar(cur.pillar2.items, "3A"),
+      projected: sumByPillar(opt.pillar2.items, "3A"),
     },
   ];
 
@@ -153,6 +172,76 @@ function SplitPanel({
       currentExtra={<PillarDetails scenario={cur} tone="current" />}
       projectedExtra={<PillarDetails scenario={opt} tone="projected" />}
     />
+  );
+}
+
+/** Comparaison brut / net d'impôt des capitaux 2e + 3e pilier, actuel vs
+ *  optimisé — le vrai chiffre à montrer au client, pas juste le capital
+ *  brut (voir capitalWithdrawalTax dans pension-consolidation). */
+function CapitalTaxCompare({
+  current,
+  optimized,
+}: {
+  current: ConsolidatedCapitals;
+  optimized: ConsolidatedCapitals;
+}) {
+  if (current.totalCapitalGross <= 0 && optimized.totalCapitalGross <= 0) return null;
+
+  const rows: SplitRow[] = [
+    {
+      label: "Capital LPP (brut)",
+      current: current.lppProjectedCapital,
+      projected: optimized.lppProjectedCapital,
+    },
+    {
+      label: "Capital LPP (net d'impôt)",
+      current: current.lppProjectedCapitalNet,
+      projected: optimized.lppProjectedCapitalNet,
+    },
+    {
+      label: "Capital 3e pilier A (brut)",
+      current: current.pillar3aProjectedCapital,
+      projected: optimized.pillar3aProjectedCapital,
+    },
+    {
+      label: "Capital 3e pilier A (net d'impôt)",
+      current: current.pillar3aProjectedCapitalNet,
+      projected: optimized.pillar3aProjectedCapitalNet,
+    },
+    {
+      label: "Total consolidé (brut)",
+      current: current.totalCapitalGross,
+      projected: optimized.totalCapitalGross,
+    },
+    {
+      label: "Total consolidé (net d'impôt)",
+      current: current.totalCapitalNet,
+      projected: optimized.totalCapitalNet,
+    },
+  ];
+
+  const netGain = optimized.totalCapitalNet - current.totalCapitalNet;
+
+  return (
+    <div className="mb-4">
+      <SplitCompareLayout
+        title="Capitaux 2e + 3e pilier · brut vs net d'impôt"
+        description="Impôt sur les prestations en capital (retrait LPP/3a), même moteur que le comparateur rente vs capital."
+        currentSubtitle="Sans optimisation"
+        projectedSubtitle="Rachats LPP + 3a au plafond"
+        rows={rows}
+        summary={{
+          retirementGain: netGain,
+          retirementGainLabel: "Capital net supplémentaire après impôt",
+        }}
+        legend={
+          <>
+            Le 3e pilier B n'est pas inclus : son régime fiscal n'est pas celui d'un capital de
+            prévoyance (3a/LPP) et dépend du contrat — non modélisé ici.
+          </>
+        }
+      />
+    </div>
   );
 }
 

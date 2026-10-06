@@ -46,6 +46,7 @@ import {
 import { projectClientLPP, projectClient3a } from "@/lib/client-dashboard/lpp-projection";
 import { pickLatestNonDismissed } from "@/lib/simulations/extract-gain";
 import type { HistoryEntry } from "@/lib/history/types";
+import { capitalWithdrawalTax } from "@/lib/lpp";
 
 export type PensionEvent = "retirement" | "disability" | "death";
 
@@ -122,6 +123,15 @@ function toItem(
   pillar: "AVS" | "AI" | "LPP" | "3A",
 ): ConsolidatedItem {
   return { label, annual, monthly: Math.round(annual / 12), pillar };
+}
+
+/** Statut utilisé par capitalWithdrawalTax (même convention que toTaxStatus
+ *  dans tax-global/profile.ts) — couple = marié/partenariat enregistré. */
+function taxStatusFromClient(b: ClientBundle): "single" | "married" | "single_with_children" {
+  const isCouple =
+    b.client.civil_status === "married" || b.client.civil_status === "registered_partnership";
+  if (isCouple) return "married";
+  return parseChildren(b.client.children).length > 0 ? "single_with_children" : "single";
 }
 
 function childLabelsFromBundle(b: ClientBundle): string[] {
@@ -712,11 +722,31 @@ export interface ConsolidatedCapitals {
    *  sinon estimation live (voir `pillar3aProjectedIsEstimate`). */
   pillar3aProjectedCapital: number;
   pillar3aProjectedIsEstimate: boolean;
+  /** Impôt sur les prestations en capital (retrait LPP), même moteur que le
+   *  comparateur rente vs capital (`capitalWithdrawalTax`) — 0 si le canton
+   *  du client est inconnu (impossible à calculer). */
+  lppCapitalTax: number;
+  /** Capital LPP net, une fois cet impôt déduit. */
+  lppProjectedCapitalNet: number;
+  pillar3aCapitalTax: number;
+  pillar3aProjectedCapitalNet: number;
+  /** Somme LPP + 3a, brut puis net d'impôt sur les prestations en capital. */
+  totalCapitalGross: number;
+  totalCapitalNet: number;
+  /** Le 3e pilier B (assurance-vie / épargne libre) n'a PAS le même régime
+   *  fiscal qu'un capital de prévoyance lié (3a/LPP) — selon le contrat, il
+   *  peut être exonéré ou imposé comme fortune/revenu, jamais comme
+   *  prestation en capital. Non modélisé ici : toujours `true`, à afficher
+   *  comme limite connue plutôt que silencieusement omis du total. */
+  pillar3bNotModeled: true;
 }
 
 /** Capitaux 2e/3e pilier à afficher tels quels dans l'onglet Consolidation
  *  (point 4 de l'audit) — mêmes sources que les rentes ci-dessus : simulation
- *  sauvegardée en priorité, estimation live en repli (signalée). */
+ *  sauvegardée en priorité, estimation live en repli (signalée). Inclut
+ *  depuis le 06.10.2026 l'impôt sur les prestations en capital (retrait),
+ *  pour que le courtier voie le montant RÉELLEMENT disponible après impôt,
+ *  pas seulement le capital brut. */
 export function getConsolidatedCapitals(
   b: ClientBundle,
   refs?: ConsolidationReferenceSimulations,
@@ -731,6 +761,17 @@ export function getConsolidatedCapitals(
   const pillar3aProjectedIsEstimate = !p3aBalance;
   const pillar3aProjectedCapital = p3aBalance ?? projectClient3a(b)?.projectedCapitalAt65 ?? 0;
 
+  const canton = b.client.canton;
+  const status = taxStatusFromClient(b);
+  const lppCapitalTax = canton
+    ? capitalWithdrawalTax({ capital: lppProjectedCapital, canton, status }).total
+    : 0;
+  const pillar3aCapitalTax = canton
+    ? capitalWithdrawalTax({ capital: pillar3aProjectedCapital, canton, status }).total
+    : 0;
+  const lppProjectedCapitalNet = Math.max(0, lppProjectedCapital - lppCapitalTax);
+  const pillar3aProjectedCapitalNet = Math.max(0, pillar3aProjectedCapital - pillar3aCapitalTax);
+
   return {
     lppCurrentBalance: Number(b.pension?.lpp_current_balance ?? 0),
     lppProjectedCapital,
@@ -738,6 +779,65 @@ export function getConsolidatedCapitals(
     lppBuybacksTotal: lppRef ? Number(lppSummary?.totalBuybacks ?? 0) : 0,
     pillar3aProjectedCapital,
     pillar3aProjectedIsEstimate,
+    lppCapitalTax,
+    lppProjectedCapitalNet,
+    pillar3aCapitalTax,
+    pillar3aProjectedCapitalNet,
+    totalCapitalGross: lppProjectedCapital + pillar3aProjectedCapital,
+    totalCapitalNet: lppProjectedCapitalNet + pillar3aProjectedCapitalNet,
+    pillar3bNotModeled: true,
+  };
+}
+
+/** Variante "optimisée" des capitaux (rachats LPP + 3a au plafond, même
+ *  logique que consolidateOptimizedBenefits) — capital brut extrapolé par
+ *  facteur de croissance depuis le moteur de projection live, appliqué sur
+ *  le capital actuel RÉEL (simulation sauvegardée ou estimation), puis net
+ *  d'impôt sur les prestations en capital comme getConsolidatedCapitals. */
+export function getOptimizedConsolidatedCapitals(
+  b: ClientBundle,
+  refs?: ConsolidationReferenceSimulations,
+): ConsolidatedCapitals {
+  const current = getConsolidatedCapitals(b, refs);
+  const optimizedBundle = buildOptimizedBundle(b);
+
+  const liveCurrentLpp = projectClientLPP(b);
+  const liveOptimizedLpp = projectClientLPP(optimizedBundle);
+  const lppFactor =
+    liveCurrentLpp && liveOptimizedLpp
+      ? growthFactor(liveCurrentLpp.projectedCapitalAt65, liveOptimizedLpp.projectedCapitalAt65)
+      : 1;
+  const lppProjectedCapital = Math.round(current.lppProjectedCapital * lppFactor);
+
+  const liveCurrent3a = projectClient3a(b);
+  const liveOptimized3a = projectClient3a(optimizedBundle);
+  const p3aFactor =
+    liveCurrent3a && liveOptimized3a
+      ? growthFactor(liveCurrent3a.projectedCapitalAt65, liveOptimized3a.projectedCapitalAt65)
+      : 1;
+  const pillar3aProjectedCapital = Math.round(current.pillar3aProjectedCapital * p3aFactor);
+
+  const canton = b.client.canton;
+  const status = taxStatusFromClient(b);
+  const lppCapitalTax = canton
+    ? capitalWithdrawalTax({ capital: lppProjectedCapital, canton, status }).total
+    : 0;
+  const pillar3aCapitalTax = canton
+    ? capitalWithdrawalTax({ capital: pillar3aProjectedCapital, canton, status }).total
+    : 0;
+  const lppProjectedCapitalNet = Math.max(0, lppProjectedCapital - lppCapitalTax);
+  const pillar3aProjectedCapitalNet = Math.max(0, pillar3aProjectedCapital - pillar3aCapitalTax);
+
+  return {
+    ...current,
+    lppProjectedCapital,
+    pillar3aProjectedCapital,
+    lppCapitalTax,
+    lppProjectedCapitalNet,
+    pillar3aCapitalTax,
+    pillar3aProjectedCapitalNet,
+    totalCapitalGross: lppProjectedCapital + pillar3aProjectedCapital,
+    totalCapitalNet: lppProjectedCapitalNet + pillar3aProjectedCapitalNet,
   };
 }
 

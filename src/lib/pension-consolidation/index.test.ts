@@ -3,11 +3,13 @@ import {
   consolidatePensionBenefits,
   consolidateOptimizedBenefits,
   getConsolidatedCapitals,
+  getOptimizedConsolidatedCapitals,
   type ConsolidationReferenceSimulations,
 } from "./index";
 import type { ClientBundle } from "@/lib/client-dashboard";
 import type { Client, ClientPension } from "@/lib/clients/types";
 import type { HistoryEntry, SimulationKind } from "@/lib/history/types";
+import { capitalWithdrawalTax } from "@/lib/lpp";
 
 function makeBundle(overrides: {
   client?: Partial<Client>;
@@ -225,5 +227,69 @@ describe("getConsolidatedCapitals — priorité simulation sauvegardée > estima
     expect(capitals.lppProjectedIsEstimate).toBe(true);
     expect(capitals.pillar3aProjectedIsEstimate).toBe(true);
     expect(capitals.lppBuybacksTotal).toBe(0);
+  });
+});
+
+describe("getConsolidatedCapitals — impôt sur les prestations en capital (brut vs net)", () => {
+  it("calcule le net via le même moteur que le comparateur rente vs capital (capitalWithdrawalTax)", () => {
+    const b = makeBundle({ client: { canton: "VD", civil_status: "single" } });
+    const refs: ConsolidationReferenceSimulations = {
+      lpp: makeEntry("lpp", { projectedBalance: 250_000, annualPension: 15_000, totalBuybacks: 0 }),
+      pillar3a: makeEntry("pillar3a", { finalBalance: 90_000 }),
+    };
+    const capitals = getConsolidatedCapitals(b, refs);
+
+    const expectedLppTax = capitalWithdrawalTax({
+      capital: 250_000,
+      canton: "VD",
+      status: "single",
+    }).total;
+    const expected3aTax = capitalWithdrawalTax({
+      capital: 90_000,
+      canton: "VD",
+      status: "single",
+    }).total;
+
+    expect(capitals.lppCapitalTax).toBe(expectedLppTax);
+    expect(capitals.lppProjectedCapitalNet).toBe(250_000 - expectedLppTax);
+    expect(capitals.pillar3aCapitalTax).toBe(expected3aTax);
+    expect(capitals.pillar3aProjectedCapitalNet).toBe(90_000 - expected3aTax);
+    expect(capitals.totalCapitalGross).toBe(340_000);
+    expect(capitals.totalCapitalNet).toBe(340_000 - expectedLppTax - expected3aTax);
+    expect(capitals.pillar3bNotModeled).toBe(true);
+    // L'impôt réduit sur prestation en capital ne doit jamais dépasser le
+    // capital lui-même (filet de sécurité, pas un vrai cas réaliste ici).
+    expect(capitals.lppProjectedCapitalNet).toBeGreaterThan(0);
+  });
+
+  it("retombe sur impôt = 0 (net = brut) quand le canton du client est inconnu", () => {
+    const b = makeBundle({ client: { canton: null as unknown as string } });
+    const refs: ConsolidationReferenceSimulations = {
+      lpp: makeEntry("lpp", { projectedBalance: 250_000, annualPension: 15_000, totalBuybacks: 0 }),
+    };
+    const capitals = getConsolidatedCapitals(b, refs);
+    expect(capitals.lppCapitalTax).toBe(0);
+    expect(capitals.lppProjectedCapitalNet).toBe(capitals.lppProjectedCapital);
+  });
+});
+
+describe("getOptimizedConsolidatedCapitals — scénario optimisé, net d'impôt", () => {
+  it("un capital optimisé plus élevé ne peut jamais produire un capital NET optimisé inférieur au net actuel", () => {
+    const b = makeBundle({
+      client: { canton: "GE", civil_status: "single" },
+      pension: { lpp_max_buyback: 50_000, pillar_3a_annual_contribution: 0 },
+    });
+    const refs: ConsolidationReferenceSimulations = {
+      lpp: makeEntry("lpp", { projectedBalance: 250_000, annualPension: 15_000, totalBuybacks: 0 }),
+      pillar3a: makeEntry("pillar3a", { finalBalance: 90_000 }),
+    };
+    const current = getConsolidatedCapitals(b, refs);
+    const optimized = getOptimizedConsolidatedCapitals(b, refs);
+
+    expect(optimized.totalCapitalGross).toBeGreaterThanOrEqual(current.totalCapitalGross);
+    expect(optimized.totalCapitalNet).toBeGreaterThanOrEqual(current.totalCapitalNet);
+    // Le net reste toujours ≤ au brut, actuel comme optimisé.
+    expect(current.totalCapitalNet).toBeLessThanOrEqual(current.totalCapitalGross);
+    expect(optimized.totalCapitalNet).toBeLessThanOrEqual(optimized.totalCapitalGross);
   });
 });

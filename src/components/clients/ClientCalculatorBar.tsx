@@ -15,6 +15,7 @@ import {
   ShieldPlus,
   Clock,
   Receipt,
+  Layers,
   FolderOpen,
   Lock,
   Plus,
@@ -44,7 +45,10 @@ import {
 
 type CalcChip = {
   to: CalcRoute;
-  kind: SimulationKind;
+  // Absent pour les calculateurs qui ne sauvegardent pas leur propre
+  // simulation (ex. Prestations consolidées, qui lit celles des autres) —
+  // pas de pastille « à rafraîchir » possible dans ce cas.
+  kind?: SimulationKind;
   label: string;
   icon: LucideIcon;
 };
@@ -59,6 +63,11 @@ const CHIPS: CalcChip[] = [
     kind: "vested_benefits",
     label: "Libre passage",
     icon: Vault,
+  },
+  {
+    to: "/calculators/consolidated-benefits",
+    label: "Prestations consolidées",
+    icon: Layers,
   },
   {
     to: "/calculators/health-insurance-france",
@@ -275,7 +284,7 @@ export function ClientCalculatorBar({
               key={chip.to}
               chip={chip}
               client={client}
-              lastSimAt={latestByKind?.[chip.kind] ?? null}
+              lastSimAt={chip.kind ? (latestByKind?.[chip.kind] ?? null) : null}
               locked={locked}
               caseId={activeCase?.id}
               onLockedClick={() => setShowNewCaseForm(true)}
