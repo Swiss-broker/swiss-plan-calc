@@ -467,7 +467,10 @@ const CONSISTENCY_RULES: ConsistencyRule[] = [
     indicator: "Capital de libre passage — situation actuelle (Supplétive)",
     probes: [
       { section: "Résumé page 3 / Détail (buildDerivedComparison)", value: (e) => buildDerivedComparison(e)!.rows[0].current as number },
-      { section: "Détail · Résultats clés (formatMetrics)", value: (e) => metricValue(e, "Capital projeté (actuel — Supplétive)") },
+      {
+        section: "Détail · Résultats clés (formatMetrics)",
+        value: (e) => metricValue(e, "Capital projeté (actuel, Supplétive)"),
+      },
     ],
   },
   {

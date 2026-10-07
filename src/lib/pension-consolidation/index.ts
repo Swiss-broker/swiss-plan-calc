@@ -280,7 +280,7 @@ function buildRetirement(
   const primaryReducedAnnual = avsRef?.annualPension ?? avs.primary.annualPension;
   if (!avsRef) {
     notes.push(
-      "Rente AVS estimée : aucune simulation « Rente AVS/AI » enregistrée pour ce client — enregistrez-en une (et marquez-la « Situation actuelle ») pour remplacer cette estimation par le résultat réel.",
+      "Rente AVS estimée : aucune simulation « Rente AVS/AI » enregistrée pour ce client. Enregistrez-en une (et marquez-la « Situation actuelle ») pour remplacer cette estimation par le résultat réel.",
     );
   }
 
@@ -322,7 +322,7 @@ function buildRetirement(
     if (!lpp) notes.push("Aucune projection LPP disponible (avoir et salaire manquants).");
     else
       notes.push(
-        "Rente LPP estimée : aucune simulation « LPP & rachats » enregistrée pour ce client — enregistrez-en une (et marquez-la « Situation actuelle ») pour remplacer cette estimation par le résultat réel.",
+        "Rente LPP estimée : aucune simulation « LPP & rachats » enregistrée pour ce client. Enregistrez-en une (et marquez-la « Situation actuelle ») pour remplacer cette estimation par le résultat réel.",
       );
   }
 

@@ -82,7 +82,7 @@ export function ClientCasesTab({
       <div className="flex items-start justify-between gap-3">
         <p className="max-w-lg text-xs text-muted-foreground">
           Chaque dossier regroupe les simulations faites pour un même projet de ce client. Depuis la
-          fiche client, un dossier doit être actif pour utiliser les calculateurs — tout ce qui est
+          fiche client, un dossier doit être actif pour utiliser les calculateurs : tout ce qui est
           enregistré pendant qu'il est actif y est automatiquement rattaché.
         </p>
         <Button size="sm" className="shrink-0 gap-1.5" onClick={() => setShowNewCaseForm(true)}>
@@ -149,7 +149,7 @@ export function ClientCasesTab({
                 </Badge>
               </div>
               <div className="text-xs text-muted-foreground">
-                Simulations enregistrées avant l'introduction des dossiers — regroupées ici, rien
+                Simulations enregistrées avant l'introduction des dossiers, regroupées ici : rien
                 n'est perdu.
               </div>
             </div>

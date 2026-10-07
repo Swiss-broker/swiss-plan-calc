@@ -354,7 +354,8 @@ const EXPLAIN_FR: Partial<Record<SimulationKind, string>> = {
   tax_global: "Ce calculateur reconstitue l'ensemble de votre charge fiscale annuelle (impôt fédéral, cantonal et communal réunis), sur la base de votre situation personnelle et professionnelle. Il fait ressortir deux chiffres utiles : votre taux d'imposition moyen sur l'ensemble de votre revenu, et votre taux marginal, c'est-à-dire ce que vous payez d'impôt sur le prochain franc que vous gagnez. Ce second chiffre est particulièrement utile pour savoir si une déduction supplémentaire, comme un versement 3a ou un rachat LPP, vaut la peine pour vous.",
   income_tax: "Ce calcul détermine l'impôt sur le revenu que vous devez, sur la base des barèmes cantonaux et fédéraux en vigueur pour votre situation.",
   source_tax: "L'impôt à la source s'applique automatiquement si vous êtes salarié étranger sans permis d'établissement C : votre employeur prélève directement l'impôt sur votre salaire, selon un barème qui dépend de votre situation familiale et de votre canton.",
-  retirement: "Au moment de la retraite, vous avez le choix entre toucher une rente à vie, ou retirer tout ou partie de votre capital de prévoyance en une fois. C'est une décision importante et difficile à revenir en arrière. Ce calculateur compare les deux options sur la base de votre espérance de vie, du taux de conversion applicable et de votre situation fiscale, pour vous aider à objectiver ce choix. Le capital utilisé ici reprend par défaut celui de votre dernière simulation « LPP & rachats » enregistrée — le même que sur la page « Prestations consolidées » — sauf si le courtier l'a volontairement modifié pour tester un autre montant.",
+  retirement:
+    "Au moment de la retraite, vous avez le choix entre toucher une rente à vie, ou retirer tout ou partie de votre capital de prévoyance en une fois. C'est une décision importante et difficile à revenir en arrière. Ce calculateur compare les deux options sur la base de votre espérance de vie, du taux de conversion applicable et de votre situation fiscale, pour vous aider à objectiver ce choix. Le capital utilisé ici reprend par défaut celui de votre dernière simulation « LPP & rachats » enregistrée (le même que sur la page « Prestations consolidées »), sauf si le courtier l'a volontairement modifié pour tester un autre montant.",
   avs_ai: "L'AVS est votre 1er pilier, le socle obligatoire de la prévoyance suisse. Son montant dépend de deux choses : le nombre d'années où vous avez cotisé (44 ans pour une carrière complète) et votre revenu moyen sur l'ensemble de votre carrière. Chaque année de cotisation manquante réduit votre rente finale.",
   vested_benefits: "Le libre passage correspond à votre capital LPP en transit entre deux emplois, ou lorsque vous quittez temporairement le marché du travail suisse. Ce capital doit être placé sur un compte ou une police dédiée, et la stratégie de placement que vous choisissez influence directement le montant dont vous disposerez à votre prochain emploi ou à la retraite.",
   cross_border: "En tant que frontalier, la façon dont vous êtes imposé dépend d'accords particuliers entre la Suisse et votre pays de résidence, qui peuvent varier sensiblement d'un canton de travail à l'autre. Ce calculateur compare votre charge fiscale selon les différents régimes qui pourraient s'appliquer à votre situation.",
@@ -901,7 +902,7 @@ function drawConsolidatedBenefitsPage(
 ) {
   pdf.section("Prestations consolidées");
   pdf.richParagraph(
-    "Ce chiffre réunit **tout ce que votre dossier finance à la retraite** : 1er pilier AVS/AI, 2e pilier LPP et 3e pilier. C'est notre référence officielle. Quand une simulation « Rente AVS/AI », « LPP & rachats » ou « Pilier 3a » a été enregistrée pour ce client, ce sont exactement ses résultats qui sont repris ici — les mêmes que sur la page dédiée de ce document, jamais un recalcul différent. À défaut de simulation enregistrée pour un pilier, une estimation est utilisée et signalée comme telle ci-dessous.",
+    "Ce chiffre réunit **tout ce que votre dossier finance à la retraite** : 1er pilier AVS/AI, 2e pilier LPP et 3e pilier. C'est notre référence officielle. Quand une simulation « Rente AVS/AI », « LPP & rachats » ou « Pilier 3a » a été enregistrée pour ce client, ce sont exactement ses résultats qui sont repris ici, les mêmes que sur la page dédiée de ce document, jamais un recalcul différent. À défaut de simulation enregistrée pour un pilier, une estimation est utilisée et signalée comme telle ci-dessous.",
   );
 
   const bundle = { client, pension, assets };
@@ -1502,7 +1503,11 @@ export function formatMetrics(
       break;
     case "vested_benefits":
       if (has(s.dynamicFinalBalance)) out.push({ label: "Capital projeté (dynamique)", value: num(s.dynamicFinalBalance), tone: "primary" });
-      if (has(s.currentFinalBalance)) out.push({ label: "Capital projeté (actuel — Supplétive)", value: num(s.currentFinalBalance) });
+      if (has(s.currentFinalBalance))
+        out.push({
+          label: "Capital projeté (actuel, Supplétive)",
+          value: num(s.currentFinalBalance),
+        });
       break;
     case "cross_border":
       if (has(s.currentTax)) out.push({ label: "Charge fiscale actuelle", value: num(s.currentTax), tone: "warning" });

@@ -526,7 +526,7 @@ function TaxGlobalCalc() {
                         suffix="CHF"
                         tip={
                           form.workStatus === "self_employed" || form.workStatus === "mixed"
-                            ? "Revenu net de l'activité indépendante (bénéfice après charges d'exploitation réelles, avant AVS) — pas de certificat de salaire pour un indépendant, donc pas de forfait frais pro automatique ni de part salarié AC/LPP."
+                            ? "Revenu net de l'activité indépendante (bénéfice après charges d'exploitation réelles, avant AVS). Pas de certificat de salaire pour un indépendant, donc pas de forfait frais pro automatique ni de part salarié AC/LPP."
                             : "Salaire annuel brut figurant sur le certificat de salaire (case 1/8), avant déductions sociales (AVS, AI, AC, LPP)."
                         }
                       />
@@ -573,7 +573,7 @@ function TaxGlobalCalc() {
                         tip={
                           form.workStatus === "self_employed" || form.workStatus === "mixed"
                             ? "Pas de certificat de salaire pour un indépendant : ce montant est un revenu distinct, ajouté au revenu imposable."
-                            : "Montant déjà compris dans le salaire brut ci-dessus (chiffre 1 du certificat de salaire) — saisi ici uniquement pour l'afficher séparément dans les résultats, jamais rajouté au calcul."
+                            : "Montant déjà compris dans le salaire brut ci-dessus (chiffre 1 du certificat de salaire), saisi ici uniquement pour l'afficher séparément dans les résultats, jamais rajouté au calcul."
                         }
                       />
                     </div>
@@ -813,7 +813,7 @@ function TaxGlobalCalc() {
                       if (reg === "cross_border_fr_1983") {
                         return (
                           <div className="rounded-md border border-destructive/40 bg-destructive/5 p-3 text-xs text-destructive">
-                            <strong>Accord 1983 — imposition en France.</strong> Le salaire suisse
+                            <strong>Accord 1983 : imposition en France.</strong> Le salaire suisse
                             est imposé au barème français. Les cotisations sociales obligatoires
                             (AVS, AI, LPP obligatoire) sont déductibles en France. En revanche, le
                             3a, les rachats LPP volontaires et l'entretien immobilier suisse ne
@@ -901,7 +901,7 @@ function TaxGlobalCalc() {
                         value={form.healthInsuranceSubsidy ?? 0}
                         onChange={(v) => set("healthInsuranceSubsidy", v)}
                         suffix="CHF"
-                        tip="Subside maladie perçu dans l'année (aide au paiement des primes). Vient réduire la prime nette réellement payée, donc la déduction ci-dessus — laissé à 0 si vous n'en touchez pas."
+                        tip="Subside maladie perçu dans l'année (aide au paiement des primes). Vient réduire la prime nette réellement payée, donc la déduction ci-dessus. Laissé à 0 si vous n'en touchez pas."
                       />
                       {(form.canton === "VD" || form.canton === "ZG") && (
                         <NumField
@@ -931,7 +931,7 @@ function TaxGlobalCalc() {
                         value={form.medicalExpenses}
                         onChange={(v) => set("medicalExpenses", v)}
                         suffix="CHF"
-                        tip="Frais médicaux déductibles au-delà de 5% du revenu net (IFD + ICC). Saisissez le total annuel — la franchise de 5% est calculée automatiquement."
+                        tip="Frais médicaux déductibles au-delà de 5% du revenu net (IFD + ICC). Saisissez le total annuel, la franchise de 5% est calculée automatiquement."
                       />
                       <NumField
                         label={t("calc.global.field.donations")}
@@ -946,7 +946,7 @@ function TaxGlobalCalc() {
                         champs ne servent qu'à saisir le réel quand il dépasse ce forfait
                         — laissés à 0, le forfait s'applique sans rien changer. */}
                     <p className="mt-4 text-xs font-medium text-muted-foreground">
-                      Frais professionnels effectifs (optionnel — si plus élevés que le forfait
+                      Frais professionnels effectifs (optionnel, si plus élevés que le forfait
                       automatique 3% du salaire net, bornes 2'000-4'000 CHF)
                     </p>
                     <div className="mt-1.5 grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -976,7 +976,7 @@ function TaxGlobalCalc() {
                         tip={
                           form.workStatus === "self_employed" || form.workStatus === "mixed"
                             ? "Indépendant : pas de forfait 3% automatique (réservé aux salariés, art. 26 LIFD). Saisissez ici le total de vos charges d'exploitation réelles (loyer professionnel, matériel, sous-traitance...) pour qu'elles soient déduites."
-                            : "Remplace ENTIÈREMENT le forfait automatique 3% (2'000-4'000 CHF) si saisi — à n'utiliser que si le total de vos frais professionnels réels (hors déplacement/repas ci-dessus) dépasse le forfait."
+                            : "Remplace ENTIÈREMENT le forfait automatique 3% (2'000-4'000 CHF) si saisi. À n'utiliser que si le total de vos frais professionnels réels (hors déplacement/repas ci-dessus) dépasse le forfait."
                         }
                       />
                       <NumField
@@ -1135,7 +1135,7 @@ function TaxGlobalCalc() {
             <CalcCard title="Impact enfants (projection)">
               <p className="mb-3 text-xs text-muted-foreground">
                 Et si vous aviez un enfant ? Comparaison avec la même situation avec 1 enfant
-                hypothétique (même salaire, même canton) — utile pour un couple qui envisage une
+                hypothétique (même salaire, même canton), utile pour un couple qui envisage une
                 naissance.
               </p>
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
@@ -1151,7 +1151,7 @@ function TaxGlobalCalc() {
                   tip={
                     childrenImpact.familyAllowancesIncludedInIncome
                       ? "Ajoutées au revenu imposable (indépendant) dans le scénario avec enfant."
-                      : "Déjà comprises dans le salaire brut saisi (salarié) — affichées ici à titre de repère. Montant repris tel quel du formulaire : à ajuster au montant réel attendu."
+                      : "Déjà comprises dans le salaire brut saisi (salarié), affichées ici à titre de repère. Montant repris tel quel du formulaire : à ajuster au montant réel attendu."
                   }
                 />
                 <MoneyTile
@@ -1206,7 +1206,7 @@ function TaxGlobalCalc() {
                   <MoneyTile
                     label="Impôt personnel"
                     value={result.income.personalTax}
-                    tip="Taxe fixe per capita (25 CHF/personne seule à GE, 50 CHF estimé/couple — non vérifié). Modélisée uniquement pour Genève pour l'instant, d'autres cantons appliquent une taxe similaire non encore intégrée."
+                    tip="Taxe fixe per capita (25 CHF/personne seule à GE, 50 CHF estimé/couple, non vérifié). Modélisée uniquement pour Genève pour l'instant, d'autres cantons appliquent une taxe similaire non encore intégrée."
                   />
                 )}
               </div>
@@ -1268,7 +1268,7 @@ function TaxGlobalCalc() {
                     <Badge variant="outline">
                       Barème appliqué par l'employeur : {result.sourceRectification.defaultScale}0
                     </Badge>
-                    <HelpDot tip="Le barème retenu à la source par l'employeur ne tient JAMAIS compte automatiquement des enfants à charge — il reste au barème de base (sans enfant) jusqu'au dépôt d'une démarche de rectification auprès de l'AFC/du canton. C'est cette démarche qui fait passer au barème réellement attribué à la situation du client." />
+                    <HelpDot tip="Le barème retenu à la source par l'employeur ne tient JAMAIS compte automatiquement des enfants à charge : il reste au barème de base (sans enfant) jusqu'au dépôt d'une démarche de rectification auprès de l'AFC/du canton. C'est cette démarche qui fait passer au barème réellement attribué à la situation du client." />
                   </div>
                   <p className="text-xs text-muted-foreground">
                     {result.sourceRectification.reason}
@@ -1484,7 +1484,7 @@ function deductionTip(
     mortgage: "Intérêts hypothécaires, entièrement déductibles du revenu imposable.",
     maintenance: (
       <div className="space-y-2 text-[11px]">
-        <p className="font-semibold">Frais d'entretien immobilier — forfait ou frais réels</p>
+        <p className="font-semibold">Frais d'entretien immobilier : forfait ou frais réels</p>
         <p>
           Forfait : 10 % de la valeur locative (bien occupé) ou 10–20 % du loyer brut (bien loué).
           Frais réels si supérieurs.

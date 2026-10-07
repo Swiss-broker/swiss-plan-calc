@@ -36,17 +36,17 @@ const PLAN_CONFIG: Record<string, { label: string; color: string; features: stri
     features: ["Contactez notre équipe pour activer votre compte"],
   },
   starter: {
-    label: "Starter — 490 CHF/mois",
+    label: "Starter (490 CHF/mois)",
     color: "bg-blue-100 text-blue-800 border-blue-200",
     features: ["10 clients max", "2 sociétés max", "Tous les calculateurs", "Exports PDF illimités", "Conversations IA illimitées"],
   },
   pro: {
-    label: "Pro — 790 CHF/mois",
+    label: "Pro (790 CHF/mois)",
     color: "bg-emerald-100 text-emerald-800 border-emerald-200",
     features: ["20 clients max", "4 sociétés max", "Tous les calculateurs", "Exports PDF illimités", "IA illimitée", "Support prioritaire"],
   },
   cabinet: {
-    label: "Cabinet — 1'290 CHF/mois",
+    label: "Cabinet (1'290 CHF/mois)",
     color: "bg-purple-100 text-purple-800 border-purple-200",
     features: ["Clients illimités", "Sociétés illimitées", "Tous les calculateurs", "Exports PDF illimités", "IA illimitée", "3 sièges inclus (titulaire + 2 collaborateurs), +290 CHF/mois par siège supplémentaire", "Support dédié"],
   },
@@ -58,12 +58,15 @@ const PLAN_CONFIG: Record<string, { label: string; color: string; features: stri
   demo: {
     label: "Mode démo",
     color: "bg-indigo-100 text-indigo-800 border-indigo-200",
-    features: ["Accès illimité à toutes les fonctionnalités", "Facturation RDV simulée — aucun paiement réel"],
+    features: [
+      "Accès illimité à toutes les fonctionnalités",
+      "Facturation RDV simulée, aucun paiement réel",
+    ],
   },
   expired: {
     label: "Abonnement expiré",
     color: "bg-red-100 text-red-800 border-red-200",
-    features: ["Accès restreint — renouvelez votre abonnement pour retrouver l'accès complet"],
+    features: ["Accès restreint, renouvelez votre abonnement pour retrouver l'accès complet"],
   },
 };
 

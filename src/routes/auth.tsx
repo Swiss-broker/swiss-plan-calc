@@ -184,7 +184,8 @@ const [otpState, setOtpState] = useState<{ email: string; plan: BillablePlan; in
             </div>
             <div className="rounded-lg border border-primary/20 bg-primary/5 p-3">
               <p className="text-xs text-muted-foreground">
-                Expéditeur : <strong>noreply@swissbrokerpro.ch</strong> — ajoutez cette adresse à vos contacts.
+                Expéditeur : <strong>noreply@swissbrokerpro.ch</strong>. Ajoutez cette adresse à vos
+                contacts.
               </p>
             </div>
           </div>

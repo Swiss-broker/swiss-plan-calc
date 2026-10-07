@@ -26,7 +26,7 @@ export function checkSynthesisConsistency(entries: HistoryEntry[]): string[] {
     const active = entries.filter((e) => e.kind === kind && !e.gain_dismissed);
     if (active.length >= 2 && !active.some((e) => e.is_baseline)) {
       warnings.push(
-        `Plusieurs simulations « ${KIND_LABELS[kind]} » sont sélectionnées pour ce dossier, mais aucune n'est marquée « Situation actuelle ». Le PDF retiendra la plus récente (${active.slice().sort((a, b) => b.created_at.localeCompare(a.created_at))[0].title}) — marquez la bonne comme référence depuis l'historique des simulations si ce n'est pas celle voulue.`,
+        `Plusieurs simulations « ${KIND_LABELS[kind]} » sont sélectionnées pour ce dossier, mais aucune n'est marquée « Situation actuelle ». Le PDF retiendra la plus récente (${active.slice().sort((a, b) => b.created_at.localeCompare(a.created_at))[0].title}). Marquez la bonne comme référence depuis l'historique des simulations si ce n'est pas celle voulue.`,
       );
     }
   }
@@ -39,7 +39,7 @@ export function checkSynthesisConsistency(entries: HistoryEntry[]): string[] {
     const rows = (taxGlobal.summary as Record<string, unknown> | undefined)?.compareRows;
     if (!Array.isArray(rows) || rows.length === 0) {
       warnings.push(
-        `La simulation « Fiscal global » sélectionnée (${taxGlobal.title}) ne contient pas de comparatif avant/après enregistré — ouvrez-la et cliquez de nouveau sur « Sauvegarder » pour que le PDF puisse afficher le résultat avant et après optimisation.`,
+        `La simulation « Fiscal global » sélectionnée (${taxGlobal.title}) ne contient pas de comparatif avant/après enregistré. Ouvrez-la et cliquez de nouveau sur « Sauvegarder » pour que le PDF puisse afficher le résultat avant et après optimisation.`,
       );
     }
   }

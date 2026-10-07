@@ -372,7 +372,7 @@ export function computeCrossBorder(input: CrossBorderInput): CrossBorderResult {
     );
     return {
       regime: "fr_fribourg",
-      regimeLabel: "Fribourg — Impôt à la source (barème cantonal FR)",
+      regimeLabel: "Fribourg, impôt à la source (barème cantonal FR)",
       swissTax: Math.round(swissTax),
       swissRate: Math.round((swissTax / input.grossAnnualSalary) * 1000) / 10,
       foreignTax: 0,

@@ -1026,7 +1026,7 @@ function StepFiscal({ form, update, errors }: StepProps) {
       <Field
         label="Intérêts hypothécaires résidence France"
         htmlFor="mort_fr"
-        hint="Déductible côté France pour frontaliers accord 1983 — réduit l'assiette imposable française. Saisie possible en euros, convertie et stockée en CHF."
+        hint="Déductible côté France pour frontaliers accord 1983, réduit l'assiette imposable française. Saisie possible en euros, convertie et stockée en CHF."
       >
         <div className="flex flex-col gap-2">
           <div className="flex gap-2">
@@ -1346,7 +1346,7 @@ function StepFamily({
                 </Field>
               <Field label={t("wizard.spouse.salary")}
                 hint={form.spouse_salary_is_fictif
-                  ? `Revenu fictif provisoire 2026 : CHF ${Math.min(num(form.gross_annual_salary) ?? 0, 70500).toLocaleString("fr-CH")} — à corriger avec le salaire réel pour DRIS`
+                  ? `Revenu fictif provisoire 2026 : CHF ${Math.min(num(form.gross_annual_salary) ?? 0, 70500).toLocaleString("fr-CH")}, à corriger avec le salaire réel pour DRIS`
                   : form.spouse_salary_currency === "EUR"
                     ? `= CHF ${(num(form.spouse_gross_annual_salary) ?? 0).toLocaleString("fr-CH")} (taux ${form.spouse_income_conversion_rate || defaultEurRate()})`
                     : undefined}

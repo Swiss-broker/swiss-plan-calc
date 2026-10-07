@@ -240,7 +240,7 @@ function BudgetCalc() {
                 label="Épargne régulière (hors 3a)"
                 value={form.savingsMonthlyCHF}
                 onChange={(v) => set("savingsMonthlyCHF", v)}
-                tip="Versements d'épargne déjà en cours (compte épargne, 3e pilier B, etc.) — un engagement récurrent qui réduit la marge disponible."
+                tip="Versements d'épargne déjà en cours (compte épargne, 3e pilier B, etc.), un engagement récurrent qui réduit la marge disponible."
               />
               <NumField
                 label="Autres charges"

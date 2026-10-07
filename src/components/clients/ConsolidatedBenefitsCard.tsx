@@ -237,7 +237,7 @@ function CapitalTaxCompare({
         legend={
           <>
             Le 3e pilier B n'est pas inclus : son régime fiscal n'est pas celui d'un capital de
-            prévoyance (3a/LPP) et dépend du contrat — non modélisé ici.
+            prévoyance (3a/LPP) et dépend du contrat : non modélisé ici.
           </>
         }
       />
@@ -262,7 +262,9 @@ function CapitalTile({
       <div className="mt-0.5 text-lg font-semibold tabular-nums">{formatCHF(value)}</div>
       {sub && <div className="mt-0.5 text-[10.5px] text-muted-foreground">{sub}</div>}
       {isEstimate && value > 0 && (
-        <div className="mt-0.5 text-[10.5px] italic text-warning">Estimation — aucune simulation enregistrée</div>
+        <div className="mt-0.5 text-[10.5px] italic text-warning">
+          Estimation : aucune simulation enregistrée
+        </div>
       )}
     </div>
   );

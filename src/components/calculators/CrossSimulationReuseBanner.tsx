@@ -97,7 +97,7 @@ export function CrossSimulationReuseBanner({
               <span className="text-muted-foreground">
                 {c.label} de {formatCHF(c.value)}
                 {c.simTitle ? ` (« ${c.simTitle} »)` : ""} enregistré le{" "}
-                {new Date(c.date).toLocaleDateString("fr-CH")} — différent du profil de base du
+                {new Date(c.date).toLocaleDateString("fr-CH")}, différent du profil de base du
                 client. L'utiliser pour ce calcul ?
               </span>
             </div>

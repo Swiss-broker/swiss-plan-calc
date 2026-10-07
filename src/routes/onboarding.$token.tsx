@@ -187,7 +187,8 @@ function OnboardingPage() {
         <CardHeader>
           <CardTitle>Finalisez votre compte</CardTitle>
           <CardDescription>
-            Plan <strong>{PLAN_LABELS[invite.plan] || invite.plan}</strong> — il ne reste que quelques informations.
+            Plan <strong>{PLAN_LABELS[invite.plan] || invite.plan}</strong>, il ne reste que
+            quelques informations.
           </CardDescription>
         </CardHeader>
         <CardContent>

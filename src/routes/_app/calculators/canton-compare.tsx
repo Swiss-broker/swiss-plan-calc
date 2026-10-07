@@ -428,7 +428,7 @@ function CantonCompareCalc() {
             {savedTaxGlobalTotal > 0 && savedTaxGlobalCanton === referenceCanton ? (
               <>
                 Le montant du canton de référence ({referenceCanton}) reprend <strong>exactement</strong> le
-                résultat de la dernière simulation « Fiscal global » enregistrée pour ce client — identique à
+                résultat de la dernière simulation « Fiscal global » enregistrée pour ce client, identique à
                 la ligne « Fiscal global » du PDF de synthèse.
               </>
             ) : (

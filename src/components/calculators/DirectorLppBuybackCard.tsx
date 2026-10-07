@@ -234,7 +234,7 @@ export function DirectorLppBuybackCard({
           <div className="flex items-start gap-3 rounded-lg border border-destructive/40 bg-destructive/5 p-3 text-xs text-destructive">
             <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
             <div>
-              <p className="font-semibold">Règle des 3 ans — retrait bloqué (art. 79b LPP)</p>
+              <p className="font-semibold">Règle des 3 ans : retrait bloqué (art. 79b LPP)</p>
               <p className="mt-1 text-destructive/80">
                 Le dirigeant part à la retraite dans {yearsToRetire} an{yearsToRetire > 1 ? "s" : ""}.
                 Tout rachat effectué maintenant sera bloqué 3 ans. Si le capital est retiré avant ce délai,

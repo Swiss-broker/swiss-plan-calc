@@ -149,7 +149,7 @@ export function computeTaxGlobal(g: TaxGlobalInput): TaxGlobalResult {
     notes.push(
       familyAllowancesIncludedInIncome
         ? `Dont ${familyAllowancesCHF.toLocaleString("fr-CH")} CHF d'allocations familiales : ajoutées au revenu imposable (indépendant, pas de certificat de salaire qui les inclurait déjà).`
-        : `Dont ${familyAllowancesCHF.toLocaleString("fr-CH")} CHF d'allocations familiales, déjà comprises dans le salaire brut saisi (chiffre 1 du certificat de salaire) — non rajoutées.`,
+        : `Dont ${familyAllowancesCHF.toLocaleString("fr-CH")} CHF d'allocations familiales, déjà comprises dans le salaire brut saisi (chiffre 1 du certificat de salaire), non rajoutées.`,
     );
   }
 
@@ -486,7 +486,7 @@ export function computeTaxGlobal(g: TaxGlobalInput): TaxGlobalResult {
       cbNotes.push(
         "Autres revenus suisses (" +
           g.otherIncome.toLocaleString("fr-CH") +
-          " CHF : dividendes, revenus locatifs suisses) : non soumis à la retenue source mensuelle. Feront l objet d une rectification IS en fin d année — un solde d impôt supplémentaire sera probablement dû.",
+          " CHF : dividendes, revenus locatifs suisses) : non soumis à la retenue source mensuelle. Feront l'objet d'une rectification IS en fin d'année, un solde d'impôt supplémentaire sera probablement dû.",
       );
     }
     return {

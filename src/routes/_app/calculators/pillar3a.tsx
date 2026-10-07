@@ -301,7 +301,7 @@ function Pillar3aCalc() {
         current: taxStaggeredProjected.totalTaxSingle,
         projected: taxStaggeredProjected.totalTaxSeparated,
         betterWhen: "lower",
-        hint: `Même capital projeté des deux côtés : retrait unique vs étalé sur ${Math.max(2, form.withdrawalAccounts)} comptes — isole l'effet du fractionnement seul.`,
+        hint: `Même capital projeté des deux côtés : retrait unique vs étalé sur ${Math.max(2, form.withdrawalAccounts)} comptes, isole l'effet du fractionnement seul.`,
       },
       {
         label: "Capital net après impôt de sortie",
@@ -435,7 +435,7 @@ useEffect(() => {
             {client && client.tax_status !== "resident" && (
               <div className="mb-3 rounded-md border border-amber-500/40 bg-amber-500/5 p-3 text-xs text-amber-900 dark:text-amber-200">
                 <strong>Estimation en imposition ordinaire.</strong> Ce client est imposé à la
-                source (ou relève d'un régime frontalier/TOU) — l'économie d'impôt ci-dessous est
+                source (ou relève d'un régime frontalier/TOU) : l'économie d'impôt ci-dessous est
                 calculée comme s'il était imposé ordinairement, mais ne se matérialise PAS
                 automatiquement sur sa retenue à la source. Elle ne devient réelle qu'après une
                 démarche de rectification ou de TOU qui fait basculer le client en imposition
@@ -603,7 +603,7 @@ useEffect(() => {
               value={form.disabilityAnnualPension}
               onChange={(v) => set("disabilityAnnualPension", v)}
               wikiId="p3a-base"
-              wikiTip="Si la police liée au 3e pilier du client prévoit une rente d'invalidité, saisissez-la ici. Saisie manuelle uniquement — jamais recalculée, laissez à 0 si la prestation n'existe pas."
+              wikiTip="Si la police liée au 3e pilier du client prévoit une rente d'invalidité, saisissez-la ici. Saisie manuelle uniquement, jamais recalculée, laissez à 0 si la prestation n'existe pas."
             />
           </div>
         </CalcCard>
@@ -641,7 +641,7 @@ useEffect(() => {
               value={form.disabilityAnnualPension}
               onChange={(v) => set("disabilityAnnualPension", v)}
               wikiId="p3a-base"
-              wikiTip="Si la police liée au 3e pilier du client prévoit une rente d'invalidité, saisissez-la ici. Saisie manuelle uniquement — jamais recalculée, laissez à 0 si la prestation n'existe pas."
+              wikiTip="Si la police liée au 3e pilier du client prévoit une rente d'invalidité, saisissez-la ici. Saisie manuelle uniquement, jamais recalculée, laissez à 0 si la prestation n'existe pas."
             />
           </div>
           <div className="grid grid-cols-2 gap-3">
@@ -655,7 +655,7 @@ useEffect(() => {
 
       <CalcCard
         title="Décès (pilier 3)"
-        description="Si la police liée au 3e pilier du client prévoit un capital décès, saisissez-le ici. Saisie manuelle uniquement — jamais recalculé, laissez à 0 si la prestation n'existe pas. La rente d'invalidité se saisit désormais dans les sections 3A et 3B ci-dessus."
+        description="Si la police liée au 3e pilier du client prévoit un capital décès, saisissez-le ici. Saisie manuelle uniquement, jamais recalculé, laissez à 0 si la prestation n'existe pas. La rente d'invalidité se saisit désormais dans les sections 3A et 3B ci-dessus."
       >
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <NumField

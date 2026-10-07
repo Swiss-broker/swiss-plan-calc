@@ -444,9 +444,21 @@ export function SessionSummaryTab({ clientId, clientName }: { clientId: string; 
         }`}>
           <div>
             {pendingInvoice.status === "paid" ? (
-              <p className="text-sm font-semibold text-success">✅ Paiement reçu — {(pendingInvoice.amount_chf / 100).toLocaleString("fr-CH", { minimumFractionDigits: 2 })} CHF</p>
+              <p className="text-sm font-semibold text-success">
+                ✅ Paiement reçu :{" "}
+                {(pendingInvoice.amount_chf / 100).toLocaleString("fr-CH", {
+                  minimumFractionDigits: 2,
+                })}{" "}
+                CHF
+              </p>
             ) : (
-              <p className="text-sm font-semibold text-amber-800">⏳ Paiement en attente — {(pendingInvoice.amount_chf / 100).toLocaleString("fr-CH", { minimumFractionDigits: 2 })} CHF</p>
+              <p className="text-sm font-semibold text-amber-800">
+                ⏳ Paiement en attente :{" "}
+                {(pendingInvoice.amount_chf / 100).toLocaleString("fr-CH", {
+                  minimumFractionDigits: 2,
+                })}{" "}
+                CHF
+              </p>
             )}
             <p className="text-xs text-muted-foreground mt-0.5">{new Date(pendingInvoice.created_at).toLocaleDateString("fr-CH")}</p>
           </div>
@@ -456,7 +468,7 @@ export function SessionSummaryTab({ clientId, clientName }: { clientId: string; 
                 type="button"
                 onClick={() => {
                   navigator.clipboard.writeText(pendingInvoice.stripe_payment_link!);
-                  toast.success("Lien copié — envoyez-le à votre client");
+                  toast.success("Lien copié, envoyez-le à votre client");
                 }}
                 className="rounded-lg border border-amber-300 bg-white px-3 py-1.5 text-xs font-medium text-amber-800 hover:bg-amber-50"
               >

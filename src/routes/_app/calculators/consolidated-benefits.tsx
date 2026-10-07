@@ -79,7 +79,8 @@ function ConsolidatedBenefitsCalc() {
           <div>
             <h2 className="text-xl font-bold tracking-tight">Prestations consolidées</h2>
             <p className="mt-1 text-sm opacity-90">
-              Ce que le dossier finance en cas de retraite, d'invalidité ou de décès, en réunissant 1er, 2e et 3e pilier — actuel vs optimisé.
+              Ce que le dossier finance en cas de retraite, d'invalidité ou de décès, en réunissant
+              1er, 2e et 3e pilier (actuel vs optimisé).
             </p>
           </div>
         </div>
