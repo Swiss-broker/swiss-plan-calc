@@ -1124,38 +1124,40 @@ function TaxGlobalCalc() {
             </div>
           </CalcCard>
 
-          {/* Impact enfants : compare la situation actuelle à la même
-              situation sans aucun enfant, pour isoler concrètement ce que
-              les enfants changent (déductions + rabais fiscaux + allocations
-              familiales) sur le revenu disponible. */}
+          {/* Impact enfants : pour un client SANS enfant, projette la même
+              situation avec 1 enfant hypothétique, pour isoler concrètement
+              ce qu'un enfant changerait (déductions + rabais fiscaux +
+              allocations familiales) sur le revenu disponible — jamais
+              l'inverse (un client qui a déjà un enfant comparé à "sans lui"
+              sous-entendrait qu'il serait mieux sans). */}
           {childrenImpact && (
-            <CalcCard title="Impact enfants">
+            <CalcCard title="Impact enfants (projection)">
               <p className="mb-3 text-xs text-muted-foreground">
-                Comparaison avec la même situation sans aucun enfant (même salaire, même canton) —
-                isole ce que {form.children > 1 ? "les enfants" : "l'enfant"} change concrètement
-                sur le budget du ménage.
+                Et si vous aviez un enfant ? Comparaison avec la même situation avec 1 enfant
+                hypothétique (même salaire, même canton) — utile pour un couple qui envisage une
+                naissance.
               </p>
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
                 <MoneyTile
                   label="Économie d'impôt"
                   value={childrenImpact.taxSavingsCHF}
                   tone={childrenImpact.taxSavingsCHF >= 0 ? "success" : "warning"}
-                  tip="Déduction enfant (cantonale + fédérale) et rabais d'impôt fédéral par enfant : différence d'impôt total entre la situation actuelle et la même situation sans enfant."
+                  tip="Déduction enfant (cantonale + fédérale) et rabais d'impôt fédéral par enfant : différence d'impôt total entre la situation actuelle et la même situation avec 1 enfant hypothétique."
                 />
                 <MoneyTile
                   label="Allocations familiales"
                   value={childrenImpact.familyAllowancesCHF}
                   tip={
                     childrenImpact.familyAllowancesIncludedInIncome
-                      ? "Ajoutées au revenu imposable (indépendant)."
-                      : "Déjà comprises dans le salaire brut saisi (salarié) — affichées ici à titre de repère."
+                      ? "Ajoutées au revenu imposable (indépendant) dans le scénario avec enfant."
+                      : "Déjà comprises dans le salaire brut saisi (salarié) — affichées ici à titre de repère. Montant repris tel quel du formulaire : à ajuster au montant réel attendu."
                   }
                 />
                 <MoneyTile
                   label="Impact net sur le revenu disponible"
                   value={childrenImpact.netImpactCHF}
                   tone={childrenImpact.netImpactCHF >= 0 ? "success" : "warning"}
-                  tip="Ce que les enfants rapportent (ou coûtent) réellement chaque année, net d'impôt : netAnnualCHF avec enfants moins netAnnualCHF sans enfant. Pas une simple somme des deux cases ci-dessus."
+                  tip="Ce qu'un enfant rapporterait (ou coûterait) réellement chaque année, net d'impôt : netAnnualCHF avec 1 enfant hypothétique moins netAnnualCHF situation actuelle. Pas une simple somme des deux cases ci-dessus."
                 />
               </div>
             </CalcCard>

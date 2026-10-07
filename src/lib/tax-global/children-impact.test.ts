@@ -4,19 +4,19 @@ import { createDefaultInput } from "./profile";
 import type { TaxGlobalInput } from "./types";
 
 describe("computeChildrenImpact", () => {
-  it("retourne null sans enfant", () => {
-    const input: TaxGlobalInput = { ...createDefaultInput(), children: 0 };
+  it("retourne null si le client a déjà un enfant", () => {
+    const input: TaxGlobalInput = { ...createDefaultInput(), children: 1, childrenAges: [5] };
     expect(computeChildrenImpact(input)).toBeNull();
   });
 
-  it("salarié : économie d'impôt positive, allocations informatives non ajoutées au net", () => {
+  it("salarié sans enfant : économie d'impôt positive si un enfant arrivait, allocations informatives non ajoutées au net", () => {
     const input: TaxGlobalInput = {
       ...createDefaultInput(),
       canton: "GE",
       civilStatus: "single",
       grossSalary: 80_000,
-      children: 1,
-      childrenAges: [10],
+      children: 0,
+      childrenAges: [],
       familyAllowances: 4_000,
       workStatus: "employee",
     };
@@ -30,14 +30,14 @@ describe("computeChildrenImpact", () => {
     expect(impact.netImpactCHF).toBeCloseTo(impact.taxSavingsCHF, 6);
   });
 
-  it("indépendant : allocations ajoutées, netImpact = économie d'impôt + allocations", () => {
+  it("indépendant sans enfant : allocations ajoutées si un enfant arrivait, netImpact = économie d'impôt + allocations", () => {
     const input: TaxGlobalInput = {
       ...createDefaultInput(),
       canton: "GE",
       civilStatus: "single",
       grossSalary: 80_000,
-      children: 1,
-      childrenAges: [10],
+      children: 0,
+      childrenAges: [],
       familyAllowances: 4_000,
       workStatus: "self_employed",
     };
@@ -45,10 +45,10 @@ describe("computeChildrenImpact", () => {
     expect(impact.familyAllowancesIncludedInIncome).toBe(true);
     expect(impact.familyAllowancesCHF).toBe(4_000);
     // Indépendant : les allocations s'ajoutent au revenu brut (des deux
-    // côtés de la comparaison, mais seulement présentes "avec enfants") —
+    // côtés de la comparaison, mais seulement présentes "avec enfant") —
     // netImpact = taxSavings + familyAllowances exactement (taxSavings
     // reflète déjà l'impôt supplémentaire généré par cette inclusion).
-    expect(impact.netImpactCHF).toBeGreaterThan(impact.taxSavingsCHF);
+    expect(impact.netImpactCHF).toBeGreaterThanOrEqual(impact.taxSavingsCHF - 1e-6);
     expect(impact.netImpactCHF).toBeCloseTo(impact.taxSavingsCHF + impact.familyAllowancesCHF, 6);
   });
 });

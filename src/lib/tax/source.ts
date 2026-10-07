@@ -252,7 +252,20 @@ function baseRateGE(monthlyGross: number, scale: SourceScale): number {
 function childReduction(scale: SourceScale, children: number, baseRate: number): number {
   const n = Math.max(0, Math.min(5, children));
   if (n === 0) return 0;
-  if (scale === "A") return n * Math.min(0.6, baseRate * 0.05);
+  // Barème A (célibataire) : AUCUNE réduction automatique pour enfant(s) à
+  // charge, contrairement à B/C/H. C'est le seul barème sans sous-indice
+  // piloté par le nombre d'enfants — son sous-indice (A1, A2…) dépend d'une
+  // pension alimentaire versée atteignant des seuils précis (12'000 CHF/an
+  // → A1, 24'000 → A2, etc.), pas du nombre d'enfants à charge du
+  // contribuable lui-même. Un célibataire avec 1 enfant à charge reste sur
+  // A0 jusqu'à une démarche de rectification qui le fait basculer sur le
+  // barème H (monoparental), jamais automatiquement vers "A1" (confirmé par
+  // Sarah, recoupé avec les directives AFC/GE — même principe déjà appliqué
+  // à GE ci-dessus via scaleKey = `${opts.scale}0` systématique). Le seuil
+  // de pension alimentaire n'est pas encore modélisé ici (pas de champ
+  // "pension alimentaire versée" dans SourceTaxOptions) : pas de réduction
+  // du tout plutôt qu'une approximation non vérifiée.
+  if (scale === "A") return 0;
   if (scale === "B") return n * Math.min(2.0, baseRate * 0.12);
   if (scale === "C") return n * Math.min(2.2, baseRate * 0.13);
   if (scale === "H") return n * Math.min(2.5, baseRate * 0.15);
@@ -309,10 +322,9 @@ export function computeSourceTax(opts: SourceTaxOptions): SourceTaxResult {
   // Le taux est appliqué sur le revenu PROPRE du contribuable (pas le combiné)
   const monthlyTax = (monthly * rate) / 100;
 
-  const scaleSuffix =
-    opts.scale === "A"
-      ? `A${Math.min(opts.children ?? 0, 5)}`
-      : `${opts.scale}${Math.min(opts.children ?? 0, 5)}`;
+  // A0 systématique, jamais piloté par le nombre d'enfants — voir
+  // childReduction() ci-dessus pour le détail de cette règle.
+  const scaleSuffix = opts.scale === "A" ? "A0" : `${opts.scale}${Math.min(opts.children ?? 0, 5)}`;
 
   return {
     rate: Math.round(rate * 100) / 100,
