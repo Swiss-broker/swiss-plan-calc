@@ -82,3 +82,52 @@ describe("AVS projectAvsPension", () => {
     expect(r.combinedAnnualPension).toBe(AVS_2026.maxCoupleAnnualPension);
   });
 });
+
+describe("careerGapYears (lacune de cotisation)", () => {
+  it("réduit les années effectives sans toucher au revenu moyen saisi", () => {
+    // Arrivée/début à 30 ans (contributionStartYear), 10 ans jusqu'à la
+    // retraite simulée, mais 5 ans de lacune dans la période.
+    const withoutGap = projectAvsPension({
+      status: "single",
+      primary: {
+        birthYear: 1970,
+        gender: "male",
+        contributionStartYear: 2015,
+        retirementYear: 2025,
+        averageAnnualIncome: 80_000,
+      },
+    });
+    const withGap = projectAvsPension({
+      status: "single",
+      primary: {
+        birthYear: 1970,
+        gender: "male",
+        contributionStartYear: 2015,
+        retirementYear: 2025,
+        averageAnnualIncome: 80_000,
+        careerGapYears: 5,
+      },
+    });
+    expect(withoutGap.primary.effectiveYears).toBe(10);
+    expect(withGap.primary.effectiveYears).toBe(5);
+    expect(withGap.primary.missingYears).toBe(withoutGap.primary.missingYears + 5);
+    expect(withGap.primary.determiningIncome).toBe(withoutGap.primary.determiningIncome);
+    expect(withGap.primary.annualPension).toBeLessThan(withoutGap.primary.annualPension);
+  });
+
+  it("ne peut jamais rendre les années effectives négatives (lacune > durée brute)", () => {
+    const r = projectAvsPension({
+      status: "single",
+      primary: {
+        birthYear: 1970,
+        gender: "male",
+        contributionStartYear: 2020,
+        retirementYear: 2025,
+        averageAnnualIncome: 80_000,
+        careerGapYears: 999,
+      },
+    });
+    expect(r.primary.effectiveYears).toBe(0);
+    expect(r.primary.annualPension).toBe(0);
+  });
+});

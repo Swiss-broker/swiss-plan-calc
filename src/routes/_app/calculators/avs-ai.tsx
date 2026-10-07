@@ -78,6 +78,7 @@ function AvsAiCalc() {
       retirementYear: 2045,
       averageAnnualIncome: 90_000,
       departureYear: 0,
+      careerGapYears: 0,
       educationalYears: 0,
       educationalShare: 100,
       assistanceYears: 0,
@@ -88,6 +89,7 @@ function AvsAiCalc() {
       spouseContributionStartYear: 2005,
       spouseRetirementYear: 2046,
       spouseAverageAnnualIncome: 70_000,
+      spouseCareerGapYears: 0,
     };
     // Si on charge une sauvegarde précise, on ignore le localStorage standalone :
     // la sauvegarde fait foi.
@@ -145,6 +147,7 @@ function AvsAiCalc() {
           retirementYear: form.retirementYear,
           averageAnnualIncome: form.averageAnnualIncome,
           departureYear: form.departureYear > 0 ? form.departureYear : null,
+          careerGapYears: form.careerGapYears,
           educationalYears: form.educationalYears,
           educationalShare: form.educationalShare,
           assistanceYears: form.assistanceYears,
@@ -157,6 +160,7 @@ function AvsAiCalc() {
               contributionStartYear: form.spouseContributionStartYear,
               retirementYear: form.spouseRetirementYear,
               averageAnnualIncome: form.spouseAverageAnnualIncome,
+              careerGapYears: form.spouseCareerGapYears,
             }
           : undefined,
       }),
@@ -198,6 +202,7 @@ function AvsAiCalc() {
           retirementYear: currentYear,
           averageAnnualIncome: form.averageAnnualIncome,
           departureYear: null,
+          careerGapYears: form.careerGapYears,
           educationalYears: aiEduYears,
           educationalShare: form.educationalShare,
           assistanceYears: aiAssistYears,
@@ -323,7 +328,13 @@ function AvsAiCalc() {
                 wikiId="avs-base"
                 wikiTip={t("calc.avs.tip.departure")}
               />
-              <div />
+              <NumField
+                label={t("calc.avs.field.career_gap_years")}
+                value={form.careerGapYears}
+                onChange={(v) => set("careerGapYears", v)}
+                wikiId="avs-base"
+                wikiTip={t("calc.avs.tip.career_gap_years")}
+              />
               <NumField
                 label={t("calc.avs.field.educational_years")}
                 value={form.educationalYears}
@@ -425,6 +436,13 @@ function AvsAiCalc() {
                   onChange={(v) => set("spouseAverageAnnualIncome", v)}
                   suffix="CHF"
                 />
+                  <NumField
+                    label={t("calc.avs.field.career_gap_years")}
+                    value={form.spouseCareerGapYears}
+                    onChange={(v) => set("spouseCareerGapYears", v)}
+                    wikiId="avs-base"
+                    wikiTip={t("calc.avs.tip.career_gap_years")}
+                  />
                 <p className="col-span-full text-xs text-muted-foreground">
                   {t("calc.avs.spouse_ref_age", { age: refAgeSpouse })}
                 </p>

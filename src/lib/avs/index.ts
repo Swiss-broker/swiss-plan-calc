@@ -86,6 +86,15 @@ export interface AvsPersonInput {
   assistanceYears?: number;
   /** Pourcentage attribué (0..100) */
   assistanceShare?: number;
+  /** Années SANS activité professionnelle (ni cotisation AVS) à l'intérieur
+   *  de la période contributionStartYear → retraite/départ — ex. arrivée en
+   *  Suisse à 30 ans, 10 ans sur place mais seulement 5 ans réellement
+   *  travaillés (5 ans de lacune). Distinct de missingYears (calculé, en
+   *  sortie) : ce champ est une SAISIE qui réduit directement le nombre
+   *  d'années effectives, donc l'échelle de rente. averageAnnualIncome doit
+   *  rester le revenu moyen sur les seules années réellement travaillées —
+   *  ne jamais le diluer sur la période totale. */
+  careerGapYears?: number;
 }
 
 export interface AvsCoupleInput {
@@ -124,7 +133,11 @@ function computePerson(input: AvsPersonInput): AvsPersonResult {
     ? input.departureYear
     : input.retirementYear;
   const rawYears = endYear - input.contributionStartYear;
-  const effectiveYears = Math.max(0, Math.min(fullContributionYears, rawYears));
+  // Lacune de cotisation à l'intérieur de la période (ex. coupure de
+  // travail) : réduit directement les années effectives, jamais plus que
+  // la durée brute elle-même.
+  const gapYears = Math.max(0, Math.min(rawYears, input.careerGapYears ?? 0));
+  const effectiveYears = Math.max(0, Math.min(fullContributionYears, rawYears - gapYears));
   const missingYears = Math.max(0, fullContributionYears - effectiveYears);
   const reductionRatio = effectiveYears / fullContributionYears;
 

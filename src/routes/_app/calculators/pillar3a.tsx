@@ -597,6 +597,15 @@ useEffect(() => {
               Hypothèse : capital final réparti sur 25 ans d'espérance de vie après la retraite.
             </p>
           </div>
+          <div className="mt-3">
+            <NumField
+              label="Rente d'invalidité annuelle (pilier 3a)"
+              value={form.disabilityAnnualPension}
+              onChange={(v) => set("disabilityAnnualPension", v)}
+              wikiId="p3a-base"
+              wikiTip="Si la police liée au 3e pilier du client prévoit une rente d'invalidité, saisissez-la ici. Saisie manuelle uniquement — jamais recalculée, laissez à 0 si la prestation n'existe pas."
+            />
+          </div>
         </CalcCard>
         <CalcCard title={t("calc.p3a.staggered_card")} description={t("calc.p3a.staggered_desc")}>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -627,6 +636,13 @@ useEffect(() => {
               <NumField label={t("calc.p3a.field.3b_return")} value={form.pillar3bReturn} onChange={(v) => set("pillar3bReturn", v)} step={0.1} />
             </div>
             <p className="text-[11px] text-muted-foreground">{t("calc.p3a.p3b_help")}</p>
+            <NumField
+              label="Rente d'invalidité annuelle (pilier 3b)"
+              value={form.disabilityAnnualPension}
+              onChange={(v) => set("disabilityAnnualPension", v)}
+              wikiId="p3a-base"
+              wikiTip="Si la police liée au 3e pilier du client prévoit une rente d'invalidité, saisissez-la ici. Saisie manuelle uniquement — jamais recalculée, laissez à 0 si la prestation n'existe pas."
+            />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <MoneyTile label={t("calc.p3a.p3b_final")} value={projection3b.finalBalance} tone="primary" big tip={t("calc.p3a.tip.p3b_final")} />
@@ -638,15 +654,10 @@ useEffect(() => {
       </CalcCard>
 
       <CalcCard
-        title="Invalidité et décès (pilier 3)"
-        description="Si la police liée au 3e pilier du client prévoit une rente d'invalidité et/ou un capital décès, saisissez-les ici. Saisie manuelle uniquement — jamais recalculée, laissez à 0 si la prestation n'existe pas."
+        title="Décès (pilier 3)"
+        description="Si la police liée au 3e pilier du client prévoit un capital décès, saisissez-le ici. Saisie manuelle uniquement — jamais recalculé, laissez à 0 si la prestation n'existe pas. La rente d'invalidité se saisit désormais dans les sections 3A et 3B ci-dessus."
       >
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <NumField
-            label="Rente d'invalidité annuelle"
-            value={form.disabilityAnnualPension}
-            onChange={(v) => set("disabilityAnnualPension", v)}
-          />
           <NumField
             label="Capital décès"
             value={form.deathCapital}

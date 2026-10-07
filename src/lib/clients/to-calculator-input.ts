@@ -434,14 +434,14 @@ export function toAvsAiInput(b: ClientBundle) {
   const spouseRetirementYear =
     spouseBirthYear !== undefined ? spouseBirthYear + 65 : undefined;
 
-  // Priorité : valeur explicite (avs_contribution_start_year) > arrival/cross_border > 21 ans révolus.
+  // Priorité : valeur explicite (avs_contribution_start_year) > "Début
+  // d'activité en Suisse" (champ désormais rempli par TOUS les clients,
+  // pas seulement les frontaliers — une personne peut arriver en Suisse
+  // sans travailler tout de suite) > année d'arrivée (si début d'activité
+  // non renseigné) > 21 ans révolus.
   const explicitStart = numOrUndef(b.client.avs_contribution_start_year);
-  const isCrossBorder =
-    b.client.tax_status === "cross_border_fr_1983" ||
-    b.client.tax_status === "cross_border_ge";
-  const arrivalStart = isCrossBorder
-    ? numOrUndef(b.client.cross_border_start_year)
-    : numOrUndef(b.client.arrival_year_ch);
+  const arrivalStart =
+    numOrUndef(b.client.cross_border_start_year) ?? numOrUndef(b.client.arrival_year_ch);
   const default18 = birthYear !== undefined ? birthYear + 21 : undefined;
   const contributionStartYear =
     explicitStart ?? (arrivalStart !== undefined && default18 !== undefined ? Math.max(arrivalStart, default18) : (arrivalStart ?? default18));
