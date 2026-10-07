@@ -542,6 +542,17 @@ function LppCalc() {
         </div>
         <div className="space-y-4 md:col-span-2">
           <CalcCard title={t("calc.lpp.savings_card")}>
+            {client && client.tax_status !== "resident" && (
+              <div className="mb-3 rounded-md border border-amber-500/40 bg-amber-500/5 p-3 text-xs text-amber-900 dark:text-amber-200">
+                <strong>Estimation en imposition ordinaire.</strong> Ce client est imposé à la
+                source (ou relève d'un régime frontalier/TOU) — l'économie d'impôt ci-dessous est
+                calculée comme s'il était imposé ordinairement, mais ne se matérialise PAS
+                automatiquement sur sa retenue à la source. Elle ne devient réelle qu'après une
+                démarche de rectification ou de TOU qui fait basculer le client en imposition
+                ordinaire (voir le calculateur Fiscal Global pour le barème avant/après
+                rectification applicable à sa situation).
+              </div>
+            )}
             <Row>
               <MoneyTile label={t("calc.lpp.total_savings")} value={buybackPlan.totalTaxSavings} tone="success" big tip={t("calc.lpp.tip.total_savings")} />
               <MoneyTile label={t("calc.lpp.yearly_amount")} value={buybackPlan.yearlyAmount} tip={t("calc.lpp.tip.yearly_amount")} />

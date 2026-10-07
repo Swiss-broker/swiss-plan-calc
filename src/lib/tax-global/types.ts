@@ -3,7 +3,7 @@
 // dans une seule structure, et expose un résultat consolidé.
 
 import type { IncomeTaxBreakdown, WorkStatusForTax } from "@/lib/tax/income";
-import type { SourceTaxResult } from "@/lib/tax/source";
+import type { SourceTaxResult, SourceScale } from "@/lib/tax/source";
 import type { CrossBorderResult } from "@/lib/tax/cross-border";
 import type { QuasiResidentResult, TOUComparisonResult } from "@/lib/tax/tou";
 import type { HealthFranceResult } from "@/lib/health-france";
@@ -112,6 +112,27 @@ export interface TaxGlobalInput {
   lamalChildMonthlyCHF: number;
 }
 
+/** Comparatif "avant / après démarche de rectification IS" — distinct de la
+ *  TOU (bascule complète vers la taxation ordinaire) : la rectification
+ *  reste dans le régime source, elle corrige seulement le barème attribué
+ *  (ex. A → H pour un parent seul avec enfant à charge). Voir
+ *  inferSourceRectification dans @/lib/tax/source. */
+export interface SourceRectificationSummary {
+  /** Barème appliqué par défaut par l'employeur (jamais piloté par les enfants). */
+  defaultScale: SourceScale;
+  /** Barème réellement attribué à la situation du contribuable, après démarche. */
+  rectifiedScale: SourceScale;
+  /** true si rectifiedScale diffère de defaultScale : il y a une démarche
+   *  concrète à faire, et donc une optimisation à montrer. */
+  applicable: boolean;
+  /** Explication en langage clair (vide si non applicable). */
+  reason: string;
+  defaultAnnualTax: number;
+  rectifiedAnnualTax: number;
+  /** rectifiedAnnualTax − defaultAnnualTax (négatif = rectification avantageuse). */
+  delta: number;
+}
+
 export interface TaxGlobalResult {
   regime: Regime;
   regimeLabel: string;
@@ -121,6 +142,8 @@ export interface TaxGlobalResult {
   crossBorder?: CrossBorderResult;
   touEligibility?: QuasiResidentResult;
   touComparison?: TOUComparisonResult;
+  /** Présent uniquement pour les régimes source_taxed/tou. */
+  sourceRectification?: SourceRectificationSummary;
   health?: HealthFranceResult;
 
   // KPI consolidés

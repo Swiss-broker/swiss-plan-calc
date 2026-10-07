@@ -26,6 +26,18 @@ export function parseChildren(value: unknown): Child[] {
   });
 }
 
+/** Enfants "à charge" (case "Au foyer" de la fiche client) : seuls ceux-ci
+ *  comptent pour tout calcul fiscal (statut monoparental, déduction enfant,
+ *  barème H, quotient familial FR...) — un enfant déclaré mais non à charge
+ *  (garde partagée, enfant majeur indépendant, etc.) ne doit RIEN changer au
+ *  statut ni aux déductions du client. Voir mapStatus dans
+ *  to-calculator-input.ts, qui applique déjà ce filtre pour le statut :
+ *  toute donnée "nombre d'enfants" / "âges des enfants" transmise à un
+ *  moteur fiscal doit utiliser CETTE fonction, jamais parseChildren brut. */
+export function dependentChildren(value: unknown): Child[] {
+  return parseChildren(value).filter((c) => c.in_household);
+}
+
 export function ageFromDob(dob: string | null | undefined): number | null {
   if (!dob) return null;
   const d = new Date(dob);

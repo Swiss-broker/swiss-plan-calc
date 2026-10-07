@@ -9,7 +9,7 @@
 // - AUCUNE écriture vers la fiche : le mapping est unidirectionnel.
 
 import type { Client, ClientPension, ClientAssets } from "./types";
-import { ageFromDob, parseChildren } from "./types";
+import { ageFromDob, parseChildren, dependentChildren } from "./types";
 import type { IncomeTaxInput } from "@/lib/tax/income";
 import type { TaxStatusContext, WorkStatusContext } from "@/lib/optimizer";
 import { getTotalGrossIncomeOrUndef, getTotalGrossIncome } from "./income";
@@ -48,14 +48,28 @@ export interface ClientBundle {
 // Helpers de mapping
 // ──────────────────────────────────────────────────────────────────────────
 
+/** @param assumeOrdinary Force le traitement "résident ordinaire" même si
+ *  le client est en retenue à la source — réservé aux calculateurs dont le
+ *  but EST d'explorer le résultat d'une démarche (TOU, rectification) :
+ *  voir toTouInput. Partout ailleurs, laisser au défaut (false). */
 export function mapStatus(
   c: Client,
   hasChildren: boolean,
+  opts: { assumeOrdinary?: boolean } = {},
 ): IncomeTaxInput["status"] {
   if (c.civil_status === "married" || c.civil_status === "registered_partnership") {
     return "married";
   }
-  if (hasChildren) return "single_with_children";
+  // Résident ordinaire (suisse ou permis C) : la situation familiale réelle
+  // s'applique directement, pas de démarche à faire. Tout autre statut
+  // fiscal (source, frontalier, TOU) = retenue à la source par l'employeur :
+  // le barème par défaut ne tient JAMAIS compte des enfants avant une
+  // démarche de rectification — voir inferSourceRectification dans
+  // @/lib/tax/source. Sans ce garde-fou, un client célibataire imposé à la
+  // source avec 1 enfant se verrait reclassé "famille monoparentale" dans
+  // tous les calculateurs alors qu'aucune démarche n'a été faite.
+  const treatAsOrdinary = opts.assumeOrdinary || c.tax_status === "resident";
+  if (hasChildren && treatAsOrdinary) return "single_with_children";
   return "single";
 }
 
@@ -132,9 +146,18 @@ export function getClientDisplayName(c: Client): string {
 // Mappers par calculateur (renvoient des Partial<form> mergés côté composant)
 // ──────────────────────────────────────────────────────────────────────────
 
-/** income-tax · TOU · base commune */
+/** income-tax · base commune (TOU a sa propre logique, voir toTouInput) */
 export function toIncomeTaxInput(b: ClientBundle) {
-  const children = parseChildren(b.client.children);
+  // Seuls les enfants "à charge" (case "Au foyer" de la fiche) comptent pour
+  // le statut et les déductions — un enfant déclaré mais pas à charge (garde
+  // partagée, majeur indépendant...) ne doit rien changer au calcul fiscal.
+  // Ce calculateur applique l'imposition ORDINAIRE : pour un client en
+  // retenue à la source (pas "resident"), rien n'est acquis avant une
+  // démarche de rectification — les enfants ne doivent donc pas s'appliquer
+  // automatiquement ici (voir mapStatus). Résident ordinaire (suisse/permis
+  // C) : la situation réelle s'applique directement.
+  const isOrdinaryResident = b.client.tax_status === "resident";
+  const children = isOrdinaryResident ? dependentChildren(b.client.children) : [];
   return {
     canton: b.client.canton ?? undefined,
     // Multiplicateur communal réel si la commune du client est connue et
@@ -143,7 +166,7 @@ export function toIncomeTaxInput(b: ClientBundle) {
     // VS uniquement : indexation communale réelle de la commune, si connue.
     vsIndexationPercent: getVsIndexation(b.client.canton, b.client.commune),
     taxStatus: b.client.tax_status,
-    status: mapStatus(b.client, children.some(ch => ch.in_household)),
+    status: mapStatus(b.client, children.length > 0),
     confession: mapConfession(b.client),
     children: children.length,
     // Utilisée uniquement par VS (déduction pour enfant dépendante de
@@ -173,16 +196,15 @@ export function toSourceTaxInput(b: ClientBundle) {
   const married =
     b.client.civil_status === "married" ||
     b.client.civil_status === "registered_partnership";
-  const hasKids = parseChildren(b.client.children).some(ch => ch.in_household);
+  const kids = dependentChildren(b.client.children);
   const spouseSalary = Number(b.client.spouse_gross_annual_salary ?? 0);
-  // Barème par défaut : C si marié biactif, B si marié monoactif, H si monoparental, A sinon.
-  const defaultScale: "A" | "B" | "C" | "H" = married
-    ? spouseSalary > 0
-      ? "C"
-      : "B"
-    : hasKids
-      ? "H"
-      : "A";
+  // Barème par défaut appliqué par l'employeur : C si marié biactif, B si
+  // marié monoactif, A sinon — JAMAIS H à partir des enfants. Le barème H
+  // (monoparental) ne s'applique qu'après une démarche de rectification
+  // explicitement enregistrée par le courtier (source_tax_scale), jamais
+  // automatiquement à partir du nombre d'enfants — voir mapStatus et
+  // inferSourceRectification dans @/lib/tax/source.
+  const defaultScale: "A" | "B" | "C" | "H" = married ? (spouseSalary > 0 ? "C" : "B") : "A";
   const scale = ((b.client.source_tax_scale as string | null) ?? defaultScale) as
     | "A"
     | "B"
@@ -191,7 +213,7 @@ export function toSourceTaxInput(b: ClientBundle) {
   return {
     canton: b.client.canton ?? undefined,
     scale,
-    children: parseChildren(b.client.children).length,
+    children: kids.length,
     monthlyGross: b.client.gross_annual_salary
       ? Math.round(Number(b.client.gross_annual_salary) / 12)
       : undefined,
@@ -216,7 +238,11 @@ export function toCrossBorderInput(b: ClientBundle) {
     workCanton: b.client.canton ?? undefined,
     grossAnnualSalary: getTotalGrossIncomeOrUndef(b.client),
     status: (married ? "married" : "single") as "single" | "married",
-    children: parseChildren(b.client.children).length,
+    // Frontalier = retenue à la source par l'employeur, même principe que
+    // le barème A0 : les enfants ne font jamais basculer automatiquement
+    // sur un barème monoparental sans démarche de rectification — voir
+    // mapStatus et toSourceTaxInput.
+    children: 0,
     spouseGrossSalary: numOrUndef(b.client.spouse_gross_annual_salary),
   };
 }
@@ -224,8 +250,17 @@ export function toCrossBorderInput(b: ClientBundle) {
 /** TOU / quasi-résident */
 export function toTouInput(b: ClientBundle) {
   const base = toIncomeTaxInput(b);
+  // Le calculateur TOU sert justement à explorer le résultat d'une demande
+  // de Taxation Ordinaire Ultérieure : contrairement à toIncomeTaxInput
+  // (imposition ordinaire "en l'état", sans démarche), on remet ici la
+  // vraie situation familiale — c'est le but explicite de l'outil, comme
+  // le bouton "après rectification" dans le Fiscal Global.
+  const children = dependentChildren(b.client.children);
   return {
     ...base,
+    status: mapStatus(b.client, children.length > 0, { assumeOrdinary: true }),
+    children: children.length,
+    childrenAges: children.map((ch) => ageFromDob(ch.date_of_birth)),
     worldwideIncome: getTotalGrossIncomeOrUndef(b.client),
     isEUEFTAResident: b.client.tax_status === "tou",
   };
@@ -255,10 +290,15 @@ export function toLppInput(b: ClientBundle) {
       }
     | null;
 
+  // Estimation d'économie d'impôt en imposition ORDINAIRE : pour un client
+  // en retenue à la source, rien n'est acquis avant rectification — voir
+  // mapStatus et le bandeau "Estimation en imposition ordinaire" affiché
+  // sur cette page pour un client non résident.
+  const lppKids = b.client.tax_status === "resident" ? dependentChildren(b.client.children) : [];
   return {
     canton: b.client.canton ?? undefined,
-    status: mapStatus(b.client, parseChildren(b.client.children).some(ch => ch.in_household)),
-    children: parseChildren(b.client.children).length,
+    status: mapStatus(b.client, lppKids.length > 0),
+    children: lppKids.length,
     confession: mapConfession(b.client),
     currentAge: ageFromDob(b.client.date_of_birth) ?? undefined,
     retirementAge: undefined,
@@ -315,7 +355,7 @@ export function toPillar3aInput(b: ClientBundle) {
   const pillar3bSum = sumAccountBalances(b.pension?.pillar_3b_accounts);
   return {
     canton: b.client.canton ?? undefined,
-    status: mapStatus(b.client, parseChildren(b.client.children).some(ch => ch.in_household)),
+    status: mapStatus(b.client, dependentChildren(b.client.children).length > 0),
     grossSalary: getTotalGrossIncomeOrUndef(b.client),
     contribution: numOrUndef(b.pension?.pillar_3a_annual_contribution),
     currentBalance: pillar3aSum > 0 ? pillar3aSum : undefined,
@@ -334,13 +374,18 @@ export function toPillar3aInput(b: ClientBundle) {
 export function toCantonCompareInput(b: ClientBundle) {
   // Le formulaire n'a qu'un seul champ "Salaire brut" : on agrège
   // salaire + bonus + autres revenus pour refléter la base imposable totale.
+  // Comparateur en imposition ORDINAIRE : pour un client en retenue à la
+  // source, pas de démarche faite donc pas d'enfant pris en compte — voir
+  // mapStatus.
+  const compareKids =
+    b.client.tax_status === "resident" ? dependentChildren(b.client.children) : [];
   return {
     referenceCanton: b.client.canton ?? undefined,
-    status: mapStatus(b.client, parseChildren(b.client.children).some(ch => ch.in_household)),
-    children: parseChildren(b.client.children).length,
+    status: mapStatus(b.client, compareKids.length > 0),
+    children: compareKids.length,
     // Utilisée uniquement par VS (déduction pour enfant dépendante de
     // l'âge, Art. 31 al. 1 let. b LF) — ignorée par les autres cantons.
-    childrenAges: parseChildren(b.client.children).map(ch => ageFromDob(ch.date_of_birth)),
+    childrenAges: compareKids.map((ch) => ageFromDob(ch.date_of_birth)),
     grossSalary: getTotalGrossIncomeOrUndef(b.client),
     spouseGrossSalary: numOrUndef(b.client.spouse_gross_annual_salary),
     netWealth: computeFortune(b.assets) || undefined,
@@ -541,7 +586,9 @@ export function toBudgetInput(b: ClientBundle) {
 // CALCULATEUR FISCAL GLOBAL
 // ──────────────────────────────────────────────────────────────────────────
 export function toTaxGlobalInput(b: ClientBundle) {
-  const children = parseChildren(b.client.children);
+  // Seuls les enfants à charge ("Au foyer") comptent pour le calcul fiscal —
+  // voir dependentChildren dans ./types.
+  const children = dependentChildren(b.client.children);
   const country = (b.client.country_of_residence ?? "CH").toUpperCase();
   const permitRaw = (b.client.permit ?? "swiss") as string;
   const permit = ([

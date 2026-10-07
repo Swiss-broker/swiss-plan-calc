@@ -2,7 +2,7 @@
 // AUCUN calcul n'est réécrit : on délègue à income/source/cross-border/tou/health-france.
 
 import { computeIncomeTax, type IncomeTaxInput } from "@/lib/tax/income";
-import { computeSourceTax, inferSourceScale } from "@/lib/tax/source";
+import { computeSourceTax, inferSourceScale, inferSourceRectification } from "@/lib/tax/source";
 import { computeCrossBorder } from "@/lib/tax/cross-border";
 import { checkQuasiResident, compareTOUvsSource } from "@/lib/tax/tou";
 import { computeHealthFrance } from "@/lib/health-france";
@@ -256,6 +256,38 @@ export function computeTaxGlobal(g: TaxGlobalInput): TaxGlobalResult {
       church: g.confession !== "none",
     });
 
+    // "Avant rectification" (barème par défaut, calculé ci-dessus) vs
+    // "après rectification" (barème réellement attribué à la situation du
+    // contribuable, voir inferSourceRectification) — pour matérialiser
+    // visuellement, bouton par bouton, l'optimisation que représente la
+    // démarche de rectification elle-même (indépendamment de la TOU).
+    const rectification = inferSourceRectification(
+      statusForScale,
+      couple && g.spouseEmployed,
+      g.children,
+    );
+    const rectifiedSource = rectification.rectificationApplicable
+      ? computeSourceTax({
+          monthlyGross: Math.round((g.grossSalary + g.bonus) / 12),
+          spouseMonthlyGross:
+            couple && g.spouseEmployed ? Math.round(g.spouseGrossSalary / 12) : undefined,
+          canton: g.canton,
+          scale: rectification.rectifiedScale,
+          children: g.children,
+          church: g.confession !== "none",
+          useRectifiedScale: true,
+        })
+      : null;
+    const sourceRectification = {
+      defaultScale: rectification.defaultScale,
+      rectifiedScale: rectification.rectifiedScale,
+      applicable: rectification.rectificationApplicable,
+      reason: rectification.reason,
+      defaultAnnualTax: source.annualTax,
+      rectifiedAnnualTax: rectifiedSource ? rectifiedSource.annualTax : source.annualTax,
+      delta: rectifiedSource ? rectifiedSource.annualTax - source.annualTax : 0,
+    };
+
     const swissIncome =
       g.grossSalary + g.bonus + (couple ? g.spouseGrossSalary : 0) + g.otherIncome + g.rentalIncome;
     const worldwide = swissIncome + g.foreignIncome;
@@ -315,6 +347,7 @@ export function computeTaxGlobal(g: TaxGlobalInput): TaxGlobalResult {
       source,
       touEligibility,
       touComparison,
+      sourceRectification,
       totalTaxCHF: total,
       socialChargesCHF: lamal,
       grossIncomeCHF: gross,

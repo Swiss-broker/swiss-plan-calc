@@ -164,6 +164,12 @@ export interface SourceTaxOptions {
   church?: boolean;
   /** Frontalier France bénéficiant de l'accord 4.5 % */
   isCrossBorderFR?: boolean;
+  /** true pour le scénario "après rectification" : pour GE, utilise le vrai
+   *  sous-indice par enfant (H1, H2…) au lieu du sous-indice "0" toujours
+   *  appliqué par défaut par l'employeur (voir inferSourceRectification).
+   *  Sans effet pour les cantons hors GE : le sous-indice par enfant y est
+   *  déjà dérivé de `children` ailleurs dans cette fonction. */
+  useRectifiedScale?: boolean;
 }
 
 export interface SourceTaxResult {
@@ -286,11 +292,17 @@ export function computeSourceTax(opts: SourceTaxOptions): SourceTaxResult {
     // Genève : utilise les vraies tables officielles tar26GE (mêmes tables
     // que le module frontalier cross-border.ts) au lieu d'une courbe
     // approximative.
-    // Barème toujours "0 enfant" (A0/B0/C0/H0) : c'est le barème appliqué
+    // Barème "0 enfant" (A0/B0/C0/H0) par défaut : c'est le barème appliqué
     // par défaut par l'employeur. La prise en compte des enfants ne se fait
     // qu'après une démarche de rectification (DRIS) l'année suivante, avant
     // le 31 mars, jamais automatiquement (directives officielles AFC/ge.ch).
-    const scaleKey = `${opts.scale}0`;
+    // opts.useRectifiedScale (scénario "après rectification" explicite,
+    // voir inferSourceRectification) utilise le vrai sous-indice par
+    // enfant — plafonné à 2, les tables officielles GE_IS_RATES_2026
+    // (cross-border.ts) ne couvrant que 0/1/2 enfants pour GE.
+    const scaleKey = opts.useRectifiedScale
+      ? `${opts.scale}${Math.min(opts.children ?? 0, 2)}`
+      : `${opts.scale}0`;
     const determinationAnnual = determinationBase * 12;
     const baseRate = interpolateGERate(determinationAnnual, scaleKey);
     rate = Math.max(0, baseRate + churchAddition);
@@ -322,9 +334,17 @@ export function computeSourceTax(opts: SourceTaxOptions): SourceTaxResult {
   // Le taux est appliqué sur le revenu PROPRE du contribuable (pas le combiné)
   const monthlyTax = (monthly * rate) / 100;
 
-  // A0 systématique, jamais piloté par le nombre d'enfants — voir
-  // childReduction() ci-dessus pour le détail de cette règle.
-  const scaleSuffix = opts.scale === "A" ? "A0" : `${opts.scale}${Math.min(opts.children ?? 0, 5)}`;
+  // A0 systématique, jamais piloté par le nombre d'enfants (voir
+  // childReduction() ci-dessus). Les autres barèmes affichent le vrai
+  // sous-indice par enfant UNIQUEMENT pour le scénario explicite "après
+  // rectification" (opts.useRectifiedScale) — sinon "X0", cohérent avec le
+  // taux réellement appliqué par défaut (voir scaleKey ci-dessus pour GE).
+  const scaleSuffix =
+    opts.scale === "A"
+      ? "A0"
+      : opts.useRectifiedScale
+        ? `${opts.scale}${Math.min(opts.children ?? 0, 5)}`
+        : `${opts.scale}0`;
 
   return {
     rate: Math.round(rate * 100) / 100,
@@ -341,4 +361,63 @@ export function inferSourceScale(status: FilingStatus, spouseEmployed: boolean):
   if (status === "single_with_children") return "H";
   if (status === "married") return spouseEmployed ? "C" : "B";
   return "A";
+}
+
+export interface SourceRectificationResult {
+  /** Barème par défaut appliqué par l'employeur, sans tenir compte des
+   *  enfants (voir inferSourceScale, toujours appelé avec children=0). */
+  defaultScale: SourceScale;
+  /** Barème qui doit réellement être attribué après démarche de
+   *  rectification IS, compte tenu de la situation familiale réelle. */
+  rectifiedScale: SourceScale;
+  /** true si rectifiedScale diffère de defaultScale : il y a une démarche
+   *  à faire pour obtenir le barème correct. */
+  rectificationApplicable: boolean;
+  /** Explication en langage clair de la bascule (vide si inapplicable). */
+  reason: string;
+}
+
+/**
+ * Barème après démarche de rectification IS, pour la seule situation
+ * aujourd'hui documentée avec certitude : un célibataire avec au moins un
+ * enfant à charge. Le barème par défaut appliqué par l'employeur est
+ * toujours A (jamais H automatiquement, voir inferSourceScale), même si le
+ * contribuable a des enfants — la prise en compte de l'enfant ne se fait
+ * qu'après une démarche de rectification, qui fait alors basculer sur le
+ * barème H (famille monoparentale), avec le sous-indice correspondant au
+ * nombre d'enfants (H1, H2…).
+ *
+ * Volontairement limité à ce seul cas : contrairement à A, les barèmes B/C
+ * (couples) intègrent déjà les enfants dans leur sous-indice ailleurs dans
+ * ce fichier (voir scaleKey dans computeSourceTax) sans qu'un mécanisme de
+ * rectification équivalent n'ait été vérifié ici — ne pas l'étendre sans
+ * un cas de référence confirmé. Le sous-indice A1/A2… pour pension
+ * alimentaire versée (12'000 CHF/an → A1, 24'000 → A2…) n'est pas non plus
+ * modélisé ici, faute de champ "pension alimentaire versée" dans le moteur
+ * source (voir childReduction ci-dessus) — pas de bascule devinée plutôt
+ * qu'une approximation non vérifiée.
+ */
+export function inferSourceRectification(
+  status: FilingStatus,
+  spouseEmployed: boolean,
+  children: number,
+): SourceRectificationResult {
+  const defaultScale = inferSourceScale(
+    status === "single_with_children" ? "single" : status,
+    spouseEmployed,
+  );
+  if (defaultScale === "A" && children > 0) {
+    return {
+      defaultScale,
+      rectifiedScale: "H",
+      rectificationApplicable: true,
+      reason: `${children} enfant${children > 1 ? "s" : ""} à charge dans le ménage : le barème par défaut (A, sans enfant) ne reflète pas la situation réelle. Après dépôt d'une demande de rectification auprès de l'AFC/du canton, le barème H (famille monoparentale) s'applique.`,
+    };
+  }
+  return {
+    defaultScale,
+    rectifiedScale: defaultScale,
+    rectificationApplicable: false,
+    reason: "",
+  };
 }

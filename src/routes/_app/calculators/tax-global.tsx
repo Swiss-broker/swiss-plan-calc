@@ -236,6 +236,7 @@ function TaxGlobalCalc() {
   const isCouple = form.civilStatus === "married" || form.civilStatus === "registered_partnership";
   const isCohabiting = form.civilStatus === "cohabiting";
   const [guideOpen, setGuideOpen] = useState(false);
+  const [showRectifiedScale, setShowRectifiedScale] = useState(false);
   const guideSteps: GuideStep[] = [
     { title: t("calc.global.guide.s1.title"), body: t("calc.global.guide.s1.body") },
     {
@@ -1258,6 +1259,53 @@ function TaxGlobalCalc() {
                       <span>{result.touComparison.recommendationText}</span>
                       <HelpDot tip="Comparaison entre rester en imposition à la source (IS, barème sur le salaire brut, sans déductions) et demander la Taxation Ordinaire Ultérieure (TOU, barème résident avec toutes les déductions saisies ci-dessus : 3a, rachat LPP, intérêts hypothécaires, etc.). Le message indique l'option la moins coûteuse pour le client selon les déductions actuellement renseignées. Si les déductions augmentent, la TOU peut devenir plus avantageuse." />
                     </p>
+                  )}
+                </div>
+              )}
+              {result.sourceRectification?.applicable && (
+                <div className="mt-3 rounded-md border border-amber-500/40 bg-amber-500/5 p-3 text-sm text-amber-900 dark:text-amber-200">
+                  <div className="mb-2 flex items-center gap-2">
+                    <Badge variant="outline">
+                      Barème appliqué par l'employeur : {result.sourceRectification.defaultScale}0
+                    </Badge>
+                    <HelpDot tip="Le barème retenu à la source par l'employeur ne tient JAMAIS compte automatiquement des enfants à charge — il reste au barème de base (sans enfant) jusqu'au dépôt d'une démarche de rectification auprès de l'AFC/du canton. C'est cette démarche qui fait passer au barème réellement attribué à la situation du client." />
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    {result.sourceRectification.reason}
+                  </p>
+                  <Button
+                    type="button"
+                    variant={showRectifiedScale ? "default" : "outline"}
+                    size="sm"
+                    className="mt-2"
+                    onClick={() => setShowRectifiedScale((v) => !v)}
+                  >
+                    {showRectifiedScale
+                      ? "Masquer l'optimisation après rectification"
+                      : "Voir l'optimisation après rectification"}
+                  </Button>
+                  {showRectifiedScale && (
+                    <div className="mt-3 grid grid-cols-2 gap-3 rounded-md border border-border bg-background p-3">
+                      <MoneyTile
+                        label="Avant rectification"
+                        value={result.sourceRectification.defaultAnnualTax}
+                        hint={`Barème ${result.sourceRectification.defaultScale}0`}
+                        tip="Retenue à la source annuelle actuellement appliquée par l'employeur, sans tenir compte de la situation familiale réelle du client."
+                      />
+                      <MoneyTile
+                        label="Après rectification"
+                        value={result.sourceRectification.rectifiedAnnualTax}
+                        hint={`Barème ${result.sourceRectification.rectifiedScale}`}
+                        tone="success"
+                        tip="Retenue à la source annuelle une fois la démarche de rectification effectuée et le barème correctement attribué à la situation réelle du client."
+                      />
+                      <div className="col-span-2 text-xs text-muted-foreground">
+                        Économie annuelle estimée grâce à la rectification :{" "}
+                        <span className="font-semibold text-success">
+                          {formatCHF(-result.sourceRectification.delta)}
+                        </span>
+                      </div>
+                    </div>
                   )}
                 </div>
               )}
