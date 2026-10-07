@@ -62,6 +62,7 @@ import { Route as AppCalculatorsAvsAiRouteImport } from './routes/_app/calculato
 import { Route as AppCompaniesCompanyIdEditRouteImport } from './routes/_app/companies/$companyId_.edit'
 import { Route as AppClientsClientIdScenariosRouteImport } from './routes/_app/clients/$clientId_.scenarios'
 import { Route as AppClientsClientIdEditRouteImport } from './routes/_app/clients/$clientId_.edit'
+import { Route as AppClientsClientIdCasesCaseIdRouteImport } from './routes/_app/clients/$clientId_.cases.$caseId'
 
 const ResetPasswordRoute = ResetPasswordRouteImport.update({
   id: '/reset-password',
@@ -338,6 +339,12 @@ const AppClientsClientIdEditRoute = AppClientsClientIdEditRouteImport.update({
   path: '/clients/$clientId/edit',
   getParentRoute: () => AppRoute,
 } as any)
+const AppClientsClientIdCasesCaseIdRoute =
+  AppClientsClientIdCasesCaseIdRouteImport.update({
+    id: '/clients/$clientId_/cases/$caseId',
+    path: '/clients/$clientId/cases/$caseId',
+    getParentRoute: () => AppRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -392,6 +399,7 @@ export interface FileRoutesByFullPath {
   '/clients/$clientId/edit': typeof AppClientsClientIdEditRoute
   '/clients/$clientId/scenarios': typeof AppClientsClientIdScenariosRoute
   '/companies/$companyId/edit': typeof AppCompaniesCompanyIdEditRoute
+  '/clients/$clientId/cases/$caseId': typeof AppClientsClientIdCasesCaseIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -444,6 +452,7 @@ export interface FileRoutesByTo {
   '/clients/$clientId/edit': typeof AppClientsClientIdEditRoute
   '/clients/$clientId/scenarios': typeof AppClientsClientIdScenariosRoute
   '/companies/$companyId/edit': typeof AppCompaniesCompanyIdEditRoute
+  '/clients/$clientId/cases/$caseId': typeof AppClientsClientIdCasesCaseIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -500,6 +509,7 @@ export interface FileRoutesById {
   '/_app/clients/$clientId_/edit': typeof AppClientsClientIdEditRoute
   '/_app/clients/$clientId_/scenarios': typeof AppClientsClientIdScenariosRoute
   '/_app/companies/$companyId_/edit': typeof AppCompaniesCompanyIdEditRoute
+  '/_app/clients/$clientId_/cases/$caseId': typeof AppClientsClientIdCasesCaseIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -556,6 +566,7 @@ export interface FileRouteTypes {
     | '/clients/$clientId/edit'
     | '/clients/$clientId/scenarios'
     | '/companies/$companyId/edit'
+    | '/clients/$clientId/cases/$caseId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -608,6 +619,7 @@ export interface FileRouteTypes {
     | '/clients/$clientId/edit'
     | '/clients/$clientId/scenarios'
     | '/companies/$companyId/edit'
+    | '/clients/$clientId/cases/$caseId'
   id:
     | '__root__'
     | '/'
@@ -663,6 +675,7 @@ export interface FileRouteTypes {
     | '/_app/clients/$clientId_/edit'
     | '/_app/clients/$clientId_/scenarios'
     | '/_app/companies/$companyId_/edit'
+    | '/_app/clients/$clientId_/cases/$caseId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -1056,6 +1069,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppClientsClientIdEditRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/clients/$clientId_/cases/$caseId': {
+      id: '/_app/clients/$clientId_/cases/$caseId'
+      path: '/clients/$clientId/cases/$caseId'
+      fullPath: '/clients/$clientId/cases/$caseId'
+      preLoaderRoute: typeof AppClientsClientIdCasesCaseIdRouteImport
+      parentRoute: typeof AppRoute
+    }
   }
 }
 
@@ -1144,6 +1164,7 @@ interface AppRouteChildren {
   AppClientsIndexRoute: typeof AppClientsIndexRoute
   AppClientsClientIdEditRoute: typeof AppClientsClientIdEditRoute
   AppClientsClientIdScenariosRoute: typeof AppClientsClientIdScenariosRoute
+  AppClientsClientIdCasesCaseIdRoute: typeof AppClientsClientIdCasesCaseIdRoute
 }
 
 const AppRouteChildren: AppRouteChildren = {
@@ -1161,6 +1182,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppClientsIndexRoute: AppClientsIndexRoute,
   AppClientsClientIdEditRoute: AppClientsClientIdEditRoute,
   AppClientsClientIdScenariosRoute: AppClientsClientIdScenariosRoute,
+  AppClientsClientIdCasesCaseIdRoute: AppClientsClientIdCasesCaseIdRoute,
 }
 
 const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)

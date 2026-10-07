@@ -57,7 +57,6 @@ import { ageFromDob, parseChildren, type Client, type ClientPension, type Client
 import { formatCHF, formatPct } from "@/lib/format";
 import { sumAllLppBuybacksDone } from "@/lib/clients/to-calculator-input";
 import { OptimizationsPanel } from "@/components/optimizer/OptimizationsPanel";
-import { ClientCalculatorBar } from "@/components/clients/ClientCalculatorBar";
 import { useClientDashboard } from "@/hooks/use-client-dashboard";
 import {
   DashboardOverview,
@@ -469,45 +468,16 @@ function ClientDetailPage() {
             clientId={clientId}
             activeCaseId={caseId}
             onSelectCase={(id) =>
-              // "Ouvrir" un dossier doit montrer SES simulations, pas la
-              // synthèse générale du client : on bascule sur l'onglet
-              // "Synthèse RDV", qui filtre désormais sur ce dossier (voir
-              // SessionSummaryTab, prop caseId).
-              navigate({
-                search: (prev: z.infer<typeof searchSchema>) => ({
-                  ...prev,
-                  caseId: id,
-                  tab: "session",
-                }),
-                replace: true,
-              })
-            }
-            onCreateCase={(id) =>
-              // Même logique que ClientCalculatorBar.onCreateCase ci-dessous :
-              // un dossier créé depuis l'onglet "Dossiers" doit, lui aussi,
-              // rediriger directement vers le calculateur Budget.
-              navigate({
-                to: "/calculators/budget",
-                search: { clientId, caseId: id },
-              })
-            }
-          />
-        </TabsContent>
-
-        <TabsContent value="session" className="mt-4 space-y-4">
-          {/* La page dossier : sélection/activation du dossier + lancement
-              des calculateurs pré-remplis, juste au-dessus des simulations
-              déjà faites dans ce même dossier. "Lancer un calcul" ne se
-              fait plus jamais depuis la fiche générale (onglet Synthèse),
-              toujours depuis ici. */}
-          <ClientCalculatorBar
-            client={client}
-            activeCaseId={caseId}
-            onSelectCase={(id) =>
-              navigate({
-                search: (prev: z.infer<typeof searchSchema>) => ({ ...prev, caseId: id }),
-                replace: true,
-              })
+              // "Ouvrir" un dossier amène sur sa page dédiée : calculateurs
+              // de CE dossier en haut, ses simulations juste en dessous. Un
+              // dossier terminé y verrouille automatiquement les
+              // calculateurs (voir ClientCalculatorBar).
+              id
+                ? navigate({
+                    to: "/clients/$clientId/cases/$caseId",
+                    params: { clientId, caseId: id },
+                  })
+                : undefined
             }
             onCreateCase={(id) =>
               // Un dossier qui vient d'être créé n'a encore aucune simulation :
@@ -520,10 +490,16 @@ function ClientDetailPage() {
               })
             }
           />
+        </TabsContent>
+
+        <TabsContent value="session" className="mt-4">
+          {/* Vue globale, non filtrée par dossier : historique complet,
+              outils de facturation et synthèse PDF pour tout le client.
+              Lancer un calcul ne se fait plus ici, uniquement depuis
+              l'intérieur d'un dossier (onglet Dossiers puis Ouvrir). */}
           <SessionSummaryTab
             clientId={clientId}
             clientName={`${client.first_name} ${client.last_name}`.trim()}
-            caseId={caseId}
           />
         </TabsContent>
 

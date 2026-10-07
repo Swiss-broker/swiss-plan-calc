@@ -150,7 +150,11 @@ export function ClientCalculatorBar({
   const [newCaseName, setNewCaseName] = useState("");
 
   const activeCase = cases.find((c) => c.id === activeCaseId);
-  const locked = !activeCase;
+  // Un dossier terminé ne doit PLUS donner accès aux calculateurs : avant ce
+  // correctif, fermer un dossier le laissait quand même actif/déverrouillé
+  // (locked ne regardait que "y a-t-il un dossier", jamais son statut).
+  const closed = activeCase?.status === "closed";
+  const locked = !activeCase || closed;
 
   const submitNewCase = () => {
     const title = newCaseName.trim();
@@ -296,15 +300,20 @@ export function ClientCalculatorBar({
               client={client}
               lastSimAt={chip.kind ? (latestByKind?.[chip.kind] ?? null) : null}
               locked={locked}
+              closed={closed}
               caseId={activeCase?.id}
-              onLockedClick={() => setShowNewCaseForm(true)}
+              onLockedClick={() => {
+                if (!closed) setShowNewCaseForm(true);
+              }}
             />
           ))}
         </div>
         <p className="mt-2 text-[10.5px] text-muted-foreground">
-          {locked
-            ? "Créez ou sélectionnez un dossier ci-dessus pour activer les calculateurs."
-            : "Les calculateurs grisés ne s'appliquent pas à ce profil. Une pastille orange signale une simulation à rafraîchir suite à une modification de la fiche."}
+          {closed
+            ? "Ce dossier est terminé. Réouvrez-le ci-dessus pour relancer des calculateurs."
+            : locked
+              ? "Créez ou sélectionnez un dossier ci-dessus pour activer les calculateurs."
+              : "Les calculateurs grisés ne s'appliquent pas à ce profil. Une pastille orange signale une simulation à rafraîchir suite à une modification de la fiche."}
         </p>
       </div>
     </TooltipProvider>
@@ -316,6 +325,7 @@ function ChipLink({
   client,
   lastSimAt,
   locked,
+  closed,
   caseId,
   onLockedClick,
 }: {
@@ -323,6 +333,7 @@ function ChipLink({
   client: Client;
   lastSimAt: string | null;
   locked: boolean;
+  closed: boolean;
   caseId: string | undefined;
   onLockedClick: () => void;
 }) {
@@ -350,7 +361,9 @@ function ChipLink({
           </button>
         </TooltipTrigger>
         <TooltipContent side="bottom" className="max-w-xs text-xs">
-          Créez ou sélectionnez un dossier pour activer ce calculateur.
+          {closed
+            ? "Ce dossier est terminé. Réouvrez-le pour relancer ce calculateur."
+            : "Créez ou sélectionnez un dossier pour activer ce calculateur."}
         </TooltipContent>
       </Tooltip>
     );
