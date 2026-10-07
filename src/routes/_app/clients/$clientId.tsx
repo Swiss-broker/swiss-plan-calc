@@ -411,28 +411,6 @@ function ClientDetailPage() {
       <div className="mt-6">
         <AiAnalysis client={client} pension={pension} assets={assets} />
       </div>
-      <div className="mt-4">
-        <ClientCalculatorBar
-          client={client}
-          activeCaseId={caseId}
-          onSelectCase={(id) =>
-            navigate({
-              search: (prev: z.infer<typeof searchSchema>) => ({ ...prev, caseId: id }),
-              replace: true,
-            })
-          }
-          onCreateCase={(id) =>
-            // Un dossier qui vient d'être créé n'a encore aucune simulation :
-            // on redirige directement vers le calculateur Budget pour que le
-            // budget soit toujours établi EN PREMIER dans le rendez-vous,
-            // avant toute autre simulation (voir src/lib/budget.ts).
-            navigate({
-              to: "/calculators/budget",
-              search: { clientId, caseId: id },
-            })
-          }
-        />
-      </div>
 
       <Tabs
         value={tab ?? "overview"}
@@ -491,17 +469,21 @@ function ClientDetailPage() {
             clientId={clientId}
             activeCaseId={caseId}
             onSelectCase={(id) =>
+              // "Ouvrir" un dossier doit montrer SES simulations, pas la
+              // synthèse générale du client : on bascule sur l'onglet
+              // "Synthèse RDV", qui filtre désormais sur ce dossier (voir
+              // SessionSummaryTab, prop caseId).
               navigate({
                 search: (prev: z.infer<typeof searchSchema>) => ({
                   ...prev,
                   caseId: id,
-                  tab: "overview",
+                  tab: "session",
                 }),
                 replace: true,
               })
             }
             onCreateCase={(id) =>
-              // Même logique que ClientCalculatorBar.onCreateCase ci-dessus :
+              // Même logique que ClientCalculatorBar.onCreateCase ci-dessous :
               // un dossier créé depuis l'onglet "Dossiers" doit, lui aussi,
               // rediriger directement vers le calculateur Budget.
               navigate({
@@ -512,10 +494,36 @@ function ClientDetailPage() {
           />
         </TabsContent>
 
-        <TabsContent value="session" className="mt-4">
+        <TabsContent value="session" className="mt-4 space-y-4">
+          {/* La page dossier : sélection/activation du dossier + lancement
+              des calculateurs pré-remplis, juste au-dessus des simulations
+              déjà faites dans ce même dossier. "Lancer un calcul" ne se
+              fait plus jamais depuis la fiche générale (onglet Synthèse),
+              toujours depuis ici. */}
+          <ClientCalculatorBar
+            client={client}
+            activeCaseId={caseId}
+            onSelectCase={(id) =>
+              navigate({
+                search: (prev: z.infer<typeof searchSchema>) => ({ ...prev, caseId: id }),
+                replace: true,
+              })
+            }
+            onCreateCase={(id) =>
+              // Un dossier qui vient d'être créé n'a encore aucune simulation :
+              // on redirige directement vers le calculateur Budget pour que le
+              // budget soit toujours établi EN PREMIER dans le rendez-vous,
+              // avant toute autre simulation (voir src/lib/budget.ts).
+              navigate({
+                to: "/calculators/budget",
+                search: { clientId, caseId: id },
+              })
+            }
+          />
           <SessionSummaryTab
             clientId={clientId}
             clientName={`${client.first_name} ${client.last_name}`.trim()}
+            caseId={caseId}
           />
         </TabsContent>
 

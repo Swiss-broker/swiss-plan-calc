@@ -36,9 +36,22 @@ import { aggregateGains, listDismissedGains, type GainItem } from "@/lib/simulat
 import { formatCHF } from "@/lib/format";
 import { formatDateShort } from "@/lib/i18n/format";
 import { useT } from "@/contexts/LanguageContext";
+import { useClientCases } from "@/hooks/useClientCases";
 import { SynthesisReportModal } from "./SynthesisReportModal";
 
-export function SessionSummaryTab({ clientId, clientName }: { clientId: string; clientName: string }) {
+export function SessionSummaryTab({
+  clientId,
+  clientName,
+  caseId,
+}: {
+  clientId: string;
+  clientName: string;
+  /** Dossier actif (?caseId=xxx) : quand présent, la liste des simulations
+   *  est filtrée sur CE dossier uniquement (voir "Ouvrir" dans
+   *  ClientCasesTab) — plus de confusion avec les simulations des autres
+   *  dossiers du même client. */
+  caseId?: string;
+}) {
   const t = useT();
   const qc = useQueryClient();
   const [reportOpen, setReportOpen] = useState(false);
@@ -203,17 +216,21 @@ export function SessionSummaryTab({ clientId, clientName }: { clientId: string; 
   });
 
   const { data: entries = [], isLoading } = useQuery({
-    queryKey: ["client-simulations", clientId],
+    queryKey: ["client-simulations", clientId, caseId],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("simulation_history")
-        .select("*")
-        .eq("client_id", clientId)
-        .order("created_at", { ascending: false });
+      let query = supabase.from("simulation_history").select("*").eq("client_id", clientId);
+      // Dossier actif : on ne montre QUE ses simulations — voir "Ouvrir"
+      // dans ClientCasesTab. Sans dossier actif (onglet ouvert directement),
+      // comportement inchangé : toutes les simulations du client.
+      if (caseId) query = query.eq("case_id", caseId);
+      const { data, error } = await query.order("created_at", { ascending: false });
       if (error) throw error;
       return (data ?? []) as unknown as HistoryEntry[];
     },
   });
+
+  const { cases } = useClientCases(clientId);
+  const activeCase = caseId ? cases.find((c) => c.id === caseId) : undefined;
 
   const remove = useMutation({
     mutationFn: async (id: string) => {
@@ -387,7 +404,9 @@ export function SessionSummaryTab({ clientId, clientName }: { clientId: string; 
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base">
             <CalendarClock className="h-5 w-5 text-primary" />
-            {t("client.session.simulations_list", { n: entries.length })}
+            {activeCase
+              ? `Dossier « ${activeCase.title} » : ${entries.length} simulation${entries.length > 1 ? "s" : ""}`
+              : t("client.session.simulations_list", { n: entries.length })}
           </CardTitle>
         </CardHeader>
         <CardContent>
