@@ -1124,7 +1124,10 @@ export function exportBudgetPdf(args: {
     ["Poste", "CHF/mois"],
     [
       ["Logement", formatCHF(input.housingMonthlyCHF)],
+      ["Énergie (eau, électricité, gaz)", formatCHF(input.energyMonthlyCHF)],
       ["Assurance maladie", formatCHF(input.healthInsuranceMonthlyCHF)],
+      ["Autres assurances", formatCHF(input.otherInsuranceMonthlyCHF)],
+      ["Transport", formatCHF(input.transportMonthlyCHF)],
       ["Crédits / leasing", formatCHF(input.loansMonthlyCHF)],
       ["Pension alimentaire versée", formatCHF(input.alimonyPaidMonthlyCHF)],
       ["Autres charges", formatCHF(input.otherExpensesMonthlyCHF)],

@@ -43,7 +43,10 @@ const DEFAULT_FORM: BudgetInput = {
   rentalIncomeMonthlyCHF: 0,
   otherIncomeMonthlyCHF: 0,
   housingMonthlyCHF: 0,
+  energyMonthlyCHF: 0,
   healthInsuranceMonthlyCHF: 0,
+  otherInsuranceMonthlyCHF: 0,
+  transportMonthlyCHF: 0,
   loansMonthlyCHF: 0,
   alimonyPaidMonthlyCHF: 0,
   otherExpensesMonthlyCHF: 0,
@@ -179,9 +182,24 @@ function BudgetCalc() {
                 onChange={(v) => set("housingMonthlyCHF", v)}
               />
               <NumField
+                label="Énergie (eau, électricité, gaz)"
+                value={form.energyMonthlyCHF}
+                onChange={(v) => set("energyMonthlyCHF", v)}
+              />
+              <NumField
                 label="Assurance maladie"
                 value={form.healthInsuranceMonthlyCHF}
                 onChange={(v) => set("healthInsuranceMonthlyCHF", v)}
+              />
+              <NumField
+                label="Autres assurances (véhicule, ménage, RC…)"
+                value={form.otherInsuranceMonthlyCHF}
+                onChange={(v) => set("otherInsuranceMonthlyCHF", v)}
+              />
+              <NumField
+                label="Transport (véhicule, essence, abonnement)"
+                value={form.transportMonthlyCHF}
+                onChange={(v) => set("transportMonthlyCHF", v)}
               />
               <NumField
                 label="Crédits / leasing"

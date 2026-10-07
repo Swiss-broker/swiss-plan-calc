@@ -8,7 +8,10 @@ const BASE_INPUT = {
   rentalIncomeMonthlyCHF: 0,
   otherIncomeMonthlyCHF: 0,
   housingMonthlyCHF: 1_800,
+  energyMonthlyCHF: 200,
   healthInsuranceMonthlyCHF: 400,
+  otherInsuranceMonthlyCHF: 100,
+  transportMonthlyCHF: 300,
   loansMonthlyCHF: 0,
   alimonyPaidMonthlyCHF: 0,
   otherExpensesMonthlyCHF: 500,
@@ -38,8 +41,8 @@ describe("computeBudgetTotals — budget actuel", () => {
   it("revenus − charges = marge actuelle", () => {
     const result = computeBudgetTotals(BASE_INPUT);
     expect(result.totalMonthlyIncomeCHF).toBe(6_000);
-    expect(result.totalMonthlyExpensesCHF).toBe(2_700);
-    expect(result.currentMarginCHF).toBe(3_300);
+    expect(result.totalMonthlyExpensesCHF).toBe(3_300);
+    expect(result.currentMarginCHF).toBe(2_700);
   });
 });
 
