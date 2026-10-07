@@ -597,13 +597,20 @@ useEffect(() => {
               Hypothèse : capital final réparti sur 25 ans d'espérance de vie après la retraite.
             </p>
           </div>
-          <div className="mt-3">
+          <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
             <NumField
               label="Rente d'invalidité annuelle (pilier 3a)"
               value={form.disabilityAnnualPension}
               onChange={(v) => set("disabilityAnnualPension", v)}
               wikiId="p3a-base"
               wikiTip="Si la police liée au 3e pilier du client prévoit une rente d'invalidité, saisissez-la ici. Saisie manuelle uniquement, jamais recalculée, laissez à 0 si la prestation n'existe pas."
+            />
+            <NumField
+              label="Capital décès (pilier 3a)"
+              value={form.deathCapital}
+              onChange={(v) => set("deathCapital", v)}
+              wikiId="p3a-base"
+              wikiTip="Si la police liée au 3e pilier du client prévoit un capital décès, saisissez-le ici. Saisie manuelle uniquement, jamais recalculé, laissez à 0 si la prestation n'existe pas."
             />
           </div>
         </CalcCard>
@@ -636,13 +643,22 @@ useEffect(() => {
               <NumField label={t("calc.p3a.field.3b_return")} value={form.pillar3bReturn} onChange={(v) => set("pillar3bReturn", v)} step={0.1} />
             </div>
             <p className="text-[11px] text-muted-foreground">{t("calc.p3a.p3b_help")}</p>
-            <NumField
-              label="Rente d'invalidité annuelle (pilier 3b)"
-              value={form.disabilityAnnualPension}
-              onChange={(v) => set("disabilityAnnualPension", v)}
-              wikiId="p3a-base"
-              wikiTip="Si la police liée au 3e pilier du client prévoit une rente d'invalidité, saisissez-la ici. Saisie manuelle uniquement, jamais recalculée, laissez à 0 si la prestation n'existe pas."
-            />
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <NumField
+                label="Rente d'invalidité annuelle (pilier 3b)"
+                value={form.disabilityAnnualPension}
+                onChange={(v) => set("disabilityAnnualPension", v)}
+                wikiId="p3a-base"
+                wikiTip="Si la police liée au 3e pilier du client prévoit une rente d'invalidité, saisissez-la ici. Saisie manuelle uniquement, jamais recalculée, laissez à 0 si la prestation n'existe pas."
+              />
+              <NumField
+                label="Capital décès (pilier 3b)"
+                value={form.deathCapital}
+                onChange={(v) => set("deathCapital", v)}
+                wikiId="p3a-base"
+                wikiTip="Si la police liée au 3e pilier du client prévoit un capital décès, saisissez-le ici. Saisie manuelle uniquement, jamais recalculé, laissez à 0 si la prestation n'existe pas."
+              />
+            </div>
           </div>
           <div className="grid grid-cols-2 gap-3">
             <MoneyTile label={t("calc.p3a.p3b_final")} value={projection3b.finalBalance} tone="primary" big tip={t("calc.p3a.tip.p3b_final")} />
@@ -650,19 +666,6 @@ useEffect(() => {
             <MoneyTile label={t("calc.p3a.total_returns")} value={projection3b.totalReturns} tone="success" tip={t("calc.p3a.tip.p3b_returns")} />
             <MoneyTile label={t("calc.p3a.total_3a_3b")} value={projection.finalBalance + projection3b.finalBalance} tone="success" tip={t("calc.p3a.tip.total_3a_3b")} />
           </div>
-        </div>
-      </CalcCard>
-
-      <CalcCard
-        title="Décès (pilier 3)"
-        description="Si la police liée au 3e pilier du client prévoit un capital décès, saisissez-le ici. Saisie manuelle uniquement, jamais recalculé, laissez à 0 si la prestation n'existe pas. La rente d'invalidité se saisit désormais dans les sections 3A et 3B ci-dessus."
-      >
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <NumField
-            label="Capital décès"
-            value={form.deathCapital}
-            onChange={(v) => set("deathCapital", v)}
-          />
         </div>
       </CalcCard>
 
