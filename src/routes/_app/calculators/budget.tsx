@@ -44,11 +44,16 @@ const DEFAULT_FORM: BudgetInput = {
   otherIncomeMonthlyCHF: 0,
   housingMonthlyCHF: 0,
   energyMonthlyCHF: 0,
+  foodMonthlyCHF: 0,
   healthInsuranceMonthlyCHF: 0,
   otherInsuranceMonthlyCHF: 0,
   transportMonthlyCHF: 0,
+  subscriptionsLeisureMonthlyCHF: 0,
+  childcareMonthlyCHF: 0,
+  taxesMonthlyCHF: 0,
   loansMonthlyCHF: 0,
   alimonyPaidMonthlyCHF: 0,
+  savingsMonthlyCHF: 0,
   otherExpensesMonthlyCHF: 0,
 };
 
@@ -187,6 +192,11 @@ function BudgetCalc() {
                 onChange={(v) => set("energyMonthlyCHF", v)}
               />
               <NumField
+                label="Alimentation (courses)"
+                value={form.foodMonthlyCHF}
+                onChange={(v) => set("foodMonthlyCHF", v)}
+              />
+              <NumField
                 label="Assurance maladie"
                 value={form.healthInsuranceMonthlyCHF}
                 onChange={(v) => set("healthInsuranceMonthlyCHF", v)}
@@ -202,6 +212,21 @@ function BudgetCalc() {
                 onChange={(v) => set("transportMonthlyCHF", v)}
               />
               <NumField
+                label="Abonnements & loisirs (téléphone, internet, streaming, sport)"
+                value={form.subscriptionsLeisureMonthlyCHF}
+                onChange={(v) => set("subscriptionsLeisureMonthlyCHF", v)}
+              />
+              <NumField
+                label="Garde d'enfants / scolarité"
+                value={form.childcareMonthlyCHF}
+                onChange={(v) => set("childcareMonthlyCHF", v)}
+              />
+              <NumField
+                label="Impôts (acompte mensuel)"
+                value={form.taxesMonthlyCHF}
+                onChange={(v) => set("taxesMonthlyCHF", v)}
+              />
+              <NumField
                 label="Crédits / leasing"
                 value={form.loansMonthlyCHF}
                 onChange={(v) => set("loansMonthlyCHF", v)}
@@ -210,6 +235,12 @@ function BudgetCalc() {
                 label="Pension alimentaire versée"
                 value={form.alimonyPaidMonthlyCHF}
                 onChange={(v) => set("alimonyPaidMonthlyCHF", v)}
+              />
+              <NumField
+                label="Épargne régulière (hors 3a)"
+                value={form.savingsMonthlyCHF}
+                onChange={(v) => set("savingsMonthlyCHF", v)}
+                tip="Versements d'épargne déjà en cours (compte épargne, 3e pilier B, etc.) — un engagement récurrent qui réduit la marge disponible."
               />
               <NumField
                 label="Autres charges"

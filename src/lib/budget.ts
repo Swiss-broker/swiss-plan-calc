@@ -20,11 +20,16 @@ export interface BudgetInput {
   otherIncomeMonthlyCHF: number;
   housingMonthlyCHF: number;
   energyMonthlyCHF: number;
+  foodMonthlyCHF: number;
   healthInsuranceMonthlyCHF: number;
   otherInsuranceMonthlyCHF: number;
   transportMonthlyCHF: number;
+  subscriptionsLeisureMonthlyCHF: number;
+  childcareMonthlyCHF: number;
+  taxesMonthlyCHF: number;
   loansMonthlyCHF: number;
   alimonyPaidMonthlyCHF: number;
+  savingsMonthlyCHF: number;
   otherExpensesMonthlyCHF: number;
   [key: string]: unknown;
 }
@@ -58,11 +63,16 @@ export function computeBudgetTotals(input: BudgetInput): {
   const totalMonthlyExpensesCHF =
     input.housingMonthlyCHF +
     input.energyMonthlyCHF +
+    input.foodMonthlyCHF +
     input.healthInsuranceMonthlyCHF +
     input.otherInsuranceMonthlyCHF +
     input.transportMonthlyCHF +
+    input.subscriptionsLeisureMonthlyCHF +
+    input.childcareMonthlyCHF +
+    input.taxesMonthlyCHF +
     input.loansMonthlyCHF +
     input.alimonyPaidMonthlyCHF +
+    input.savingsMonthlyCHF +
     input.otherExpensesMonthlyCHF;
   return {
     totalMonthlyIncomeCHF,
