@@ -76,7 +76,7 @@ export const Route = createFileRoute("/_app/calculators/tax-global")({
 function TaxGlobalCalc() {
   const t = useT();
   const { clientId, caseId, simId } = Route.useSearch();
-  const { client, prefill } = usePrefillFromClient(clientId, "tax-global");
+  const { client, prefill, error: prefillError } = usePrefillFromClient(clientId, "tax-global");
   const { inputs: savedInputs, isLoading: loadingSaved } = useLoadSavedSimulation(simId);
 
   const [form, setForm] = useState<TaxGlobalInput>(() => createDefaultInput());
@@ -99,18 +99,28 @@ function TaxGlobalCalc() {
   useEffect(() => {
     if (baselineClientRef.current !== clientId) {
       baselineClientRef.current = clientId;
-      setBaselineState(form);
-      baselineInitializedRef.current = true;
-      return;
+      baselineInitializedRef.current = false;
     }
-    // Première hydratation : si la base est encore le default et le form a
-    // été peuplé par le prefill, on resynchronise une seule fois.
-    if (!baselineInitializedRef.current) {
-      setBaselineState(form);
-      baselineInitializedRef.current = true;
-    }
+    if (baselineInitializedRef.current) return;
+    // Tant qu'un client est lié mais que son profil n'a pas encore fini de
+    // charger, ne pas figer la base maintenant : ce premier effet s'exécute
+    // AVANT que useHydrateFormFromPrefill n'ait eu la main (prefill encore
+    // null), donc sans cette garde la base se figeait sur le formulaire
+    // vide par défaut, jamais sur le vrai profil du client — obligeant à
+    // cliquer "Définir comme base" à chaque ouverture pour corriger ça.
+    if (clientId && !prefill && !prefillError) return;
+    setBaselineState(form);
+    baselineInitializedRef.current = true;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [clientId, form.grossSalary, form.canton, form.permit, form.civilStatus]);
+  }, [
+    clientId,
+    prefill,
+    prefillError,
+    form.grossSalary,
+    form.canton,
+    form.permit,
+    form.civilStatus,
+  ]);
   const setBaseline = () => setBaselineState(form);
 
   // Rechargement d'un brouillon sauvegardé : ne s'applique qu'une fois par
