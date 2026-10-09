@@ -50,6 +50,23 @@
 // cantonale (285%) et le coefficient du chef-lieu Delémont (190%), déjà
 // corrects dans CANTON_SCALES.JU (cantons.ts).
 //
+// VS : couverture complète (122/122 communes + 4 alias historiques/
+// bilingues), recoupée le 09.10.2026 contre le document officiel
+// "Coefficients et indexations des communes valaisannes 2022-2027"
+// (Service cantonal des contributions, colonne 2026) — seul document qui
+// fournit à la fois le coefficient communal ET l'indexation par commune,
+// les deux valeurs nécessaires au calcul VS. 23 des 24 valeurs déjà
+// présentes concordaient exactement (dont Sion, confirmant à 176% la
+// calibration numérique précédente). Une erreur trouvée et corrigée :
+// Viège/Visp avait vsIndexationPercent 176 (valeur par défaut non
+// sourcée) au lieu de 166 (valeur officielle 2026). Noms des communes
+// fusionnées repris sous leur forme officielle actuelle (ex. "Val de
+// Bagnes", "Goms", "Crans-Montana") sans dupliquer les anciens villages
+// listés entre parenthèses dans le document, même logique que JU/FR.
+// Alias conservés : Bagnes et Verbier → Val de Bagnes, Brigue-Glis →
+// Brig/Glis, Viège → Visp (noms français d'usage pour des communes au
+// nom officiel germanophone/fusionné).
+//
 // Unités d'origine et conversion vers le multiplicateur décimal attendu par
 // computeCantonalCommunal (voir communalMult = simple * communalMult) :
 //   GE centimes additionnels, VD/FR/NE coefficient en % → valeur / 100
@@ -442,59 +459,160 @@ export const COMMUNAL_MULTIPLIERS: Record<string, Record<string, CommunalMultipl
     Yvorne: { multiplier: 0.715, verified: "confirmed" },
   },
   VS: {
+    Agarn: { multiplier: 1.3, verified: "confirmed", vsIndexationPercent: 153 },
+    Albinen: { multiplier: 1.3, verified: "confirmed", vsIndexationPercent: 145 },
+    Anniviers: { multiplier: 1.25, verified: "confirmed", vsIndexationPercent: 146 },
+    Arbaz: { multiplier: 1.25, verified: "confirmed", vsIndexationPercent: 146 },
     Ardon: { multiplier: 1.3, verified: "confirmed", vsIndexationPercent: 166 },
+    Ausserberg: { multiplier: 1.3, verified: "confirmed", vsIndexationPercent: 138 },
+    Ayent: { multiplier: 1.3, verified: "confirmed", vsIndexationPercent: 158 },
     Bagnes: {
       multiplier: 1,
       fiscalCommune: "Val de Bagnes",
       verified: "confirmed",
       vsIndexationPercent: 176,
     },
+    Baltschieder: { multiplier: 1.2, verified: "confirmed", vsIndexationPercent: 166 },
+    Bellwald: { multiplier: 1.3, verified: "confirmed", vsIndexationPercent: 160 },
+    Bettmeralp: { multiplier: 1.2, verified: "confirmed", vsIndexationPercent: 136 },
+    Binn: { multiplier: 1.2, verified: "confirmed", vsIndexationPercent: 156 },
+    Bister: { multiplier: 1, verified: "confirmed", vsIndexationPercent: 176 },
+    Bitsch: { multiplier: 1, verified: "confirmed", vsIndexationPercent: 176 },
+    Blatten: { multiplier: 1.4, verified: "confirmed", vsIndexationPercent: 136 },
+    "Bourg-Saint-Pierre": { multiplier: 1, verified: "confirmed", vsIndexationPercent: 176 },
+    Bovernier: { multiplier: 1.2, verified: "confirmed", vsIndexationPercent: 156 },
+    "Brig/Glis": { multiplier: 1, verified: "confirmed", vsIndexationPercent: 176 },
     "Brigue-Glis": {
       multiplier: 1,
       fiscalCommune: "Brig/Glis",
       verified: "confirmed",
       vsIndexationPercent: 176,
     },
+    Bürchen: { multiplier: 1.3, verified: "confirmed", vsIndexationPercent: 146 },
+    Chalais: { multiplier: 1.3, verified: "confirmed", vsIndexationPercent: 146 },
     Chamoson: { multiplier: 1.25, verified: "confirmed", vsIndexationPercent: 143 },
+    Champéry: { multiplier: 1.35, verified: "confirmed", vsIndexationPercent: 141 },
+    Chippis: { multiplier: 1.2, verified: "confirmed", vsIndexationPercent: 146 },
+    "Collombey-Muraz": { multiplier: 1.25, verified: "confirmed", vsIndexationPercent: 171 },
+    Collonges: { multiplier: 1.1, verified: "confirmed", vsIndexationPercent: 165 },
     Conthey: { multiplier: 1.2, verified: "confirmed", vsIndexationPercent: 163 },
     "Crans-Montana": { multiplier: 1.15, verified: "confirmed", vsIndexationPercent: 176 },
+    Dorénaz: { multiplier: 1.2, verified: "confirmed", vsIndexationPercent: 161 },
+    Eggerberg: { multiplier: 1.3, verified: "confirmed", vsIndexationPercent: 133 },
+    Eischoll: { multiplier: 1.3, verified: "confirmed", vsIndexationPercent: 146 },
+    Eisten: { multiplier: 1, verified: "confirmed", vsIndexationPercent: 176 },
+    Embd: { multiplier: 1.3, verified: "confirmed", vsIndexationPercent: 158 },
+    Ergisch: { multiplier: 1, verified: "confirmed", vsIndexationPercent: 176 },
+    Ernen: { multiplier: 1.1, verified: "confirmed", vsIndexationPercent: 176 },
+    Evolène: { multiplier: 1.25, verified: "confirmed", vsIndexationPercent: 140 },
+    Ferden: { multiplier: 1.4, verified: "confirmed", vsIndexationPercent: 151 },
+    Fiesch: { multiplier: 1.15, verified: "confirmed", vsIndexationPercent: 160 },
+    Fieschertal: { multiplier: 1.1, verified: "confirmed", vsIndexationPercent: 176 },
+    Finhaut: { multiplier: 1, verified: "confirmed", vsIndexationPercent: 176 },
     Fully: { multiplier: 1.2, verified: "confirmed", vsIndexationPercent: 165 },
+    "Gampel-Bratsch": { multiplier: 1.3, verified: "confirmed", vsIndexationPercent: 151 },
+    Goms: { multiplier: 1.1, verified: "confirmed", vsIndexationPercent: 173 },
+    Grengiols: { multiplier: 1, verified: "confirmed", vsIndexationPercent: 146 },
     Grimisuat: { multiplier: 1.25, verified: "confirmed", vsIndexationPercent: 163 },
+    Grächen: { multiplier: 1.4, verified: "confirmed", vsIndexationPercent: 135 },
+    Grône: { multiplier: 1.25, verified: "confirmed", vsIndexationPercent: 143 },
+    "Guttet-Feschel": { multiplier: 1.3, verified: "confirmed", vsIndexationPercent: 148 },
     Hérémence: { multiplier: 1, verified: "confirmed", vsIndexationPercent: 176 },
+    Icogne: { multiplier: 1.2, verified: "confirmed", vsIndexationPercent: 176 },
+    Inden: { multiplier: 1.1, verified: "confirmed", vsIndexationPercent: 136 },
+    Isérables: { multiplier: 1.35, verified: "confirmed", vsIndexationPercent: 138 },
+    Kippel: { multiplier: 1.4, verified: "confirmed", vsIndexationPercent: 136 },
+    Lalden: { multiplier: 1.2, verified: "confirmed", vsIndexationPercent: 158 },
+    Lax: { multiplier: 1.4, verified: "confirmed", vsIndexationPercent: 163 },
+    Lens: { multiplier: 1.05, verified: "confirmed", vsIndexationPercent: 176 },
+    Leuk: { multiplier: 1.3, verified: "confirmed", vsIndexationPercent: 156 },
+    Leukerbad: { multiplier: 1.45, verified: "confirmed", vsIndexationPercent: 151 },
+    Leytron: { multiplier: 1.2, verified: "confirmed", vsIndexationPercent: 146 },
+    Liddes: { multiplier: 1.25, verified: "confirmed", vsIndexationPercent: 143 },
     Martigny: { multiplier: 1.1, verified: "confirmed", vsIndexationPercent: 166 },
+    "Martigny-Combe": { multiplier: 1.1, verified: "confirmed", vsIndexationPercent: 163 },
+    Massongex: { multiplier: 1.2, verified: "confirmed", vsIndexationPercent: 168 },
+    "Mont-Noble": { multiplier: 1.35, verified: "confirmed", vsIndexationPercent: 148 },
     Monthey: { multiplier: 1.2, verified: "confirmed", vsIndexationPercent: 170 },
+    "Mörel-Filet": { multiplier: 1.15, verified: "confirmed", vsIndexationPercent: 140 },
     Naters: { multiplier: 1.1, verified: "confirmed", vsIndexationPercent: 176 },
     Nendaz: { multiplier: 1.3, verified: "confirmed", vsIndexationPercent: 156 },
+    Niedergesteln: { multiplier: 1.2, verified: "confirmed", vsIndexationPercent: 156 },
+    "Noble-Contrée": { multiplier: 1.1, verified: "confirmed", vsIndexationPercent: 166 },
+    Oberems: { multiplier: 1, verified: "confirmed", vsIndexationPercent: 176 },
+    Obergoms: { multiplier: 1.1, verified: "confirmed", vsIndexationPercent: 176 },
+    Orsières: { multiplier: 1.2, verified: "confirmed", vsIndexationPercent: 150 },
+    "Port-Valais": { multiplier: 1.1, verified: "confirmed", vsIndexationPercent: 170 },
+    Randa: { multiplier: 1.1, verified: "confirmed", vsIndexationPercent: 176 },
+    Raron: { multiplier: 1.2, verified: "confirmed", vsIndexationPercent: 165 },
     Riddes: { multiplier: 1.25, verified: "confirmed", vsIndexationPercent: 153 },
+    "Ried-Brig": { multiplier: 1.1, verified: "confirmed", vsIndexationPercent: 170 },
+    Riederalp: { multiplier: 1.2, verified: "confirmed", vsIndexationPercent: 138 },
+    "Saas-Almagell": { multiplier: 1.2, verified: "confirmed", vsIndexationPercent: 150 },
+    "Saas-Balen": { multiplier: 1.1, verified: "confirmed", vsIndexationPercent: 153 },
+    "Saas-Fee": { multiplier: 1.2, verified: "confirmed", vsIndexationPercent: 145 },
+    "Saas-Grund": { multiplier: 1.3, verified: "confirmed", vsIndexationPercent: 133 },
+    Saillon: { multiplier: 1.2, verified: "confirmed", vsIndexationPercent: 146 },
+    "Saint-Gingolph": { multiplier: 1.35, verified: "confirmed", vsIndexationPercent: 133 },
+    "Saint-Léonard": { multiplier: 1.2, verified: "confirmed", vsIndexationPercent: 158 },
+    "Saint-Martin": { multiplier: 1.35, verified: "confirmed", vsIndexationPercent: 150 },
     "Saint-Maurice": { multiplier: 1.25, verified: "confirmed", vsIndexationPercent: 163 },
+    Salgesch: { multiplier: 1.2, verified: "confirmed", vsIndexationPercent: 136 },
+    Salvan: { multiplier: 1.15, verified: "confirmed", vsIndexationPercent: 173 },
     Savièse: { multiplier: 1.15, verified: "confirmed", vsIndexationPercent: 156 },
     Saxon: { multiplier: 1.2, verified: "confirmed", vsIndexationPercent: 166 },
+    Sembrancher: { multiplier: 1.2, verified: "confirmed", vsIndexationPercent: 155 },
     Sierre: { multiplier: 1.2, verified: "confirmed", vsIndexationPercent: 161 },
+    Simplon: { multiplier: 1, verified: "confirmed", vsIndexationPercent: 176 },
     // Chef-lieu cantonal : coefficient déjà utilisé comme repli par défaut
-    // (CANTON_SCALES.VS.communalMultiplierCapital dans cantons.ts), mais
-    // l'indexation manquait ici — le moteur sautait entièrement la
-    // dé-indexation pour Sion (voir cantons.ts VS_CANTONAL_INDEXATION_
-    // PERCENT_2026 pour le même problème côté cantonal). Indexation 176%
-    // calibrée par recherche numérique contre un cas réel AFC
-    // (swisstaxcalculator.estv.admin.ch, Sion, personne seule, 0 enfant,
-    // 80'000 CHF brut) : reproduit 4'342.15 CHF contre 4'342 CHF réels
-    // (écart 0.15 CHF) — voir cantons.test.ts.
+    // (CANTON_SCALES.VS.communalMultiplierCapital dans cantons.ts).
+    // vsIndexationPercent initialement calibré par recherche numérique
+    // contre un cas réel AFC (swisstaxcalculator.estv.admin.ch, Sion,
+    // personne seule, 0 enfant, 80'000 CHF brut) : reproduit 4'342.15 CHF
+    // contre 4'342 CHF réels (écart 0.15 CHF) — voir cantons.test.ts.
+    // Valeur 176% depuis confirmée exactement par le document officiel
+    // "Coefficients et indexations des communes valaisannes 2022-2027".
     Sion: { multiplier: 1.1, verified: "confirmed", vsIndexationPercent: 176 },
+    "St. Niklaus": { multiplier: 1.2, verified: "confirmed", vsIndexationPercent: 160 },
+    Stalden: { multiplier: 1.1, verified: "confirmed", vsIndexationPercent: 171 },
+    Staldenried: { multiplier: 1.1, verified: "confirmed", vsIndexationPercent: 176 },
+    "Steg-Hohtenn": { multiplier: 1.2, verified: "confirmed", vsIndexationPercent: 156 },
+    Termen: { multiplier: 1.2, verified: "confirmed", vsIndexationPercent: 176 },
+    Trient: { multiplier: 1, verified: "confirmed", vsIndexationPercent: 176 },
+    Troistorrents: { multiplier: 1.2, verified: "confirmed", vsIndexationPercent: 166 },
+    "Turtmann-Unterems": { multiplier: 1.2, verified: "confirmed", vsIndexationPercent: 166 },
+    Täsch: { multiplier: 1.1, verified: "confirmed", vsIndexationPercent: 155 },
+    Törbel: { multiplier: 1.4, verified: "confirmed", vsIndexationPercent: 176 },
+    Unterbäch: { multiplier: 1.2, verified: "confirmed", vsIndexationPercent: 138 },
+    "Val d'Illiez": { multiplier: 1.3, verified: "confirmed", vsIndexationPercent: 151 },
+    "Val de Bagnes": { multiplier: 1, verified: "confirmed", vsIndexationPercent: 176 },
+    Varen: { multiplier: 1.2, verified: "confirmed", vsIndexationPercent: 156 },
     Verbier: {
       multiplier: 1,
       fiscalCommune: "Val de Bagnes",
       verified: "confirmed",
       vsIndexationPercent: 176,
     },
+    Vernayaz: { multiplier: 1.2, verified: "confirmed", vsIndexationPercent: 166 },
+    Vex: { multiplier: 1.3, verified: "confirmed", vsIndexationPercent: 166 },
+    Veysonnaz: { multiplier: 1.2, verified: "confirmed", vsIndexationPercent: 110 },
+    Vionnaz: { multiplier: 1.1, verified: "confirmed", vsIndexationPercent: 153 },
+    Visp: { multiplier: 1.1, verified: "confirmed", vsIndexationPercent: 166 },
+    Visperterminen: { multiplier: 1.3, verified: "confirmed", vsIndexationPercent: 150 },
     Viège: {
       multiplier: 1.1,
       fiscalCommune: "Visp",
       verified: "confirmed",
-      vsIndexationPercent: 176,
+      vsIndexationPercent: 166,
     },
     Vouvry: { multiplier: 1.25, verified: "confirmed", vsIndexationPercent: 158 },
+    Vérossaz: { multiplier: 1.3, verified: "confirmed", vsIndexationPercent: 153 },
     Vétroz: { multiplier: 1.15, verified: "confirmed", vsIndexationPercent: 163 },
+    Wiler: { multiplier: 1.4, verified: "confirmed", vsIndexationPercent: 146 },
+    Zeneggen: { multiplier: 1.3, verified: "confirmed", vsIndexationPercent: 151 },
     Zermatt: { multiplier: 1, verified: "confirmed", vsIndexationPercent: 176 },
+    Zwischbergen: { multiplier: 1, verified: "confirmed", vsIndexationPercent: 173 },
+    Évionnaz: { multiplier: 1.3, verified: "confirmed", vsIndexationPercent: 176 },
   },
   FR: {
     Attalens: { multiplier: 0.785, verified: "confirmed" },
