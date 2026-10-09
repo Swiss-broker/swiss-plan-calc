@@ -414,7 +414,10 @@ function AccountPage() {
           <div className="rounded-2xl border border-border bg-card p-6 shadow-card space-y-4">
             <h2 className="text-base font-semibold">Compte bancaire pour facturation</h2>
             <p className="text-xs text-muted-foreground">
-              Connectez votre compte bancaire pour recevoir les paiements de vos clients directement. SwissBroker Pro retient 10% de commission sur chaque paiement, le reste est viré automatiquement sur votre compte.
+              Connectez votre compte bancaire pour recevoir les paiements de vos clients
+              directement. SwissBroker Pro retient une commission par tranches (30% jusqu'à 1'000
+              CHF, 20% de 1'000 à 2'000 CHF, 10% au-delà), le reste est viré automatiquement sur
+              votre compte.
             </p>
             {connectComplete ? (
               <div className="space-y-3">

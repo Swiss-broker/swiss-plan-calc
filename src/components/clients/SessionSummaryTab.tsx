@@ -34,6 +34,11 @@ import {
   type SimulationKind,
 } from "@/lib/history/types";
 import { aggregateGains, listDismissedGains, type GainItem } from "@/lib/simulations/extract-gain";
+import {
+  RDV_MIN_CENTIMES,
+  computeCommissionCentimes,
+  computeCommissionBreakdown,
+} from "@/lib/billing/commission";
 import { formatCHF } from "@/lib/format";
 import { formatDateShort } from "@/lib/i18n/format";
 import { useT } from "@/contexts/LanguageContext";
@@ -74,8 +79,8 @@ export function SessionSummaryTab({
 
   const onGenerateInvoice = async () => {
     if (!user) return;
-    if (invoiceAmount < 80) {
-      toast.error("Le montant minimum est de 80 CHF.");
+    if (Math.round(invoiceAmount * 100) < RDV_MIN_CENTIMES) {
+      toast.error("Le montant minimum est de 150 CHF.");
       return;
     }
     setInvoiceLoading(true);
@@ -588,13 +593,16 @@ export function SessionSummaryTab({
       {invoiceOpen && (
         <div className="rounded-2xl border border-border bg-card p-5 shadow-card space-y-4">
           <h3 className="text-base font-semibold">Facturer ce rendez-vous</h3>
-          <p className="text-xs text-muted-foreground">Générez un lien de paiement à envoyer à votre client. Le PDF de synthèse se débloque automatiquement après paiement. Minimum 80 CHF.</p>
+          <p className="text-xs text-muted-foreground">
+            Générez un lien de paiement à envoyer à votre client. Le PDF de synthèse se débloque
+            automatiquement après paiement. Minimum 150 CHF.
+          </p>
           <div className="grid gap-3 sm:grid-cols-2">
             <div className="space-y-1.5">
               <label className="text-xs font-medium text-muted-foreground">Montant (CHF)</label>
               <input
                 type="number"
-                min={80}
+                min={150}
                 value={invoiceAmount}
                 onChange={(e) => setInvoiceAmount(Number(e.target.value))}
                 className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
@@ -611,6 +619,7 @@ export function SessionSummaryTab({
               />
             </div>
           </div>
+          {!invoiceLink && <CommissionPreview amountChf={invoiceAmount} />}
           {invoiceLink ? (
             <div className="rounded-lg border border-success/30 bg-success/5 p-4 space-y-3">
               <p className="text-sm font-medium text-success">Lien de paiement généré</p>
@@ -688,6 +697,58 @@ export function SessionSummaryTab({
         clientId={clientId}
         entries={entries}
       />
+    </div>
+  );
+}
+
+// Aperçu obligatoire avant d'envoyer un lien de paiement : affiche la
+// commission SwissBroker Pro par tranches et ce que le courtier recevra
+// réellement, calculée avec le même module que le serveur (jamais une
+// approximation séparée qui pourrait diverger). Le détail par tranche
+// s'ouvre au tap (pas au survol) : les courtiers utilisent surtout des
+// tablettes.
+function CommissionPreview({ amountChf }: { amountChf: number }) {
+  const [detailOpen, setDetailOpen] = useState(false);
+  const amountCentimes = Math.round((amountChf || 0) * 100);
+  if (!Number.isFinite(amountCentimes) || amountCentimes < RDV_MIN_CENTIMES) return null;
+
+  const commissionCentimes = computeCommissionCentimes(amountCentimes);
+  const netCentimes = amountCentimes - commissionCentimes;
+  const breakdown = computeCommissionBreakdown(amountCentimes).filter((b) => b.portionCentimes > 0);
+  const fmt = (centimes: number) =>
+    (centimes / 100).toLocaleString("fr-CH", { minimumFractionDigits: 2 });
+
+  return (
+    <div className="rounded-lg border border-border bg-muted/30 p-3 space-y-2">
+      <div className="flex flex-wrap items-center gap-1.5 text-xs">
+        <span className="text-muted-foreground">Montant du RDV :</span>
+        <span className="font-medium">{fmt(amountCentimes)} CHF</span>
+        <span className="text-muted-foreground">→ Commission SwissBroker :</span>
+        <span className="font-medium">{fmt(commissionCentimes)} CHF</span>
+        <span className="text-muted-foreground">→</span>
+        <span className="font-semibold text-success">Vous recevez : {fmt(netCentimes)} CHF</span>
+      </div>
+      <button
+        type="button"
+        onClick={() => setDetailOpen((v) => !v)}
+        className="flex items-center gap-1 text-[11px] font-medium text-muted-foreground hover:text-foreground"
+      >
+        <ChevronDown className={`h-3 w-3 transition-transform ${detailOpen ? "rotate-180" : ""}`} />
+        Détail par tranche
+      </button>
+      {detailOpen && (
+        <ul className="space-y-1 pl-4 text-[11px] text-muted-foreground">
+          {breakdown.map((b) => (
+            <li key={b.fromCentimes}>
+              {(b.fromCentimes / 100).toLocaleString("fr-CH")}
+              {b.toCentimes !== null
+                ? ` → ${(b.toCentimes / 100).toLocaleString("fr-CH")} CHF`
+                : " CHF et au-delà"}{" "}
+              ({Math.round(b.rate * 100)} %) : {fmt(b.commissionCentimes)} CHF
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 }

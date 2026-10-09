@@ -273,7 +273,11 @@ const FR: WikiArticle[] = [
       <ul className="list-disc pl-5 space-y-1.5">
         <li>Le dossier de synthèse PDF se génère depuis la fiche client, onglet « Synthèse RDV », une fois qu'au moins une simulation a été sauvegardée.</li>
         <li>Toutes les simulations sauvegardées pour ce client apparaissent dans « Simulations rattachées » : possibilité de <strong>sélectionner tout</strong> ou seulement certaines, selon ce qui est pertinent pour le rendez-vous en cours.</li>
-        <li>La génération du PDF est <strong>débloquée après paiement</strong> du rendez-vous par le client (minimum 80 CHF), via le bouton « Facturer ce RDV » qui crée un lien de paiement Stripe.</li>
+        <li>
+          La génération du PDF est <strong>débloquée après paiement</strong> du rendez-vous par le
+          client (minimum 150 CHF), via le bouton « Facturer ce RDV » qui crée un lien de paiement
+          Stripe.
+        </li>
         <li>Le PDF final contient : le profil du client, une page par simulation sélectionnée (paramètres, résultats, analyse rédigée), un tableau comparatif avant/après, et une conclusion avec recommandations chiffrées.</li>
         <li>Le nom du cabinet, le logo et les coordonnées affichés dans le PDF proviennent du profil courtier (« Mon profil »), pensez à les renseigner avant le premier envoi à un client.</li>
       </ul>
@@ -556,7 +560,10 @@ const DE: WikiArticle[] = [
       <ul className="list-disc pl-5 space-y-1.5">
         <li>Die PDF-Synthese wird im Kundendossier unter «RDV-Synthese» erstellt, sobald mindestens eine Simulation gespeichert wurde.</li>
         <li>Alle gespeicherten Simulationen erscheinen unter «Verknüpfte Simulationen»: es können <strong>alle oder nur bestimmte</strong> ausgewählt werden.</li>
-        <li>Die PDF-Erstellung wird erst nach <strong>Zahlung</strong> des Termins durch den Kunden freigeschaltet (mindestens 80 CHF), über den Button «Termin fakturieren».</li>
+        <li>
+          Die PDF-Erstellung wird erst nach <strong>Zahlung</strong> des Termins durch den Kunden
+          freigeschaltet (mindestens 150 CHF), über den Button «Termin fakturieren».
+        </li>
         <li>Das PDF enthält: Kundenprofil, eine Seite pro ausgewählter Simulation, eine Vorher/Nachher-Tabelle und eine Schlussfolgerung mit bezifferten Empfehlungen.</li>
         <li>Kanzleiname, Logo und Kontaktdaten im PDF stammen aus dem Maklerprofil («Mein Profil»).</li>
       </ul>
@@ -792,7 +799,10 @@ const EN: WikiArticle[] = [
       <ul className="list-disc pl-5 space-y-1.5">
         <li>The PDF summary is generated from the client's file, "Meeting summary" tab, once at least one simulation has been saved.</li>
         <li>All saved simulations for that client appear under "Linked simulations": you can select <strong>all or only some</strong> of them.</li>
-        <li>PDF generation is <strong>unlocked after payment</strong> of the meeting by the client (minimum CHF 80), via the "Invoice this meeting" button.</li>
+        <li>
+          PDF generation is <strong>unlocked after payment</strong> of the meeting by the client
+          (minimum CHF 150), via the "Invoice this meeting" button.
+        </li>
         <li>The final PDF includes: the client profile, one page per selected simulation, a before/after comparison table, and a conclusion with quantified recommendations.</li>
         <li>The firm name, logo and contact details shown in the PDF come from the broker profile ("My profile").</li>
       </ul>
@@ -1030,7 +1040,10 @@ const IT: WikiArticle[] = [
       <ul className="list-disc pl-5 space-y-1.5">
         <li>La sintesi PDF si genera dalla scheda cliente, scheda «Sintesi appuntamento», una volta salvata almeno una simulazione.</li>
         <li>Tutte le simulazioni salvate per quel cliente appaiono in «Simulazioni collegate»: è possibile selezionarle <strong>tutte o solo alcune</strong>.</li>
-        <li>La generazione del PDF è <strong>sbloccata dopo il pagamento</strong> dell'appuntamento da parte del cliente (minimo 80 CHF), tramite il pulsante «Fatturare questo appuntamento».</li>
+        <li>
+          La generazione del PDF è <strong>sbloccata dopo il pagamento</strong> dell'appuntamento da
+          parte del cliente (minimo 150 CHF), tramite il pulsante «Fatturare questo appuntamento».
+        </li>
         <li>Il PDF finale contiene: il profilo del cliente, una pagina per simulazione selezionata, una tabella comparativa prima/dopo, e una conclusione con raccomandazioni quantificate.</li>
         <li>Il nome dello studio, il logo e i contatti mostrati nel PDF provengono dal profilo del consulente («Il mio profilo»).</li>
       </ul>
