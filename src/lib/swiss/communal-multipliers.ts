@@ -6,6 +6,12 @@
 // présente ici, le multiplicateur par défaut du chef-lieu cantonal
 // (CANTON_SCALES[canton].communalMultiplierCapital dans src/lib/tax/cantons.ts).
 //
+// GE : couverture complète (45/45 communes), recoupée le 09.10.2026 contre
+// le fichier officiel "Taux de centimes additionnels 2018-2026" (État de
+// Genève) — les 42 valeurs déjà présentes concordaient exactement ; ajout
+// de Bellevue, Collex-Bossy, et Genève elle-même (0.4549, cohérente avec
+// communalMultiplierCapital = 0.455 déjà en place).
+//
 // Unités d'origine et conversion vers le multiplicateur décimal attendu par
 // computeCantonalCommunal (voir communalMult = simple * communalMult) :
 //   GE centimes additionnels, VD/FR/NE coefficient en % → valeur / 100
@@ -44,6 +50,7 @@ export const COMMUNAL_MULTIPLIERS: Record<string, Record<string, CommunalMultipl
     Avully: { multiplier: 0.51, verified: "confirmed" },
     Avusy: { multiplier: 0.49, verified: "confirmed" },
     Bardonnex: { multiplier: 0.43, verified: "confirmed" },
+    Bellevue: { multiplier: 0.39, verified: "confirmed" },
     Bernex: { multiplier: 0.48, verified: "confirmed" },
     Carouge: { multiplier: 0.4, verified: "confirmed" },
     Cartigny: { multiplier: 0.42, verified: "confirmed" },
@@ -51,12 +58,19 @@ export const COMMUNAL_MULTIPLIERS: Record<string, Record<string, CommunalMultipl
     Choulex: { multiplier: 0.4, verified: "confirmed" },
     "Chêne-Bougeries": { multiplier: 0.32, verified: "confirmed" },
     "Chêne-Bourg": { multiplier: 0.46, verified: "confirmed" },
+    "Collex-Bossy": { multiplier: 0.46, verified: "confirmed" },
     "Collonge-Bellerive": { multiplier: 0.28, verified: "confirmed" },
     Cologny: { multiplier: 0.25, verified: "confirmed" },
     Confignon: { multiplier: 0.46, verified: "confirmed" },
     Corsier: { multiplier: 0.31, verified: "confirmed" },
     Céligny: { multiplier: 0.33, verified: "confirmed" },
     Dardagny: { multiplier: 0.48, verified: "confirmed" },
+    // Chef-lieu : déjà utilisé comme repli par défaut
+    // (CANTON_SCALES.GE.communalMultiplierCapital = 0.455 dans cantons.ts,
+    // cohérent avec ce 0.4549 officiel) — ajoutée ici explicitement pour
+    // que la liste GE soit complète (45/45 communes), sans dépendre
+    // implicitement du repli cantonal.
+    Genève: { multiplier: 0.4549, verified: "confirmed" },
     Genthod: { multiplier: 0.25, verified: "confirmed" },
     "Grand-Saconnex": { multiplier: 0.44, verified: "confirmed" },
     Gy: { multiplier: 0.46, verified: "confirmed" },

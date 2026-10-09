@@ -10,7 +10,7 @@ export const COMMUNES_BY_CANTON: Record<string, string[]> = {
     "Hermance", "Jussy", "Laconnex", "Meinier", "Perly-Certoux",
     "Presinge", "Puplinge", "Russin", "Soral", "Troinex", "Avully", "Avusy",
     "Cartigny", "Céligny", "Chancy", "Dardagny", "Genthod",
-    "Gy", "Aire-la-Ville",
+    "Gy", "Aire-la-Ville", "Bellevue", "Collex-Bossy",
   ],
   VD: [
     "Lausanne", "Yverdon-les-Bains", "Montreux", "Renens", "Nyon", "Vevey",
