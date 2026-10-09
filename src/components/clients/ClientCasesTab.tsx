@@ -4,9 +4,8 @@
 // jamais une vraie ligne en base, calculé ici à l'affichage pour ne rien
 // perdre sans réécrire en masse les anciennes simulations.
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { Link } from "@tanstack/react-router";
 import { FolderOpen, Clock, Plus } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -15,27 +14,9 @@ import {
   useClientCases,
   useCreateClientCase,
   useSetClientCaseStatus,
+  useSimCountsByCase,
   type ClientCase,
 } from "@/hooks/useClientCases";
-
-function useSimCountsByCase(clientId: string) {
-  return useQuery({
-    queryKey: ["client-sim-counts-by-case", clientId],
-    queryFn: async (): Promise<Record<string, number>> => {
-      const { data, error } = await supabase
-        .from("simulation_history")
-        .select("case_id")
-        .eq("client_id", clientId);
-      if (error) throw error;
-      const counts: Record<string, number> = {};
-      for (const row of data ?? []) {
-        const key = row.case_id ?? "__none__";
-        counts[key] = (counts[key] ?? 0) + 1;
-      }
-      return counts;
-    },
-  });
-}
 
 export function ClientCasesTab({
   clientId,
@@ -156,6 +137,11 @@ export function ClientCasesTab({
             <div className="shrink-0 text-sm font-semibold text-muted-foreground">
               {historyCount} simulation{historyCount > 1 ? "s" : ""}
             </div>
+            <Button asChild size="sm" variant="outline" className="shrink-0">
+              <Link to="/clients/$clientId/cases/historique" params={{ clientId }}>
+                Ouvrir
+              </Link>
+            </Button>
           </div>
         )}
 
@@ -169,7 +155,7 @@ export function ClientCasesTab({
   );
 }
 
-function CaseRow({
+export function CaseRow({
   clientCase,
   count,
   active,

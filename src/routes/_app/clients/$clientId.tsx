@@ -73,6 +73,7 @@ import { AiAnalysis } from "@/components/ai/AiAnalysis";
 import { AiConversationsTab } from "@/components/ai/AiConversationsTab";
 import { SessionSummaryTab } from "@/components/clients/SessionSummaryTab";
 import { ClientCasesTab } from "@/components/clients/ClientCasesTab";
+import { useClientCases } from "@/hooks/useClientCases";
 import { NextAppointmentCard } from "@/components/appointments/NextAppointmentCard";
 import { EmailsTab } from "@/components/clients/EmailsTab";
 import { FollowUpTab } from "@/components/clients/FollowUpTab";
@@ -119,6 +120,8 @@ function ClientDetailPage() {
   const { user } = useAuth();
   const navigate = useNavigate({ from: Route.fullPath });
   const qc = useQueryClient();
+  const { cases } = useClientCases(clientId);
+  const openCasesCount = cases.filter((c) => c.status === "open").length;
 
   const { data, isLoading, error } = useQuery({
     queryKey: ["client", clientId],
@@ -523,6 +526,38 @@ function ClientDetailPage() {
         </TabsContent>
 
         <TabsContent value="overview" className="mt-4 space-y-6">
+          {/* CTA explicite : sans ça, le courtier arrive sur la fiche sans
+              savoir comment accéder au simulateur (les calculateurs ne sont
+              accessibles que depuis l'intérieur d'un dossier). */}
+          <div className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-primary/30 bg-gradient-to-br from-primary/5 to-transparent p-5">
+            <div className="flex items-start gap-3">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-primary/15 text-primary">
+                <FolderOpen className="h-5 w-5" />
+              </div>
+              <div>
+                <p className="text-sm font-semibold">
+                  {openCasesCount > 0
+                    ? `${openCasesCount} dossier${openCasesCount > 1 ? "s" : ""} ouvert${openCasesCount > 1 ? "s" : ""} pour ce client`
+                    : "Aucun dossier ouvert pour ce client"}
+                </p>
+                <p className="mt-0.5 text-xs text-muted-foreground">
+                  Un dossier regroupe les simulations d'un même projet. Ouvrez un dossier existant
+                  ou créez-en un nouveau pour lancer un calculateur.
+                </p>
+              </div>
+            </div>
+            <Button
+              className="shrink-0 gap-1.5"
+              onClick={() =>
+                navigate({
+                  search: (prev: z.infer<typeof searchSchema>) => ({ ...prev, tab: "cases" }),
+                })
+              }
+            >
+              <Plus className="h-4 w-4" />
+              Nouveau dossier
+            </Button>
+          </div>
           {dashboard?.hasEnoughData && (
             <DashboardOverview dashboard={dashboard} clientId={clientId} />
           )}

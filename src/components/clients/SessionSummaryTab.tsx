@@ -4,7 +4,7 @@ import { useState } from "react";
 import { supabase as supabaseClient } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { usePlan } from "@/contexts/PlanContext";
-import { Link } from "@tanstack/react-router";
+import { Link, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   CheckCircle2,
@@ -19,6 +19,7 @@ import {
   Archive,
   ArchiveRestore,
   ChevronDown,
+  Clock,
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -36,13 +37,15 @@ import { aggregateGains, listDismissedGains, type GainItem } from "@/lib/simulat
 import { formatCHF } from "@/lib/format";
 import { formatDateShort } from "@/lib/i18n/format";
 import { useT } from "@/contexts/LanguageContext";
-import { useClientCases } from "@/hooks/useClientCases";
+import { useClientCases, useSetClientCaseStatus, useSimCountsByCase } from "@/hooks/useClientCases";
 import { SynthesisReportModal } from "./SynthesisReportModal";
+import { CaseRow } from "./ClientCasesTab";
 
 export function SessionSummaryTab({
   clientId,
   clientName,
   caseId,
+  historique,
 }: {
   clientId: string;
   clientName: string;
@@ -51,9 +54,14 @@ export function SessionSummaryTab({
    *  ClientCasesTab) — plus de confusion avec les simulations des autres
    *  dossiers du même client. */
   caseId?: string;
+  /** Vue du dossier virtuel "Historique (avant dossiers)" : simulations
+   *  avec case_id NULL, enregistrées avant l'introduction des dossiers.
+   *  Voir la page dédiée $clientId_.cases.historique.tsx. */
+  historique?: boolean;
 }) {
   const t = useT();
   const qc = useQueryClient();
+  const navigate = useNavigate();
   const [reportOpen, setReportOpen] = useState(false);
   const [invoiceOpen, setInvoiceOpen] = useState(false);
   const [invoiceAmount, setInvoiceAmount] = useState<number>(150);
@@ -216,13 +224,15 @@ export function SessionSummaryTab({
   });
 
   const { data: entries = [], isLoading } = useQuery({
-    queryKey: ["client-simulations", clientId, caseId],
+    queryKey: ["client-simulations", clientId, caseId, historique],
     queryFn: async () => {
       let query = supabase.from("simulation_history").select("*").eq("client_id", clientId);
       // Dossier actif : on ne montre QUE ses simulations — voir "Ouvrir"
-      // dans ClientCasesTab. Sans dossier actif (onglet ouvert directement),
-      // comportement inchangé : toutes les simulations du client.
+      // dans ClientCasesTab. "Historique" : simulations d'avant les
+      // dossiers (case_id NULL). Sinon, comportement inchangé : toutes les
+      // simulations du client.
       if (caseId) query = query.eq("case_id", caseId);
+      else if (historique) query = query.is("case_id", null);
       const { data, error } = await query.order("created_at", { ascending: false });
       if (error) throw error;
       return (data ?? []) as unknown as HistoryEntry[];
@@ -231,6 +241,9 @@ export function SessionSummaryTab({
 
   const { cases } = useClientCases(clientId);
   const activeCase = caseId ? cases.find((c) => c.id === caseId) : undefined;
+  const setCaseStatus = useSetClientCaseStatus(clientId);
+  const { data: simCounts } = useSimCountsByCase(clientId);
+  const historyCount = simCounts?.["__none__"] ?? 0;
 
   const remove = useMutation({
     mutationFn: async (id: string) => {
@@ -399,44 +412,117 @@ export function SessionSummaryTab({
         </CardContent>
       </Card>
 
-      {/* BLOC 1 · Liste chronologique */}
+      {/* BLOC 1 · Dossiers (vue générale) ou simulations du dossier actif */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base">
             <CalendarClock className="h-5 w-5 text-primary" />
             {activeCase
               ? `Dossier « ${activeCase.title} » : ${entries.length} simulation${entries.length > 1 ? "s" : ""}`
-              : t("client.session.simulations_list", { n: entries.length })}
+              : historique
+                ? `Historique (avant dossiers) : ${entries.length} simulation${entries.length > 1 ? "s" : ""}`
+                : `Dossiers de ce client (${cases.length})`}
           </CardTitle>
         </CardHeader>
         <CardContent>
-          {isLoading ? (
-            <p className="text-sm text-muted-foreground">{t("history.loading")}</p>
-          ) : entries.length === 0 ? (
+          {activeCase || historique ? (
+            isLoading ? (
+              <p className="text-sm text-muted-foreground">{t("history.loading")}</p>
+            ) : entries.length === 0 ? (
+              <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 space-y-2">
+                <p className="text-sm font-semibold text-amber-800">Aucune simulation enregistrée</p>
+                <p className="text-xs text-amber-700">
+                  Pour générer la synthèse PDF de ce rendez-vous, vous devez d'abord sauvegarder au
+                  moins une simulation depuis un calculateur.
+                </p>
+                <ol className="text-xs text-amber-700 space-y-1 list-decimal list-inside">
+                  <li>Lancez un calculateur depuis cette fiche client (bouton en haut de page)</li>
+                  <li>Effectuez votre calcul</li>
+                  <li>Cliquez sur "Sauvegarder la simulation" en bas du calculateur</li>
+                  <li>Revenez sur cet onglet pour générer la synthèse PDF</li>
+                </ol>
+              </div>
+            ) : (
+              <ul className="space-y-3">
+                {entries.map((e) => (
+                  <SimItem
+                    key={e.id}
+                    entry={e}
+                    onDelete={() => remove.mutate(e.id)}
+                    onToggleBaseline={() => setBaseline.mutate(e)}
+                    baselineLoading={setBaseline.isPending && setBaseline.variables?.id === e.id}
+                  />
+                ))}
+              </ul>
+            )
+          ) : cases.length === 0 && historyCount === 0 ? (
             <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 space-y-2">
-              <p className="text-sm font-semibold text-amber-800">Aucune simulation enregistrée</p>
+              <p className="text-sm font-semibold text-amber-800">Aucun dossier pour ce client</p>
               <p className="text-xs text-amber-700">
-                Pour générer la synthèse PDF de ce rendez-vous, vous devez d'abord sauvegarder au moins une simulation depuis un calculateur.
+                Créez un dossier (onglet « Dossiers ») pour lancer un calculateur et pouvoir générer
+                une synthèse PDF.
               </p>
-              <ol className="text-xs text-amber-700 space-y-1 list-decimal list-inside">
-                <li>Lancez un calculateur depuis cette fiche client (bouton en haut de page)</li>
-                <li>Effectuez votre calcul</li>
-                <li>Cliquez sur "Sauvegarder la simulation" en bas du calculateur</li>
-                <li>Revenez sur cet onglet pour générer la synthèse PDF</li>
-              </ol>
             </div>
           ) : (
-            <ul className="space-y-3">
-              {entries.map((e) => (
-                <SimItem
-                  key={e.id}
-                  entry={e}
-                  onDelete={() => remove.mutate(e.id)}
-                  onToggleBaseline={() => setBaseline.mutate(e)}
-                  baselineLoading={setBaseline.isPending && setBaseline.variables?.id === e.id}
+            <div className="space-y-2">
+              {cases.map((c) => (
+                <CaseRow
+                  key={c.id}
+                  clientCase={c}
+                  count={simCounts?.[c.id] ?? 0}
+                  active={false}
+                  onOpen={() =>
+                    navigate({
+                      to: "/clients/$clientId/cases/$caseId",
+                      params: { clientId, caseId: c.id },
+                    })
+                  }
+                  onToggleStatus={() =>
+                    setCaseStatus.mutate({
+                      caseId: c.id,
+                      status: c.status === "open" ? "closed" : "open",
+                    })
+                  }
                 />
               ))}
-            </ul>
+              {historyCount > 0 && (
+                <div className="flex flex-wrap items-center gap-4 rounded-xl border border-dashed p-4">
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-muted text-muted-foreground">
+                    <Clock className="h-4 w-4" />
+                  </div>
+                  <div className="min-w-[200px] flex-1">
+                    <div className="mb-0.5 flex items-center gap-2">
+                      <span className="font-semibold text-foreground/80">
+                        Historique (avant dossiers)
+                      </span>
+                      <Badge variant="secondary" className="text-[10px]">
+                        Automatique
+                      </Badge>
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      Simulations enregistrées avant l'introduction des dossiers, regroupées ici :
+                      rien n'est perdu.
+                    </div>
+                  </div>
+                  <div className="shrink-0 text-sm font-semibold text-muted-foreground">
+                    {historyCount} simulation{historyCount > 1 ? "s" : ""}
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="shrink-0"
+                    onClick={() =>
+                      navigate({
+                        to: "/clients/$clientId/cases/historique",
+                        params: { clientId },
+                      })
+                    }
+                  >
+                    Ouvrir
+                  </Button>
+                </div>
+              )}
+            </div>
           )}
         </CardContent>
       </Card>

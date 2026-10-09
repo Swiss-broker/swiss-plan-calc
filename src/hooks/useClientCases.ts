@@ -60,6 +60,25 @@ export function useCreateClientCase(clientId: string | undefined) {
   });
 }
 
+export function useSimCountsByCase(clientId: string) {
+  return useQuery({
+    queryKey: ["client-sim-counts-by-case", clientId],
+    queryFn: async (): Promise<Record<string, number>> => {
+      const { data, error } = await supabase
+        .from("simulation_history")
+        .select("case_id")
+        .eq("client_id", clientId);
+      if (error) throw error;
+      const counts: Record<string, number> = {};
+      for (const row of data ?? []) {
+        const key = row.case_id ?? "__none__";
+        counts[key] = (counts[key] ?? 0) + 1;
+      }
+      return counts;
+    },
+  });
+}
+
 export function useSetClientCaseStatus(clientId: string | undefined) {
   const qc = useQueryClient();
   return useMutation({
