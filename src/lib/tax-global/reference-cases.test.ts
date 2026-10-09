@@ -39,6 +39,25 @@
 // salaire net de 71'883 CHF). Le cas GE 80'000 CHF single/0 enfant
 // converge maintenant à ~0.5% du calculateur officiel (10'401.54 CHF vs
 // 10'453 CHF ESTV), contre ~1.3% avant ce correctif.
+//
+// Re-régénérées le 09.10.2026 pour les 4 cas VS : le moteur sautait
+// entièrement l'indexation cantonale (Art. 32 LF), lisant le taux moyen
+// directement sur le revenu réel au lieu du revenu dé-indexé — alors que
+// le communal avait déjà ce traitement (par commune connue). Signalé par
+// l'utilisatrice : Sion, célibataire, 0 enfant, 80'000 CHF brut, 8'444 CHF
+// affichés par l'app contre 5'948 CHF initialement rapportés puis 9'487
+// CHF confirmés par calculateur officiel ESTV
+// (swisstaxcalculator.estv.admin.ch). Indexation cantonale 2026 = 155%,
+// calibrée par recherche numérique contre ce cas réel (revenu imposable
+// cantonal 65'927 CHF → 4'213.29 CHF calculés contre 4'215 CHF réels, écart
+// 1.71 CHF) — voir VS_CANTONAL_INDEXATION_PERCENT_2026 dans cantons.ts.
+// Même recoupement pour Sion elle-même, absente jusqu'ici de
+// COMMUNAL_MULTIPLIERS.VS (indexation communale 176%, confirmée à 0.15 CHF
+// près) et pour l'impôt personnel VS (24 CHF/personne seule, confirmé par
+// le même cas, jusqu'ici non modélisé). Les 4 cas ci-dessous ne spécifient
+// pas de commune connue (comportement par défaut, chef-lieu) : seul le
+// cantonal bouge ici ; avec Sion explicitement sélectionnée le total
+// converge à moins de 2% du cas réel AFC (9'321.59 CHF vs 9'487 CHF).
 
 import { describe, expect, it } from "vitest";
 import { computeTaxGlobal } from "./engine";
@@ -205,10 +224,20 @@ const REFERENCE_CASES: ReferenceCase[] = [
     desc: "VS \u2014 C\u00e9libataire, sans enfant, 80'000 CHF",
     overrides: { canton: "VS", civilStatus: "single", children: 0, grossSalary: 80000 },
     expected: {
-      totalTaxCHF: 12781.91,
-      effectiveRate: 16,
+      // R\u00e9g\u00e9n\u00e9r\u00e9 le 09.10.2026 : ajout de l'indexation cantonale VS 2026
+      // (155%, voir VS_CANTONAL_INDEXATION_PERCENT_2026 dans cantons.ts),
+      // qui manquait enti\u00e8rement \u2014 le moteur lisait le taux directement sur
+      // le revenu r\u00e9el au lieu du revenu d\u00e9-index\u00e9, surestimant fortement
+      // l'imp\u00f4t cantonal (ex utilisatrice : Sion 80'000 CHF, 12'781.91 CHF
+      // calcul\u00e9s contre 9'487 CHF r\u00e9els AFC). communal inchang\u00e9 ici car ce
+      // cas ne sp\u00e9cifie pas de commune connue (comportement par d\u00e9faut,
+      // chef-lieu) ; avec Sion explicitement s\u00e9lectionn\u00e9e (vsIndexationPercent
+      // 176%, d\u00e9sormais dans COMMUNAL_MULTIPLIERS.VS), le total converge \u00e0
+      // 9'321.59 CHF, \u00e0 moins de 2% du cas r\u00e9el AFC.
+      totalTaxCHF: 10942.65,
+      effectiveRate: 13.7,
       ifd: 907.65,
-      cantonal: 5991.47,
+      cantonal: 4128.21,
       communal: 5882.79,
       wealthTax: 0,
     },
@@ -224,10 +253,11 @@ const REFERENCE_CASES: ReferenceCase[] = [
       grossSalary: 100000,
     },
     expected: {
-      totalTaxCHF: 11425.13,
-      effectiveRate: 11.4,
+      // Régénéré le 09.10.2026, voir VS_single_80k ci-dessus.
+      totalTaxCHF: 9687.03,
+      effectiveRate: 9.7,
       ifd: 1112.45,
-      cantonal: 5435.36,
+      cantonal: 3649.26,
       communal: 4877.32,
       wealthTax: 0,
     },
@@ -243,11 +273,42 @@ const REFERENCE_CASES: ReferenceCase[] = [
       grossSalary: 120000,
     },
     expected: {
-      totalTaxCHF: 10414.3,
-      effectiveRate: 8.7,
+      // Régénéré le 09.10.2026, voir VS_single_80k ci-dessus.
+      totalTaxCHF: 8680.96,
+      effectiveRate: 7.2,
       ifd: 709.7,
-      cantonal: 4830.6,
+      cantonal: 3049.26,
       communal: 4874,
+      wealthTax: 0,
+    },
+  },
+  {
+    id: "VS_Sion_single_80k",
+    desc: "VS — Sion, célibataire, sans enfant, 80'000 CHF (cas réel AFC)",
+    // Cas directement vérifié par l'utilisatrice contre le calculateur
+    // officiel ESTV (swisstaxcalculator.estv.admin.ch, Sion VS, personne
+    // seule, 0 enfant, sans confession, 80'000 CHF brut, 2026) : total réel
+    // 9'487 CHF (cantonal 4'215, communal 4'342, impôt personnel 24, IFD
+    // 906). Notre moteur converge à 9'321.59 CHF, à moins de 2% — écart
+    // résiduel probable : forfait cantonal assurance maladie VS non encore
+    // vérifié individuellement (utilise la valeur standard 4'560 CHF,
+    // contre 3'800 CHF réels pour ce cas, voir HEALTH_INSURANCE_CANTONAL_2026
+    // dans income.ts), à corriger si un canton avec forfait assurance VS
+    // propre est confirmé.
+    overrides: {
+      canton: "VS",
+      civilStatus: "single",
+      children: 0,
+      grossSalary: 80000,
+      communalMultiplier: 1.1,
+      vsIndexationPercent: 176,
+    },
+    expected: {
+      totalTaxCHF: 9321.59,
+      effectiveRate: 11.7,
+      ifd: 907.65,
+      cantonal: 4128.21,
+      communal: 4261.73,
       wealthTax: 0,
     },
   },
@@ -264,10 +325,11 @@ const REFERENCE_CASES: ReferenceCase[] = [
     expected: {
       // Régénéré le 05.10.2026 : correction du barème de fortune VS
       // (taux stockés en % au lieu de ‰, voir cantons.ts VS_WEALTH_SCALE).
-      totalTaxCHF: 36738.96,
-      effectiveRate: 24.5,
+      // Re-régénéré le 09.10.2026, voir VS_single_80k ci-dessus.
+      totalTaxCHF: 32829.69,
+      effectiveRate: 21.9,
       ifd: 5209.15,
-      cantonal: 17291.64,
+      cantonal: 13358.37,
       communal: 13213.37,
       wealthTax: 1024.8,
     },

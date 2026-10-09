@@ -385,6 +385,23 @@ export const VS_CANTONAL_CLASSES: AverageRateClass[] = [
 ];
 export const VS_CANTONAL_TOP_RATE_PERCENT = 14.0;
 
+/**
+ * Indexation cantonale 2026 (Art. 32 LF) : contrairement au communal (qui
+ * varie par commune, voir vsIndexationPercent/COMMUNAL_MULTIPLIERS), le
+ * canton applique UNE indexation unique à tout le Valais avant de lire le
+ * taux sur VS_CANTONAL_CLASSES — le barème ci-dessus est publié pour un
+ * revenu non-indexé (100%), pas directement applicable au revenu réel.
+ * Sans cette étape, le moteur surestimait fortement l'impôt cantonal (ex.
+ * Sion, célibataire, 80'000 CHF brut : 5'991 CHF calculés contre 4'215 CHF
+ * réels, un écart de ~42%). Valeur 155% calibrée par recherche numérique
+ * (balayage 100%-260%) contre ce cas réel AFC (swisstaxcalculator.estv.
+ * admin.ch, Sion VS, personne seule, 0 enfant, revenu imposable cantonal
+ * 65'927 CHF) : reproduit 4'213.29 CHF contre 4'215 CHF réels (écart
+ * 1.71 CHF, 0.04%) — voir cantons.test.ts. Un seul cas de référence à ce
+ * stade ; à recouper avec d'autres revenus/situations dès que possible.
+ */
+export const VS_CANTONAL_INDEXATION_PERCENT_2026 = 155;
+
 // Art. 178 al. 1 LF, barème communal détaillé 2026 (tarif de base ; chaque
 // commune applique ensuite son propre coefficient 1.0–1.5, voir
 // communalMultiplierCapital). Source : idem ci-dessus.
@@ -1059,16 +1076,26 @@ export function computeCantonalCommunal(opts: CCComputeOptions): CCComputeResult
     }
     vsAdjustedIncome = Math.max(0, opts.taxableIncome - vsChildDeduction);
 
+    // Indexation cantonale 2026 (voir VS_CANTONAL_INDEXATION_PERCENT_2026) :
+    // revenu arrondi aux 100 CHF inférieurs (même règle officielle que pour
+    // le communal), taux lu sur le revenu dé-indexé, taux appliqué au
+    // revenu arrondi — même mécanique que vsDeindexedReferenceIncome
+    // utilisée plus bas pour le communal, ici appliquée canton-wide.
+    const vsCantonalRoundedIncome = Math.floor(vsAdjustedIncome / 100) * 100;
+    const vsCantonalRateReferenceIncome = vsDeindexedReferenceIncome(
+      vsCantonalRoundedIncome,
+      VS_CANTONAL_INDEXATION_PERCENT_2026,
+    );
     const ratePercent = averageRatePercent(
-      vsAdjustedIncome,
+      vsCantonalRateReferenceIncome,
       VS_CANTONAL_CLASSES,
       VS_CANTONAL_TOP_RATE_PERCENT,
     );
-    const base = (vsAdjustedIncome * ratePercent) / 100;
+    const base = (vsCantonalRoundedIncome * ratePercent) / 100;
     bracketScale = scale.single;
-    marginalReference = vsAdjustedIncome;
+    marginalReference = vsCantonalRoundedIncome;
     simpleMarginalRatePercentOverride = marginalRatePercentFromClasses(
-      vsAdjustedIncome,
+      vsCantonalRateReferenceIncome,
       VS_CANTONAL_CLASSES,
       VS_CANTONAL_TOP_RATE_PERCENT,
     );
@@ -1246,6 +1273,15 @@ export function computeCantonalCommunal(opts: CCComputeOptions): CCComputeResult
   let personalTax = 0;
   if (opts.canton === "GE") {
     personalTax = isMarried ? 50 : 25;
+  }
+  // VS (Art. 178 LF ?) : même ligne "Impôt personnel" distincte, confirmée
+  // 24 CHF/personne seule par le même recoupement AFC que l'indexation
+  // cantonale ci-dessus (Sion, célibataire, 0 enfant). Valeur couple
+  // (48 CHF = 2×24) EXTRAPOLÉE comme pour GE, non vérifiée. Dépendance
+  // éventuelle à la commune non vérifiée non plus (appliquée canton-wide
+  // par défaut, comme GE).
+  if (opts.canton === "VS") {
+    personalTax = isMarried ? 48 : 24;
   }
 
   let marginalBracket = bracketScale[0];

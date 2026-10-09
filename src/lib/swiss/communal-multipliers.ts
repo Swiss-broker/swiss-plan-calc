@@ -145,6 +145,16 @@ export const COMMUNAL_MULTIPLIERS: Record<string, Record<string, CommunalMultipl
     Savièse: { multiplier: 1.15, verified: "confirmed", vsIndexationPercent: 156 },
     Saxon: { multiplier: 1.2, verified: "confirmed", vsIndexationPercent: 166 },
     Sierre: { multiplier: 1.2, verified: "confirmed", vsIndexationPercent: 161 },
+    // Chef-lieu cantonal : coefficient déjà utilisé comme repli par défaut
+    // (CANTON_SCALES.VS.communalMultiplierCapital dans cantons.ts), mais
+    // l'indexation manquait ici — le moteur sautait entièrement la
+    // dé-indexation pour Sion (voir cantons.ts VS_CANTONAL_INDEXATION_
+    // PERCENT_2026 pour le même problème côté cantonal). Indexation 176%
+    // calibrée par recherche numérique contre un cas réel AFC
+    // (swisstaxcalculator.estv.admin.ch, Sion, personne seule, 0 enfant,
+    // 80'000 CHF brut) : reproduit 4'342.15 CHF contre 4'342 CHF réels
+    // (écart 0.15 CHF) — voir cantons.test.ts.
+    Sion: { multiplier: 1.1, verified: "confirmed", vsIndexationPercent: 176 },
     Verbier: {
       multiplier: 1,
       fiscalCommune: "Val de Bagnes",
