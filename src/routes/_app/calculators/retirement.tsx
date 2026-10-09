@@ -46,7 +46,7 @@ export const Route = createFileRoute("/_app/calculators/retirement")({
 
 function RetirementCalc() {
   const t = useT();
-  const { clientId, simId } = Route.useSearch();
+  const { clientId, caseId, simId } = Route.useSearch();
   const { client, bundle, prefill } = usePrefillFromClient(clientId, "retirement");
   const { inputs: savedInputs, isLoading: loadingSaved } = useLoadSavedSimulation(simId);
   const dashboard = useClientDashboard(bundle ?? null);
@@ -56,7 +56,7 @@ function RetirementCalc() {
   // (useClientDashboard), qui ignore les rachats/hypothèses de la simulation
   // sauvegardée et pouvait donc afficher un capital différent de celui de la
   // page "Prestations consolidées" pour la même situation.
-  const { data: consolidationRefs } = useConsolidationReferences(clientId);
+  const { data: consolidationRefs } = useConsolidationReferences(clientId, caseId);
   const lppSimCapital = Number(
     (consolidationRefs?.lpp?.summary as Record<string, unknown> | undefined)?.projectedBalance ?? 0,
   );
@@ -80,7 +80,7 @@ function RetirementCalc() {
 }, [projectedCapital, simId]);
 
   // Pré-remplir le taux marginal depuis la dernière simulation fiscale du client
-  const { data: snapshot } = useClientFiscalSnapshot(clientId);
+  const { data: snapshot } = useClientFiscalSnapshot(clientId, caseId);
   const marginalAutofilled = useRef(false);
   useEffect(() => {
     if (simId) return; // brouillon chargé : ne pas écraser avec la fiche vivante

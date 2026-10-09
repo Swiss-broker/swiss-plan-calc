@@ -30,6 +30,7 @@ interface Candidate {
 
 interface Props {
   clientId: string | undefined;
+  caseId: string | undefined;
   currentLppBuyback: number;
   currentPillar3aContributions: number;
   onApply: (provenance: ReuseProvenance) => void;
@@ -37,11 +38,12 @@ interface Props {
 
 export function CrossSimulationReuseBanner({
   clientId,
+  caseId,
   currentLppBuyback,
   currentPillar3aContributions,
   onApply,
 }: Props) {
-  const { data: refs } = useConsolidationReferences(clientId);
+  const { data: refs } = useConsolidationReferences(clientId, caseId);
   const [dismissed, setDismissed] = useState<Set<string>>(new Set());
 
   if (!clientId) return null;

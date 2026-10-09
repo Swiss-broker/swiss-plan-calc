@@ -58,7 +58,7 @@ export const Route = createFileRoute("/_app/calculators/pillar3a")({
 
 function Pillar3aCalc() {
   const t = useT();
-  const { clientId, simId } = Route.useSearch();
+  const { clientId, caseId, simId } = Route.useSearch();
   const { client, prefill } = usePrefillFromClient(clientId, "pillar3a");
   const { inputs: savedInputs, isLoading: loadingSaved } = useLoadSavedSimulation(simId);
   const [form, setForm] = useState({
@@ -370,7 +370,7 @@ useEffect(() => {
           Vous consultez une simulation sauvegardée. Toute modification créera une nouvelle sauvegarde distincte si vous cliquez sur « Sauvegarder ».
         </div>
       )}
-      <FiscalSnapshotBanner clientId={clientId} />
+      <FiscalSnapshotBanner clientId={clientId} caseId={caseId} />
 
       <div className="rounded-xl border border-primary/30 bg-primary/5 p-4 text-sm">
         <div className="font-semibold">{t("calc.p3a.intro_title")}</div>

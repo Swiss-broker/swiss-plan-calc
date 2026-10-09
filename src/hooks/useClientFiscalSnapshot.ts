@@ -14,17 +14,26 @@ export interface ClientFiscalSnapshot {
   lastUpdated: string;
 }
 
-export function useClientFiscalSnapshot(clientId: string | undefined) {
+// Filtré par dossier (case_id) : une simulation fiscale enregistrée dans
+// un dossier ne doit jamais être reprise comme référence dans un AUTRE
+// dossier du même client, sinon un courtier voit un taux marginal qui ne
+// correspond pas du tout au scénario du dossier ouvert. Sans caseId (accès
+// hors dossier, ex. lien direct historique), on se limite au dossier
+// virtuel "historique" (case_id NULL) plutôt que de retomber sur tout le
+// client — jamais de fuite entre dossiers.
+export function useClientFiscalSnapshot(clientId: string | undefined, caseId: string | undefined) {
   return useQuery({
-    queryKey: ["client-fiscal-snapshot", clientId],
+    queryKey: ["client-fiscal-snapshot", clientId, caseId],
     enabled: Boolean(clientId),
     queryFn: async (): Promise<ClientFiscalSnapshot | null> => {
       if (!clientId) return null;
-      const { data, error } = await supabase
+      let query = supabase
         .from("simulation_history")
         .select("kind, summary, created_at")
         .eq("client_id", clientId)
-        .in("kind", ["income_tax", "source_tax", "tax_global"])
+        .in("kind", ["income_tax", "source_tax", "tax_global"]);
+      query = caseId ? query.eq("case_id", caseId) : query.is("case_id", null);
+      const { data, error } = await query
         .order("created_at", { ascending: false })
         .limit(1)
         .maybeSingle();

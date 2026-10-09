@@ -117,7 +117,7 @@ function placeOfTaxation(regime: Regime): { flag: string; label: string } {
 
 function CantonCompareCalc() {
   const t = useT();
-  const { clientId, simId } = Route.useSearch();
+  const { clientId, caseId, simId } = Route.useSearch();
   const { client } = usePrefillFromClient(clientId, "canton-compare");
   const { inputs: savedInputs, isLoading: loadingSaved } = useLoadSavedSimulation(simId);
   const selectable = getSelectableCantons();
@@ -148,7 +148,7 @@ function CantonCompareCalc() {
   // différent de celui affiché sur le calculateur dédié. Repli sur le
   // recalcul "fiche" (dashboard) uniquement si aucune simulation n'a été
   // enregistrée pour ce pilier.
-  const { data: consolidationRefs } = useConsolidationReferences(clientId);
+  const { data: consolidationRefs } = useConsolidationReferences(clientId, caseId);
   // Impôt "situation actuelle" : priorité à la dernière simulation « Fiscal
   // global » enregistrée pour ce client (même canton que la référence ici),
   // pour ne jamais afficher un montant différent de la ligne « Fiscal

@@ -7,8 +7,14 @@ import { useClientFiscalSnapshot } from "@/hooks/useClientFiscalSnapshot";
  * Permet aux calculateurs 3a / LPP / retraite d'afficher la cohérence
  * avec la dernière simulation impôt revenu/source.
  */
-export function FiscalSnapshotBanner({ clientId }: { clientId?: string }) {
-  const { data: snapshot } = useClientFiscalSnapshot(clientId);
+export function FiscalSnapshotBanner({
+  clientId,
+  caseId,
+}: {
+  clientId?: string;
+  caseId?: string;
+}) {
+  const { data: snapshot } = useClientFiscalSnapshot(clientId, caseId);
   if (!snapshot) return null;
   const date = new Date(snapshot.lastUpdated).toLocaleDateString("fr-CH");
   const sourceLabel =

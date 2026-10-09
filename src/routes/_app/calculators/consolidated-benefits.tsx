@@ -36,7 +36,7 @@ export const Route = createFileRoute("/_app/calculators/consolidated-benefits")(
 });
 
 function ConsolidatedBenefitsCalc() {
-  const { clientId } = Route.useSearch();
+  const { clientId, caseId } = Route.useSearch();
   const navigate = Route.useNavigate();
 
   const { data: clients = [] } = useQuery({
@@ -121,7 +121,7 @@ function ConsolidatedBenefitsCalc() {
       ) : (
         <>
           <ClientLinkBanner client={bundle.client} />
-          <ConsolidatedBenefitsCard bundle={bundle} />
+          <ConsolidatedBenefitsCard bundle={bundle} caseId={caseId} />
         </>
       )}
     </div>

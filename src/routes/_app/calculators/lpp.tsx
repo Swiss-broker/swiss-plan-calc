@@ -66,7 +66,7 @@ export const Route = createFileRoute("/_app/calculators/lpp")({
 
 function LppCalc() {
   const t = useT();
-  const { clientId, simId } = Route.useSearch();
+  const { clientId, caseId, simId } = Route.useSearch();
   const { client, prefill } = usePrefillFromClient(clientId, "lpp");
   const { inputs: savedInputs, isLoading: loadingSaved } = useLoadSavedSimulation(simId);
   const [form, setForm] = useState({
@@ -298,7 +298,7 @@ function LppCalc() {
           Vous consultez une simulation sauvegardée. Toute modification créera une nouvelle sauvegarde distincte si vous cliquez sur « Sauvegarder ».
         </div>
       )}
-      <FiscalSnapshotBanner clientId={clientId} />
+      <FiscalSnapshotBanner clientId={clientId} caseId={caseId} />
       <div className="grid grid-cols-1 gap-6 md:grid-cols-5">
         <div className="md:col-span-3">
           <CalcCard title={t("calc.lpp.projection_card")} description={t("calc.lpp.projection_desc")}>

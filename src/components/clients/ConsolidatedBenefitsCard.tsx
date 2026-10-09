@@ -27,6 +27,7 @@ import { useConsolidationReferences } from "@/hooks/useConsolidationReferences";
 
 interface Props {
   bundle: ClientBundle;
+  caseId?: string;
 }
 
 const EVENT_ICONS: Record<PensionEvent, typeof HeartHandshake> = {
@@ -35,12 +36,13 @@ const EVENT_ICONS: Record<PensionEvent, typeof HeartHandshake> = {
   death: Cross,
 };
 
-export function ConsolidatedBenefitsCard({ bundle }: Props) {
+export function ConsolidatedBenefitsCard({ bundle, caseId }: Props) {
   // "Actuel" reprend les résultats des dernières simulations AVS/AI, LPP et
-  // 3a réellement sauvegardées pour ce client (même sélection que le PDF de
-  // synthèse) — jamais un recalcul indépendant qui pourrait afficher un
-  // chiffre différent de celui du calculateur dédié.
-  const { data: refs } = useConsolidationReferences(bundle.client.id);
+  // 3a réellement sauvegardées pour ce client DANS CE DOSSIER (même
+  // sélection que le PDF de synthèse) — jamais un recalcul indépendant qui
+  // pourrait afficher un chiffre différent de celui du calculateur dédié,
+  // et jamais une simulation d'un autre dossier du même client.
+  const { data: refs } = useConsolidationReferences(bundle.client.id, caseId);
   const current = useMemo(() => consolidatePensionBenefits(bundle, refs), [bundle, refs]);
   const optimized = useMemo(() => consolidateOptimizedBenefits(bundle, refs), [bundle, refs]);
   const capitals = useMemo(() => getConsolidatedCapitals(bundle, refs), [bundle, refs]);

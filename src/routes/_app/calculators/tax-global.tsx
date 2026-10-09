@@ -75,7 +75,7 @@ export const Route = createFileRoute("/_app/calculators/tax-global")({
 
 function TaxGlobalCalc() {
   const t = useT();
-  const { clientId, simId } = Route.useSearch();
+  const { clientId, caseId, simId } = Route.useSearch();
   const { client, prefill } = usePrefillFromClient(clientId, "tax-global");
   const { inputs: savedInputs, isLoading: loadingSaved } = useLoadSavedSimulation(simId);
 
@@ -290,6 +290,7 @@ function TaxGlobalCalc() {
       <CrossCalcImpactBanner calculator="tax-global" clientId={clientId} />
       <CrossSimulationReuseBanner
         clientId={clientId}
+        caseId={caseId}
         currentLppBuyback={form.lppBuyback ?? 0}
         currentPillar3aContributions={form.pillar3aContributions ?? 0}
         onApply={applyReuse}
