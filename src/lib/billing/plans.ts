@@ -15,11 +15,22 @@ export const PLAN_LABELS: Record<BillablePlan, string> = {
   cabinet: "Cabinet",
 };
 
-// Plans qui donnent un accès réel à l'application : abonnement individuel
-// payé (starter/pro), siège cabinet payé par quelqu'un (cabinet), ou
-// compte interne (fondatrice, associé). "trial" est un état transitoire
-// entre la vérification du code par email et le paiement Stripe — il ne
-// doit jamais suffire à lui seul pour accéder à l'application, sans quoi
-// n'importe qui peut créer un compte et utiliser le produit gratuitement
-// sans jamais payer. Voir _app.tsx pour l'application de cette règle.
-export const ACTIVE_PLANS: ReadonlySet<BrokerPlan> = new Set(["starter", "pro", "cabinet", "internal", "demo"]);
+// Plans qui donnent un accès réel à l'application : cotisation annuelle
+// payée ("active", nouveau modèle économique), compte interne (fondatrice,
+// associé), ou compte démo. "trial" est un état transitoire entre la
+// vérification du code par email et le paiement Stripe — il ne doit jamais
+// suffire à lui seul pour accéder à l'application, sans quoi n'importe qui
+// peut créer un compte et utiliser le produit gratuitement sans jamais
+// payer. Voir _app.tsx pour l'application de cette règle.
+//
+// starter/pro/cabinet restent ici pour les comptes déjà existants sous
+// l'ancien modèle (plus aucun nouveau compte ne peut désormais obtenir
+// l'une de ces valeurs) — retirés en Phase 5 avec le reste du cabinet.
+export const ACTIVE_PLANS: ReadonlySet<BrokerPlan> = new Set([
+  "active",
+  "starter",
+  "pro",
+  "cabinet",
+  "internal",
+  "demo",
+]);

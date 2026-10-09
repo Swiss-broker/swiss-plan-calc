@@ -2236,6 +2236,7 @@ export type Database = {
         | "internal"
         | "expired"
         | "demo"
+        | "active"
       civil_status:
         | "single"
         | "married"
@@ -2483,6 +2484,7 @@ export const Constants = {
         "internal",
         "expired",
         "demo",
+        "active",
       ],
       civil_status: [
         "single",

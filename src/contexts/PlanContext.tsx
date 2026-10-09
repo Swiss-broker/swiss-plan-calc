@@ -1,7 +1,8 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-export type BrokerPlan = "trial" | "starter" | "pro" | "cabinet" | "expired" | "free" | "internal" | "demo";
+export type BrokerPlan =
+  "active" | "trial" | "starter" | "pro" | "cabinet" | "expired" | "free" | "internal" | "demo";
 export type CabinetRole = "root_director" | "director" | "courtier" | null;
 export interface PlanLimits {
   maxClients: number | null;     // null = illimité
@@ -16,6 +17,7 @@ export interface PlanLimits {
 // ces compteurs). Voir aussi la suppression des 4 triggers de quota côté
 // base (migration 20261008130500_drop_plan_quota_limits.sql).
 export const PLAN_LIMITS: Record<BrokerPlan, PlanLimits> = {
+  active: { maxClients: null, maxCompanies: null, maxPdfPerMonth: null, maxAiPerDay: null },
   trial:    { maxClients: null, maxCompanies: null, maxPdfPerMonth: null, maxAiPerDay: null },
   starter:  { maxClients: null, maxCompanies: null, maxPdfPerMonth: null, maxAiPerDay: null },
   pro:      { maxClients: null, maxCompanies: null, maxPdfPerMonth: null, maxAiPerDay: null },

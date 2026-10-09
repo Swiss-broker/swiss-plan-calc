@@ -15,8 +15,6 @@ export function jsonResponse(data: unknown, status = 200) {
   });
 }
 
-const ALLOWED_PLANS = new Set(["starter", "pro", "cabinet"]);
-const ALLOWED_BILLING_PERIODS = new Set(["monthly", "annual"]);
 const ALLOWED_DISCOUNT_DURATIONS = new Set(["none", "once", "3_months", "6_months", "12_months", "forever"]);
 const REPEATING_MONTHS: Record<string, number> = { "3_months": 3, "6_months": 6, "12_months": 12 };
 
@@ -39,12 +37,7 @@ export type Env = {
   supabaseUrl: string;
   supabaseKey: string;
   stripeKey: string;
-  starterMonthly?: string;
-  starterYearly?: string;
-  proMonthly?: string;
-  proYearly?: string;
-  cabinetMonthly?: string;
-  cabinetYearly?: string;
+  cotisationPriceId?: string;
   siteUrl: string;
 };
 
@@ -54,25 +47,21 @@ export async function handleGenerateOfferRequest(req: Request, env: Env): Promis
   }
 
   try {
-    const {
-      supabaseUrl, supabaseKey, stripeKey,
-      starterMonthly, starterYearly, proMonthly, proYearly, cabinetMonthly, cabinetYearly,
-      siteUrl,
-    } = env;
+    const { supabaseUrl, supabaseKey, stripeKey, cotisationPriceId, siteUrl } = env;
     if (!supabaseUrl || !supabaseKey) return jsonResponse({ error: "CONFIG_MISSING" }, 500);
     if (!stripeKey) return jsonResponse({ error: "STRIPE_SECRET_KEY manquante." }, 500);
+    if (!cotisationPriceId) {
+      return jsonResponse(
+        { error: "STRIPE_COTISATION_ANNUELLE manquant (secret non configuré)." },
+        500,
+      );
+    }
 
     const callerId = getVerifiedUserId(req);
-    const { demo_request_id, plan, billing_period, discount_percent, discount_duration } = await req.json();
+    const { demo_request_id, discount_percent, discount_duration } = await req.json();
 
     if (!demo_request_id || typeof demo_request_id !== "string") {
       return jsonResponse({ error: "demo_request_id manquant." }, 400);
-    }
-    if (!plan || !ALLOWED_PLANS.has(plan)) {
-      return jsonResponse({ error: "Plan invalide (attendu : starter, pro ou cabinet)." }, 400);
-    }
-    if (!billing_period || !ALLOWED_BILLING_PERIODS.has(billing_period)) {
-      return jsonResponse({ error: "billing_period invalide (attendu : monthly ou annual)." }, 400);
     }
     if (!discount_duration || !ALLOWED_DISCOUNT_DURATIONS.has(discount_duration)) {
       return jsonResponse({
@@ -128,22 +117,6 @@ export async function handleGenerateOfferRequest(req: Request, env: Env): Promis
       return jsonResponse({ error: "Ce lead ne vous est pas assigné." }, 403);
     }
 
-    // Correspondance plan + période -> Price ID, lue depuis les mêmes
-    // secrets que le flux self-serve existant (stripe-checkout) — jamais
-    // de price_id en dur ici.
-    const PRICE_BY_PLAN_AND_PERIOD: Record<string, Record<string, string | undefined>> = {
-      starter: { monthly: starterMonthly, annual: starterYearly },
-      pro: { monthly: proMonthly, annual: proYearly },
-      cabinet: { monthly: cabinetMonthly, annual: cabinetYearly },
-    };
-    const priceId = PRICE_BY_PLAN_AND_PERIOD[plan][billing_period];
-    if (!priceId) {
-      const secretSuffix = billing_period === "annual" ? "YEARLY" : "MONTHLY";
-      return jsonResponse({
-        error: `Price ID manquant pour le plan "${plan}" en période "${billing_period}" (secret STRIPE_${plan.toUpperCase()}_${secretSuffix} non configuré).`,
-      }, 500);
-    }
-
     // Coupon à la volée si une remise est demandée, avec la durée choisie :
     // 'once' (première facture seulement), '3_months'/'6_months'/'12_months'
     // (duration=repeating), ou 'forever' (tant que l'abonnement existe).
@@ -191,7 +164,7 @@ export async function handleGenerateOfferRequest(req: Request, env: Env): Promis
     const params: Record<string, string> = {
       "payment_method_types[0]": "card",
       mode: "subscription",
-      "line_items[0][price]": priceId,
+      "line_items[0][price]": cotisationPriceId,
       "line_items[0][quantity]": "1",
       "adaptive_pricing[enabled]": "false",
       customer_email: lead.email,
@@ -201,12 +174,8 @@ export async function handleGenerateOfferRequest(req: Request, env: Env): Promis
       success_url: `${siteUrl}/paiement-confirme`,
       cancel_url: `${siteUrl}/`,
       "metadata[demo_request_id]": demo_request_id,
-      "metadata[plan]": plan,
-      "metadata[billing_period]": billing_period,
       "metadata[generated_by]": callerId,
       "subscription_data[metadata][demo_request_id]": demo_request_id,
-      "subscription_data[metadata][plan]": plan,
-      "subscription_data[metadata][billing_period]": billing_period,
     };
     if (couponId) params["discounts[0][coupon]"] = couponId;
 
@@ -235,8 +204,6 @@ export async function handleGenerateOfferRequest(req: Request, env: Env): Promis
           target_type: "demo_request",
           target_id: demo_request_id,
           details: {
-            plan,
-            billing_period,
             discount_duration,
             discount_percent: discountPercent,
             coupon_id: couponId,
@@ -272,12 +239,7 @@ if (typeof Deno !== "undefined") {
       supabaseUrl: Deno.env.get("SUPABASE_URL") ?? "",
       supabaseKey: Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
       stripeKey: Deno.env.get("STRIPE_SECRET_KEY") ?? "",
-      starterMonthly: Deno.env.get("STRIPE_STARTER_MONTHLY"),
-      starterYearly: Deno.env.get("STRIPE_STARTER_YEARLY"),
-      proMonthly: Deno.env.get("STRIPE_PRO_MONTHLY"),
-      proYearly: Deno.env.get("STRIPE_PRO_YEARLY"),
-      cabinetMonthly: Deno.env.get("STRIPE_CABINET_MONTHLY"),
-      cabinetYearly: Deno.env.get("STRIPE_CABINET_YEARLY"),
+      cotisationPriceId: Deno.env.get("STRIPE_COTISATION_ANNUELLE"),
       siteUrl: Deno.env.get("SITE_URL") ?? "https://swissbrokerpro.ch",
     }),
   );

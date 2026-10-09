@@ -75,6 +75,13 @@ const profiles: Record<string, { email: string; first_name: string; plan?: strin
 const clients: Record<string, { first_name: string; last_name: string }> = {
   "client-1": { first_name: "Jean", last_name: "Dupont" },
 };
+const profilesByEmail: Record<string, { id: string; plan: string }> = {
+  "nouveau@x.ch": { id: "broker-nouveau", plan: "trial" },
+  "interne@x.ch": { id: "broker-interne", plan: "internal" },
+  "demo@x.ch": { id: "broker-demo", plan: "demo" },
+};
+let patchedProfiles: Array<{ email: string; body: Record<string, unknown> }> = [];
+let planEvents: Array<Record<string, unknown>> = [];
 
 function mockFetch(input: string | URL | Request, init?: RequestInit): Promise<Response> {
   const url = String(input);
@@ -92,6 +99,20 @@ function mockFetch(input: string | URL | Request, init?: RequestInit): Promise<R
     const id = decodeURIComponent(url.match(/id=eq\.([^&]+)/)?.[1] ?? "");
     const p = profiles[id];
     return Promise.resolve(new Response(JSON.stringify(p ? [p] : []), { status: 200 }));
+  }
+  if (url.includes("/rest/v1/profiles?email=eq.") && method === "GET") {
+    const email = decodeURIComponent(url.match(/email=eq\.([^&]+)/)?.[1] ?? "");
+    const p = profilesByEmail[email];
+    return Promise.resolve(new Response(JSON.stringify(p ? [p] : []), { status: 200 }));
+  }
+  if (url.includes("/rest/v1/profiles?email=eq.") && method === "PATCH") {
+    const email = decodeURIComponent(url.match(/email=eq\.([^&]+)/)?.[1] ?? "");
+    patchedProfiles.push({ email, body: JSON.parse(String(init?.body ?? "{}")) });
+    return Promise.resolve(new Response(null, { status: 204 }));
+  }
+  if (url.includes("/rest/v1/plan_events") && method === "POST") {
+    planEvents.push(JSON.parse(String(init?.body ?? "{}")));
+    return Promise.resolve(new Response(null, { status: 201 }));
   }
   if (url.includes("/rest/v1/clients?id=eq.")) {
     const id = decodeURIComponent(url.match(/id=eq\.([^&]+)/)?.[1] ?? "");
@@ -113,6 +134,8 @@ beforeEach(() => {
   patchedInvoices = [];
   brevoCalls = [];
   frozenCommissionCentimes = null;
+  patchedProfiles = [];
+  planEvents = [];
   vi.stubGlobal("fetch", vi.fn(mockFetch));
 });
 
@@ -228,6 +251,40 @@ describe("stripe-webhook — paiement RDV : rattachement exact (régression du b
 
     const html = brevoCalls[0].htmlContent;
     expect(html).toContain("550.00 CHF");
+  });
+});
+
+describe("stripe-webhook — cotisation annuelle (plus de sélection de plan ni de cabinet)", () => {
+  it("un paiement de cotisation accorde le plan 'active', journalisé dans plan_events", async () => {
+    const event = checkoutSessionCompletedEvent({ mode: "subscription", email: "nouveau@x.ch" });
+    const res = await handleStripeWebhookRequest(await signedStripeRequest(event), ENV);
+    expect(res.status).toBe(200);
+
+    expect(patchedProfiles).toHaveLength(1);
+    expect(patchedProfiles[0].email).toBe("nouveau@x.ch");
+    expect(patchedProfiles[0].body).toEqual({ plan: "active" });
+
+    expect(planEvents).toHaveLength(1);
+    expect(planEvents[0]).toMatchObject({
+      broker_id: "broker-nouveau",
+      previous_plan: "trial",
+      new_plan: "active",
+      reason: "checkout_completed",
+    });
+  });
+
+  it("un compte internal n'est jamais rétrogradé/modifié par ce webhook", async () => {
+    const event = checkoutSessionCompletedEvent({ mode: "subscription", email: "interne@x.ch" });
+    await handleStripeWebhookRequest(await signedStripeRequest(event), ENV);
+    expect(patchedProfiles).toHaveLength(0);
+    expect(planEvents).toHaveLength(0);
+  });
+
+  it("un compte demo n'est jamais modifié par ce webhook", async () => {
+    const event = checkoutSessionCompletedEvent({ mode: "subscription", email: "demo@x.ch" });
+    await handleStripeWebhookRequest(await signedStripeRequest(event), ENV);
+    expect(patchedProfiles).toHaveLength(0);
+    expect(planEvents).toHaveLength(0);
   });
 });
 

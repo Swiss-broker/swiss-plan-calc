@@ -8,9 +8,7 @@ import { handleStripeCheckoutRequest, type Env } from "./index";
 
 const ENV: Env = {
   stripeKey: "sk_test_fake",
-  starterMonthly: "price_starter_m",
-  proMonthly: "price_pro_m",
-  cabinetMonthly: "price_cabinet_m",
+  cotisationPriceId: "price_cotisation_annuelle",
   siteUrl: "https://swissbrokerpro.ch",
 };
 
@@ -54,10 +52,9 @@ beforeEach(() => {
   vi.stubGlobal("fetch", vi.fn(mockFetch));
 });
 
-describe("stripe-checkout — identité dérivée du JWT", () => {
+describe("stripe-checkout — cotisation annuelle, identité dérivée du JWT", () => {
   it("brokerId/brokerEmail falsifiés dans le body sont ignorés", async () => {
     const req = reqWithAuth("user-A", "moi@cabinet.ch", {
-      priceId: "price_pro_m",
       brokerId: "user-victime",
       brokerEmail: "victime@ailleurs.ch",
     });
@@ -68,24 +65,31 @@ describe("stripe-checkout — identité dérivée du JWT", () => {
     expect(sessionParams?.get("metadata[broker_id]")).toBe("user-A");
   });
 
-  it("le plan reste résolu côté serveur à partir du priceId, jamais du body", async () => {
-    const req = reqWithAuth("user-A", "moi@cabinet.ch", { priceId: "price_cabinet_m" });
+  it("utilise toujours le seul prix configuré côté serveur (cotisation annuelle)", async () => {
+    const req = reqWithAuth("user-A", "moi@cabinet.ch", {});
     const res = await handleStripeCheckoutRequest(req, ENV);
     expect(res.status).toBe(200);
-    expect(sessionParams?.get("metadata[plan]")).toBe("cabinet");
+    expect(sessionParams?.get("line_items[0][price]")).toBe("price_cotisation_annuelle");
+    expect(sessionParams?.get("metadata[plan]")).toBe("active");
+    expect(sessionParams?.get("subscription_data[metadata][plan]")).toBe("active");
   });
 
-  it("priceId inconnu -> refus", async () => {
-    const req = reqWithAuth("user-A", "moi@cabinet.ch", { priceId: "price_inconnu" });
-    const res = await handleStripeCheckoutRequest(req, ENV);
+  it("un coupon fourni est transmis à Stripe", async () => {
+    const req = reqWithAuth("user-A", "moi@cabinet.ch", { coupon: "PROMO10" });
+    await handleStripeCheckoutRequest(req, ENV);
+    expect(sessionParams?.get("discounts[0][coupon]")).toBe("PROMO10");
+  });
+
+  it("secret STRIPE_COTISATION_ANNUELLE manquant -> refus", async () => {
+    const req = reqWithAuth("user-A", "moi@cabinet.ch", {});
+    const res = await handleStripeCheckoutRequest(req, { ...ENV, cotisationPriceId: undefined });
     expect(res.status).toBe(500);
+    const body = await res.json();
+    expect(String(body.error)).toContain("STRIPE_COTISATION_ANNUELLE");
   });
 
   it("sans Authorization -> refus", async () => {
-    const res = await handleStripeCheckoutRequest(
-      reqWithAuth(null, undefined, { priceId: "price_pro_m" }),
-      ENV,
-    );
+    const res = await handleStripeCheckoutRequest(reqWithAuth(null, undefined, {}), ENV);
     expect(res.status).toBe(500);
     const body = await res.json();
     expect(String(body.error)).toContain("Authentification requise");

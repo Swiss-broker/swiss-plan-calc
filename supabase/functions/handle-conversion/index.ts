@@ -16,9 +16,6 @@ export function jsonResponse(data: unknown, status = 200) {
   });
 }
 
-const ALLOWED_PLANS = new Set(["starter", "pro", "cabinet"]);
-const PLAN_LABELS: Record<string, string> = { starter: "Starter", pro: "Pro", cabinet: "Cabinet" };
-
 // Même méthode de vérification que stripe-webhook (déjà en production) :
 // on recalcule le HMAC-SHA256 attendu à partir du corps brut et du secret
 // partagé, puis on compare au(x) v1 de l'en-tête Stripe-Signature. C'est
@@ -177,11 +174,9 @@ export async function handleConversionRequest(req: Request, env: Env): Promise<R
       body: JSON.stringify({ status: "converted" }),
     });
 
-    const rawPlan = session.metadata?.plan;
-    const plan = ALLOWED_PLANS.has(rawPlan) ? rawPlan : "starter";
-    if (!ALLOWED_PLANS.has(rawPlan)) {
-      console.error("handle-conversion: plan absent/invalide dans les metadata Stripe, repli sur 'starter':", rawPlan);
-    }
+    // Un seul produit (cotisation annuelle) : plus de sélection de plan
+    // depuis les metadata Stripe, toujours "active".
+    const plan = "active";
 
     const token = randomToken();
     const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
@@ -215,7 +210,7 @@ export async function handleConversionRequest(req: Request, env: Env): Promise<R
         <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 24px;">
           <h2 style="color: #0f766e;">Merci pour votre confiance !</h2>
           <p>Bonjour ${lead.name ?? ""},</p>
-          <p>Votre abonnement SwissBroker Pro (${PLAN_LABELS[plan]}) est confirmé. Il ne reste qu'une étape pour finaliser la création de votre compte :</p>
+          <p>Votre cotisation annuelle SwissBroker Pro est confirmée. Il ne reste qu'une étape pour finaliser la création de votre compte :</p>
           <p style="margin: 24px 0;">
             <a href="${onboardingUrl}" style="background:#0f766e; color:#fff; padding:12px 20px; border-radius:8px; text-decoration:none; font-weight:bold;">Finaliser mon compte</a>
           </p>

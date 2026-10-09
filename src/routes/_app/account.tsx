@@ -30,6 +30,14 @@ const TABS = [
 type TabId = typeof TABS[number]["id"];
 
 const PLAN_CONFIG: Record<string, { label: string; color: string; features: string[] }> = {
+  active: {
+    label: "Cotisation annuelle active",
+    color: "bg-emerald-100 text-emerald-800 border-emerald-200",
+    features: [
+      "Accès illimité à tous les calculateurs",
+      "Facturation RDV à la commission, pas d'abonnement mensuel",
+    ],
+  },
   trial: {
     label: "Compte non activé",
     color: "bg-amber-100 text-amber-800 border-amber-200",

@@ -31,7 +31,7 @@ Deno.serve(async (req) => {
     return new Response(
       JSON.stringify({
         email: session.customer_details?.email ?? session.customer_email ?? "",
-        plan: session.metadata?.plan ?? "pro",
+        plan: session.metadata?.plan ?? "active",
         status: session.status,
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }

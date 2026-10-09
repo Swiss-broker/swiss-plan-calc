@@ -27,12 +27,7 @@ function getCallerFromJwt(req: Request): { id: string; email: string | null } | 
 
 export type Env = {
   stripeKey: string;
-  starterMonthly?: string;
-  starterYearly?: string;
-  proMonthly?: string;
-  proYearly?: string;
-  cabinetMonthly?: string;
-  cabinetYearly?: string;
+  cotisationPriceId?: string;
   siteUrl: string;
 };
 
@@ -42,11 +37,17 @@ export async function handleStripeCheckoutRequest(req: Request, env: Env): Promi
   }
 
   try {
-    const { priceId, coupon } = await req.json();
-    const { stripeKey } = env;
+    const { coupon } = await req.json();
+    const { stripeKey, cotisationPriceId } = env;
 
     if (!stripeKey) {
       throw new Error("STRIPE_SECRET_KEY manquante");
+    }
+    // Un seul produit (cotisation annuelle) : pas de priceId envoyé par le
+    // navigateur, pas de correspondance à résoudre — le prix vient
+    // uniquement du secret serveur STRIPE_COTISATION_ANNUELLE.
+    if (!cotisationPriceId) {
+      throw new Error("STRIPE_COTISATION_ANNUELLE manquant (secret non configuré).");
     }
 
     const caller = getCallerFromJwt(req);
@@ -54,45 +55,21 @@ export async function handleStripeCheckoutRequest(req: Request, env: Env): Promi
     const brokerId = caller.id;
     const brokerEmail = caller.email ?? undefined;
 
-    // Correspondance officielle priceId -> plan, definie cote serveur.
-    // On ignore volontairement tout "plan" qui viendrait du navigateur :
-    // c'est le prix reellement paye qui determine le plan accorde, jamais
-    // une valeur envoyee par le client, qui pourrait etre falsifiee.
-    const PRICE_TO_PLAN: Record<string, string> = {};
-    const { starterMonthly, starterYearly, proMonthly, proYearly, cabinetMonthly, cabinetYearly } =
-      env;
-
-    if (starterMonthly) PRICE_TO_PLAN[starterMonthly] = "starter";
-    if (starterYearly) PRICE_TO_PLAN[starterYearly] = "starter";
-    if (proMonthly) PRICE_TO_PLAN[proMonthly] = "pro";
-    if (proYearly) PRICE_TO_PLAN[proYearly] = "pro";
-    if (cabinetMonthly) PRICE_TO_PLAN[cabinetMonthly] = "cabinet";
-    if (cabinetYearly) PRICE_TO_PLAN[cabinetYearly] = "cabinet";
-
-    const resolvedPlan = PRICE_TO_PLAN[priceId];
-    if (!resolvedPlan) {
-      throw new Error("priceId inconnu ou non autorisé");
-    }
-
     const { siteUrl } = env;
 
     const params: Record<string, string> = {
       "payment_method_types[0]": "card",
       mode: "subscription",
-      "line_items[0][price]": priceId,
+      "line_items[0][price]": cotisationPriceId,
       "line_items[0][quantity]": "1",
       customer_email: brokerEmail,
       client_reference_id: brokerId ?? "",
       // Après paiement → page de connexion (pas le dashboard)
       success_url: `${siteUrl}/auth?paiement=ok`,
       cancel_url: `${siteUrl}/`,
-      // Le plan transmis au webhook est celui resolu cote serveur, pas
-      // celui envoye par le navigateur.
-      "metadata[plan]": resolvedPlan,
+      "metadata[plan]": "active",
       "metadata[broker_id]": brokerId ?? "",
-      "subscription_data[metadata][plan]": resolvedPlan,
-      // Période d'essai 3 jours sur tous les plans
-      "subscription_data[trial_period_days]": "3",
+      "subscription_data[metadata][plan]": "active",
     };
 
     if (coupon) {
@@ -140,12 +117,7 @@ if (typeof Deno !== "undefined") {
   Deno.serve((req) =>
     handleStripeCheckoutRequest(req, {
       stripeKey: Deno.env.get("STRIPE_SECRET_KEY") ?? "",
-      starterMonthly: Deno.env.get("STRIPE_STARTER_MONTHLY"),
-      starterYearly: Deno.env.get("STRIPE_STARTER_YEARLY"),
-      proMonthly: Deno.env.get("STRIPE_PRO_MONTHLY"),
-      proYearly: Deno.env.get("STRIPE_PRO_YEARLY"),
-      cabinetMonthly: Deno.env.get("STRIPE_CABINET_MONTHLY"),
-      cabinetYearly: Deno.env.get("STRIPE_CABINET_YEARLY"),
+      cotisationPriceId: Deno.env.get("STRIPE_COTISATION_ANNUELLE"),
       siteUrl: Deno.env.get("SITE_URL") ?? "https://swissbrokerpro.ch",
     }),
   );

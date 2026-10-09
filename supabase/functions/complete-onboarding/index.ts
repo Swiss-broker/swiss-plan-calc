@@ -22,7 +22,12 @@ export function jsonResponse(data: unknown, status = 200) {
   });
 }
 
-const ALLOWED_PLANS = new Set(["starter", "pro", "cabinet"]);
+// Un seul plan accordé par ce parcours (cotisation annuelle) ; la valeur
+// vient de client_invites.plan, posée par handle-conversion, jamais du
+// visiteur — gardé en Set plutôt qu'une comparaison directe pour que ce
+// choix explicite serve de garde-fou si jamais une autre valeur apparaît
+// (ligne corrompue, invitation historique d'avant cette refonte).
+const ALLOWED_PLANS = new Set(["active"]);
 
 export type Env = { supabaseUrl: string; supabaseKey: string };
 
@@ -88,7 +93,15 @@ export async function handleCompleteOnboardingRequest(req: Request, env: Env): P
       return jsonResponse({ error: "INVITE_EXPIRED" }, 403);
     }
 
-    const plan = ALLOWED_PLANS.has(invite.plan) ? invite.plan : "starter";
+    if (!ALLOWED_PLANS.has(invite.plan)) {
+      // Invitation historique d'avant cette refonte (starter/pro/cabinet) :
+      // mieux vaut échouer explicitement que d'accorder silencieusement un
+      // plan qui n'existe plus. On relâche la réclamation pour que la
+      // personne puisse être réinvitée proprement.
+      await releaseInviteClaim(supabaseUrl, svcHeaders, token);
+      return jsonResponse({ error: "INVITE_PLAN_OBSOLETE", detail: invite.plan }, 410);
+    }
+    const plan = invite.plan;
 
     // Création du compte Auth. email_confirm=true : ce courtier a déjà
     // prouvé la possession de cette adresse en cliquant le lien reçu par
