@@ -29,6 +29,13 @@
 // le suffixe "(FR)" de désambiguïsation inter-cantonale retiré, ex.
 // "Romont (FR)" → "Romont", déjà stocké sans suffixe).
 //
+// NE : couverture complète (34 communes, les 14 déjà présentes
+// concordaient exactement), recoupée le 09.10.2026 contre la page
+// officielle "Coefficients communaux et cantonal en vigueur dans les
+// communes neuchâteloises" (ne.ch), colonne 2026. Confirme aussi la
+// quotité cantonale (124%) et le coefficient du chef-lieu Neuchâtel
+// (65%), déjà corrects dans CANTON_SCALES.NE (cantons.ts).
+//
 // Unités d'origine et conversion vers le multiplicateur décimal attendu par
 // computeCantonalCommunal (voir communalMult = simple * communalMult) :
 //   GE centimes additionnels, VD/FR/NE coefficient en % → valeur / 100
@@ -599,16 +606,36 @@ export const COMMUNAL_MULTIPLIERS: Record<string, Record<string, CommunalMultipl
   },
   NE: {
     Boudry: { multiplier: 0.68, verified: "confirmed" },
+    "Brot-Plamboz": { multiplier: 0.75, verified: "confirmed" },
     Cernier: { multiplier: 0.66, fiscalCommune: "Val-de-Ruz", verified: "confirmed" },
     Colombier: { multiplier: 0.63, fiscalCommune: "Milvignes", verified: "confirmed" },
+    Cornaux: { multiplier: 0.74, verified: "confirmed" },
     Cortaillod: { multiplier: 0.66, verified: "confirmed" },
     Couvet: { multiplier: 0.76, fiscalCommune: "Val-de-Travers", verified: "confirmed" },
+    Cressier: { multiplier: 0.77, verified: "confirmed" },
+    Enges: { multiplier: 0.68, fiscalCommune: "Laténa", verified: "confirmed" },
     Fleurier: { multiplier: 0.76, fiscalCommune: "Val-de-Travers", verified: "confirmed" },
     Hauterive: { multiplier: 0.68, fiscalCommune: "Laténa", verified: "confirmed" },
+    "La Brévine": { multiplier: 0.75, verified: "confirmed" },
     "La Chaux-de-Fonds": { multiplier: 0.75, verified: "confirmed" },
+    "La Chaux-du-Milieu": { multiplier: 0.75, verified: "confirmed" },
+    "La Côte-aux-Fées": { multiplier: 0.75, verified: "confirmed" },
+    "La Grande Béroche": { multiplier: 0.63, verified: "confirmed" },
+    "La Sagne": { multiplier: 0.75, verified: "confirmed" },
+    "La Tène": { multiplier: 0.68, fiscalCommune: "Laténa", verified: "confirmed" },
+    Laténa: { multiplier: 0.68, verified: "confirmed" },
+    "Le Cerneux-Péquignot": { multiplier: 0.72, verified: "confirmed" },
+    "Le Landeron": { multiplier: 0.66, verified: "confirmed" },
     "Le Locle": { multiplier: 0.69, verified: "confirmed" },
+    "Les Planchettes": { multiplier: 0.77, verified: "confirmed" },
+    "Les Ponts-de-Martel": { multiplier: 0.75, verified: "confirmed" },
+    "Les Verrières": { multiplier: 0.79, verified: "confirmed" },
+    Lignières: { multiplier: 0.67, verified: "confirmed" },
     "Marin-Epagnier": { multiplier: 0.68, fiscalCommune: "Laténa", verified: "confirmed" },
+    Milvignes: { multiplier: 0.63, verified: "confirmed" },
+    Neuchâtel: { multiplier: 0.65, verified: "confirmed" },
     Peseux: { multiplier: 0.65, fiscalCommune: "Neuchâtel", verified: "confirmed" },
+    Rochefort: { multiplier: 0.67, verified: "confirmed" },
     "Saint-Blaise": { multiplier: 0.68, fiscalCommune: "Laténa", verified: "confirmed" },
     "Val-de-Ruz": { multiplier: 0.66, verified: "confirmed" },
     "Val-de-Travers": { multiplier: 0.76, verified: "confirmed" },
