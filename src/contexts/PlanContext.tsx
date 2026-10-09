@@ -9,10 +9,16 @@ export interface PlanLimits {
   maxPdfPerMonth: number | null;
   maxAiPerDay: number | null;
 }
+// Le modèle économique est passé des abonnements à quota à la commission
+// uniquement : plus aucune limite de nombre de clients/sociétés, quel que
+// soit le plan actif (y compris pour les comptes expirés/sans abonnement,
+// qui restent bloqués par ailleurs via isExpired — voir plus bas — pas via
+// ces compteurs). Voir aussi la suppression des 4 triggers de quota côté
+// base (migration 20261008130500_drop_plan_quota_limits.sql).
 export const PLAN_LIMITS: Record<BrokerPlan, PlanLimits> = {
-  trial:    { maxClients: 20,   maxCompanies: 4,    maxPdfPerMonth: null, maxAiPerDay: null },
-  starter:  { maxClients: 10,   maxCompanies: 2,    maxPdfPerMonth: null, maxAiPerDay: null },
-  pro:      { maxClients: 20,   maxCompanies: 4,    maxPdfPerMonth: null, maxAiPerDay: null },
+  trial:    { maxClients: null, maxCompanies: null, maxPdfPerMonth: null, maxAiPerDay: null },
+  starter:  { maxClients: null, maxCompanies: null, maxPdfPerMonth: null, maxAiPerDay: null },
+  pro:      { maxClients: null, maxCompanies: null, maxPdfPerMonth: null, maxAiPerDay: null },
   cabinet:  { maxClients: null, maxCompanies: null, maxPdfPerMonth: null, maxAiPerDay: null },
   expired:  { maxClients: 0,    maxCompanies: 0,    maxPdfPerMonth: 0,    maxAiPerDay: 0    },
   free:     { maxClients: 0,    maxCompanies: 0,    maxPdfPerMonth: 0,    maxAiPerDay: 0    },
