@@ -36,6 +36,20 @@
 // quotité cantonale (124%) et le coefficient du chef-lieu Neuchâtel
 // (65%), déjà corrects dans CANTON_SCALES.NE (cantons.ts).
 //
+// JU : couverture complète (53 communes, dont Moutier qui a rejoint le
+// canton du Jura au 01.01.2026), recoupée le 09.10.2026 contre le
+// document officiel "Quotités d'impôt des communes et taux impôts 2026"
+// (Service des contributions, jura.ch), un district par page. Les 13
+// valeurs déjà présentes concordaient exactement. Les sous-entrées du
+// document identifiant d'anciens villages fusionnés (ex. "Haute-Sorne
+// (Courf.)", "Val Terbi (Vermes)", "Basse-Allaine (Buix)") partagent
+// toutes le même multiplicateur que leur commune civile de rattachement
+// (seul le taux de l'impôt ecclésiastique, non utilisé ici, diffère) —
+// elles ne sont donc pas dupliquées comme alias distincts, hors
+// Bassecourt et Vicques déjà présents. Confirme aussi la quotité
+// cantonale (285%) et le coefficient du chef-lieu Delémont (190%), déjà
+// corrects dans CANTON_SCALES.JU (cantons.ts).
+//
 // Unités d'origine et conversion vers le multiplicateur décimal attendu par
 // computeCantonalCommunal (voir communalMult = simple * communalMult) :
 //   GE centimes additionnels, VD/FR/NE coefficient en % → valeur / 100
@@ -642,19 +656,57 @@ export const COMMUNAL_MULTIPLIERS: Record<string, Record<string, CommunalMultipl
   },
   JU: {
     Alle: { multiplier: 2.25, verified: "confirmed" },
+    "Basse-Allaine": { multiplier: 2.35, verified: "confirmed" },
+    "Basse-Vendline": { multiplier: 2.1, verified: "confirmed" },
     Bassecourt: { multiplier: 2.1, fiscalCommune: "Haute-Sorne", verified: "confirmed" },
     Boncourt: { multiplier: 1.55, verified: "confirmed" },
+    Bourrignon: { multiplier: 2.25, verified: "confirmed" },
+    Boécourt: { multiplier: 2.0, verified: "confirmed" },
+    Bure: { multiplier: 2.25, verified: "confirmed" },
+    Châtillon: { multiplier: 2.0, verified: "confirmed" },
+    "Clos du Doubs": { multiplier: 2.15, verified: "confirmed" },
+    Coeuve: { multiplier: 2.35, verified: "confirmed" },
+    Cornol: { multiplier: 2.05, verified: "confirmed" },
+    Courchapoix: { multiplier: 2.15, verified: "confirmed" },
+    Courchavon: { multiplier: 1.9, verified: "confirmed" },
+    Courgenay: { multiplier: 2.05, verified: "confirmed" },
     Courrendlin: { multiplier: 2.25, verified: "confirmed" },
     Courroux: { multiplier: 2.15, verified: "confirmed" },
+    Courtedoux: { multiplier: 2.2, verified: "confirmed" },
     Courtételle: { multiplier: 1.65, verified: "confirmed" },
+    "Damphreux-Lugnez": { multiplier: 2.15, verified: "confirmed" },
+    Delémont: { multiplier: 1.9, verified: "confirmed" },
     Develier: { multiplier: 1.95, verified: "confirmed" },
-    // Corrigé : 1.70 (document officiel 2026), la source initiale donnait
-    // 1.30 par erreur.
+    Ederswiler: { multiplier: 2.2, verified: "confirmed" },
+    Fahy: { multiplier: 2.3, verified: "confirmed" },
+    Fontenais: { multiplier: 2.35, verified: "confirmed" },
+    Grandfontaine: { multiplier: 2.25, verified: "confirmed" },
+    "Haute-Ajoie": { multiplier: 2.15, verified: "confirmed" },
+    "Haute-Sorne": { multiplier: 2.1, verified: "confirmed" },
+    "La Baroche": { multiplier: 2.15, verified: "confirmed" },
+    Lajoux: { multiplier: 2.2, verified: "confirmed" },
+    "Le Bémont": { multiplier: 1.95, verified: "confirmed" },
+    "Le Genevez": { multiplier: 2.05, verified: "confirmed" },
     "Le Noirmont": { multiplier: 1.7, verified: "confirmed" },
+    "Les Bois": { multiplier: 2.05, verified: "confirmed" },
     "Les Breuleux": { multiplier: 1.3, verified: "confirmed" },
+    "Les Enfers": { multiplier: 2.05, verified: "confirmed" },
+    Mervelier: { multiplier: 2.25, verified: "confirmed" },
+    Mettembert: { multiplier: 2.2, verified: "confirmed" },
+    Montfaucon: { multiplier: 2.2, verified: "confirmed" },
+    Moutier: { multiplier: 2.3, verified: "confirmed" },
     Movelier: { multiplier: 2.25, verified: "confirmed" },
+    Muriaux: { multiplier: 1.6, verified: "confirmed" },
+    Pleigne: { multiplier: 2.1, verified: "confirmed" },
     Porrentruy: { multiplier: 2.05, verified: "confirmed" },
+    Rossemaison: { multiplier: 2.0, verified: "confirmed" },
     Saignelégier: { multiplier: 2.3, verified: "confirmed" },
+    Saulcy: { multiplier: 2.2, verified: "confirmed" },
+    Soubey: { multiplier: 2.25, verified: "confirmed" },
+    Soyhières: { multiplier: 2.15, verified: "confirmed" },
+    "St-Brais": { multiplier: 2.25, verified: "confirmed" },
+    "Val Terbi": { multiplier: 2.2, verified: "confirmed" },
+    Vendlincourt: { multiplier: 2.3, verified: "confirmed" },
     Vicques: { multiplier: 2.2, fiscalCommune: "Val Terbi", verified: "confirmed" },
   },
 };
