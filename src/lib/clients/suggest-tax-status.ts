@@ -14,8 +14,8 @@ export interface TaxStatusSuggestionInput {
   canton?: string | null;
 }
 
-const FRONTIER_COUNTRIES = new Set(["FR", "IT", "AT", "DE", "LI"]);
-const ACCORD_1983_CANTONS = new Set(["VD", "VS", "NE", "JU", "FR", "BE"]);
+export const FRONTIER_COUNTRIES = new Set(["FR", "IT", "AT", "DE", "LI"]);
+export const ACCORD_1983_CANTONS = new Set(["VD", "VS", "NE", "JU", "FR", "BE"]);
 
 export function suggestTaxStatus(
   i: TaxStatusSuggestionInput,

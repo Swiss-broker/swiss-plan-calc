@@ -46,6 +46,7 @@ import {
 import type { Child, Client } from "@/lib/clients/types";
 import { getWorkStatusRules } from "@/lib/clients/work-status-rules";
 import { suggestTaxStatus } from "@/lib/clients/suggest-tax-status";
+import { checkClientConsistency } from "@/lib/clients/consistency-check";
 import { formatCHF } from "@/lib/format";
 import { computeLppInsuredSalary, LPP_COORDINATION_DEDUCTION_2026, LPP_MAX_INSURED_SALARY_2026 } from "@/lib/lpp";
 import { CountryCombobox } from "@/components/ui/country-combobox";
@@ -427,6 +428,12 @@ export function ClientWizard({ initial, mode, clientId }: ClientWizardProps) {
 
   const isMarried = form.civil_status === "married" || form.civil_status === "registered_partnership";
 
+  // Avertissements non bloquants : incohérences administrativement
+  // impossibles entre champs (permis vs résidence, statut fiscal vs
+  // permis/canton, état civil vs conjoint, dates) — le courtier garde la
+  // main, voir consistency-check.ts.
+  const consistencyIssues = useMemo(() => checkClientConsistency(form), [form]);
+
   const save = useMutation({
     mutationFn: async () => {
       if (!user) throw new Error(t("wizard.toast.unauth"));
@@ -694,6 +701,24 @@ export function ClientWizard({ initial, mode, clientId }: ClientWizardProps) {
       {showIdentityWarning && (
         <div className="mt-4 rounded-lg border border-warning/40 bg-warning/10 p-3 text-sm text-foreground">
           ⚠️ Ce client a une synthèse PDF déjà débloquée par paiement. Modifier le prénom, nom, date de naissance, genre, nationalité ou email va <strong>reverrouiller</strong> cette synthèse à l'enregistrement. Une nouvelle facturation sera nécessaire pour la redébloquer.
+        </div>
+      )}
+
+      {consistencyIssues.length > 0 && (
+        <div className="mt-4 rounded-lg border border-warning/40 bg-warning/10 p-3 text-sm text-foreground">
+          <p className="font-medium">
+            ⚠️ {consistencyIssues.length > 1 ? "Incohérences détectées" : "Incohérence détectée"}{" "}
+            dans la fiche :
+          </p>
+          <ul className="mt-1.5 list-disc space-y-1 pl-5">
+            {consistencyIssues.map((issue, i) => (
+              <li key={i}>{issue.message}</li>
+            ))}
+          </ul>
+          <p className="mt-1.5 text-xs text-muted-foreground">
+            Vérifiez ces champs avant d'enregistrer — à corriger si c'est une erreur de saisie, ou à
+            ignorer si c'est un cas particulier que vous connaissez.
+          </p>
         </div>
       )}
 
