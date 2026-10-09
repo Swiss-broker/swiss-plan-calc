@@ -1262,6 +1262,8 @@ export type Database = {
       }
       demo_requests: {
         Row: {
+          archived: boolean
+          archived_at: string | null
           assigned_to: string | null
           company_name: string | null
           created_at: string
@@ -1269,6 +1271,7 @@ export type Database = {
           email: string
           follow_up_date: string | null
           id: string
+          meeting_url: string | null
           name: string
           notes: Json
           phone: string | null
@@ -1276,6 +1279,8 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          archived?: boolean
+          archived_at?: string | null
           assigned_to?: string | null
           company_name?: string | null
           created_at?: string
@@ -1283,6 +1288,7 @@ export type Database = {
           email: string
           follow_up_date?: string | null
           id?: string
+          meeting_url?: string | null
           name: string
           notes?: Json
           phone?: string | null
@@ -1290,6 +1296,8 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          archived?: boolean
+          archived_at?: string | null
           assigned_to?: string | null
           company_name?: string | null
           created_at?: string
@@ -1297,6 +1305,7 @@ export type Database = {
           email?: string
           follow_up_date?: string | null
           id?: string
+          meeting_url?: string | null
           name?: string
           notes?: Json
           phone?: string | null
@@ -1377,6 +1386,74 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      lead_email_log: {
+        Row: {
+          body: string | null
+          commercial_id: string
+          demo_request_id: string
+          id: string
+          sent_at: string
+          subject: string
+          template_key: string | null
+        }
+        Insert: {
+          body?: string | null
+          commercial_id: string
+          demo_request_id: string
+          id?: string
+          sent_at?: string
+          subject: string
+          template_key?: string | null
+        }
+        Update: {
+          body?: string | null
+          commercial_id?: string
+          demo_request_id?: string
+          id?: string
+          sent_at?: string
+          subject?: string
+          template_key?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lead_email_log_demo_request_id_fkey"
+            columns: ["demo_request_id"]
+            isOneToOne: false
+            referencedRelation: "demo_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lead_email_templates: {
+        Row: {
+          body: string
+          commercial_id: string
+          created_at: string
+          id: string
+          subject: string
+          template_key: string
+          updated_at: string
+        }
+        Insert: {
+          body: string
+          commercial_id: string
+          created_at?: string
+          id?: string
+          subject: string
+          template_key: string
+          updated_at?: string
+        }
+        Update: {
+          body?: string
+          commercial_id?: string
+          created_at?: string
+          id?: string
+          subject?: string
+          template_key?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       notifications: {
         Row: {
@@ -1571,8 +1648,10 @@ export type Database = {
           amount_chf: number
           broker_id: string
           client_id: string | null
+          commission_centimes: number | null
           created_at: string
           id: string
+          is_demo: boolean
           pdf_unlocked: boolean
           snapshot_date_of_birth: string | null
           snapshot_email: string | null
@@ -1589,8 +1668,10 @@ export type Database = {
           amount_chf: number
           broker_id: string
           client_id?: string | null
+          commission_centimes?: number | null
           created_at?: string
           id?: string
+          is_demo?: boolean
           pdf_unlocked?: boolean
           snapshot_date_of_birth?: string | null
           snapshot_email?: string | null
@@ -1607,8 +1688,10 @@ export type Database = {
           amount_chf?: number
           broker_id?: string
           client_id?: string | null
+          commission_centimes?: number | null
           created_at?: string
           id?: string
+          is_demo?: boolean
           pdf_unlocked?: boolean
           snapshot_date_of_birth?: string | null
           snapshot_email?: string | null
@@ -2152,6 +2235,7 @@ export type Database = {
         | "cabinet"
         | "internal"
         | "expired"
+        | "demo"
       civil_status:
         | "single"
         | "married"
@@ -2398,6 +2482,7 @@ export const Constants = {
         "cabinet",
         "internal",
         "expired",
+        "demo",
       ],
       civil_status: [
         "single",

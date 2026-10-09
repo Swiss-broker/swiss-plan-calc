@@ -8,14 +8,24 @@
 // reste bloquee indefiniment, sans que personne ne le sache.
 //
 // Appelee toutes les 30 minutes par pg_cron (voir migration
-// check_stuck_rdv_payments_cron.sql). Pour chaque facture "pending" avec un
-// payment_intent deja cree depuis plus de 20 minutes, on demande directement
-// a Stripe si le paiement a reellement abouti. Si oui : on corrige la facture
+// check_stuck_rdv_payments_cron.sql). Pour chaque facture "pending" creee
+// depuis plus de 20 minutes, on demande directement a Stripe si un paiement
+// correspondant a reellement abouti. Si oui : on corrige la facture
 // nous-memes (comme l'aurait fait le webhook) et on alerte les admins, car
 // ca signale une vraie panne du webhook a corriger.
 //
+// Depuis que stripe-rdv-invoice ne cree plus de PaymentIntent a l'avance
+// (l'ancien PaymentIntent "orphelin" n'etait de toute facon jamais celui
+// reellement paye via le Payment Link), on ne connait plus l'id du vrai
+// PaymentIntent avant que le client paie effectivement. On retrouve donc le
+// paiement via l'API de recherche Stripe, en filtrant sur metadata.invoice_id
+// (pose par stripe-rdv-invoice sur le Payment Link, et propage au
+// PaymentIntent reellement cree au moment du paiement) plutot que par un id
+// connu a l'avance. L'index de recherche Stripe a jusqu'a ~1 minute de
+// retard, largement couvert par le seuil de 20 minutes ci-dessous.
+//
 // Ne touche jamais une facture encore normalement en attente de paiement
-// (Stripe repond alors autre chose que "succeeded") : ce n'est pas un bug,
+// (aucun PaymentIntent trouve, ou pas "succeeded") : ce n'est pas un bug,
 // juste un client qui n'a pas encore paye.
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -40,15 +50,18 @@ async function isAuthorized(supabaseUrl: string, supabaseKey: string, token: str
   return (await res.json()) === true;
 }
 
-Deno.serve(async (req) => {
+export type Env = { supabaseUrl: string; supabaseKey: string; stripeKey: string };
+
+export async function handleCheckStuckRdvPaymentsRequest(
+  req: Request,
+  env: Env,
+): Promise<Response> {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
 
   try {
-    const supabaseUrl = Deno.env.get("SUPABASE_URL");
-    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-    const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
+    const { supabaseUrl, supabaseKey, stripeKey } = env;
     if (!supabaseUrl || !supabaseKey || !stripeKey) {
       throw new Error("Variables d'environnement manquantes");
     }
@@ -62,19 +75,21 @@ Deno.serve(async (req) => {
 
     const cutoff = new Date(Date.now() - 20 * 60 * 1000).toISOString();
     const stuckRes = await fetch(
-      `${supabaseUrl}/rest/v1/rdv_invoices?status=eq.pending&stripe_payment_intent_id=not.is.null&created_at=lt.${cutoff}&select=id,broker_id,stripe_payment_intent_id`,
+      `${supabaseUrl}/rest/v1/rdv_invoices?status=eq.pending&is_demo=eq.false&created_at=lt.${cutoff}&select=id,broker_id`,
       { headers: { "apikey": supabaseKey, "Authorization": `Bearer ${supabaseKey}` } }
     );
-    const stuckInvoices: { id: string; broker_id: string; stripe_payment_intent_id: string }[] = await stuckRes.json();
+    const stuckInvoices: { id: string; broker_id: string }[] = await stuckRes.json();
 
     let corrected = 0;
     for (const invoice of stuckInvoices) {
-      const piRes = await fetch(
-        `https://api.stripe.com/v1/payment_intents/${invoice.stripe_payment_intent_id}`,
-        { headers: { "Authorization": `Bearer ${stripeKey}` } }
+      const query = encodeURIComponent(`metadata['invoice_id']:'${invoice.id}'`);
+      const searchRes = await fetch(
+        `https://api.stripe.com/v1/payment_intents/search?query=${query}`,
+        { headers: { Authorization: `Bearer ${stripeKey}` } },
       );
-      const pi = await piRes.json();
-      if (pi.status !== "succeeded") continue; // toujours en attente cote client : normal, on ne touche a rien.
+      const searchResult = await searchRes.json();
+      const pi = searchResult.data?.[0];
+      if (!pi || pi.status !== "succeeded") continue; // toujours en attente cote client : normal, on ne touche a rien.
 
       await fetch(`${supabaseUrl}/rest/v1/rdv_invoices?id=eq.${invoice.id}`, {
         method: "PATCH",
@@ -84,7 +99,11 @@ Deno.serve(async (req) => {
           "Content-Type": "application/json",
           "Prefer": "return=minimal",
         },
-        body: JSON.stringify({ status: "paid", pdf_unlocked: true }),
+        body: JSON.stringify({
+          status: "paid",
+          pdf_unlocked: true,
+          stripe_payment_intent_id: pi.id,
+        }),
       });
 
       // Une ligne par admin, meme convention que les triggers notify_admins_*
@@ -131,4 +150,23 @@ Deno.serve(async (req) => {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
-});
+}
+
+// `Deno` n'existe pas sous Node/Vitest : ce garde-fou permet d'importer ce
+// fichier depuis les tests sans jamais tenter de demarrer un vrai serveur
+// Deno en dehors du runtime Edge Functions.
+declare const Deno:
+  | {
+      serve: (h: (req: Request) => Response | Promise<Response>) => void;
+      env: { get(k: string): string | undefined };
+    }
+  | undefined;
+if (typeof Deno !== "undefined") {
+  Deno.serve((req) =>
+    handleCheckStuckRdvPaymentsRequest(req, {
+      supabaseUrl: Deno.env.get("SUPABASE_URL") ?? "",
+      supabaseKey: Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
+      stripeKey: Deno.env.get("STRIPE_SECRET_KEY") ?? "",
+    }),
+  );
+}

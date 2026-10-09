@@ -1,3 +1,9 @@
+import {
+  RDV_MIN_CENTIMES,
+  computeCommissionCentimes,
+  computeBrokerNetCentimes,
+} from "../_shared/commission.ts";
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
@@ -32,8 +38,10 @@ export async function handleDemoRdvInvoiceRequest(req: Request, env: Env): Promi
   try {
     const { clientId, amountChf } = await req.json();
 
-    if (!amountChf || amountChf < 80) {
-      throw new Error("Le montant minimum de facturation est de 80 CHF.");
+    if (!amountChf) throw new Error("Montant manquant.");
+    const amountCentimes = Math.round(amountChf * 100);
+    if (amountCentimes < RDV_MIN_CENTIMES) {
+      throw new Error("Le montant minimum de facturation est de 150 CHF.");
     }
 
     const caller = getCallerFromJwt(req);
@@ -95,8 +103,6 @@ export async function handleDemoRdvInvoiceRequest(req: Request, env: Env): Promi
       };
     }
 
-    const amountCentimes = Math.round(amountChf * 100);
-
     // Identifiants clairement non-Stripe : préfixe "demo_" (un vrai
     // payment_intent Stripe commence toujours par "pi_"), et lien pointant
     // vers un chemin qui n'existe sur aucun serveur de paiement réel —
@@ -117,6 +123,7 @@ export async function handleDemoRdvInvoiceRequest(req: Request, env: Env): Promi
         broker_id: brokerId,
         client_id: clientId || null,
         amount_chf: amountCentimes,
+        commission_centimes: computeCommissionCentimes(amountCentimes),
         stripe_payment_intent_id: stripePaymentIntentId,
         stripe_payment_link: stripePaymentLink,
         status: "paid",
@@ -131,13 +138,16 @@ export async function handleDemoRdvInvoiceRequest(req: Request, env: Env): Promi
       throw new Error("Erreur lors de la création de la facture démo.");
     }
 
+    // Commission simulée avec la vraie grille, pour que la démo montre un
+    // calcul réaliste au commercial/prospect — aucun débit n'a lieu, juste
+    // le même calcul que la facturation réelle (voir _shared/commission.ts).
     return new Response(
       JSON.stringify({
         paymentLink: stripePaymentLink,
         paymentIntentId: stripePaymentIntentId,
         amountChf,
-        commission: 0,
-        brokerReceives: amountChf,
+        commission: computeCommissionCentimes(amountCentimes) / 100,
+        brokerReceives: computeBrokerNetCentimes(amountCentimes) / 100,
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );

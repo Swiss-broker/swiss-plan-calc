@@ -1,3 +1,5 @@
+import { RDV_MIN_CENTIMES, computeCommissionCentimes } from "../_shared/commission.ts";
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
@@ -34,8 +36,10 @@ export async function handleStripeRdvInvoiceRequest(req: Request, env: Env): Pro
   try {
     const { clientId, amountChf, description, returnUrl } = await req.json();
 
-    if (!amountChf || amountChf < 80) {
-      throw new Error("Le montant minimum de facturation est de 80 CHF.");
+    if (!amountChf) throw new Error("Montant manquant.");
+    const amountCentimes = Math.round(amountChf * 100);
+    if (amountCentimes < RDV_MIN_CENTIMES) {
+      throw new Error("Le montant minimum de facturation est de 150 CHF.");
     }
 
     const caller = getCallerFromJwt(req);
@@ -59,10 +63,9 @@ export async function handleStripeRdvInvoiceRequest(req: Request, env: Env): Pro
     }
 
     const stripeAccountId = accounts[0].stripe_account_id;
-    const amountCentimes = Math.round(amountChf * 100);
 
-    // Commission 10% pour SwissBroker Pro
-    const applicationFee = Math.round(amountCentimes * 0.1);
+    // Commission SwissBroker Pro par tranches marginales, voir _shared/commission.ts.
+    const applicationFee = computeCommissionCentimes(amountCentimes);
 
     // Récupère l'identité actuelle du client pour figer un instantané
     // au moment du paiement (empêche le déblocage PDF de survivre à un
@@ -109,26 +112,13 @@ export async function handleStripeRdvInvoiceRequest(req: Request, env: Env): Pro
       };
     }
 
-    // Créer un Payment Intent avec transfert automatique
-    const piRes = await fetch("https://api.stripe.com/v1/payment_intents", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${stripeKey}`,
-        "Content-Type": "application/x-www-form-urlencoded",
-      },
-      body: new URLSearchParams({
-        amount: String(amountCentimes),
-        currency: "chf",
-        description: description || "Conseil en prévoyance SwissBroker Pro",
-        "transfer_data[destination]": stripeAccountId,
-        application_fee_amount: String(applicationFee),
-        "metadata[broker_id]": brokerId,
-        "metadata[client_id]": clientId || "",
-        "payment_method_types[]": "card",
-      }).toString(),
-    });
-    const pi = await piRes.json();
-    if (!piRes.ok) throw new Error(pi.error?.message ?? "Erreur création paiement");
+    // Identifiant de la facture, généré AVANT tout appel Stripe : il part
+    // dans les metadata du Payment Link pour que le webhook puisse ensuite
+    // rattacher le paiement à CETTE facture précise, jamais à "une facture
+    // pending de ce courtier" au hasard (voir le correctif dans
+    // stripe-webhook). Sert aussi de clé primaire explicite à l'insertion
+    // plus bas, donc déjà connu avant que la ligne existe en base.
+    const invoiceId = crypto.randomUUID();
 
     // Créer un Payment Link Stripe pour partager facilement
     const plRes = await fetch("https://api.stripe.com/v1/prices", {
@@ -158,6 +148,7 @@ export async function handleStripeRdvInvoiceRequest(req: Request, env: Env): Pro
         application_fee_amount: String(applicationFee),
         "metadata[broker_id]": brokerId,
         "metadata[client_id]": clientId || "",
+        "metadata[invoice_id]": invoiceId,
         "after_completion[type]": "hosted_confirmation",
         "after_completion[hosted_confirmation][custom_message]":
           "Merci pour votre paiement. Votre courtier a été notifié.",
@@ -176,10 +167,20 @@ export async function handleStripeRdvInvoiceRequest(req: Request, env: Env): Pro
         Prefer: "return=minimal",
       },
       body: JSON.stringify({
+        id: invoiceId,
         broker_id: brokerId,
         client_id: clientId || null,
         amount_chf: amountCentimes,
-        stripe_payment_intent_id: pi.id,
+        // Figée ici une fois pour toutes : si le barème de commission
+        // change un jour, cette facture garde la commission réellement
+        // annoncée au courtier au moment où il l'a envoyée, pas un montant
+        // recalculé après coup avec un barème différent.
+        commission_centimes: applicationFee,
+        // Pas encore connu : un Payment Link n'est lié à un vrai
+        // PaymentIntent qu'au moment où quelqu'un le paie réellement.
+        // stripe-webhook le renseignera avec le PaymentIntent réel dès que
+        // le paiement aboutit (checkout.session.completed).
+        stripe_payment_intent_id: null,
         stripe_payment_link: paymentLink.url,
         status: "pending",
         pdf_unlocked: false,
@@ -194,7 +195,6 @@ export async function handleStripeRdvInvoiceRequest(req: Request, env: Env): Pro
     return new Response(
       JSON.stringify({
         paymentLink: paymentLink.url,
-        paymentIntentId: pi.id,
         amountChf,
         commission: applicationFee / 100,
         brokerReceives: (amountCentimes - applicationFee) / 100,

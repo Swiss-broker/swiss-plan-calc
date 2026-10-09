@@ -40,6 +40,7 @@ const clients: Record<string, { broker_id: string; first_name: string; email: st
 };
 
 let insertedInvoices: Record<string, unknown>[] = [];
+let paymentLinkRequests: URLSearchParams[] = [];
 
 function mockFetch(input: string | URL | Request, init?: RequestInit): Promise<Response> {
   const url = String(input);
@@ -56,13 +57,11 @@ function mockFetch(input: string | URL | Request, init?: RequestInit): Promise<R
     const match = c && c.broker_id === brokerFilter ? [c] : [];
     return Promise.resolve(new Response(JSON.stringify(match), { status: 200 }));
   }
-  if (url === "https://api.stripe.com/v1/payment_intents") {
-    return Promise.resolve(new Response(JSON.stringify({ id: "pi_fake" }), { status: 200 }));
-  }
   if (url === "https://api.stripe.com/v1/prices") {
     return Promise.resolve(new Response(JSON.stringify({ id: "price_fake" }), { status: 200 }));
   }
   if (url === "https://api.stripe.com/v1/payment_links") {
+    paymentLinkRequests.push(new URLSearchParams(String(init?.body ?? "")));
     return Promise.resolve(
       new Response(JSON.stringify({ url: "https://buy.stripe.com/fake" }), { status: 200 }),
     );
@@ -77,6 +76,7 @@ function mockFetch(input: string | URL | Request, init?: RequestInit): Promise<R
 
 beforeEach(() => {
   insertedInvoices = [];
+  paymentLinkRequests = [];
   vi.stubGlobal("fetch", vi.fn(mockFetch));
 });
 
@@ -117,5 +117,64 @@ describe("stripe-rdv-invoice — identité dérivée du JWT + isolation client",
     const body = await res.json();
     expect(String(body.error)).toContain("Authentification requise");
     expect(insertedInvoices).toHaveLength(0);
+  });
+});
+
+describe("stripe-rdv-invoice — minimum 150 CHF et commission par tranches", () => {
+  it("149.99 CHF est refusé (sous le minimum)", async () => {
+    const req = reqWithAuth("broker-A", { amountChf: 149.99 });
+    const res = await handleStripeRdvInvoiceRequest(req, ENV);
+    expect(res.status).toBe(500);
+    const body = await res.json();
+    expect(String(body.error)).toContain("150 CHF");
+    expect(insertedInvoices).toHaveLength(0);
+  });
+
+  it("150 CHF est accepté", async () => {
+    const res = await handleStripeRdvInvoiceRequest(
+      reqWithAuth("broker-A", { amountChf: 150 }),
+      ENV,
+    );
+    expect(res.status).toBe(200);
+  });
+
+  it("2500 CHF -> commission 550 CHF (par tranches, plus 10% plat), courtier reçoit 1950 CHF", async () => {
+    const res = await handleStripeRdvInvoiceRequest(
+      reqWithAuth("broker-A", { amountChf: 2500 }),
+      ENV,
+    );
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.commission).toBe(550);
+    expect(body.brokerReceives).toBe(1950);
+    expect(paymentLinkRequests[0].get("application_fee_amount")).toBe("55000");
+    // Figée en base au moment de la facturation (voir migration
+    // add_rdv_invoices_commission_centimes), pour que l'historique reste
+    // exact si le barème change plus tard.
+    expect(insertedInvoices[0].commission_centimes).toBe(55_000);
+  });
+
+  it("n'appelle plus /v1/payment_intents (PaymentIntent orphelin supprimé) et ne renvoie plus paymentIntentId", async () => {
+    const res = await handleStripeRdvInvoiceRequest(
+      reqWithAuth("broker-A", { amountChf: 150 }),
+      ENV,
+    );
+    const body = await res.json();
+    expect(body.paymentIntentId).toBeUndefined();
+    // mockFetch jette une erreur explicite pour toute URL non mockée : si le
+    // code appelait encore /v1/payment_intents (retiré du mock exprès), ce
+    // test échouerait avec "URL non mockee" plutôt que de passer en silence.
+  });
+
+  it("l'identifiant de la facture part dans les metadata du Payment Link et sert d'id à la ligne insérée (rattachement exact pour le webhook)", async () => {
+    const res = await handleStripeRdvInvoiceRequest(
+      reqWithAuth("broker-A", { amountChf: 150 }),
+      ENV,
+    );
+    await res.json();
+    const metadataInvoiceId = paymentLinkRequests[0].get("metadata[invoice_id]");
+    expect(metadataInvoiceId).toBeTruthy();
+    expect(insertedInvoices[0].id).toBe(metadataInvoiceId);
+    expect(insertedInvoices[0].stripe_payment_intent_id).toBeNull();
   });
 });

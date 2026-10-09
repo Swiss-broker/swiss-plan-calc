@@ -1,4 +1,14 @@
 // supabase/functions/stripe-webhook/index.ts
+import { computeCommissionCentimes, computeCommissionBreakdown } from "../_shared/commission.ts";
+
+function formatBracketLabel(fromCentimes: number, toCentimes: number | null, rate: number): string {
+  const from = (fromCentimes / 100).toLocaleString("fr-CH");
+  const pct = Math.round(rate * 100);
+  return toCentimes === null
+    ? `au-delà de ${from} CHF (${pct}%)`
+    : `${from} → ${(toCentimes / 100).toLocaleString("fr-CH")} CHF (${pct}%)`;
+}
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, stripe-signature",
@@ -44,8 +54,12 @@ async function verifyStripeSignature(
 
 // supabase/functions/stripe-webhook/index.ts
 // Remplace uniquement la fonction sendBrevoEmail par cette version avec logs
-async function sendBrevoEmail(to: string, subject: string, htmlContent: string) {
-  const brevoKey = Deno.env.get("BREVO_API_KEY");
+async function sendBrevoEmail(
+  to: string,
+  subject: string,
+  htmlContent: string,
+  brevoKey: string | undefined,
+) {
   if (!brevoKey) {
     console.error("BREVO_API_KEY manquante, email non envoyé");
     return;
@@ -90,15 +104,20 @@ async function createNotification(
   });
 }
 
-Deno.serve(async (req) => {
+export type Env = {
+  stripeKey: string;
+  supabaseUrl: string;
+  supabaseKey: string;
+  webhookSecret: string;
+  brevoKey?: string;
+};
+
+export async function handleStripeWebhookRequest(req: Request, env: Env): Promise<Response> {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
   try {
-    const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
-    const supabaseUrl = Deno.env.get("SUPABASE_URL");
-    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-    const webhookSecret = Deno.env.get("STRIPE_WEBHOOK_SECRET");
+    const { stripeKey, supabaseUrl, supabaseKey, webhookSecret, brevoKey } = env;
     if (!stripeKey || !supabaseUrl || !supabaseKey || !webhookSecret) {
       throw new Error("Variables d'environnement manquantes");
     }
@@ -200,28 +219,53 @@ Deno.serve(async (req) => {
       if (session.mode === "payment") {
         const amountTotal = session.amount_total ?? 0;
         const amountChf = amountTotal / 100;
-        const commission = Math.round(amountTotal * 0.10) / 100;
-        const brokerReceives = amountChf - commission;
         const paymentIntentId = session.payment_intent;
+        // Identifiant de LA facture précise, posé dans les metadata du
+        // Payment Link par stripe-rdv-invoice. Sans lui, impossible de
+        // savoir laquelle vient d'être payée : avant ce correctif, la
+        // requête ci-dessous mettait à jour TOUTES les factures "pending"
+        // de ce courtier à la fois (un client qui payait débloquait les
+        // PDF des AUTRES clients du même courtier). On ne met donc plus à
+        // jour que par id, jamais par un filtre broker_id+status large.
+        const invoiceId = session.metadata?.invoice_id;
 
-        // Mettre à jour la facture
-        await fetch(
-          `${supabaseUrl}/rest/v1/rdv_invoices?broker_id=eq.${brokerId}&status=eq.pending`,
-          {
-            method: "PATCH",
-            headers: {
-              "apikey": supabaseKey,
-              "Authorization": `Bearer ${supabaseKey}`,
-              "Content-Type": "application/json",
-              "Prefer": "return=minimal",
-            },
-            body: JSON.stringify({
-              status: "paid",
-              pdf_unlocked: true,
-              stripe_payment_intent_id: paymentIntentId,
-            }),
-          }
-        );
+        if (!invoiceId) {
+          console.error(
+            "checkout.session.completed (RDV) sans invoice_id en metadata : facture introuvable, rien mis à jour.",
+            session.id,
+          );
+          return new Response(JSON.stringify({ received: true }), {
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+
+        // Mettre à jour UNIQUEMENT cette facture. "return=representation"
+        // pour récupérer commission_centimes dans la même requête : c'est
+        // la commission figée par stripe-rdv-invoice au moment où elle a
+        // été annoncée au courtier, à utiliser ici plutôt que la
+        // recalculer (qui donnerait un chiffre différent si le barème a
+        // changé entre-temps).
+        const patchRes = await fetch(`${supabaseUrl}/rest/v1/rdv_invoices?id=eq.${invoiceId}`, {
+          method: "PATCH",
+          headers: {
+            apikey: supabaseKey,
+            Authorization: `Bearer ${supabaseKey}`,
+            "Content-Type": "application/json",
+            Prefer: "return=representation",
+          },
+          body: JSON.stringify({
+            status: "paid",
+            pdf_unlocked: true,
+            stripe_payment_intent_id: paymentIntentId,
+          }),
+        });
+        const patchedInvoices = patchRes.ok ? await patchRes.json() : [];
+        const frozenCommissionCentimes: number | null =
+          patchedInvoices[0]?.commission_centimes ?? null;
+        const commissionCentimes =
+          frozenCommissionCentimes ?? computeCommissionCentimes(amountTotal);
+        const commission = commissionCentimes / 100;
+        const brokerReceives = (amountTotal - commissionCentimes) / 100;
 
         // Récupérer l'email du courtier
         const brokerRes = await fetch(
@@ -270,9 +314,19 @@ Deno.serve(async (req) => {
                   <td style="padding:8px 12px; font-weight:bold;">Montant total</td>
                   <td style="padding:8px 12px;">${amountChf.toFixed(2)} CHF</td>
                 </tr>
+                ${computeCommissionBreakdown(amountTotal)
+                  .filter((b) => b.portionCentimes > 0)
+                  .map(
+                    (b) => `
                 <tr>
-                  <td style="padding:8px 12px;">Commission SwissBroker Pro (10%)</td>
-                  <td style="padding:8px 12px;">- ${commission.toFixed(2)} CHF</td>
+                  <td style="padding:8px 12px;">Commission SwissBroker Pro — ${formatBracketLabel(b.fromCentimes, b.toCentimes, b.rate)}</td>
+                  <td style="padding:8px 12px;">- ${(b.commissionCentimes / 100).toFixed(2)} CHF</td>
+                </tr>`,
+                  )
+                  .join("")}
+                <tr style="background:#eef2ff;">
+                  <td style="padding:8px 12px; font-weight:bold;">Total commission</td>
+                  <td style="padding:8px 12px; font-weight:bold;">- ${commission.toFixed(2)} CHF</td>
                 </tr>
                 <tr style="background:#f0fdf4;">
                   <td style="padding:8px 12px; font-weight:bold;">Vous recevrez</td>
@@ -282,7 +336,8 @@ Deno.serve(async (req) => {
               <p>Le PDF de synthèse du rendez-vous est désormais débloqué dans la fiche de votre client.</p>
               <p style="color:#999; font-size:12px;">SwissBroker Pro — Piliarys</p>
             </div>
-            `
+            `,
+            brevoKey,
           );
         }
       } else {
@@ -465,21 +520,29 @@ Deno.serve(async (req) => {
 
     if (event.type === "payment_intent.succeeded") {
       const pi = event.data.object;
-      const brokerId = pi.metadata?.broker_id;
-      if (brokerId) {
-        await fetch(
-          `${supabaseUrl}/rest/v1/rdv_invoices?stripe_payment_intent_id=eq.${pi.id}`,
-          {
-            method: "PATCH",
-            headers: {
-              "apikey": supabaseKey,
-              "Authorization": `Bearer ${supabaseKey}`,
-              "Content-Type": "application/json",
-              "Prefer": "return=minimal",
-            },
-            body: JSON.stringify({ status: "paid", pdf_unlocked: true }),
-          }
-        );
+      // Filet de sécurité redondant avec checkout.session.completed : si ce
+      // dernier est pour une raison quelconque manqué, ce PaymentIntent
+      // porte les mêmes metadata (posées par stripe-rdv-invoice) et permet
+      // de débloquer la bonne facture quand même. Par invoice_id, jamais
+      // par stripe_payment_intent_id=eq.${pi.id} : la facture n'a aucun
+      // PaymentIntent connu avant le paiement réel (plus de PaymentIntent
+      // orphelin créé à l'avance), donc ce filtre ne matchait plus rien.
+      const invoiceId = pi.metadata?.invoice_id;
+      if (invoiceId) {
+        await fetch(`${supabaseUrl}/rest/v1/rdv_invoices?id=eq.${invoiceId}`, {
+          method: "PATCH",
+          headers: {
+            apikey: supabaseKey,
+            Authorization: `Bearer ${supabaseKey}`,
+            "Content-Type": "application/json",
+            Prefer: "return=minimal",
+          },
+          body: JSON.stringify({
+            status: "paid",
+            pdf_unlocked: true,
+            stripe_payment_intent_id: pi.id,
+          }),
+        });
       }
     }
 
@@ -492,4 +555,25 @@ Deno.serve(async (req) => {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
-});
+}
+
+// `Deno` n'existe pas sous Node/Vitest : ce garde-fou permet d'importer ce
+// fichier depuis les tests sans jamais tenter de demarrer un vrai serveur
+// Deno en dehors du runtime Edge Functions.
+declare const Deno:
+  | {
+      serve: (h: (req: Request) => Response | Promise<Response>) => void;
+      env: { get(k: string): string | undefined };
+    }
+  | undefined;
+if (typeof Deno !== "undefined") {
+  Deno.serve((req) =>
+    handleStripeWebhookRequest(req, {
+      stripeKey: Deno.env.get("STRIPE_SECRET_KEY") ?? "",
+      supabaseUrl: Deno.env.get("SUPABASE_URL") ?? "",
+      supabaseKey: Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
+      webhookSecret: Deno.env.get("STRIPE_WEBHOOK_SECRET") ?? "",
+      brevoKey: Deno.env.get("BREVO_API_KEY"),
+    }),
+  );
+}

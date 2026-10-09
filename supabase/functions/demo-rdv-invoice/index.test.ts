@@ -82,4 +82,22 @@ describe("demo-rdv-invoice — réservé aux comptes plan='demo', jamais Stripe"
     expect(res.status).toBe(500);
     expect(insertedInvoices).toHaveLength(0);
   });
+
+  it("149.99 CHF est refusé (sous le minimum de 150 CHF)", async () => {
+    const req = reqWithAuth("broker-demo", { amountChf: 149.99 });
+    const res = await handleDemoRdvInvoiceRequest(req, ENV);
+    expect(res.status).toBe(500);
+    const body = await res.json();
+    expect(String(body.error)).toContain("150 CHF");
+    expect(insertedInvoices).toHaveLength(0);
+  });
+
+  it("la commission simulée suit la vraie grille par tranches (2'500 CHF -> 550 CHF), pas 0", async () => {
+    const req = reqWithAuth("broker-demo", { amountChf: 2500 });
+    const res = await handleDemoRdvInvoiceRequest(req, ENV);
+    const body = await res.json();
+    expect(body.commission).toBe(550);
+    expect(body.brokerReceives).toBe(1950);
+    expect(insertedInvoices[0].commission_centimes).toBe(55_000);
+  });
 });
