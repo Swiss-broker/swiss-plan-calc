@@ -54,9 +54,9 @@ const PLAN_CONFIG: Record<string, { label: string; color: string; features: stri
     features: ["20 clients max", "4 sociétés max", "Tous les calculateurs", "Exports PDF illimités", "IA illimitée", "Support prioritaire"],
   },
   cabinet: {
-    label: "Cabinet (1'290 CHF/mois)",
+    label: "Cabinet (ancien plan, inactif)",
     color: "bg-purple-100 text-purple-800 border-purple-200",
-    features: ["Clients illimités", "Sociétés illimitées", "Tous les calculateurs", "Exports PDF illimités", "IA illimitée", "3 sièges inclus (titulaire + 2 collaborateurs), +290 CHF/mois par siège supplémentaire", "Support dédié"],
+    features: ["Ce plan n'est plus proposé — contactez notre équipe pour passer à la cotisation annuelle."],
   },
   internal: {
     label: "Accès interne",

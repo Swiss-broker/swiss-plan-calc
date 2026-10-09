@@ -28,10 +28,6 @@ import { useT, useLanguage } from "@/contexts/LanguageContext";
 import { formatDateShort } from "@/lib/i18n/format";
 import { t as translate } from "@/lib/i18n";
 import { KIND_LABELS } from "@/lib/history/types";
-import { usePlan } from "@/contexts/PlanContext";
-import { CabinetRootGuide } from "@/components/guides/CabinetRootGuide";
-import { CabinetDirectorGuide } from "@/components/guides/CabinetDirectorGuide";
-
 export const Route = createFileRoute("/_app/dashboard")({
   head: () => ({ meta: [{ title: translate("dash.head.title") }] }),
   component: Dashboard,
@@ -49,7 +45,6 @@ function Dashboard() {
   const t = useT();
   const { lang } = useLanguage();
   const { user } = useAuth();
-  const { cabinetRole } = usePlan();
   const brokerId = user?.id;
   const greeting = getGreetingKey();
   const GreetIcon = greeting.icon;
@@ -136,11 +131,6 @@ function Dashboard() {
               <p className="mt-1 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
                 {profile?.brokerage_name ? `${profile.brokerage_name} · ` : ""}
                 {t("dash.subtitle")}
-                {(cabinetRole === "root_director" || cabinetRole === "director") && (
-                  <Badge variant="secondary" className="text-xs">
-                    {cabinetRole === "root_director" ? "Directeur cabinet" : "Directeur"}
-                  </Badge>
-                )}
               </p>
             </div>
           </div>

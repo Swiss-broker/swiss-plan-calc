@@ -3,7 +3,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 export type BrokerPlan =
   "active" | "trial" | "starter" | "pro" | "cabinet" | "expired" | "free" | "internal" | "demo";
-export type CabinetRole = "root_director" | "director" | "courtier" | null;
 export interface PlanLimits {
   maxClients: number | null;     // null = illimité
   maxCompanies: number | null;
@@ -34,18 +33,11 @@ export interface PlanState {
   isExpired: boolean;
   canAddClient: (currentCount: number) => boolean;
   canAddCompany: (currentCount: number) => boolean;
-  // Rôle dans la hiérarchie cabinet, null si le compte n'appartient à aucun
-  // cabinet (Starter, Pro, comptes individuels classiques).
-  cabinetRole: CabinetRole;
-  // Vrai pour root_director et director : sert à afficher ou non l'onglet
-  // Équipe et à accéder au dashboard équipe.
-  canManageTeam: boolean;
 }
 const PlanContext = createContext<PlanState | null>(null);
 export function PlanProvider({ children }: { children: ReactNode }) {
   const { user, isAuthenticated, isLoading: authLoading } = useAuth();
   const [plan, setPlan] = useState<BrokerPlan>("trial");
-  const [cabinetRole, setCabinetRole] = useState<CabinetRole>(null);
   const [isLoading, setIsLoading] = useState(true);
   useEffect(() => {
     // Tant que l'authentification elle-même n'a pas encore répondu, on ne
@@ -66,21 +58,20 @@ export function PlanProvider({ children }: { children: ReactNode }) {
       return;
     }
     setIsLoading(true);
-    // Charge le plan et le rôle cabinet depuis Supabase
+    // Charge le plan depuis Supabase
     const loadPlan = () => {
       supabase
         .from("profiles")
-        .select("plan,cabinet_role")
+        .select("plan")
         .eq("id", user.id)
         .maybeSingle()
         .then(({ data }) => {
           if (data?.plan) setPlan(data.plan as BrokerPlan);
-          setCabinetRole((data?.cabinet_role as CabinetRole) ?? null);
           setIsLoading(false);
         });
     };
     loadPlan();
-    // Recharge en temps réel si la base change (plan ou rôle cabinet)
+    // Recharge en temps réel si la base change (plan)
     const channel = supabase
       .channel("plan-changes")
       .on("postgres_changes", {
@@ -90,9 +81,6 @@ export function PlanProvider({ children }: { children: ReactNode }) {
         filter: `id=eq.${user.id}`,
       }, (payload) => {
         if (payload.new?.plan) setPlan(payload.new.plan as BrokerPlan);
-        if ("cabinet_role" in (payload.new ?? {})) {
-          setCabinetRole((payload.new.cabinet_role as CabinetRole) ?? null);
-        }
       })
       .subscribe();
     return () => { supabase.removeChannel(channel); };
@@ -114,8 +102,6 @@ export function PlanProvider({ children }: { children: ReactNode }) {
     // count = nombre de créations ce mois-ci uniquement
     canAddClient: (count) => limits.maxClients === null || count < limits.maxClients,
     canAddCompany: (count) => limits.maxCompanies === null || count < limits.maxCompanies,
-    cabinetRole,
-    canManageTeam: cabinetRole === "root_director" || cabinetRole === "director" || plan === "internal",
   };
   return <PlanContext.Provider value={value}>{children}</PlanContext.Provider>;
 }

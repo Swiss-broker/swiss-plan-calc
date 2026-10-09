@@ -60,27 +60,6 @@ verify_jwt = true
 [functions.admin-set-broker-plan]
 verify_jwt = true
 
-[functions.cabinet-add-seat]
-verify_jwt = true
-
-[functions.cabinet-cancel-invite]
-verify_jwt = true
-
-[functions.cabinet-remove-member]
-verify_jwt = true
-
-[functions.cabinet-invite-info]
-verify_jwt = true
-
-[functions.team-dashboard-data]
-verify_jwt = true
-
-[functions.team-post-announcement]
-verify_jwt = true
-
-[functions.team-get-announcements]
-verify_jwt = true
-
 [functions.client-upload]
 verify_jwt = false
 

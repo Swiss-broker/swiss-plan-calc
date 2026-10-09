@@ -19,11 +19,6 @@ import { SelfServeClosedNotice } from "@/components/billing/SelfServeClosedNotic
 const authSearchSchema = z.object({
   mode: z.enum(["signin", "signup"]).optional(),
   plan: z.enum(["starter", "pro", "cabinet"]).optional(),
-  // Présent uniquement si la personne arrive via un lien d'invitation
-  // cabinet (email envoyé par cabinet-add-seat). Dans ce cas, l'étape de
-  // paiement Stripe est entièrement sautée après l'inscription : le siège
-  // a déjà été payé par le directeur qui a envoyé l'invitation.
-  invite: z.string().optional(),
 });
 
 export const Route = createFileRoute("/auth")({
@@ -37,19 +32,11 @@ export const Route = createFileRoute("/auth")({
   component: AuthPage,
 });
 
-const signupSchema = z.object({
-  firstName: z.string().trim().min(1, "auth.error.first_required").max(80),
-  lastName: z.string().trim().min(1, "auth.error.last_required").max(80),
-  email: z.string().trim().email("auth.error.email_invalid").max(255),
-  password: z.string().min(8, "auth.error.password_min").max(72),
-});
-
 const signinSchema = z.object({
   email: z.string().trim().email("auth.error.email_invalid"),
   password: z.string().min(1, "auth.error.password_required"),
 });
 
-type SignupValues = z.infer<typeof signupSchema>;
 type SigninValues = z.infer<typeof signinSchema>;
 
 function AuthPage() {
@@ -60,145 +47,11 @@ function AuthPage() {
   const [mode, setMode] = useState<"signin" | "signup">(search.mode ?? "signin");
   const selectedPlan = search.plan ?? "pro";
 
-const [otpState, setOtpState] = useState<{ email: string; plan: BillablePlan; inviteToken?: string } | null>(null);
-  const [otpToken, setOtpToken] = useState("");
-  const [otpLoading, setOtpLoading] = useState(false);
-  const [otpError, setOtpError] = useState<string | null>(null);
-
   useEffect(() => {
-    if (otpState) return;
     if (!isLoading && isAuthenticated) {
       navigate({ to: "/dashboard" });
     }
-  }, [isAuthenticated, isLoading, navigate, otpState]);
-
-  const handleOtpSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!otpState) return;
-    setOtpLoading(true);
-    setOtpError(null);
-
-    const { data, error: otpError } = await supabase.auth.verifyOtp({
-      email: otpState.email,
-      token: otpToken,
-      type: "signup",
-    });
-
-    if (otpError || !data.session) {
-      setOtpLoading(false);
-      setOtpError("Code incorrect ou expiré. Vérifiez le code reçu par email.");
-      return;
-    }
-
-    // Invitation cabinet : deux cas selon qui doit payer, vérifié
-    // maintenant plutôt que supposé automatiquement.
-    if (otpState.inviteToken) {
-      try {
-        const { data: inviteInfo, error: inviteError } = await supabase.functions.invoke(
-          "cabinet-invite-info",
-          { body: { token: otpState.inviteToken } },
-        );
-        if (inviteError || inviteInfo?.error) {
-          throw new Error(inviteInfo?.error ?? "Invitation invalide.");
-        }
-        if (inviteInfo.payer === "cabinet") {
-          // Déjà payé par le cabinet, accès débloqué à l'inscription.
-          navigate({ to: "/dashboard" });
-          return;
-        }
-        // Le courtier paie lui-même : direction le paiement, avec le
-        // price_id du siège cabinet, pas celui de Starter/Pro.
-        const { data: stripeData, error: fnError } = await supabase.functions.invoke("stripe-checkout", {
-          body: {
-            priceId: "price_1U17fiRzqfEoHxSu8CIqtbtA",
-            brokerId: data.session.user.id,
-            brokerEmail: data.session.user.email,
-            plan: "cabinet",
-          },
-        });
-        if (fnError || !stripeData?.url) throw new Error("Erreur Stripe");
-        window.location.href = stripeData.url;
-        return;
-      } catch (e) {
-        setOtpError(
-          e instanceof Error ? e.message : "Erreur lors de la vérification de l'invitation. Contactez le support.",
-        );
-        setOtpLoading(false);
-        return;
-      }
-    }
-  };
-
-  if (otpState) {
-    return (
-      <div className="relative min-h-screen overflow-hidden bg-hero flex items-center justify-center px-4">
-        <div className="absolute inset-0 grid-bg opacity-40" aria-hidden />
-        <div className="relative w-full max-w-md rounded-2xl border border-border bg-card p-8 shadow-elegant">
-          <div className="text-center mb-6">
-            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
-              <span className="text-3xl">📧</span>
-            </div>
-            <h1 className="text-2xl font-bold tracking-tight">Vérifiez vos emails</h1>
-            <p className="mt-2 text-sm text-muted-foreground">Un code à 6 chiffres a été envoyé à</p>
-            <p className="font-medium text-foreground">{otpState.email}</p>
-          </div>
-
-          <form onSubmit={handleOtpSubmit} className="space-y-4">
-            <div className="space-y-1.5">
-              <Label htmlFor="otp">Code de confirmation</Label>
-              <Input
-                id="otp"
-                type="text"
-                inputMode="numeric"
-                maxLength={8}
-                value={otpToken}
-                onChange={(e) => setOtpToken(e.target.value.replace(/\D/g, ""))}
-                placeholder="123456"
-                className="text-center text-2xl tracking-widest font-bold"
-                autoFocus
-                required
-              />
-            </div>
-
-            {otpError && <p className="text-sm text-destructive text-center">{otpError}</p>}
-
-            <Button type="submit" className="h-11 w-full shadow-elegant" disabled={otpLoading || otpToken.length < 6}>
-              {otpLoading && <Loader2 className="h-4 w-4 animate-spin" />}
-              Confirmer et accéder au paiement
-            </Button>
-          </form>
-
-          <div className="mt-4 space-y-2">
-            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground text-center">
-              Vous ne trouvez pas l'email ?
-            </p>
-            <div className="rounded-lg border border-border bg-muted/40 p-3">
-              <p className="text-xs text-muted-foreground">
-                <strong>Outlook, Hotmail, Live :</strong> vérifiez votre dossier <strong>Courrier indésirable</strong>.
-              </p>
-            </div>
-            <div className="rounded-lg border border-border bg-muted/40 p-3">
-              <p className="text-xs text-muted-foreground">
-                <strong>Sur téléphone :</strong> si l'email n'apparaît pas dans l'app Mail, ouvrez directement l'<strong>application Outlook</strong> ou connectez-vous sur <strong>outlook.com</strong> / <strong>gmail.com</strong> depuis un navigateur.
-              </p>
-            </div>
-            <div className="rounded-lg border border-primary/20 bg-primary/5 p-3">
-              <p className="text-xs text-muted-foreground">
-                Expéditeur : <strong>noreply@swissbrokerpro.ch</strong>. Ajoutez cette adresse à vos
-                contacts.
-              </p>
-            </div>
-          </div>
-
-          <div className="mt-4 text-center">
-            <button type="button" onClick={() => setOtpState(null)} className="text-xs text-muted-foreground hover:text-foreground underline">
-              Retour
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  }, [isAuthenticated, isLoading, navigate]);
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-hero">
@@ -216,23 +69,12 @@ const [otpState, setOtpState] = useState<{ email: string; plan: BillablePlan; in
               <span className="text-xl font-bold text-primary-foreground">S</span>
             </div>
             <h1 className="text-2xl font-bold tracking-tight">
-              {mode === "signup"
-                ? search.invite
-                  ? `Créer un compte ${PLAN_LABELS[selectedPlan as BillablePlan] ?? "courtier"}`
-                  : "Réservez une démo"
-                : t("auth.signin.title")}
+              {mode === "signup" ? "Réservez une démo" : t("auth.signin.title")}
             </h1>
           </div>
 
           {mode === "signup" ? (
-            // Invitation cabinet valide (?invite=token) : parcours de création
-            // de compte conservé, ce n'est pas le self-serve générique fermé
-            // ci-dessous. Sans ce paramètre, impossible de créer un compte ici.
-            search.invite ? (
-              <SignupForm plan={selectedPlan} inviteToken={search.invite} onOtpRequired={setOtpState} />
-            ) : (
-              <SignupClosedNotice plan={selectedPlan as BillablePlan} />
-            )
+            <SignupClosedNotice plan={selectedPlan as BillablePlan} />
           ) : (
             <SigninForm />
           )}
@@ -257,108 +99,6 @@ const [otpState, setOtpState] = useState<{ email: string; plan: BillablePlan; in
         </div>
       </div>
     </div>
-  );
-}
-
-// Conservé uniquement pour le parcours d'invitation cabinet
-// (?invite=token, généré par cabinet-add-seat) : un courtier invité à
-// rejoindre un cabinet existant doit toujours pouvoir créer son compte.
-// Ce n'est PAS le parcours self-serve générique — celui-ci est fermé (voir
-// SignupClosedNotice ci-dessous), seul ce cas précis reste ouvert.
-function SignupForm({
-  plan,
-  inviteToken,
-  onOtpRequired,
-}: {
-  plan: BillablePlan;
-  inviteToken?: string;
-  onOtpRequired: (state: { email: string; plan: BillablePlan; inviteToken?: string }) => void;
-}) {
-  const t = useT();
-  const [loading, setLoading] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
-  const form = useForm<SignupValues>({
-    resolver: zodResolver(signupSchema),
-    defaultValues: { firstName: "", lastName: "", email: "", password: "" },
-  });
-  const onSubmit = async (values: SignupValues) => {
-    setLoading(true);
-    const { error } = await supabase.auth.signUp({
-      email: values.email,
-      password: values.password,
-      options: {
-        data: {
-          first_name: values.firstName,
-          last_name: values.lastName,
-          // Lu côté serveur par le trigger handle_new_user pour appliquer
-          // automatiquement le bon rôle/manager si c'est une invitation
-          // cabinet valide. Ignoré silencieusement sinon.
-          ...(inviteToken ? { invite_token: inviteToken } : {}),
-        },
-      },
-    });
-    setLoading(false);
-    if (error) {
-      if (error.message.toLowerCase().includes("already")) {
-        toast.error(t("auth.error.account_exists"));
-      } else {
-        toast.error(error.message);
-      }
-      return;
-    }
-    onOtpRequired({ email: values.email, plan, inviteToken });
-  };
-
-  return (
-    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-      <div className="grid grid-cols-2 gap-3">
-        <div className="space-y-1.5">
-          <Label htmlFor="firstName">{t("auth.field.first_name")}</Label>
-          <Input id="firstName" {...form.register("firstName")} />
-          {form.formState.errors.firstName && (
-            <p className="text-xs text-destructive">{t(form.formState.errors.firstName.message ?? "")}</p>
-          )}
-        </div>
-        <div className="space-y-1.5">
-          <Label htmlFor="lastName">{t("auth.field.last_name")}</Label>
-          <Input id="lastName" {...form.register("lastName")} />
-          {form.formState.errors.lastName && (
-            <p className="text-xs text-destructive">{t(form.formState.errors.lastName.message ?? "")}</p>
-          )}
-        </div>
-      </div>
-      <div className="space-y-1.5">
-        <Label htmlFor="email">{t("auth.field.email_pro")}</Label>
-        <Input id="email" type="email" autoComplete="email" {...form.register("email")} />
-      </div>
-      <div className="space-y-1.5">
-        <Label htmlFor="password">{t("auth.field.password")}</Label>
-        <div className="relative">
-          <Input
-            id="password"
-            type={showPassword ? "text" : "password"}
-            autoComplete="new-password"
-            className="pr-10"
-            {...form.register("password")}
-          />
-          <button
-            type="button"
-            onClick={() => setShowPassword((v) => !v)}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-            tabIndex={-1}
-          >
-            {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-          </button>
-        </div>
-        {form.formState.errors.password && (
-          <p className="text-xs text-destructive">{t(form.formState.errors.password.message ?? "")}</p>
-        )}
-      </div>
-      <Button type="submit" className="h-11 w-full shadow-elegant" disabled={loading}>
-        {loading && <Loader2 className="h-4 w-4 animate-spin" />}
-        {t("auth.signup.submit")}
-      </Button>
-    </form>
   );
 }
 

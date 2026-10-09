@@ -459,7 +459,6 @@ function FAQ() {
     { q: t("landing.faq.q3.title"), a: t("landing.faq.q3.answer") },
     { q: t("landing.faq.q4.title"), a: t("landing.faq.q4.answer") },
     { q: t("landing.faq.q5.title"), a: t("landing.faq.q5.answer") },
-    { q: t("landing.faq.q6.title"), a: t("landing.faq.q6.answer") },
     { q: t("landing.faq.q7.title"), a: t("landing.faq.q7.answer") },
     { q: t("landing.faq.q8.title"), a: t("landing.faq.q8.answer") },
     { q: t("landing.faq.q9.title"), a: t("landing.faq.q9.answer") },
