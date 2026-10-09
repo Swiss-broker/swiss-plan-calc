@@ -81,14 +81,16 @@ function Pillar3aCalc() {
     pillar3bCurrent: 0,
     pillar3bYears: 25,
     pillar3bReturn: 2.0,
-    // Rente d'invalidité du 3e pilier (police liée, si elle existe) —
-    // saisie manuelle uniquement, jamais recalculée : voir audit. 0/vide si
-    // aucune rente d'invalidité n'est prévue par la police du client.
-    disabilityAnnualPension: 0,
-    // Capital décès du 3e pilier (clause décès de la police liée, le cas
-    // échéant) — saisie manuelle uniquement, jamais recalculé. 0/vide si
-    // aucun capital décès n'est prévu par la police du client.
-    deathCapital: 0,
+    // Rente d'invalidité du 3e pilier — saisie manuelle uniquement, jamais
+    // recalculée. 3a et 3b sont des polices distinctes, donc des champs
+    // distincts (0/vide si aucune rente d'invalidité prévue par la police).
+    disabilityAnnualPension3a: 0,
+    disabilityAnnualPension3b: 0,
+    // Capital décès du 3e pilier — saisie manuelle uniquement, jamais
+    // recalculé. 3a et 3b sont des polices distinctes, donc des champs
+    // distincts (0/vide si aucun capital décès prévu par la police).
+    deathCapital3a: 0,
+    deathCapital3b: 0,
   });
   useHydrateFormFromPrefill(simId ? null : prefill, setForm);
 
@@ -600,17 +602,17 @@ useEffect(() => {
           <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
             <NumField
               label="Rente d'invalidité annuelle (pilier 3a)"
-              value={form.disabilityAnnualPension}
-              onChange={(v) => set("disabilityAnnualPension", v)}
+              value={form.disabilityAnnualPension3a}
+              onChange={(v) => set("disabilityAnnualPension3a", v)}
               wikiId="p3a-base"
-              wikiTip="Si la police liée au 3e pilier du client prévoit une rente d'invalidité, saisissez-la ici. Saisie manuelle uniquement, jamais recalculée, laissez à 0 si la prestation n'existe pas."
+              wikiTip="Si la police liée au 3e pilier A du client prévoit une rente d'invalidité, saisissez-la ici. Saisie manuelle uniquement, jamais recalculée, laissez à 0 si la prestation n'existe pas. Champ indépendant du 3e pilier B."
             />
             <NumField
               label="Capital décès (pilier 3a)"
-              value={form.deathCapital}
-              onChange={(v) => set("deathCapital", v)}
+              value={form.deathCapital3a}
+              onChange={(v) => set("deathCapital3a", v)}
               wikiId="p3a-base"
-              wikiTip="Si la police liée au 3e pilier du client prévoit un capital décès, saisissez-le ici. Saisie manuelle uniquement, jamais recalculé, laissez à 0 si la prestation n'existe pas."
+              wikiTip="Si la police liée au 3e pilier A du client prévoit un capital décès, saisissez-le ici. Saisie manuelle uniquement, jamais recalculé, laissez à 0 si la prestation n'existe pas. Champ indépendant du 3e pilier B."
             />
           </div>
         </CalcCard>
@@ -646,17 +648,17 @@ useEffect(() => {
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <NumField
                 label="Rente d'invalidité annuelle (pilier 3b)"
-                value={form.disabilityAnnualPension}
-                onChange={(v) => set("disabilityAnnualPension", v)}
+                value={form.disabilityAnnualPension3b}
+                onChange={(v) => set("disabilityAnnualPension3b", v)}
                 wikiId="p3a-base"
-                wikiTip="Si la police liée au 3e pilier du client prévoit une rente d'invalidité, saisissez-la ici. Saisie manuelle uniquement, jamais recalculée, laissez à 0 si la prestation n'existe pas."
+                wikiTip="Si la police liée au 3e pilier B du client prévoit une rente d'invalidité, saisissez-la ici. Saisie manuelle uniquement, jamais recalculée, laissez à 0 si la prestation n'existe pas. Champ indépendant du 3e pilier A."
               />
               <NumField
                 label="Capital décès (pilier 3b)"
-                value={form.deathCapital}
-                onChange={(v) => set("deathCapital", v)}
+                value={form.deathCapital3b}
+                onChange={(v) => set("deathCapital3b", v)}
                 wikiId="p3a-base"
-                wikiTip="Si la police liée au 3e pilier du client prévoit un capital décès, saisissez-le ici. Saisie manuelle uniquement, jamais recalculé, laissez à 0 si la prestation n'existe pas."
+                wikiTip="Si la police liée au 3e pilier B du client prévoit un capital décès, saisissez-le ici. Saisie manuelle uniquement, jamais recalculé, laissez à 0 si la prestation n'existe pas. Champ indépendant du 3e pilier A."
               />
             </div>
           </div>
@@ -685,14 +687,15 @@ useEffect(() => {
             // reprise telle quelle par la consolidation et le PDF — jamais
             // recalculée ailleurs à partir d'un autre capital.
             oldAgeMonthlyPension,
-            // Rente d'invalidité saisie manuellement (police 3e pilier,
-            // le cas échéant) — reprise telle quelle par la consolidation
-            // et le comparateur cantonal, jamais recalculée.
-            disabilityAnnualPension: form.disabilityAnnualPension || undefined,
-            // Capital décès saisi manuellement (police 3e pilier, le cas
-            // échéant) — repris tel quel par la consolidation (scénario
+            // Rente d'invalidité saisie manuellement (3a + 3b, polices
+            // distinctes) — total repris par la consolidation et le
+            // comparateur cantonal, jamais recalculé.
+            disabilityAnnualPension:
+              form.disabilityAnnualPension3a + form.disabilityAnnualPension3b || undefined,
+            // Capital décès saisi manuellement (3a + 3b, polices
+            // distinctes) — total repris par la consolidation (scénario
             // décès), jamais recalculé.
-            deathCapital: form.deathCapital || undefined,
+            deathCapital: form.deathCapital3a + form.deathCapital3b || undefined,
             // Trajectoire année par année (année → capital), pour le
             // graphique d'évolution du PDF de synthèse. Simple retranscription
             // de projection.yearly, déjà calculé ci-dessus.
