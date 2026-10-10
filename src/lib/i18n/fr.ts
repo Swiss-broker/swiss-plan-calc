@@ -1212,6 +1212,7 @@ export const fr: Record<string, string> = {
   "landing.nav.modules": "Modules",
   "landing.nav.optimization": "Optimisation",
   "landing.cta.signin": "Se connecter",
+  "landing.cta.signup": "S'inscrire",
   "landing.cta.try": "Essayer gratuitement",
   "landing.cta.try_short": "Essayer",
   "landing.hero.badge": "Le seul outil qui couvre tout : fiscal, LPP, frontaliers, retraite",

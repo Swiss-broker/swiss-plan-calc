@@ -1140,6 +1140,7 @@ export const it: Record<string, string> = {
   "landing.nav.modules": "Moduli",
   "landing.nav.optimization": "Ottimizzazione",
   "landing.cta.signin": "Accedi",
+  "landing.cta.signup": "Iscriviti",
   "landing.cta.try": "Prova gratis",
   "landing.cta.try_short": "Prova",
   "landing.hero.badge": "Pensato per i broker svizzeri · Svizzera romanda · Frontalieri inclusi",

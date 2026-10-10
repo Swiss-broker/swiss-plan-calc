@@ -1140,6 +1140,7 @@ export const en: Record<string, string> = {
   "landing.nav.modules": "Modules",
   "landing.nav.optimization": "Optimization",
   "landing.cta.signin": "Sign in",
+  "landing.cta.signup": "Sign up",
   "landing.cta.try": "Try for free",
   "landing.cta.try_short": "Try",
   "landing.hero.badge": "Built for Swiss brokers · French-speaking Switzerland · Cross-border workers included",

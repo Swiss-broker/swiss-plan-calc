@@ -133,6 +133,7 @@ function Header() {
         <div className="flex shrink-0 items-center gap-1 sm:gap-2">
           <PublicLanguageSwitcher />
           <Link to="/auth"><Button variant="ghost" size="sm" className="px-2 sm:px-3">{t("landing.cta.signin")}</Button></Link>
+          <Link to="/auth" search={{ mode: "signup" }}><Button size="sm" className="px-2 sm:px-3">{t("landing.cta.signup")}</Button></Link>
         </div>
       </div>
     </motion.header>
@@ -176,12 +177,14 @@ function Hero() {
           </motion.p>
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.5 }}
             className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
-            <a href={CALCOM_URL} target="_blank" rel="noopener noreferrer">
+            <Link to="/auth" search={{ mode: "signup" }}>
               <Button size="lg" className="h-12 px-8 bg-emerald-400 text-emerald-950 hover:bg-emerald-300 shadow-lg shadow-emerald-400/25 group">
-                Réserver une démo<ArrowRight className="ml-1 h-4 w-4 transition-transform group-hover:translate-x-1" />
+                S'inscrire — 99 CHF/an<ArrowRight className="ml-1 h-4 w-4 transition-transform group-hover:translate-x-1" />
               </Button>
+            </Link>
+            <a href={CALCOM_URL} target="_blank" rel="noopener noreferrer">
+              <Button size="lg" variant="outline" className="h-12 px-8 border-white/30 text-white hover:bg-white/10">Réserver une démo</Button>
             </a>
-            <a href="#modules"><Button size="lg" variant="outline" className="h-12 px-8 border-white/30 text-white hover:bg-white/10">Découvrir les modules</Button></a>
           </motion.div>
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.6, delay: 0.7 }}
             className="mt-8 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs text-white/60">
@@ -495,13 +498,22 @@ function CTASection() {
           <div className="relative">
             <h2 className="text-3xl font-bold tracking-tight text-white sm:text-4xl">{t("landing.cta.title")}</h2>
             <p className="mx-auto mt-4 max-w-xl text-white/80">{t("landing.cta.desc")}</p>
-            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.97 }} className="mt-8 inline-block">
-              <a href={CALCOM_URL} target="_blank" rel="noopener noreferrer">
-                <Button size="lg" className="h-12 px-8 bg-white text-emerald-900 hover:bg-white/90 shadow-lg">
-                  Réserver une démo<ArrowRight className="ml-1 h-4 w-4" />
-                </Button>
-              </a>
-            </motion.div>
+            <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
+              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.97 }}>
+                <Link to="/auth" search={{ mode: "signup" }}>
+                  <Button size="lg" className="h-12 px-8 bg-white text-emerald-900 hover:bg-white/90 shadow-lg">
+                    S'inscrire — 99 CHF/an<ArrowRight className="ml-1 h-4 w-4" />
+                  </Button>
+                </Link>
+              </motion.div>
+              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.97 }}>
+                <a href={CALCOM_URL} target="_blank" rel="noopener noreferrer">
+                  <Button size="lg" variant="outline" className="h-12 px-8 border-white/40 text-white hover:bg-white/10">
+                    Réserver une démo
+                  </Button>
+                </a>
+              </motion.div>
+            </div>
           </div>
         </motion.div>
       </div>

@@ -1144,6 +1144,7 @@ export const de: Record<string, string> = {
   "landing.nav.modules": "Module",
   "landing.nav.optimization": "Optimierung",
   "landing.cta.signin": "Anmelden",
+  "landing.cta.signup": "Registrieren",
   "landing.cta.try": "Kostenlos testen",
   "landing.cta.try_short": "Testen",
   "landing.hero.badge": "Für Schweizer Broker · Westschweiz · Grenzgänger inklusive",
