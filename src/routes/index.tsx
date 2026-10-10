@@ -179,7 +179,7 @@ function Hero() {
             className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
             <Link to="/auth" search={{ mode: "signup" }}>
               <Button size="lg" className="h-12 px-8 bg-emerald-400 text-emerald-950 hover:bg-emerald-300 shadow-lg shadow-emerald-400/25 group">
-                S'inscrire — 99 CHF/an<ArrowRight className="ml-1 h-4 w-4 transition-transform group-hover:translate-x-1" />
+                S'inscrire (99 CHF/an)<ArrowRight className="ml-1 h-4 w-4 transition-transform group-hover:translate-x-1" />
               </Button>
             </Link>
             <a href={CALCOM_URL} target="_blank" rel="noopener noreferrer">
@@ -377,13 +377,67 @@ function Optimization() {
   );
 }
 
+function PathCard({
+  badge, title, steps, ctaLabel, ctaHref, ctaTo, primary, delay,
+}: {
+  badge: string;
+  title: string;
+  steps: { title: string; desc: string }[];
+  ctaLabel: string;
+  ctaHref?: string;
+  ctaTo?: string;
+  primary?: boolean;
+  delay: number;
+}) {
+  const cta = ctaHref ? (
+    <a href={ctaHref} target="_blank" rel="noopener noreferrer">
+      <Button size="lg" variant={primary ? "default" : "outline"} className="h-11 w-full">
+        {ctaLabel}{primary && <ArrowRight className="ml-1 h-4 w-4" />}
+      </Button>
+    </a>
+  ) : (
+    <Link to="/auth" search={{ mode: "signup" }}>
+      <Button size="lg" variant={primary ? "default" : "outline"} className="h-11 w-full">
+        {ctaLabel}{primary && <ArrowRight className="ml-1 h-4 w-4" />}
+      </Button>
+    </Link>
+  );
+  return (
+    <Reveal delay={delay} y={40} scale={0.97}
+      className={`rounded-2xl border p-6 sm:p-8 ${primary ? "border-primary/30 bg-gradient-to-br from-primary/5 to-card shadow-elegant" : "border-border bg-card shadow-card"}`}>
+      <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wider ${primary ? "bg-primary/15 text-primary" : "bg-muted text-muted-foreground"}`}>
+        {badge}
+      </span>
+      <h3 className="mt-3 text-xl font-bold tracking-tight">{title}</h3>
+      <ul className="mt-6 space-y-5">
+        {steps.map((s, i) => (
+          <li key={s.title} className="flex gap-3">
+            <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">
+              {i + 1}
+            </div>
+            <div>
+              <h4 className="text-sm font-semibold">{s.title}</h4>
+              <p className="mt-0.5 text-sm text-muted-foreground leading-relaxed">{s.desc}</p>
+            </div>
+          </li>
+        ))}
+      </ul>
+      <div className="mt-7">{cta}</div>
+    </Reveal>
+  );
+}
+
 function Path() {
   const t = useT();
-  const steps = [
-    { title: t("landing.path.step1.title"), desc: t("landing.path.step1.desc") },
-    { title: t("landing.path.step2.title"), desc: t("landing.path.step2.desc") },
-    { title: t("landing.path.step3.title"), desc: t("landing.path.step3.desc") },
-    { title: t("landing.path.step4.title"), desc: t("landing.path.step4.desc") },
+  const directSteps = [
+    { title: t("landing.path.direct.step1.title"), desc: t("landing.path.direct.step1.desc") },
+    { title: t("landing.path.direct.step2.title"), desc: t("landing.path.direct.step2.desc") },
+    { title: t("landing.path.direct.step3.title"), desc: t("landing.path.direct.step3.desc") },
+  ];
+  const demoSteps = [
+    { title: t("landing.path.demo.step1.title"), desc: t("landing.path.demo.step1.desc") },
+    { title: t("landing.path.demo.step2.title"), desc: t("landing.path.demo.step2.desc") },
+    { title: t("landing.path.demo.step3.title"), desc: t("landing.path.demo.step3.desc") },
   ];
   const trust = [
     { icon: Lock, title: t("landing.trust.isolation.title"), desc: t("landing.trust.isolation.desc") },
@@ -398,23 +452,24 @@ function Path() {
           <p className="mt-3 text-muted-foreground">{t("landing.path.subtitle")}</p>
         </Reveal>
 
-        <div className="relative">
-          {/* Ligne pointillée continue derrière les 4 puces numérotées : chaque
-              puce a un fond opaque qui la recouvre à son emplacement, ce qui
-              donne visuellement des segments entre les puces sans calcul de
-              position par élément. */}
-          <div className="pointer-events-none absolute left-0 right-0 top-6 hidden border-t-2 border-dashed border-border lg:block" />
-          <div className="relative grid gap-10 sm:grid-cols-2 lg:grid-cols-4">
-            {steps.map((s, i) => (
-              <Reveal key={s.title} delay={i * 0.1} y={30} className="text-center">
-                <div className="relative z-10 mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-emerald-600 to-teal-600 text-base font-extrabold text-white shadow-lg shadow-emerald-600/30">
-                  {i + 1}
-                </div>
-                <h3 className="text-sm font-semibold mb-1.5">{s.title}</h3>
-                <p className="text-sm text-muted-foreground leading-relaxed">{s.desc}</p>
-              </Reveal>
-            ))}
-          </div>
+        <div className="grid gap-6 lg:grid-cols-2">
+          <PathCard
+            badge={t("landing.path.direct.badge")}
+            title={t("landing.path.direct.title")}
+            steps={directSteps}
+            ctaLabel={t("landing.path.direct.cta")}
+            ctaTo="/auth"
+            primary
+            delay={0}
+          />
+          <PathCard
+            badge={t("landing.path.demo.badge")}
+            title={t("landing.path.demo.title")}
+            steps={demoSteps}
+            ctaLabel={t("landing.path.demo.cta")}
+            ctaHref={CALCOM_URL}
+            delay={0.1}
+          />
         </div>
 
         <div className="mt-14 grid gap-4 sm:grid-cols-3">
@@ -502,7 +557,7 @@ function CTASection() {
               <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.97 }}>
                 <Link to="/auth" search={{ mode: "signup" }}>
                   <Button size="lg" className="h-12 px-8 bg-white text-emerald-900 hover:bg-white/90 shadow-lg">
-                    S'inscrire — 99 CHF/an<ArrowRight className="ml-1 h-4 w-4" />
+                    S'inscrire (99 CHF/an)<ArrowRight className="ml-1 h-4 w-4" />
                   </Button>
                 </Link>
               </motion.div>
