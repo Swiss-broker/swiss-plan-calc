@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import {
   ArrowRight, CheckCircle2, Building2, Globe2,
   Clock, Shield, Sparkles, TrendingUp, Calculator, Lock, ChevronDown,
+  Facebook, Instagram, Linkedin,
 } from "lucide-react";
 import { useT } from "@/contexts/LanguageContext";
 import { PublicLanguageSwitcher } from "@/components/common/PublicLanguageSwitcher";
@@ -17,6 +18,8 @@ import logoIcon from "@/assets/logo-icon.png";
 import logoFull from "@/assets/logo-full.png";
 
 const CALCOM_URL = "https://cal.com/swissbroker/30min";
+const FACEBOOK_URL = "https://www.facebook.com/share/1Je4dVGvxo/?mibextid=wwXIfr";
+const INSTAGRAM_URL = "https://www.instagram.com/swissbrokerpro?xtok=cmhka25lcGRxZ3Ro&utm_source=qr";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -128,7 +131,7 @@ function Header() {
           <a href="#features" className="text-sm text-muted-foreground hover:text-foreground transition-colors">{t("landing.nav.features")}</a>
           <a href="#modules" className="text-sm text-muted-foreground hover:text-foreground transition-colors">{t("landing.nav.modules")}</a>
           <a href="#optimisation" className="text-sm text-muted-foreground hover:text-foreground transition-colors">{t("landing.nav.optimization")}</a>
-          <a href={CALCOM_URL} target="_blank" rel="noopener noreferrer" className="text-sm font-semibold text-primary hover:text-primary/80 transition-colors">Réserver une démo</a>
+          <a href={CALCOM_URL} target="_blank" rel="noopener noreferrer" className="text-sm font-semibold text-primary hover:text-primary/80 transition-colors">{t("landing.cta.discovery")}</a>
         </nav>
         <div className="flex shrink-0 items-center gap-1 sm:gap-2">
           <PublicLanguageSwitcher />
@@ -183,7 +186,7 @@ function Hero() {
               </Button>
             </Link>
             <a href={CALCOM_URL} target="_blank" rel="noopener noreferrer">
-              <Button size="lg" variant="outline" className="h-12 px-8 border-white/30 text-white hover:bg-white/10">Réserver une démo</Button>
+              <Button size="lg" variant="outline" className="h-12 px-8 border-white/30 text-white hover:bg-white/10">{t("landing.cta.discovery")}</Button>
             </a>
           </motion.div>
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.6, delay: 0.7 }}
@@ -564,7 +567,7 @@ function CTASection() {
               <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.97 }}>
                 <a href={CALCOM_URL} target="_blank" rel="noopener noreferrer">
                   <Button size="lg" variant="outline" className="h-12 px-8 border-white/40 text-white hover:bg-white/10">
-                    Réserver une démo
+                    {t("landing.cta.discovery")}
                   </Button>
                 </a>
               </motion.div>
@@ -588,6 +591,20 @@ function Footer() {
           </div>
           <div className="flex items-center gap-2 text-sm text-muted-foreground"><Building2 className="h-4 w-4" />{t("landing.footer.brand")}</div>
           <div className="flex items-center gap-2 text-xs text-muted-foreground"><Globe2 className="h-3.5 w-3.5" />{t("landing.footer.scope")}</div>
+          <div className="mt-2 flex items-center gap-3">
+            <a href={FACEBOOK_URL} target="_blank" rel="noopener noreferrer" aria-label="Facebook"
+              className="flex h-9 w-9 items-center justify-center rounded-full border border-border text-muted-foreground transition-colors hover:border-primary/30 hover:text-primary">
+              <Facebook className="h-4 w-4" />
+            </a>
+            <a href={INSTAGRAM_URL} target="_blank" rel="noopener noreferrer" aria-label="Instagram"
+              className="flex h-9 w-9 items-center justify-center rounded-full border border-border text-muted-foreground transition-colors hover:border-primary/30 hover:text-primary">
+              <Instagram className="h-4 w-4" />
+            </a>
+            <span aria-hidden="true" title={t("landing.footer.social.soon")}
+              className="flex h-9 w-9 items-center justify-center rounded-full border border-border text-muted-foreground/40 cursor-not-allowed">
+              <Linkedin className="h-4 w-4" />
+            </span>
+          </div>
         </div>
 
         <div>
