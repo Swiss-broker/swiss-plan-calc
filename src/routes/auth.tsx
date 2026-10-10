@@ -29,12 +29,27 @@ export const Route = createFileRoute("/auth")({
   component: AuthPage,
 });
 
-const signupSchema = z.object({
-  firstName: z.string().trim().min(1, "auth.error.first_required").max(80),
-  lastName: z.string().trim().min(1, "auth.error.last_required").max(80),
-  email: z.string().trim().email("auth.error.email_invalid").max(255),
-  password: z.string().min(8, "auth.error.password_min").max(72),
-});
+// Caractère spécial = tout ce qui n'est ni une lettre ni un chiffre : les
+// mêmes règles que celles qu'on attend d'un courtier pour son propre mot
+// de passe client (cohérence du niveau d'exigence).
+const SPECIAL_CHAR_RE = /[^A-Za-z0-9]/;
+
+const signupSchema = z
+  .object({
+    firstName: z.string().trim().min(1, "auth.error.first_required").max(80),
+    lastName: z.string().trim().min(1, "auth.error.last_required").max(80),
+    email: z.string().trim().email("auth.error.email_invalid").max(255),
+    password: z
+      .string()
+      .min(8, "auth.error.password_min")
+      .max(72)
+      .regex(SPECIAL_CHAR_RE, "auth.error.password_special"),
+    confirmPassword: z.string(),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: "auth.error.password_mismatch",
+    path: ["confirmPassword"],
+  });
 
 const signinSchema = z.object({
   email: z.string().trim().email("auth.error.email_invalid"),
@@ -237,9 +252,10 @@ function SignupForm({
   const t = useT();
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const form = useForm<SignupValues>({
     resolver: zodResolver(signupSchema),
-    defaultValues: { firstName: "", lastName: "", email: "", password: "" },
+    defaultValues: { firstName: "", lastName: "", email: "", password: "", confirmPassword: "" },
   });
   const onSubmit = async (values: SignupValues) => {
     setLoading(true);
@@ -309,8 +325,32 @@ function SignupForm({
             {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
           </button>
         </div>
+        <p className="text-xs text-muted-foreground">8 caractères minimum, avec au moins un caractère spécial.</p>
         {form.formState.errors.password && (
           <p className="text-xs text-destructive">{t(form.formState.errors.password.message ?? "")}</p>
+        )}
+      </div>
+      <div className="space-y-1.5">
+        <Label htmlFor="confirmPassword">{t("auth.field.password_confirm")}</Label>
+        <div className="relative">
+          <Input
+            id="confirmPassword"
+            type={showConfirmPassword ? "text" : "password"}
+            autoComplete="new-password"
+            className="pr-10"
+            {...form.register("confirmPassword")}
+          />
+          <button
+            type="button"
+            onClick={() => setShowConfirmPassword((v) => !v)}
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+            tabIndex={-1}
+          >
+            {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+          </button>
+        </div>
+        {form.formState.errors.confirmPassword && (
+          <p className="text-xs text-destructive">{t(form.formState.errors.confirmPassword.message ?? "")}</p>
         )}
       </div>
       <Button type="submit" className="h-11 w-full shadow-elegant" disabled={loading}>
