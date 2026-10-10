@@ -15,8 +15,13 @@ export function jsonResponse(data: unknown, status = 200) {
   });
 }
 
-const ALLOWED_DISCOUNT_DURATIONS = new Set(["none", "once", "3_months", "6_months", "12_months", "forever"]);
-const REPEATING_MONTHS: Record<string, number> = { "3_months": 3, "6_months": 6, "12_months": 12 };
+// Durées adaptées à un produit annuel unique (99 CHF/an) : "3/6/12 mois"
+// n'avait de sens que pour l'ancien modèle mensuel (Starter/Pro/Cabinet).
+// Avec une seule facture par an, la seule granularité qui compte est le
+// nombre d'années pendant lesquelles la remise s'applique aux
+// renouvellements, d'où 2_years/3_years plutôt que des mois.
+const ALLOWED_DISCOUNT_DURATIONS = new Set(["none", "once", "2_years", "3_years", "forever"]);
+const REPEATING_MONTHS: Record<string, number> = { "2_years": 24, "3_years": 36 };
 
 /** Identité vérifiée depuis le JWT (déjà validé par la passerelle Supabase,
  * verify_jwt=true). Ne jamais faire confiance à un id envoyé dans le body. */
@@ -65,7 +70,7 @@ export async function handleGenerateOfferRequest(req: Request, env: Env): Promis
     }
     if (!discount_duration || !ALLOWED_DISCOUNT_DURATIONS.has(discount_duration)) {
       return jsonResponse({
-        error: "discount_duration invalide (attendu : none, once, 3_months, 6_months, 12_months ou forever).",
+        error: "discount_duration invalide (attendu : none, once, 2_years, 3_years ou forever).",
       }, 400);
     }
     let discountPercent: number | null = null;
@@ -118,8 +123,9 @@ export async function handleGenerateOfferRequest(req: Request, env: Env): Promis
     }
 
     // Coupon à la volée si une remise est demandée, avec la durée choisie :
-    // 'once' (première facture seulement), '3_months'/'6_months'/'12_months'
-    // (duration=repeating), ou 'forever' (tant que l'abonnement existe).
+    // 'once' (première facture seulement), '2_years'/'3_years' (duration=
+    // repeating sur 24/36 mois, soit 2 ou 3 renouvellements annuels), ou
+    // 'forever' (tant que l'abonnement existe).
     let couponId: string | null = null;
     if (discountPercent !== null) {
       // Le champ name du coupon Stripe est limité à 40 caractères : on

@@ -131,14 +131,14 @@ describe("generate-offer — cotisation annuelle (plus de choix de plan/période
   it("remise : crée un coupon Stripe et l'applique à la session", async () => {
     const req = reqWithAuth("commercial-1", {
       demo_request_id: "lead-1",
-      discount_duration: "3_months",
+      discount_duration: "2_years",
       discount_percent: 20,
     });
     const res = await handleGenerateOfferRequest(req, ENV);
     expect(res.status).toBe(200);
     expect(couponParams?.get("percent_off")).toBe("20");
     expect(couponParams?.get("duration")).toBe("repeating");
-    expect(couponParams?.get("duration_in_months")).toBe("3");
+    expect(couponParams?.get("duration_in_months")).toBe("24");
     expect(sessionParams?.get("discounts[0][coupon]")).toBe("coupon_fake");
   });
 
