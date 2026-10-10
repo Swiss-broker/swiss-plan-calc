@@ -1,3 +1,5 @@
+import { computeCommissionCentimes } from "../_shared/commission.ts";
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
@@ -64,10 +66,20 @@ export async function handleAdminInvoicesDataRequest(req: Request, env: Env): Pr
 
     if (action === "list_all") {
       const res = await fetch(
-        `${supabaseUrl}/rest/v1/rdv_invoices?is_demo=eq.false&select=id,created_at,amount_chf,status,client_id,broker_id&order=created_at.desc`,
+        `${supabaseUrl}/rest/v1/rdv_invoices?is_demo=eq.false&select=id,created_at,amount_chf,status,client_id,broker_id,commission_centimes&order=created_at.desc`,
         { headers: svcHeaders },
       );
-      const invoices = await res.json();
+      const rows = await res.json();
+      // commission_centimes n'est figée que depuis la Phase 2 (voir
+      // stripe-rdv-invoice) : une facture plus ancienne ne l'a jamais eue.
+      // On la recalcule alors avec le barème actuel plutôt que de laisser
+      // le panel admin afficher une commission manquante ou à 0.
+      const invoices = Array.isArray(rows)
+        ? rows.map((r: any) => ({
+            ...r,
+            commission_centimes: r.commission_centimes ?? computeCommissionCentimes(r.amount_chf || 0),
+          }))
+        : rows;
       return jsonResponse({ invoices });
     }
 

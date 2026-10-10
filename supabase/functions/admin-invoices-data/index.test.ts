@@ -79,6 +79,14 @@ describe("admin-invoices-data", () => {
     expect(body.invoices.some((i: any) => i.id === "inv-3")).toBe(false);
   });
 
+  it("list_all -> commission_centimes recalculée au barème actuel quand absente (factures antérieures à la Phase 2)", async () => {
+    const res = await handleAdminInvoicesDataRequest(reqWithAuth("caller-admin", { action: "list_all" }), ENV);
+    const body = await res.json();
+    // inv-1 : 10000 centimes (100 CHF), entièrement dans la tranche 0-1000 CHF à 30%.
+    const inv1 = body.invoices.find((i: any) => i.id === "inv-1");
+    expect(inv1.commission_centimes).toBe(3000);
+  });
+
   it("sum_paid -> somme payées + non-demo, tous courtiers", async () => {
     const res = await handleAdminInvoicesDataRequest(reqWithAuth("caller-admin", { action: "sum_paid" }), ENV);
     expect(res.status).toBe(200);
