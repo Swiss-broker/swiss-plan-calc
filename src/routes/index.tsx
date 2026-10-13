@@ -104,6 +104,7 @@ function Landing() {
     <div className="min-h-screen bg-background overflow-x-hidden">
       <Header />
       <Hero />
+      <Planning />
       <Features />
       <Modules />
       <Path />
@@ -137,6 +138,16 @@ function Header() {
           <PublicLanguageSwitcher />
           <Link to="/auth"><Button variant="ghost" size="sm" className="px-2 sm:px-3">{t("landing.cta.signin")}</Button></Link>
           <Link to="/auth" search={{ mode: "signup" }}><Button size="sm" className="px-2 sm:px-3">{t("landing.cta.signup")}</Button></Link>
+          <div className="ml-1 hidden items-center gap-3 border-l border-border pl-3 sm:flex">
+            <a href={FACEBOOK_URL} target="_blank" rel="noopener noreferrer" aria-label="Facebook"
+              className="text-muted-foreground transition-colors hover:text-primary">
+              <Facebook className="h-4 w-4" />
+            </a>
+            <a href={INSTAGRAM_URL} target="_blank" rel="noopener noreferrer" aria-label="Instagram"
+              className="text-muted-foreground transition-colors hover:text-primary">
+              <Instagram className="h-4 w-4" />
+            </a>
+          </div>
         </div>
       </div>
     </motion.header>
@@ -213,6 +224,37 @@ function Hero() {
             ))}
           </div>
         </motion.div>
+      </div>
+    </section>
+  );
+}
+
+function Planning() {
+  const t = useT();
+  const cards = [
+    { icon: Clock, title: t("landing.planning.before.title"), desc: t("landing.planning.before.desc") },
+    { icon: Sparkles, title: t("landing.planning.with.title"), desc: t("landing.planning.with.desc"), highlight: true },
+    { icon: Calculator, title: t("landing.planning.alacarte.title"), desc: t("landing.planning.alacarte.desc") },
+  ];
+  return (
+    <section className="py-20 bg-background">
+      <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+        <Reveal y={45} scale={0.96} className="mx-auto max-w-2xl text-center mb-14">
+          <h2 className="text-balance text-3xl font-bold tracking-tight text-emerald-800 sm:text-4xl">{t("landing.planning.title")}</h2>
+          <p className="mt-3 text-muted-foreground">{t("landing.planning.subtitle")}</p>
+        </Reveal>
+        <div className="grid gap-5 sm:grid-cols-3">
+          {cards.map((c, i) => (
+            <Reveal key={c.title} delay={i * 0.1} y={40} scale={0.97}
+              className={`rounded-2xl border p-6 ${c.highlight ? "border-primary/30 bg-gradient-to-br from-primary/5 to-card shadow-elegant" : "border-border bg-card shadow-card"}`}>
+              <div className={`mb-4 inline-flex h-10 w-10 items-center justify-center rounded-xl ${c.highlight ? "bg-primary/15 text-primary" : "bg-muted text-muted-foreground"}`}>
+                <c.icon className="h-5 w-5" />
+              </div>
+              <h3 className="text-base font-semibold mb-2">{c.title}</h3>
+              <p className="text-sm text-muted-foreground leading-relaxed">{c.desc}</p>
+            </Reveal>
+          ))}
+        </div>
       </div>
     </section>
   );
