@@ -244,13 +244,9 @@ function Planning() {
   return (
     <section className="py-20 bg-background">
       <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
-        <Reveal y={45} scale={0.96} className="mx-auto max-w-2xl text-center mb-14">
+        <Reveal y={45} scale={0.96} className="mx-auto max-w-6xl text-center mb-14">
           <h2 className="text-balance text-3xl font-bold tracking-tight text-emerald-800 sm:text-4xl">{t("landing.planning.title")}</h2>
-          <p className="mt-3 text-muted-foreground">
-            {t("landing.planning.subtitle").split(/(?<=:)\s+/).map((line, i) => (
-              <span key={i} className="block">{line}</span>
-            ))}
-          </p>
+          <p className="mt-3 text-muted-foreground">{t("landing.planning.subtitle")}</p>
         </Reveal>
         <div className="grid gap-5 sm:grid-cols-3">
           {cards.map((c, i) => (
