@@ -1235,6 +1235,8 @@ export const fr: Record<string, string> = {
   "landing.planning.with.desc": "La même planification, de la fiscalité à la retraite, chiffrée et prête à présenter en quelques minutes de rendez-vous.",
   "landing.planning.alacarte.title": "À la carte",
   "landing.planning.alacarte.desc": "Besoin de moins ? Chaque module fonctionne aussi de façon indépendante : un calcul d'impôt, une analyse LPP ou un plan 3e pilier, sans planification complète.",
+  "landing.planning.preview.alt": "Extrait d'un dossier de synthèse généré par SwissBroker Pro, avec les chiffres clés du client",
+  "landing.planning.preview.caption": "Extrait d'un vrai dossier généré par l'outil (données de test, non réelles).",
   "landing.features.title": "Une suite d'outils conçus pour aller de l'analyse au rendez-vous sans multiplier les fichiers, calculateurs et onglets",
   "landing.features.subtitle": "Une seule interface pour passer de l'analyse à une recommandation claire, chiffrée et prête à présenter.",
   "landing.features.stat.modules": "Modules de calcul",

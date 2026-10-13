@@ -16,6 +16,8 @@ import { LEGAL_PAGES } from "@/lib/legal/pages";
 // Logo réel du cabinet, remplace l'icône "S" et le texte générés en CSS.
 import logoIcon from "@/assets/logo-icon.png";
 import logoFull from "@/assets/logo-full.png";
+// Capture d'un vrai rapport généré par l'outil (dossier de test, données fictives).
+import reportPreview from "@/assets/report-preview.png";
 
 const CALCOM_URL = "https://cal.com/swissbroker/30min";
 const FACEBOOK_URL = "https://www.facebook.com/share/1Je4dVGvxo/?mibextid=wwXIfr";
@@ -259,6 +261,18 @@ function Planning() {
             </Reveal>
           ))}
         </div>
+
+        <Reveal y={40} scale={0.97} delay={0.2} className="mx-auto mt-10 max-w-3xl">
+          <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-elegant">
+            <div className="flex items-center gap-1.5 border-b border-border bg-muted/60 px-4 py-2.5">
+              <span className="h-2.5 w-2.5 rounded-full bg-rose-400/70" />
+              <span className="h-2.5 w-2.5 rounded-full bg-amber-400/70" />
+              <span className="h-2.5 w-2.5 rounded-full bg-emerald-400/70" />
+            </div>
+            <img src={reportPreview} alt={t("landing.planning.preview.alt")} className="w-full" loading="lazy" />
+          </div>
+          <p className="mt-3 text-center text-xs text-muted-foreground">{t("landing.planning.preview.caption")}</p>
+        </Reveal>
       </div>
     </section>
   );
