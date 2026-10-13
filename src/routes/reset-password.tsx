@@ -9,6 +9,7 @@ import { Loader2, Eye, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { isAuthWeakPasswordError } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/reset-password")({
@@ -54,10 +55,17 @@ function ResetPasswordPage() {
     const { error } = await supabase.auth.updateUser({ password: values.password });
     if (error) {
       setLoading(false);
-      // On affiche le vrai message d'erreur de Supabase le temps de diagnostiquer,
-      // au lieu du message générique qui cachait la cause exacte.
       console.error("Erreur updateUser:", error);
-      toast.error(error.message || "Erreur lors de la mise à jour du mot de passe.");
+      if (isAuthWeakPasswordError(error) && error.reasons.includes("pwned")) {
+        // Protection Supabase contre les mots de passe compromis (base
+        // HaveIBeenPwned) : sans ce cas, l'utilisateur voit le message
+        // brut de Supabase, en anglais, sans comprendre pourquoi.
+        toast.error("Ce mot de passe a été repéré dans une fuite de données connue sur Internet. Pour votre sécurité, choisissez-en un autre.");
+      } else {
+        // On affiche le vrai message d'erreur de Supabase le temps de diagnostiquer,
+        // au lieu du message générique qui cachait la cause exacte.
+        toast.error(error.message || "Erreur lors de la mise à jour du mot de passe.");
+      }
       return;
     }
     await supabase.auth.signOut();

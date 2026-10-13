@@ -1317,6 +1317,7 @@ export const de: Record<string, string> = {
   "auth.error.password_mismatch": "Passwörter stimmen nicht überein",
   "auth.error.password_required": "Passwort erforderlich",
   "auth.error.account_exists": "Mit dieser E-Mail existiert bereits ein Konto.",
+  "auth.error.password_pwned": "Dieses Passwort wurde in einem bekannten Datenleck im Internet gefunden. Wählen Sie zu Ihrer Sicherheit ein anderes.",
   "auth.error.bad_credentials": "E-Mail oder Passwort falsch.",
   "auth.success.signup": "Konto erstellt. Prüfen Sie Ihr Postfach zur Bestätigung Ihrer Adresse.",
   "auth.signup.submit": "Konto erstellen",

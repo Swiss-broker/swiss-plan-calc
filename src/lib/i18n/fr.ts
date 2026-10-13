@@ -1385,6 +1385,7 @@ export const fr: Record<string, string> = {
   "auth.error.password_mismatch": "Les mots de passe ne correspondent pas",
   "auth.error.password_required": "Mot de passe requis",
   "auth.error.account_exists": "Un compte existe déjà avec cet email.",
+  "auth.error.password_pwned": "Ce mot de passe a été repéré dans une fuite de données connue sur Internet. Pour votre sécurité, choisissez-en un autre.",
   "auth.error.bad_credentials": "Email ou mot de passe incorrect.",
   "auth.success.signup": "Compte créé. Vérifiez votre boîte mail pour confirmer votre adresse.",
   "auth.signup.submit": "Créer mon compte",

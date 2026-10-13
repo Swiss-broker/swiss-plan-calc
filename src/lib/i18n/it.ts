@@ -1313,6 +1313,7 @@ export const it: Record<string, string> = {
   "auth.error.password_mismatch": "Le password non corrispondono",
   "auth.error.password_required": "Password richiesta",
   "auth.error.account_exists": "Esiste già un account con questa email.",
+  "auth.error.password_pwned": "Questa password è stata individuata in una fuga di dati nota su Internet. Per la vostra sicurezza, sceglietene un'altra.",
   "auth.error.bad_credentials": "Email o password errati.",
   "auth.success.signup": "Account creato. Verifica la tua casella email per confermare l'indirizzo.",
   "auth.signup.submit": "Crea il mio account",

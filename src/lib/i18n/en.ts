@@ -1313,6 +1313,7 @@ export const en: Record<string, string> = {
   "auth.error.password_mismatch": "Passwords do not match",
   "auth.error.password_required": "Password required",
   "auth.error.account_exists": "An account already exists with this email.",
+  "auth.error.password_pwned": "This password has been found in a known data breach on the internet. For your security, please choose a different one.",
   "auth.error.bad_credentials": "Wrong email or password.",
   "auth.success.signup": "Account created. Check your inbox to confirm your address.",
   "auth.signup.submit": "Create my account",

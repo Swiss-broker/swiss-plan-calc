@@ -8,6 +8,7 @@ import { ArrowLeft, Loader2, Eye, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { isAuthWeakPasswordError } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useT } from "@/contexts/LanguageContext";
@@ -273,6 +274,11 @@ function SignupForm({
     if (error) {
       if (error.message.toLowerCase().includes("already")) {
         toast.error(t("auth.error.account_exists"));
+      } else if (isAuthWeakPasswordError(error) && error.reasons.includes("pwned")) {
+        // Protection Supabase contre les mots de passe compromis (base
+        // HaveIBeenPwned) : sans ce cas, l'utilisateur voit le message
+        // brut de Supabase, en anglais, sans comprendre pourquoi.
+        toast.error(t("auth.error.password_pwned"));
       } else {
         toast.error(error.message);
       }
