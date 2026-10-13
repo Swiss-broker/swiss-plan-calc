@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import {
   ArrowRight, CheckCircle2, Building2, Globe2,
   Clock, Shield, Sparkles, TrendingUp, Calculator, Lock, ChevronDown,
-  Facebook, Instagram, Linkedin,
+  Facebook, Instagram, Linkedin, BadgeCheck, Mail,
 } from "lucide-react";
 import { useT } from "@/contexts/LanguageContext";
 import { PublicLanguageSwitcher } from "@/components/common/PublicLanguageSwitcher";
@@ -20,6 +20,7 @@ import logoFull from "@/assets/logo-full.png";
 const CALCOM_URL = "https://cal.com/swissbroker/30min";
 const FACEBOOK_URL = "https://www.facebook.com/share/1Je4dVGvxo/?mibextid=wwXIfr";
 const INSTAGRAM_URL = "https://www.instagram.com/swissbrokerpro?xtok=cmhka25lcGRxZ3Ro&utm_source=qr";
+const CONTACT_EMAIL = "contact@swissbrokerpro.ch";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -193,7 +194,7 @@ function Hero() {
             className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
             <Link to="/auth" search={{ mode: "signup" }}>
               <Button size="lg" className="h-12 px-8 bg-emerald-400 text-emerald-950 hover:bg-emerald-300 shadow-lg shadow-emerald-400/25 group">
-                S'inscrire (99 CHF/an)<ArrowRight className="ml-1 h-4 w-4 transition-transform group-hover:translate-x-1" />
+                {t("landing.path.direct.cta")}<ArrowRight className="ml-1 h-4 w-4 transition-transform group-hover:translate-x-1" />
               </Button>
             </Link>
             <a href={CALCOM_URL} target="_blank" rel="noopener noreferrer">
@@ -202,13 +203,16 @@ function Hero() {
           </motion.div>
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.6, delay: 0.7 }}
             className="mt-8 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs text-white/60">
-            <span className="inline-flex items-center gap-1.5"><CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" />Barèmes officiels AFC 2026</span>
+            <span className="inline-flex items-center gap-1.5"><CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" />{t("landing.hero.officialScales")}</span>
           </motion.div>
         </div>
 
         {/* Potentiel de revenu intégré dans le hero */}
         <motion.div initial={{ opacity: 0, y: 40 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, delay: 0.8 }}
           className="mx-auto mt-16 max-w-6xl">
+          <p className="mb-4 text-center text-xs font-semibold uppercase tracking-wider text-white/50">
+            {t("landing.commissions.intro")}
+          </p>
           <div className="grid gap-4" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))" }}>
             {commissionItems.map((it, i) => (
               <motion.div key={it.label} initial={{ opacity: 0, y: 10 }} animate={inView ? { opacity: 1, y: 0 } : {}}
@@ -263,10 +267,10 @@ function Planning() {
 function Features() {
   const t = useT();
   const stats = [
-    { value: 12, label: "Modules de calcul" },
-    { value: 9, label: "Cantons couverts" },
-    { value: 2026, label: "Barèmes officiels" },
-    { value: 20, label: "Minutes par RDV" },
+    { value: 12, label: t("landing.features.stat.modules") },
+    { value: 9, label: t("landing.features.stat.cantons") },
+    { value: 2026, label: t("landing.features.stat.scales") },
+    { value: 20, label: t("landing.features.stat.minutes") },
   ];
   const items = [
     { icon: Clock, title: t("landing.feature.exact.title"), desc: t("landing.feature.exact.desc"), gradient: "from-emerald-500/20 to-teal-500/20", accent: "#059669" },
@@ -488,6 +492,7 @@ function Path() {
     { icon: Lock, title: t("landing.trust.isolation.title"), desc: t("landing.trust.isolation.desc") },
     { icon: Shield, title: t("landing.trust.encryption.title"), desc: t("landing.trust.encryption.desc") },
     { icon: CheckCircle2, title: t("landing.trust.noCommitment.title"), desc: t("landing.trust.noCommitment.desc") },
+    { icon: BadgeCheck, title: t("landing.trust.guarantee.title"), desc: t("landing.trust.guarantee.desc") },
   ];
   return (
     <section className="py-20 bg-background">
@@ -517,7 +522,7 @@ function Path() {
           />
         </div>
 
-        <div className="mt-14 grid gap-4 sm:grid-cols-3">
+        <div className="mt-14 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {trust.map((tr, i) => (
             <Reveal key={tr.title} delay={i * 0.08} y={30}
               className="flex items-start gap-3 rounded-2xl border border-border bg-muted p-5">
@@ -560,11 +565,13 @@ function FAQ() {
     { q: t("landing.faq.q1.title"), a: t("landing.faq.q1.answer") },
     { q: t("landing.faq.q2.title"), a: t("landing.faq.q2.answer") },
     { q: t("landing.faq.q3.title"), a: t("landing.faq.q3.answer") },
+    { q: t("landing.faq.q10.title"), a: t("landing.faq.q10.answer") },
     { q: t("landing.faq.q4.title"), a: t("landing.faq.q4.answer") },
     { q: t("landing.faq.q5.title"), a: t("landing.faq.q5.answer") },
     { q: t("landing.faq.q7.title"), a: t("landing.faq.q7.answer") },
     { q: t("landing.faq.q8.title"), a: t("landing.faq.q8.answer") },
     { q: t("landing.faq.q9.title"), a: t("landing.faq.q9.answer") },
+    { q: t("landing.faq.q11.title"), a: t("landing.faq.q11.answer") },
   ];
   return (
     <section className="py-20 bg-muted/40">
@@ -602,7 +609,7 @@ function CTASection() {
               <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.97 }}>
                 <Link to="/auth" search={{ mode: "signup" }}>
                   <Button size="lg" className="h-12 px-8 bg-white text-emerald-900 hover:bg-white/90 shadow-lg">
-                    S'inscrire (99 CHF/an)<ArrowRight className="ml-1 h-4 w-4" />
+                    {t("landing.path.direct.cta")}<ArrowRight className="ml-1 h-4 w-4" />
                   </Button>
                 </Link>
               </motion.div>
@@ -633,6 +640,9 @@ function Footer() {
           </div>
           <div className="flex items-center gap-2 text-sm text-muted-foreground"><Building2 className="h-4 w-4" />{t("landing.footer.brand")}</div>
           <div className="flex items-center gap-2 text-xs text-muted-foreground"><Globe2 className="h-3.5 w-3.5" />{t("landing.footer.scope")}</div>
+          <a href={`mailto:${CONTACT_EMAIL}`} className="flex items-center gap-2 text-xs text-muted-foreground transition-colors hover:text-primary">
+            <Mail className="h-3.5 w-3.5" />{t("landing.footer.contact")} {CONTACT_EMAIL}
+          </a>
           <div className="mt-2 flex items-center gap-3">
             <a href={FACEBOOK_URL} target="_blank" rel="noopener noreferrer" aria-label="Facebook"
               className="flex h-9 w-9 items-center justify-center rounded-full border border-border text-muted-foreground transition-colors hover:border-primary/30 hover:text-primary">
@@ -650,7 +660,7 @@ function Footer() {
         </div>
 
         <div>
-          <p className="text-xs font-semibold uppercase tracking-wide text-foreground">Légal</p>
+          <p className="text-xs font-semibold uppercase tracking-wide text-foreground">{t("landing.footer.legal")}</p>
           <div className="mt-3 grid grid-cols-2 gap-x-6 gap-y-2">
             {[LEGAL_PAGES.slice(0, 4), LEGAL_PAGES.slice(4)].map((column, i) => (
               <ul key={i} className="space-y-2">

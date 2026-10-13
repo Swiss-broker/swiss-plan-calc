@@ -98,6 +98,10 @@ const blocks: LegalBlock[] = [
     type: "p",
     text: "La résiliation n'entraîne pas le remboursement des périodes déjà commencées ou payées, sauf disposition légale impérative contraire ou décision commerciale contraire de Piliarys Sàrl.",
   },
+  {
+    type: "p",
+    text: "Par dérogation à ce qui précède, Piliarys Sàrl accorde une garantie de remboursement de 14 jours à compter de la date de la première souscription d'un nouvel utilisateur : si celui-ci n'est pas satisfait, il peut demander le remboursement intégral de ce premier paiement, sans justification, en écrivant à contact@swissbrokerpro.ch dans ce délai. Cette garantie ne s'applique qu'à la première souscription et ne se renouvelle pas aux périodes de facturation suivantes.",
+  },
 
   { type: "h2", text: "11. Défaut de paiement" },
   {
