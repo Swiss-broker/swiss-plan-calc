@@ -39,7 +39,13 @@ async function sendBrevoEmail(
     method: "POST",
     headers: { "api-key": brevoKey, "Content-Type": "application/json" },
     body: JSON.stringify({
-      sender: { name: "SwissBroker Pro", email: "noreply@swissbrokerpro.ch" },
+      // Volontairement PAS "noreply@..." : ces e-mails sont envoyés à un
+      // lead dans le but explicite d'échanger avec lui. Une adresse visible
+      // "no-reply" dissuade de répondre, même avec un reply-to technique en
+      // coulisses — contact@swissbrokerpro.ch est une boîte partagée
+      // réellement suivie, pas une adresse personnelle d'un membre de
+      // l'équipe (restée privée).
+      sender: { name: "SwissBroker Pro", email: "contact@swissbrokerpro.ch" },
       to: [{ email: to }],
       subject,
       htmlContent,

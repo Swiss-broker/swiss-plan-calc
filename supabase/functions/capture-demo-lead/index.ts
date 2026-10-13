@@ -194,21 +194,31 @@ export async function handleCaptureDemoLeadRequest(req: Request, env: Env): Prom
     // notification ci-dessous ne doit plus faire échouer la réponse, sinon
     // un retry Cal.com réinsérerait le même lead une seconde fois.
     try {
+      // settings.alert_email permet à chaque admin de recevoir cette
+      // notification EN PLUS sur une adresse personnelle (plus susceptible
+      // d'être vue vite, ex. sur mobile) : les deux adresses reçoivent
+      // l'alerte, l'une ne remplace pas l'autre.
       const adminsRes = await fetch(
-        `${supabaseUrl}/rest/v1/admin_users?role=eq.admin&select=email`,
+        `${supabaseUrl}/rest/v1/admin_users?role=eq.admin&select=email,settings`,
         { headers: { apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}` } },
       );
-      const admins: { email: string }[] = adminsRes.ok ? await adminsRes.json() : [];
+      const admins: { email: string; settings?: { alert_email?: string } }[] =
+        adminsRes.ok ? await adminsRes.json() : [];
 
       const dateLabel = demoDate
         ? new Date(demoDate).toLocaleString("fr-CH", { dateStyle: "long", timeStyle: "short" })
         : null;
 
+      const recipientEmails = new Set<string>();
       for (const admin of admins) {
-        if (!admin.email) continue;
+        if (admin.email) recipientEmails.add(admin.email);
+        if (admin.settings?.alert_email) recipientEmails.add(admin.settings.alert_email);
+      }
+
+      for (const alertEmail of recipientEmails) {
         await sendBrevoEmail(
           brevoKey,
-          admin.email,
+          alertEmail,
           "Nouvelle demande de démo",
           `<div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; color:#1f2937; line-height:1.5;">
             <h2 style="color:#0f766e; margin:0 0 12px;">Nouvelle demande de démo</h2>
