@@ -160,8 +160,8 @@ function Hero() {
   const ref = useRef(null);
   const inView = useInView(ref, { once: true });
   const commissionItems = [
-    { num: t("landing.commissions.item1.num"), label: t("landing.commissions.item1.label"), desc: t("landing.commissions.item1.desc") },
-    { num: t("landing.commissions.item2.num"), label: t("landing.commissions.item2.label"), desc: t("landing.commissions.item2.desc") },
+    { num: t("landing.commissions.item1.num"), label: t("landing.commissions.item1.label"), desc: t("landing.commissions.item1.desc"), footnote: true },
+    { num: t("landing.commissions.item2.num"), label: t("landing.commissions.item2.label"), desc: t("landing.commissions.item2.desc"), footnote: true },
     { num: t("landing.commissions.item3.num"), label: t("landing.commissions.item3.label"), desc: t("landing.commissions.item3.desc") },
     { num: t("landing.commissions.item4.num"), label: t("landing.commissions.item4.label"), desc: t("landing.commissions.item4.desc") },
   ];
@@ -222,11 +222,12 @@ function Hero() {
                 <div className="relative z-[1] whitespace-nowrap text-lg font-extrabold tracking-tight text-emerald-300 tabular-nums sm:text-xl">
                   <AnimRangeText text={it.num} inView={inView} />
                 </div>
-                <p className="relative z-[1] mt-2 text-sm font-bold text-white">{it.label}</p>
+                <p className="relative z-[1] mt-2 text-sm font-bold text-white">{it.label}{it.footnote && "*"}</p>
                 <p className="relative z-[1] mt-1 text-sm text-white/60 leading-relaxed">{it.desc}</p>
               </motion.div>
             ))}
           </div>
+          <p className="mt-4 text-center text-[11px] text-white/40">{t("landing.commissions.footnote")}</p>
         </motion.div>
       </div>
     </section>
@@ -245,7 +246,11 @@ function Planning() {
       <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
         <Reveal y={45} scale={0.96} className="mx-auto max-w-2xl text-center mb-14">
           <h2 className="text-balance text-3xl font-bold tracking-tight text-emerald-800 sm:text-4xl">{t("landing.planning.title")}</h2>
-          <p className="mt-3 text-muted-foreground">{t("landing.planning.subtitle")}</p>
+          <p className="mt-3 text-muted-foreground">
+            {t("landing.planning.subtitle").split(/(?<=:)\s+/).map((line, i) => (
+              <span key={i} className="block">{line}</span>
+            ))}
+          </p>
         </Reveal>
         <div className="grid gap-5 sm:grid-cols-3">
           {cards.map((c, i) => (
