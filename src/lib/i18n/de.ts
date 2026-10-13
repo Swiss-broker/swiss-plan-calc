@@ -1167,8 +1167,6 @@ export const de: Record<string, string> = {
   "landing.planning.with.desc": "Dieselbe Planung, von den Steuern bis zur Pensionierung, berechnet und präsentationsbereit innerhalb wenigen Minuten Ihres Termins.",
   "landing.planning.alacarte.title": "À la carte",
   "landing.planning.alacarte.desc": "Brauchen Sie weniger? Jedes Modul funktioniert auch eigenständig: eine Steuerberechnung, eine BVG-Analyse oder ein Plan für die 3. Säule, ohne vollständige Finanzplanung.",
-  "landing.planning.preview.alt": "Ausschnitt aus einem von SwissBroker Pro erstellten Synthesedossier mit den wichtigsten Kennzahlen des Kunden",
-  "landing.planning.preview.caption": "Ausschnitt aus einem echten, vom Tool erstellten Dossier (Testdaten, kein echter Kunde).",
   "landing.features.title": "Eine Toolsuite, die Sie von der Analyse bis zum Termin führt, ohne Dateien, Rechner und Tabs zu jonglieren",
   "landing.features.subtitle": "Eine einzige Oberfläche, um von der Analyse zu einer klaren, bezifferten und präsentationsbereiten Empfehlung zu gelangen.",
   "landing.features.stat.modules": "Berechnungsmodule",
