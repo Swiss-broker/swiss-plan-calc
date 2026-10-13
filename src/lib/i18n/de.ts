@@ -1182,7 +1182,7 @@ export const de: Record<string, string> = {
   "landing.feature.priv.title": "Private Dossiers",
   "landing.feature.priv.desc": "Jeder Broker hat seinen privaten Bereich. Verschlüsselte Daten, kein Teilen, konform mit Schweizer Praxis.",
   "landing.commissions.intro": "Ihr Verdienstpotenzial als Makler",
-  "landing.commissions.footnote": "* Indikative Marktzahlen, nicht von SwissBroker Pro garantiert. Details bei Ihrem Kennenlerngespräch.",
+  "landing.commissions.footnote": "* Details bei Ihrem Kennenlerngespräch oder per E-Mail bei Ihrer Anmeldung.",
   "landing.commissions.item1.num": "40 ‰ bis 50 ‰",
   "landing.commissions.item1.label": "An Provision",
   "landing.commissions.item1.desc": "Produktion 3. Säule A und B, ohne Neubewertung.",

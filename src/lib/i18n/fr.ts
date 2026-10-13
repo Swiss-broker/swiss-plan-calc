@@ -1250,7 +1250,7 @@ export const fr: Record<string, string> = {
   "landing.feature.priv.title": "Vos dossiers, vos données",
   "landing.feature.priv.desc": "Espace privé par courtier. Aucun partage, aucune fuite. Conforme aux pratiques suisses.",
   "landing.commissions.intro": "Le potentiel de revenu du métier de courtier",
-  "landing.commissions.footnote": "* Chiffres de marché indicatifs, non garantis par SwissBroker Pro. Détails évoqués lors de votre appel découverte.",
+  "landing.commissions.footnote": "* Détails évoqués lors de votre appel découverte, ou par e-mail lors de votre inscription.",
   "landing.commissions.item1.num": "40 ‰ à 50 ‰",
   "landing.commissions.item1.label": "De commission",
   "landing.commissions.item1.desc": "Production 3e pilier A et B, sans revalorisation.",

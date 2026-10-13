@@ -1178,7 +1178,7 @@ export const en: Record<string, string> = {
   "landing.feature.priv.title": "Private files",
   "landing.feature.priv.desc": "Each broker has their private workspace. Encrypted data, no sharing, compliant with Swiss practices.",
   "landing.commissions.intro": "Your earning potential as a broker",
-  "landing.commissions.footnote": "* Indicative market figures, not guaranteed by SwissBroker Pro. Details covered during your discovery call.",
+  "landing.commissions.footnote": "* Details covered during your discovery call, or by email when you sign up.",
   "landing.commissions.item1.num": "40 ‰ to 50 ‰",
   "landing.commissions.item1.label": "In commission",
   "landing.commissions.item1.desc": "3rd pillar A and B production, no revaluation.",
