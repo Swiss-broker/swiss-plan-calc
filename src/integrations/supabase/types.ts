@@ -10,7 +10,7 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.5"
+    PostgrestVersion: "14.15"
   }
   public: {
     Tables: {
@@ -1555,6 +1555,9 @@ export type Database = {
       }
       profiles: {
         Row: {
+          advantages_call_done: boolean
+          advantages_email_last_sent_at: string | null
+          advantages_reminder_last_shown_at: string | null
           brokerage_name: string | null
           cabinet_role: string | null
           cabinet_root_id: string | null
@@ -1579,6 +1582,9 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          advantages_call_done?: boolean
+          advantages_email_last_sent_at?: string | null
+          advantages_reminder_last_shown_at?: string | null
           brokerage_name?: string | null
           cabinet_role?: string | null
           cabinet_root_id?: string | null
@@ -1603,6 +1609,9 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          advantages_call_done?: boolean
+          advantages_email_last_sent_at?: string | null
+          advantages_reminder_last_shown_at?: string | null
           brokerage_name?: string | null
           cabinet_role?: string | null
           cabinet_root_id?: string | null
@@ -2204,6 +2213,7 @@ export type Database = {
       run_appointment_followup_reminders: { Args: never; Returns: undefined }
       run_check_stuck_rdv_payments: { Args: never; Returns: undefined }
       run_document_request_reminders: { Args: never; Returns: undefined }
+      run_send_advantages_reminder_emails: { Args: never; Returns: undefined }
       text_to_bytea: { Args: { data: string }; Returns: string }
       urlencode:
         | { Args: { data: Json }; Returns: string }

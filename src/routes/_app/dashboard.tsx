@@ -28,6 +28,7 @@ import { useT, useLanguage } from "@/contexts/LanguageContext";
 import { formatDateShort } from "@/lib/i18n/format";
 import { t as translate } from "@/lib/i18n";
 import { KIND_LABELS } from "@/lib/history/types";
+import { AdvantagesReminderBanner } from "@/components/billing/AdvantagesReminderBanner";
 export const Route = createFileRoute("/_app/dashboard")({
   head: () => ({ meta: [{ title: translate("dash.head.title") }] }),
   component: Dashboard,
@@ -115,6 +116,7 @@ function Dashboard() {
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+      <AdvantagesReminderBanner />
       {/* HERO */}
       <div className="relative overflow-hidden rounded-3xl border border-border bg-gradient-to-br from-primary/10 via-card to-card p-6 sm:p-8 shadow-card">
         <div className="absolute -top-10 -right-10 h-48 w-48 rounded-full bg-primary/10 blur-3xl" />

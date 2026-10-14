@@ -3,6 +3,7 @@ import { FeedbackWidget } from "@/components/feedback/FeedbackWidget";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { AiChat } from "@/components/ai/AiChat";
 import { CompleteProfileModal } from "@/components/CompleteProfileModal";
+import { AdvantagesModal } from "@/components/billing/AdvantagesModal";
 import { createFileRoute, Link, Outlet, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import {
@@ -81,6 +82,7 @@ function AppShell() {
           <Outlet />
           <AiChat />
           <CompleteProfileModal />
+          <AdvantagesModal />
         </main>
         <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50">
           <FeedbackWidget />

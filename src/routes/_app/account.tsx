@@ -1,8 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { Loader2, User, Building2, CreditCard, FileText, Mail } from "lucide-react";
+import { Loader2, User, Building2, CreditCard, FileText, Mail, Gift } from "lucide-react";
 import { EmailTemplatesSection } from "@/components/account/EmailTemplatesSection";
+import { AdvantagesContent, CALCOM_ADVANTAGES_URL } from "@/components/billing/AdvantagesContent";
+import { useAdvantagesStatus } from "@/hooks/useAdvantagesStatus";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -12,8 +15,15 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useT } from "@/contexts/LanguageContext";
 import { getSelectableCantons, isSelectableCanton, CANTON_BY_CODE } from "@/lib/swiss/cantons";
 import { tCanton, t as translate } from "@/lib/i18n";
+import { zodValidator, fallback } from "@tanstack/zod-adapter";
+import { z } from "zod";
+
+const searchSchema = z.object({
+  tab: fallback(z.string().optional(), undefined),
+});
 
 export const Route = createFileRoute("/_app/account")({
+  validateSearch: zodValidator(searchSchema),
   head: () => ({ meta: [{ title: translate("account.head.title") }] }),
   component: AccountPage,
 });
@@ -22,6 +32,7 @@ const TABS = [
   { id: "profil", label: "Profil", icon: User },
   { id: "cabinet", label: "Mon cabinet", icon: Building2 },
   { id: "abonnement", label: "Abonnement", icon: CreditCard },
+  { id: "avantages", label: "Avantages", icon: Gift },
   { id: "paiements", label: "Mes paiements", icon: CreditCard },
   { id: "pdf", label: "Rapports PDF", icon: FileText },
   { id: "emails", label: "Modèles d'e-mails", icon: Mail },
@@ -78,10 +89,16 @@ const PLAN_CONFIG: Record<string, { label: string; color: string; features: stri
   },
 };
 
+const TAB_IDS = TABS.map((tab) => tab.id) as readonly string[];
+function isTabId(v: string | undefined): v is TabId {
+  return !!v && TAB_IDS.includes(v);
+}
+
 function AccountPage() {
   const t = useT();
   const { user } = useAuth();
-  const [activeTab, setActiveTab] = useState<TabId>("profil");
+  const { tab: tabFromUrl } = Route.useSearch();
+  const [activeTab, setActiveTab] = useState<TabId>(isTabId(tabFromUrl) ? tabFromUrl : "profil");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [plan, setPlan] = useState<string>("trial");
@@ -415,6 +432,9 @@ function AccountPage() {
         </div>
       )}
 
+      {/* Contenu onglet Avantages */}
+      {activeTab === "avantages" && <AdvantagesTabContent />}
+
       {/* Contenu onglet Mes paiements */}
       {activeTab === "paiements" && (
         <div className="mt-6 space-y-5">
@@ -533,6 +553,29 @@ function AccountPage() {
         <div className="mt-6">
           <EmailTemplatesSection />
         </div>
+      )}
+    </div>
+  );
+}
+
+function AdvantagesTabContent() {
+  const { callDone, isLoading, setCallDone } = useAdvantagesStatus();
+
+  return (
+    <div className="mt-6 rounded-2xl border border-border bg-card p-6 shadow-card space-y-5">
+      <AdvantagesContent />
+      <label className="flex items-start gap-2 rounded-md border border-border bg-muted/30 p-3 text-sm">
+        <Checkbox
+          checked={callDone ?? false}
+          disabled={isLoading}
+          onCheckedChange={(v) => void setCallDone(Boolean(v))}
+        />
+        <span>J'ai déjà eu mon rendez-vous avec l'équipe au sujet de ces avantages</span>
+      </label>
+      {!isLoading && !callDone && (
+        <a href={CALCOM_ADVANTAGES_URL} target="_blank" rel="noopener noreferrer">
+          <Button variant="outline">Réserver un appel avec l'équipe</Button>
+        </a>
       )}
     </div>
   );
