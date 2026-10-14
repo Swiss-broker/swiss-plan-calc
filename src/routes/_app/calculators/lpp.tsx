@@ -51,6 +51,8 @@ import { SplitCompareLayout, type SplitRow } from "@/components/calculators/Spli
 import { useT } from "@/contexts/LanguageContext";
 import { CrossCalcImpactBanner } from "@/components/calculators/CrossCalcImpactBanner";
 import { ClientPrefillBadge } from "@/components/calculators/ClientPrefillBadge";
+import { getCommunalMultiplier } from "@/lib/swiss/communal-multipliers";
+import { computeRegimeAwareDeduction } from "@/lib/tax/regime-aware-deduction";
 
 const searchSchema = z.object({
   clientId: fallback(z.string().uuid().optional(), undefined),
@@ -67,7 +69,7 @@ export const Route = createFileRoute("/_app/calculators/lpp")({
 function LppCalc() {
   const t = useT();
   const { clientId, caseId, simId } = Route.useSearch();
-  const { client, prefill } = usePrefillFromClient(clientId, "lpp");
+  const { client, bundle, prefill } = usePrefillFromClient(clientId, "lpp");
   const { inputs: savedInputs, isLoading: loadingSaved } = useLoadSavedSimulation(simId);
   const [form, setForm] = useState({
     currentAge: 40,
@@ -211,8 +213,12 @@ function LppCalc() {
       pillar3aContributions: form.pillar3aContributions,
       healthInsurancePremiums: form.healthInsurancePremiums || undefined,
       confession: form.confession,
+      // Multiplicateur communal réel du client lié (sinon chef-lieu par
+      // défaut) : sans lui, le taux marginal affiché ici pouvait diverger
+      // de celui de Fiscal global pour le même client.
+      communalMultiplier: client ? getCommunalMultiplier(client.canton, client.commune) : undefined,
     }),
-    [form],
+    [form, client],
   );
 
   const buybackPlan = useMemo(
@@ -225,6 +231,38 @@ function LppCalc() {
       }),
     [form.buybackCapacity, form.buybackYears, actualBuybackCapped, enrichedTaxInput],
   );
+
+  // Régime fiscal réel du client lié (résident ordinaire, imposé à la
+  // source, quasi-résident TOU, frontalier GE/accord 1983…) — voir
+  // computeRegimeAwareDeduction. simulateBuybackPlan ci-dessus calcule
+  // toujours l'économie en imposition ORDINAIRE : correct pour un résident,
+  // mais une retenue à la source n'est jamais affectée par un rachat LPP, et
+  // un frontalier sous l'accord 1983 n'a aucun droit à déduction suisse.
+  const regimeAwareBuyback = useMemo(
+    () =>
+      computeRegimeAwareDeduction({
+        bundle,
+        fallbackTaxInput: enrichedTaxInput,
+        deductionAmount: actualBuybackCapped,
+        deductionField: "lppBuyback",
+      }),
+    [bundle, enrichedTaxInput, actualBuybackCapped],
+  );
+
+  // Plan effectivement affiché : si la déduction n'est pas automatiquement
+  // acquise (régime non-résident-ordinaire), on ne montre PAS le chiffre
+  // "comme si ordinaire" tel quel — on le réduit à 0 quand il n'y a aucune
+  // économie réelle possible ("no"), ou on le laisse tel quel en l'assortissant
+  // d'une note de condition ("conditional", TOU à demander).
+  const effectiveBuybackPlan = useMemo(() => {
+    if (regimeAwareBuyback.applicable !== "no") return buybackPlan;
+    return {
+      ...buybackPlan,
+      totalTaxSavings: 0,
+      effectiveMarginalRate: 0,
+      yearly: buybackPlan.yearly.map((y) => ({ ...y, taxSavings: 0, effectiveCost: y.amount })),
+    };
+  }, [buybackPlan, regimeAwareBuyback.applicable]);
 
   // Projection sans rachat, baseline pour la comparaison "Actuel vs Projeté".
   const projectionNoBuyback = useMemo(
@@ -259,11 +297,11 @@ function LppCalc() {
       {
         label: "Économie d'impôt totale (rachats)",
         current: 0,
-        projected: buybackPlan.totalTaxSavings,
+        projected: effectiveBuybackPlan.totalTaxSavings,
         betterWhen: "higher",
       },
     ],
-    [projectionNoBuyback, projection, buybackPlan],
+    [projectionNoBuyback, projection, effectiveBuybackPlan],
   );
 
 
@@ -542,34 +580,44 @@ function LppCalc() {
         </div>
         <div className="space-y-4 md:col-span-2">
           <CalcCard title={t("calc.lpp.savings_card")}>
-            {client && client.tax_status !== "resident" && (
-              <div className="mb-3 rounded-md border border-amber-500/40 bg-amber-500/5 p-3 text-xs text-amber-900 dark:text-amber-200">
-                <strong>Estimation en imposition ordinaire.</strong> Ce client est imposé à la
-                source (ou relève d'un régime frontalier/TOU) : l'économie d'impôt ci-dessous est
-                calculée comme s'il était imposé ordinairement, mais ne se matérialise PAS
-                automatiquement sur sa retenue à la source. Elle ne devient réelle qu'après une
-                démarche de rectification ou de TOU qui fait basculer le client en imposition
-                ordinaire (voir le calculateur Fiscal Global pour le barème avant/après
-                rectification applicable à sa situation).
+            {regimeAwareBuyback.applicable !== "yes" && regimeAwareBuyback.note && (
+              <div
+                className={`mb-3 rounded-md border p-3 text-xs ${
+                  regimeAwareBuyback.applicable === "conditional"
+                    ? "border-amber-500/40 bg-amber-500/5 text-amber-900 dark:text-amber-200"
+                    : "border-destructive/40 bg-destructive/5 text-destructive"
+                }`}
+              >
+                <strong>{regimeAwareBuyback.regimeLabel}.</strong> {regimeAwareBuyback.note}
               </div>
             )}
             <Row>
-              <MoneyTile label={t("calc.lpp.total_savings")} value={buybackPlan.totalTaxSavings} tone="success" big tip={t("calc.lpp.tip.total_savings")} />
-              <MoneyTile label={t("calc.lpp.yearly_amount")} value={buybackPlan.yearlyAmount} tip={t("calc.lpp.tip.yearly_amount")} />
+              <MoneyTile
+                label={t("calc.lpp.total_savings")}
+                value={effectiveBuybackPlan.totalTaxSavings}
+                tone="success"
+                big
+                tip={t("calc.lpp.tip.total_savings")}
+              />
+              <MoneyTile
+                label={t("calc.lpp.yearly_amount")}
+                value={effectiveBuybackPlan.yearlyAmount}
+                tip={t("calc.lpp.tip.yearly_amount")}
+              />
             </Row>
             <p className="mt-2 text-xs text-muted-foreground">
-              {t("calc.lpp.avg_return", { pct: buybackPlan.averageReturn })}
+              {t("calc.lpp.avg_return", { pct: effectiveBuybackPlan.averageReturn })}
             </p>
             <div className="mt-2 rounded-md border border-primary/30 bg-primary/5 p-2 text-[11px] leading-relaxed text-foreground/90">
               {t("calc.lpp.marginal_effective", {
-                rate: buybackPlan.effectiveMarginalRate,
+                rate: effectiveBuybackPlan.effectiveMarginalRate,
                 status: t(`calc.status.${form.status}`),
                 canton: tCanton(form.canton),
-                income: formatCHF(buybackPlan.baselineTaxableIncome),
+                income: formatCHF(effectiveBuybackPlan.baselineTaxableIncome),
               })}
             </div>
             <div className="mt-4 space-y-2 text-sm">
-              {buybackPlan.yearly.map((y) => (
+              {effectiveBuybackPlan.yearly.map((y) => (
                 <div key={y.year} className="flex items-center justify-between border-t border-border/50 pt-2 first:border-t-0 first:pt-0">
                   <span className="text-muted-foreground">{t("calc.lpp.year_label", { n: y.year })}</span>
                   <div className="flex gap-3 text-right">
@@ -583,7 +631,7 @@ function LppCalc() {
             </div>
 
             <BuybackPlanExplanation
-              plan={buybackPlan}
+              plan={effectiveBuybackPlan}
               taxInput={enrichedTaxInput}
               form={form}
               actualBuybackCapped={actualBuybackCapped}
@@ -632,7 +680,7 @@ function LppCalc() {
           retirementGain: projection.projectedBalance - projectionNoBuyback.projectedBalance,
           retirementGainLabel: "Capital LPP en plus à la retraite",
           annualSaving:
-            buybackPlan.totalTaxSavings / Math.max(1, form.buybackYears),
+            effectiveBuybackPlan.totalTaxSavings / Math.max(1, form.buybackYears),
           deltaPercent:
             projectionNoBuyback.projectedBalance > 0
               ? (projection.projectedBalance - projectionNoBuyback.projectedBalance) /
@@ -657,7 +705,7 @@ function LppCalc() {
             monthlyPension: projection.monthlyPension,
             totalFees: projection.totalFees,
             totalBuybacks: projection.totalBuybacks,
-            totalTaxSavings: buybackPlan.totalTaxSavings,
+            totalTaxSavings: effectiveBuybackPlan.totalTaxSavings,
             // Rentes du certificat LPP saisies à la main (chiffre officiel de
             // la caisse) : source prioritaire pour « Prestations consolidées »
             // et le PDF de synthèse, avant toute estimation recalculée.

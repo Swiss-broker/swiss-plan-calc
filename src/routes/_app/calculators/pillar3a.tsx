@@ -2,7 +2,8 @@ import { createFileRoute } from "@tanstack/react-router";
 import { Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ClientPrefillBadge } from "@/components/calculators/ClientPrefillBadge";
-import { useMemo, useRef, useState, useEffect } from "react";import {
+import { useMemo, useRef, useState, useEffect } from "react";
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -15,10 +16,10 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { getSelectableCantons } from "@/lib/swiss/cantons";
 import {
   pillar3aMaxContribution,
-  pillar3aTaxSavings,
   projectPillar3a,
   staggeredWithdrawal,
 } from "@/lib/pillar3";
+import { computeRegimeAwareDeduction } from "@/lib/tax/regime-aware-deduction";
 import { CalcCard, MoneyTile, Row } from "@/components/calculators/CalcUI";
 import { formatCHF } from "@/lib/format";
 import type { IncomeTaxInput } from "@/lib/tax/income";
@@ -36,6 +37,7 @@ import { FiscalSnapshotBanner } from "@/components/calculators/FiscalSnapshotBan
 import { SplitCompareLayout, type SplitRow } from "@/components/calculators/SplitCompareLayout";
 import { useT } from "@/contexts/LanguageContext";
 import { CrossCalcImpactBanner } from "@/components/calculators/CrossCalcImpactBanner";
+import { getCommunalMultiplier } from "@/lib/swiss/communal-multipliers";
 
 // Rente de vieillesse estimée du 3e pilier = capital final ÷ 25 ans
 // (hypothèse d'espérance de vie retenue après l'âge de la retraite) ÷ 12
@@ -59,7 +61,7 @@ export const Route = createFileRoute("/_app/calculators/pillar3a")({
 function Pillar3aCalc() {
   const t = useT();
   const { clientId, caseId, simId } = Route.useSearch();
-  const { client, prefill } = usePrefillFromClient(clientId, "pillar3a");
+  const { client, bundle, prefill } = usePrefillFromClient(clientId, "pillar3a");
   const { inputs: savedInputs, isLoading: loadingSaved } = useLoadSavedSimulation(simId);
   const [form, setForm] = useState({
     hasLPP: true,
@@ -112,23 +114,38 @@ function Pillar3aCalc() {
     netSelfEmploymentIncome: form.netSelfEmploymentIncome,
   });
 
-  const savings = useMemo(
-    () =>
-      pillar3aTaxSavings({
-        contribution: form.contribution,
-        taxInput: {
-  canton: form.canton,
-  status: form.status,
-  grossSalary: form.grossSalary,
-  // Base = 0 (pas la cotisation elle-même) : sinon on calcule l'économie
+  // Multiplicateur communal réel du client lié (sinon chef-lieu par défaut,
+  // voir getCommunalMultiplier) : sans lui, le taux marginal affiché ici
+  // pouvait diverger de celui de Fiscal global pour le même client, dès
+  // que sa commune s'écarte du chef-lieu du canton.
+  const communalMultiplier = useMemo(
+    () => (client ? getCommunalMultiplier(client.canton, client.commune) : undefined),
+    [client],
+  );
+
+  // Économie fiscale tenant compte du RÉGIME réel du client lié (résident
+  // ordinaire, imposé à la source, quasi-résident TOU, frontalier GE/accord
+  // 1983…) — voir computeRegimeAwareDeduction. Base = 0 cotisation 3a
+  // existante (pas la cotisation elle-même) : sinon on calcule l'économie
   // d'un DEUXIÈME versement ajouté par-dessus un premier déjà déduit, ce
   // qui tombe dans une tranche marginale plus basse et sous-estime
   // l'économie réelle. Même base que optimizedSavings ci-dessous, pour
   // que "3b actuel" et "3b cible" restent comparables.
-  pillar3aContributions: 0,
-},
+  const savings = useMemo(
+    () =>
+      computeRegimeAwareDeduction({
+        bundle,
+        fallbackTaxInput: {
+          canton: form.canton,
+          status: form.status,
+          grossSalary: form.grossSalary,
+          communalMultiplier,
+          pillar3aContributions: 0,
+        },
+        deductionAmount: form.contribution,
+        deductionField: "pillar3aContributions",
       }),
-    [form],
+    [form, communalMultiplier, bundle],
   );
 
   const projection = useMemo(
@@ -164,16 +181,19 @@ function Pillar3aCalc() {
 
   const optimizedSavings = useMemo(
     () =>
-      pillar3aTaxSavings({
-        contribution: max,
-        taxInput: {
-  canton: form.canton,
-  status: form.status,
-  grossSalary: form.grossSalary,
-  pillar3aContributions: 0,
-},
+      computeRegimeAwareDeduction({
+        bundle,
+        fallbackTaxInput: {
+          canton: form.canton,
+          status: form.status,
+          grossSalary: form.grossSalary,
+          communalMultiplier,
+          pillar3aContributions: 0,
+        },
+        deductionAmount: max,
+        deductionField: "pillar3aContributions",
       }),
-    [max, form.canton, form.status, form.grossSalary],
+    [max, form.canton, form.status, form.grossSalary, communalMultiplier, bundle],
   );
 
   // 3b cible, règle auto : réinvestir dans le 3b exactement l'économie
@@ -181,7 +201,10 @@ function Pillar3aCalc() {
   // même principe que l'auto-remplissage de la cotisation 3b "actuelle"
   // ci-dessous (économie du scénario courant). L'utilisateur peut
   // surcharger via le champ ci-dessous.
-  const auto3bTarget = useMemo(() => Math.round(optimizedSavings.taxSavings), [optimizedSavings.taxSavings]);
+  const auto3bTarget = useMemo(
+    () => Math.round(optimizedSavings.taxSavings),
+    [optimizedSavings.taxSavings],
+  );
   const [target3bOverride, setTarget3bOverride] = useState<number | null>(null);
   const target3bYearly = target3bOverride ?? auto3bTarget;
 
@@ -254,18 +277,28 @@ function Pillar3aCalc() {
   // projeté des deux côtés) — peut être modeste : la part cantonale de
   // capitalWithdrawalTax est un taux fixe par canton, non progressif, donc
   // seule la petite part IFD (1/5 du barème) bénéficie du fractionnement.
-  const fractioningSavings = taxStaggeredProjected.totalTaxSingle - taxStaggeredProjected.totalTaxSeparated;
+  const fractioningSavings =
+    taxStaggeredProjected.totalTaxSingle - taxStaggeredProjected.totalTaxSeparated;
 
   const currentTotalPrivate = projection.finalBalance + current3bFinal;
   const projectedTotalPrivate = optimizedProjection.finalBalance + optimized3bFinal;
   const currentNetAfterTax = currentTotalPrivate - taxLumpCurrent.totalTaxSingle;
-  const projectedNetAfterTax =
-    projectedTotalPrivate - taxStaggeredProjected.totalTaxSeparated;
+  const projectedNetAfterTax = projectedTotalPrivate - taxStaggeredProjected.totalTaxSeparated;
 
   const compareRows: SplitRow[] = useMemo(
     () => [
-      { label: "Cotisation annuelle 3a", current: form.contribution, projected: max, betterWhen: "higher" },
-      { label: "Cotisation annuelle 3b", current: form.pillar3bYearly, projected: target3bYearly, betterWhen: "higher" },
+      {
+        label: "Cotisation annuelle 3a",
+        current: form.contribution,
+        projected: max,
+        betterWhen: "higher",
+      },
+      {
+        label: "Cotisation annuelle 3b",
+        current: form.pillar3bYearly,
+        projected: target3bYearly,
+        betterWhen: "higher",
+      },
       {
         label: "Économie d'impôt annuelle (3a)",
         current: savings.taxSavings,
@@ -313,10 +346,25 @@ function Pillar3aCalc() {
       },
     ],
     [
-      form.contribution, form.pillar3bYearly, form.yearsToRetirement, form.pillar3bYears, form.withdrawalAccounts,
-      max, target3bYearly, savings, optimizedSavings, projection, optimizedProjection,
-      current3bFinal, optimized3bFinal, currentTotalPrivate, projectedTotalPrivate,
-      taxLumpCurrent, taxStaggeredProjected, currentNetAfterTax, projectedNetAfterTax,
+      form.contribution,
+      form.pillar3bYearly,
+      form.yearsToRetirement,
+      form.pillar3bYears,
+      form.withdrawalAccounts,
+      max,
+      target3bYearly,
+      savings,
+      optimizedSavings,
+      projection,
+      optimizedProjection,
+      current3bFinal,
+      optimized3bFinal,
+      currentTotalPrivate,
+      projectedTotalPrivate,
+      taxLumpCurrent,
+      taxStaggeredProjected,
+      currentNetAfterTax,
+      projectedNetAfterTax,
     ],
   );
 
@@ -340,15 +388,19 @@ function Pillar3aCalc() {
   const [guideOpen, setGuideOpen] = useState(false);
   const [pillar3bManuallyEdited, setPillar3bManuallyEdited] = useState(false);
 
-useEffect(() => {
-  if (!pillar3bManuallyEdited && savings.taxSavings > 0) {
-    set("pillar3bYearly", Math.round(savings.taxSavings));
-  }
-}, [savings.taxSavings, pillar3bManuallyEdited]);
+  useEffect(() => {
+    if (!pillar3bManuallyEdited && savings.taxSavings > 0) {
+      set("pillar3bYearly", Math.round(savings.taxSavings));
+    }
+  }, [savings.taxSavings, pillar3bManuallyEdited]);
   const guideSteps: GuideStep[] = [
     { title: t("calc.p3a.step.welcome.t"), body: t("calc.p3a.step.welcome.b") },
     { target: "p3a-contribution", title: t("calc.p3a.step.cap.t"), body: t("calc.p3a.step.cap.b") },
-    { target: "p3a-expected-return", title: t("calc.p3a.step.assumptions.t"), body: t("calc.p3a.step.assumptions.b") },
+    {
+      target: "p3a-expected-return",
+      title: t("calc.p3a.step.assumptions.t"),
+      body: t("calc.p3a.step.assumptions.b"),
+    },
     { target: "p3a-3b-yearly", title: t("calc.p3a.step.p3b.t"), body: t("calc.p3a.step.p3b.b") },
     { target: "p3a-save", title: t("calc.p3a.step.save.t"), body: t("calc.p3a.step.save.b") },
   ];
@@ -356,8 +408,16 @@ useEffect(() => {
   return (
     <div className="space-y-6">
       <CrossCalcImpactBanner calculator="pillar3a" clientId={clientId} />
-      <GuideMode open={guideOpen} onClose={() => setGuideOpen(false)} steps={guideSteps} title={t("calc.p3a.guide_title")} guideId="calc-pillar3a" />
-      <div className="flex justify-end"><GuideToggleButton onClick={() => setGuideOpen(true)} /></div>
+      <GuideMode
+        open={guideOpen}
+        onClose={() => setGuideOpen(false)}
+        steps={guideSteps}
+        title={t("calc.p3a.guide_title")}
+        guideId="calc-pillar3a"
+      />
+      <div className="flex justify-end">
+        <GuideToggleButton onClick={() => setGuideOpen(true)} />
+      </div>
 
       {client && <ClientLinkBanner client={client} caseId={caseId} />}
       {simId && loadingSaved && (
@@ -367,7 +427,8 @@ useEffect(() => {
       )}
       {simId && !loadingSaved && savedInputs && (
         <div className="rounded-lg border border-primary/30 bg-primary/5 p-3 text-sm">
-          Vous consultez une simulation sauvegardée. Toute modification créera une nouvelle sauvegarde distincte si vous cliquez sur « Sauvegarder ».
+          Vous consultez une simulation sauvegardée. Toute modification créera une nouvelle
+          sauvegarde distincte si vous cliquez sur « Sauvegarder ».
         </div>
       )}
       <FiscalSnapshotBanner clientId={clientId} caseId={caseId} />
@@ -376,11 +437,15 @@ useEffect(() => {
         <div className="font-semibold">{t("calc.p3a.intro_title")}</div>
         <div className="mt-2 grid gap-3 sm:grid-cols-2">
           <div>
-            <div className="text-xs font-semibold uppercase tracking-wider text-primary">{t("calc.p3a.intro_3a_title")}</div>
+            <div className="text-xs font-semibold uppercase tracking-wider text-primary">
+              {t("calc.p3a.intro_3a_title")}
+            </div>
             <p className="mt-1 text-xs text-muted-foreground">{t("calc.p3a.intro_3a_body")}</p>
           </div>
           <div>
-            <div className="text-xs font-semibold uppercase tracking-wider text-primary">{t("calc.p3a.intro_3b_title")}</div>
+            <div className="text-xs font-semibold uppercase tracking-wider text-primary">
+              {t("calc.p3a.intro_3b_title")}
+            </div>
             <p className="mt-1 text-xs text-muted-foreground">{t("calc.p3a.intro_3b_body")}</p>
           </div>
         </div>
@@ -388,10 +453,16 @@ useEffect(() => {
 
       <div className="grid grid-cols-1 gap-6 md:grid-cols-5">
         <div className="md:col-span-3">
-          <CalcCard title={t("calc.p3a.contribution_card")} description={t("calc.p3a.contribution_desc")}>
+          <CalcCard
+            title={t("calc.p3a.contribution_card")}
+            description={t("calc.p3a.contribution_desc")}
+          >
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <label className="flex items-center gap-2 text-sm">
-                <Checkbox checked={form.hasLPP} onCheckedChange={(v) => set("hasLPP", Boolean(v))} />
+                <Checkbox
+                  checked={form.hasLPP}
+                  onCheckedChange={(v) => set("hasLPP", Boolean(v))}
+                />
                 {t("calc.p3a.has_lpp")}
               </label>
               {!form.hasLPP && (
@@ -402,52 +473,92 @@ useEffect(() => {
                 />
               )}
               <div className="space-y-1.5">
-                <Label className="text-xs font-medium text-muted-foreground">{t("pension.canton")}</Label>
+                <Label className="text-xs font-medium text-muted-foreground">
+                  {t("pension.canton")}
+                </Label>
                 <Select value={form.canton} onValueChange={(v) => set("canton", v)}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
                   <SelectContent>
                     {getSelectableCantons().map((c) => (
-                      <SelectItem key={c.code} value={c.code}>{c.code} · {c.name}</SelectItem>
+                      <SelectItem key={c.code} value={c.code}>
+                        {c.code} · {c.name}
+                      </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
               <div className="space-y-1.5">
-                <Label className="text-xs font-medium text-muted-foreground">{t("pension.civil_status")}</Label>
-                <Select value={form.status} onValueChange={(v) => set("status", v as IncomeTaxInput["status"])}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
+                <Label className="text-xs font-medium text-muted-foreground">
+                  {t("pension.civil_status")}
+                </Label>
+                <Select
+                  value={form.status}
+                  onValueChange={(v) => set("status", v as IncomeTaxInput["status"])}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="single">{t("calc.status.single")}</SelectItem>
                     <SelectItem value="married">{t("calc.status.married")}</SelectItem>
-                    <SelectItem value="single_with_children">{t("calc.status.single_with_children")}</SelectItem>
+                    <SelectItem value="single_with_children">
+                      {t("calc.status.single_with_children")}
+                    </SelectItem>
                   </SelectContent>
                 </Select>
               </div>
-<div className="space-y-1">
-  <NumField label={t("pension.gross_salary_annual")} value={form.grossSalary} onChange={(v) => set("grossSalary", v)} />
-  <ClientPrefillBadge show={!!prefill?.grossSalary && form.grossSalary === prefill.grossSalary} clientName={client ? `${client.first_name} ${client.last_name}` : undefined} />
-</div>              <div data-guide="p3a-contribution">
-                <NumField label={t("calc.p3a.field.contribution_max", { max })} value={form.contribution} onChange={(v) => set("contribution", Math.min(v, max))} wikiId="p3a-base" wikiTip={t("calc.p3a.tip.contribution_max")} />
+              <div className="space-y-1">
+                <NumField
+                  label={t("pension.gross_salary_annual")}
+                  value={form.grossSalary}
+                  onChange={(v) => set("grossSalary", v)}
+                />
+                <ClientPrefillBadge
+                  show={!!prefill?.grossSalary && form.grossSalary === prefill.grossSalary}
+                  clientName={client ? `${client.first_name} ${client.last_name}` : undefined}
+                />
+              </div>{" "}
+              <div data-guide="p3a-contribution">
+                <NumField
+                  label={t("calc.p3a.field.contribution_max", { max })}
+                  value={form.contribution}
+                  onChange={(v) => set("contribution", Math.min(v, max))}
+                  wikiId="p3a-base"
+                  wikiTip={t("calc.p3a.tip.contribution_max")}
+                />
               </div>
             </div>
           </CalcCard>
         </div>
         <div className="space-y-4 md:col-span-2">
           <CalcCard title={t("calc.p3a.savings_card")}>
-            {client && client.tax_status !== "resident" && (
-              <div className="mb-3 rounded-md border border-amber-500/40 bg-amber-500/5 p-3 text-xs text-amber-900 dark:text-amber-200">
-                <strong>Estimation en imposition ordinaire.</strong> Ce client est imposé à la
-                source (ou relève d'un régime frontalier/TOU) : l'économie d'impôt ci-dessous est
-                calculée comme s'il était imposé ordinairement, mais ne se matérialise PAS
-                automatiquement sur sa retenue à la source. Elle ne devient réelle qu'après une
-                démarche de rectification ou de TOU qui fait basculer le client en imposition
-                ordinaire (voir le calculateur Fiscal Global pour le barème avant/après
-                rectification applicable à sa situation).
+            {savings.applicable !== "yes" && savings.note && (
+              <div
+                className={`mb-3 rounded-md border p-3 text-xs ${
+                  savings.applicable === "conditional"
+                    ? "border-amber-500/40 bg-amber-500/5 text-amber-900 dark:text-amber-200"
+                    : "border-destructive/40 bg-destructive/5 text-destructive"
+                }`}
+              >
+                <strong>{savings.regimeLabel}.</strong> {savings.note}
               </div>
             )}
             <Row>
-              <MoneyTile label={t("calc.p3a.tax_savings_label")} value={savings.taxSavings} tone="success" big tip={t("calc.p3a.tip.tax_savings")} />
-              <MoneyTile label={t("calc.p3a.effective_cost")} value={savings.effectiveCost} tone="primary" tip={t("calc.p3a.tip.effective_cost")} />
+              <MoneyTile
+                label={t("calc.p3a.tax_savings_label")}
+                value={savings.taxSavings}
+                tone="success"
+                big
+                tip={t("calc.p3a.tip.tax_savings")}
+              />
+              <MoneyTile
+                label={t("calc.p3a.effective_cost")}
+                value={savings.effectiveCost}
+                tone="primary"
+                tip={t("calc.p3a.tip.effective_cost")}
+              />
             </Row>
             <p className="mt-2 text-xs text-muted-foreground">
               {t("calc.p3a.marginal_rate", { rate: savings.marginalRate.toFixed(1) })}
@@ -463,25 +574,34 @@ useEffect(() => {
                 </p>
                 <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2">
                   <div className="rounded-md border border-border/60 bg-card p-2">
-                    <div className="text-[10px] uppercase text-muted-foreground">Au versement actuel</div>
+                    <div className="text-[10px] uppercase text-muted-foreground">
+                      Au versement actuel
+                    </div>
                     <div className="mt-0.5 text-lg font-bold tabular-nums text-foreground">
                       {(savings.taxSavings * form.yearsToRetirement).toLocaleString("fr-CH")} CHF
                     </div>
                   </div>
                   <div className="rounded-md border border-success/40 bg-success/10 p-2">
-                    <div className="text-[10px] uppercase text-muted-foreground">Au plafond légal ({max.toLocaleString("fr-CH")} CHF/an)</div>
+                    <div className="text-[10px] uppercase text-muted-foreground">
+                      Au plafond légal ({max.toLocaleString("fr-CH")} CHF/an)
+                    </div>
                     <div className="mt-0.5 text-lg font-bold tabular-nums text-success">
-                      {(optimizedSavings.taxSavings * form.yearsToRetirement).toLocaleString("fr-CH")} CHF
+                      {(optimizedSavings.taxSavings * form.yearsToRetirement).toLocaleString(
+                        "fr-CH",
+                      )}{" "}
+                      CHF
                     </div>
                   </div>
                 </div>
                 <p className="mt-2 text-[10px] text-muted-foreground">
-                  Hypothèse : cotisation et taux marginal constants chaque année. Non actualisé, ne tient pas compte d'une éventuelle évolution du plafond légal ou du revenu.
+                  Hypothèse : cotisation et taux marginal constants chaque année. Non actualisé, ne
+                  tient pas compte d'une éventuelle évolution du plafond légal ou du revenu.
                 </p>
               </div>
             ) : (
               <p className="mt-3 text-[11px] text-warning">
-                Renseignez le nombre d'années jusqu'à la retraite (champ ci-dessous) pour voir la projection cumulée.
+                Renseignez le nombre d'années jusqu'à la retraite (champ ci-dessous) pour voir la
+                projection cumulée.
               </p>
             )}
           </CalcCard>
@@ -490,9 +610,14 @@ useEffect(() => {
 
       {isMaxed && (
         <div className="rounded-xl border border-success/40 bg-success/5 p-4 text-sm">
-          <div className="font-semibold text-success">✅ Cotisation 3a déjà au maximum légal ({max.toLocaleString("fr-CH")} CHF)</div>
+          <div className="font-semibold text-success">
+            ✅ Cotisation 3a déjà au maximum légal ({max.toLocaleString("fr-CH")} CHF)
+          </div>
           <p className="mt-1 text-xs text-muted-foreground">
-            Leviers d'optimisation restants : <strong>cotiser à un 3B</strong> (assurance-vie / épargne libre, cible {target3bYearly.toLocaleString("fr-CH")} CHF/an) et <strong>fractionner les retraits</strong> sur {Math.max(2, form.withdrawalAccounts)} comptes 3a pour réduire l'impôt de sortie.
+            Leviers d'optimisation restants : <strong>cotiser à un 3B</strong> (assurance-vie /
+            épargne libre, cible {target3bYearly.toLocaleString("fr-CH")} CHF/an) et{" "}
+            <strong>fractionner les retraits</strong> sur {Math.max(2, form.withdrawalAccounts)}{" "}
+            comptes 3a pour réduire l'impôt de sortie.
           </p>
         </div>
       )}
@@ -508,9 +633,9 @@ useEffect(() => {
             onChange={(v) => setTarget3bOverride(Number(v) || 0)}
           />
           <p className="mt-1 text-[11px] text-muted-foreground">
-            Suggéré automatiquement : <strong>{auto3bTarget.toLocaleString("fr-CH")} CHF/an</strong>
-            {" "}(montant de l'économie d'impôt réalisée en maximisant le 3a, réinvesti dans le 3b)
-            . Modifiez pour ajuster la projection.
+            Suggéré automatiquement : <strong>{auto3bTarget.toLocaleString("fr-CH")} CHF/an</strong>{" "}
+            (montant de l'économie d'impôt réalisée en maximisant le 3a, réinvesti dans le 3b) .
+            Modifiez pour ajuster la projection.
           </p>
         </div>
         {target3bOverride !== null && target3bOverride !== auto3bTarget && (
@@ -533,8 +658,10 @@ useEffect(() => {
         }
         legend={
           <>
-            💡 Les <strong className="text-success">petites pastilles vertes</strong> à droite de chaque ligne montrent l'écart projeté – actuel (ex.{" "}
-            <span className="font-mono">+1 500 CHF</span> = vous cotiseriez 1 500 de plus). Le 3b n'étant pas déductible du revenu, il n'apparaît pas dans l'économie d'impôt annuelle.
+            💡 Les <strong className="text-success">petites pastilles vertes</strong> à droite de
+            chaque ligne montrent l'écart projeté – actuel (ex.{" "}
+            <span className="font-mono">+1 500 CHF</span> = vous cotiseriez 1 500 de plus). Le 3b
+            n'étant pas déductible du revenu, il n'apparaît pas dans l'économie d'impôt annuelle.
           </>
         }
         currentSubtitle={client ? "Données fiche client" : "Valeurs saisies"}
@@ -557,44 +684,92 @@ useEffect(() => {
           footnote: (
             <>
               <strong>D'où vient le gain ?</strong> Capital 3a supplémentaire :{" "}
-              {(optimizedProjection.finalBalance - projection.finalBalance).toLocaleString("fr-CH")} CHF · Capital 3b supplémentaire :{" "}
-              {(optimized3bFinal - current3bFinal).toLocaleString("fr-CH")} CHF · Impôt de sortie en plus, capital plus élevé (retrait unique dans les deux cas) :{" "}
-              {(taxStaggeredProjected.totalTaxSingle - taxLumpCurrent.totalTaxSingle).toLocaleString("fr-CH")} CHF · Impôt en moins grâce au fractionnement, à capital projeté égal :{" "}
+              {(optimizedProjection.finalBalance - projection.finalBalance).toLocaleString("fr-CH")}{" "}
+              CHF · Capital 3b supplémentaire :{" "}
+              {(optimized3bFinal - current3bFinal).toLocaleString("fr-CH")} CHF · Impôt de sortie en
+              plus, capital plus élevé (retrait unique dans les deux cas) :{" "}
+              {(
+                taxStaggeredProjected.totalTaxSingle - taxLumpCurrent.totalTaxSingle
+              ).toLocaleString("fr-CH")}{" "}
+              CHF · Impôt en moins grâce au fractionnement, à capital projeté égal :{" "}
               {fractioningSavings.toLocaleString("fr-CH")} CHF.
-              {isMaxed && " Votre 3a est déjà au maximum légal → le gain provient uniquement du 3b + du fractionnement des retraits."}
+              {isMaxed &&
+                " Votre 3a est déjà au maximum légal → le gain provient uniquement du 3b + du fractionnement des retraits."}
             </>
           ),
         }}
       />
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-
         <CalcCard title={t("calc.p3a.projection_card")}>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div className="space-y-1">
-  <NumField label={t("calc.p3a.field.current_balance")} value={form.currentBalance} onChange={(v) => set("currentBalance", v)} />
-  <ClientPrefillBadge show={!!prefill?.currentBalance && form.currentBalance === prefill.currentBalance} clientName={client ? `${client.first_name} ${client.last_name}` : undefined} />
-</div>
+              <NumField
+                label={t("calc.p3a.field.current_balance")}
+                value={form.currentBalance}
+                onChange={(v) => set("currentBalance", v)}
+              />
+              <ClientPrefillBadge
+                show={!!prefill?.currentBalance && form.currentBalance === prefill.currentBalance}
+                clientName={client ? `${client.first_name} ${client.last_name}` : undefined}
+              />
+            </div>
             <div className="space-y-1">
-  <NumField label={t("pension.years_to_retirement")} value={form.yearsToRetirement} onChange={(v) => set("yearsToRetirement", v)} />
-  <ClientPrefillBadge show={!!prefill?.yearsToRetirement && form.yearsToRetirement === prefill.yearsToRetirement} clientName={client ? `${client.first_name} ${client.last_name}` : undefined} />
-</div>
-<div data-guide="p3a-expected-return">
-              <NumField label={t("pension.expected_return")} value={form.expectedReturn} onChange={(v) => set("expectedReturn", v)} step={0.1} />
-            </div>          </div>
+              <NumField
+                label={t("pension.years_to_retirement")}
+                value={form.yearsToRetirement}
+                onChange={(v) => set("yearsToRetirement", v)}
+              />
+              <ClientPrefillBadge
+                show={
+                  !!prefill?.yearsToRetirement &&
+                  form.yearsToRetirement === prefill.yearsToRetirement
+                }
+                clientName={client ? `${client.first_name} ${client.last_name}` : undefined}
+              />
+            </div>
+            <div data-guide="p3a-expected-return">
+              <NumField
+                label={t("pension.expected_return")}
+                value={form.expectedReturn}
+                onChange={(v) => set("expectedReturn", v)}
+                step={0.1}
+              />
+            </div>{" "}
+          </div>
           {/* Résultat principal mis en avant */}
           <div className="mt-4 rounded-xl border-2 border-primary/40 bg-primary/5 p-4 text-center">
-            <p className="text-xs font-semibold uppercase tracking-wider text-primary/60">{t("calc.p3a.final_balance")}</p>
-            <p className="mt-1 text-4xl font-bold tabular-nums text-primary">{projection.finalBalance.toLocaleString("fr-CH")} CHF</p>
-            <p className="mt-1 text-[11px] text-muted-foreground">dans {form.yearsToRetirement} ans · dont {projection.totalReturns.toLocaleString("fr-CH")} CHF d'intérêts</p>
+            <p className="text-xs font-semibold uppercase tracking-wider text-primary/60">
+              {t("calc.p3a.final_balance")}
+            </p>
+            <p className="mt-1 text-4xl font-bold tabular-nums text-primary">
+              {projection.finalBalance.toLocaleString("fr-CH")} CHF
+            </p>
+            <p className="mt-1 text-[11px] text-muted-foreground">
+              dans {form.yearsToRetirement} ans · dont{" "}
+              {projection.totalReturns.toLocaleString("fr-CH")} CHF d'intérêts
+            </p>
           </div>
           <div className="mt-3 grid grid-cols-2 gap-3">
-            <MoneyTile label={t("calc.p3a.total_contrib")} value={projection.totalContributions} tip={t("calc.p3a.tip.total_contrib")} />
-            <MoneyTile label={t("calc.p3a.total_returns")} value={projection.totalReturns} tone="success" tip={t("calc.p3a.tip.total_returns")} />
+            <MoneyTile
+              label={t("calc.p3a.total_contrib")}
+              value={projection.totalContributions}
+              tip={t("calc.p3a.tip.total_contrib")}
+            />
+            <MoneyTile
+              label={t("calc.p3a.total_returns")}
+              value={projection.totalReturns}
+              tone="success"
+              tip={t("calc.p3a.tip.total_returns")}
+            />
           </div>
           <div className="mt-3 rounded-lg border border-border bg-muted/30 p-3 text-center">
-            <p className="text-[11px] font-medium text-muted-foreground">Rente de vieillesse estimée (capital ÷ 25 ans ÷ 12)</p>
-            <p className="mt-1 text-xl font-semibold tabular-nums text-foreground">{formatCHF(oldAgeMonthlyPension)} / mois</p>
+            <p className="text-[11px] font-medium text-muted-foreground">
+              Rente de vieillesse estimée (capital ÷ 25 ans ÷ 12)
+            </p>
+            <p className="mt-1 text-xl font-semibold tabular-nums text-foreground">
+              {formatCHF(oldAgeMonthlyPension)} / mois
+            </p>
             <p className="mt-0.5 text-[10.5px] italic text-muted-foreground">
               Hypothèse : capital final réparti sur 25 ans d'espérance de vie après la retraite.
             </p>
@@ -618,14 +793,46 @@ useEffect(() => {
         </CalcCard>
         <CalcCard title={t("calc.p3a.staggered_card")} description={t("calc.p3a.staggered_desc")}>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <NumField label={t("calc.p3a.field.withdrawal_capital")} value={form.withdrawalCapital} onChange={(v) => set("withdrawalCapital", v)} wikiId="p3a-base" wikiTip={t("calc.p3a.tip.withdrawal_capital")} />
-            <NumField label={t("calc.p3a.field.withdrawal_accounts")} value={form.withdrawalAccounts} onChange={(v) => set("withdrawalAccounts", v)} wikiId="p3a-base" wikiTip={t("calc.p3a.tip.withdrawal_accounts")} />
+            <NumField
+              label={t("calc.p3a.field.withdrawal_capital")}
+              value={form.withdrawalCapital}
+              onChange={(v) => set("withdrawalCapital", v)}
+              wikiId="p3a-base"
+              wikiTip={t("calc.p3a.tip.withdrawal_capital")}
+            />
+            <NumField
+              label={t("calc.p3a.field.withdrawal_accounts")}
+              value={form.withdrawalAccounts}
+              onChange={(v) => set("withdrawalAccounts", v)}
+              wikiId="p3a-base"
+              wikiTip={t("calc.p3a.tip.withdrawal_accounts")}
+            />
           </div>
           <div className="mt-4 grid grid-cols-2 gap-3">
-            <MoneyTile label={t("calc.p3a.tax_single")} value={stag.totalTaxSingle} tone="warning" tip={t("calc.p3a.tip.tax_single")} />
-            <MoneyTile label={t("calc.p3a.tax_separated")} value={stag.totalTaxSeparated} tone="primary" tip={t("calc.p3a.tip.tax_separated")} />
-            <MoneyTile label={t("calc.p3a.savings_label")} value={stag.savings} tone="success" big tip={t("calc.p3a.tip.savings_label")} />
-            <MoneyTile label={t("calc.p3a.per_account")} value={stag.perAccount} tip={t("calc.p3a.tip.per_account")} />
+            <MoneyTile
+              label={t("calc.p3a.tax_single")}
+              value={stag.totalTaxSingle}
+              tone="warning"
+              tip={t("calc.p3a.tip.tax_single")}
+            />
+            <MoneyTile
+              label={t("calc.p3a.tax_separated")}
+              value={stag.totalTaxSeparated}
+              tone="primary"
+              tip={t("calc.p3a.tip.tax_separated")}
+            />
+            <MoneyTile
+              label={t("calc.p3a.savings_label")}
+              value={stag.savings}
+              tone="success"
+              big
+              tip={t("calc.p3a.tip.savings_label")}
+            />
+            <MoneyTile
+              label={t("calc.p3a.per_account")}
+              value={stag.perAccount}
+              tip={t("calc.p3a.tip.per_account")}
+            />
           </div>
         </CalcCard>
       </div>
@@ -638,11 +845,32 @@ useEffect(() => {
         <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
           <div className="space-y-3">
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              <NumField label={t("calc.p3a.field.3b_current")} value={form.pillar3bCurrent} onChange={(v) => set("pillar3bCurrent", v)} />
-<div data-guide="p3a-3b-yearly">
-                <NumField label={t("calc.p3a.field.3b_yearly")} value={form.pillar3bYearly} onChange={(v) => { set("pillar3bYearly", v); setPillar3bManuallyEdited(true); }} />
-              </div>              <NumField label={t("calc.p3a.field.3b_years")} value={form.pillar3bYears} onChange={(v) => set("pillar3bYears", v)} />
-              <NumField label={t("calc.p3a.field.3b_return")} value={form.pillar3bReturn} onChange={(v) => set("pillar3bReturn", v)} step={0.1} />
+              <NumField
+                label={t("calc.p3a.field.3b_current")}
+                value={form.pillar3bCurrent}
+                onChange={(v) => set("pillar3bCurrent", v)}
+              />
+              <div data-guide="p3a-3b-yearly">
+                <NumField
+                  label={t("calc.p3a.field.3b_yearly")}
+                  value={form.pillar3bYearly}
+                  onChange={(v) => {
+                    set("pillar3bYearly", v);
+                    setPillar3bManuallyEdited(true);
+                  }}
+                />
+              </div>{" "}
+              <NumField
+                label={t("calc.p3a.field.3b_years")}
+                value={form.pillar3bYears}
+                onChange={(v) => set("pillar3bYears", v)}
+              />
+              <NumField
+                label={t("calc.p3a.field.3b_return")}
+                value={form.pillar3bReturn}
+                onChange={(v) => set("pillar3bReturn", v)}
+                step={0.1}
+              />
             </div>
             <p className="text-[11px] text-muted-foreground">{t("calc.p3a.p3b_help")}</p>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -663,10 +891,30 @@ useEffect(() => {
             </div>
           </div>
           <div className="grid grid-cols-2 gap-3">
-            <MoneyTile label={t("calc.p3a.p3b_final")} value={projection3b.finalBalance} tone="primary" big tip={t("calc.p3a.tip.p3b_final")} />
-            <MoneyTile label={t("calc.p3a.p3b_contrib")} value={projection3b.totalContributions} tip={t("calc.p3a.tip.p3b_contrib")} />
-            <MoneyTile label={t("calc.p3a.total_returns")} value={projection3b.totalReturns} tone="success" tip={t("calc.p3a.tip.p3b_returns")} />
-            <MoneyTile label={t("calc.p3a.total_3a_3b")} value={projection.finalBalance + projection3b.finalBalance} tone="success" tip={t("calc.p3a.tip.total_3a_3b")} />
+            <MoneyTile
+              label={t("calc.p3a.p3b_final")}
+              value={projection3b.finalBalance}
+              tone="primary"
+              big
+              tip={t("calc.p3a.tip.p3b_final")}
+            />
+            <MoneyTile
+              label={t("calc.p3a.p3b_contrib")}
+              value={projection3b.totalContributions}
+              tip={t("calc.p3a.tip.p3b_contrib")}
+            />
+            <MoneyTile
+              label={t("calc.p3a.total_returns")}
+              value={projection3b.totalReturns}
+              tone="success"
+              tip={t("calc.p3a.tip.p3b_returns")}
+            />
+            <MoneyTile
+              label={t("calc.p3a.total_3a_3b")}
+              value={projection.finalBalance + projection3b.finalBalance}
+              tone="success"
+              tip={t("calc.p3a.tip.total_3a_3b")}
+            />
           </div>
         </div>
       </CalcCard>
@@ -703,14 +951,16 @@ useEffect(() => {
             // Retranscrit tel quel dans le PDF de synthèse (section "Actuel
             // vs Projeté") : sans ce champ, la comparaison 3a+3b affichée à
             // l'écran n'existe nulle part ailleurs que dans ce rendu React.
-            compareRows: compareRows.map(({ label, current, projected, format, betterWhen, hint }) => ({
-              label,
-              current,
-              projected,
-              format,
-              betterWhen,
-              hint,
-            })),
+            compareRows: compareRows.map(
+              ({ label, current, projected, format, betterWhen, hint }) => ({
+                label,
+                current,
+                projected,
+                format,
+                betterWhen,
+                hint,
+              }),
+            ),
           }}
           defaultTitle={`3a ${form.canton} · ${form.contribution} CHF/an`}
         />
