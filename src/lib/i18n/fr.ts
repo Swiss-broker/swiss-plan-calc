@@ -1971,4 +1971,26 @@ export const fr: Record<string, string> = {
   "calc.global.guide.s9.title": "Frontalier et taux de change",
   "calc.global.guide.s9.body": "Pour les régimes frontaliers, le taux de change EUR/CHF convertit automatiquement les montants saisis dans les deux sens.",
   "calc.global.guide.s10.title": "Résultat",
-  "calc.global.guide.s10.body": "Le résultat final tient compte du régime, des déductions applicables et de la progressivité. Vérifiez toujours qu'il correspond au profil réel du client.",};
+  "calc.global.guide.s10.body":
+    "Le résultat final tient compte du régime, des déductions applicables et de la progressivité. Vérifiez toujours qu'il correspond au profil réel du client.",
+  "landing.footer.cookiePrefs": "Préférences cookies",
+  "cookies.banner.desc":
+    "Nous utilisons des cookies pour faire fonctionner le site et, si vous l'acceptez, mesurer l'audience et personnaliser nos campagnes.",
+  "cookies.banner.policyLink": "En savoir plus",
+  "cookies.banner.refuseAll": "Refuser",
+  "cookies.banner.customize": "Personnaliser",
+  "cookies.banner.acceptAll": "Tout accepter",
+  "cookies.prefs.title": "Préférences de cookies",
+  "cookies.prefs.desc":
+    "Choisissez les catégories de cookies que vous autorisez. Vous pouvez modifier ce choix à tout moment depuis le pied de page.",
+  "cookies.prefs.necessary.title": "Nécessaires",
+  "cookies.prefs.necessary.desc":
+    "Indispensables au fonctionnement du site (connexion, sécurité). Toujours actifs.",
+  "cookies.prefs.analytics.title": "Mesure d'audience",
+  "cookies.prefs.analytics.desc":
+    "Google Analytics : pages consultées, durée de visite, provenance des visiteurs.",
+  "cookies.prefs.marketing.title": "Marketing",
+  "cookies.prefs.marketing.desc":
+    "Meta Pixel et LinkedIn Insight Tag : mesure des campagnes publicitaires.",
+  "cookies.prefs.save": "Enregistrer mes préférences",
+};

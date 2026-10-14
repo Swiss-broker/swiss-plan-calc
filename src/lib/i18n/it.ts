@@ -1948,4 +1948,26 @@ export const it: Record<string, string> = {
   "calc.retirement.explain.line1": "Scenario rendita: il capitale viene convertito in rendita annua (tasso di conversione), versata ogni anno per la durata indicata, poi tassata ogni anno all'aliquota marginale indicata.",
   "calc.retirement.explain.line2": "Scenario capitale: il capitale è prima soggetto all'imposta unica sul prelievo (calcolata sopra), poi si presume che il saldo netto venga investito al rendimento indicato per la stessa durata.",
   "calc.retirement.explain.line3": "La raccomandazione confronta il totale netto effettivamente percepito nell'intero periodo nei due scenari. Se la differenza è ridotta, viene proposto un mix rendita/capitale per bilanciare sicurezza e performance.",
-  "calc.global.guide.s10.body": "Il risultato finale tiene conto del regime, delle deduzioni applicabili e della progressività. Verifica sempre che corrisponda al profilo reale del cliente.",};
+  "calc.global.guide.s10.body":
+    "Il risultato finale tiene conto del regime, delle deduzioni applicabili e della progressività. Verifica sempre che corrisponda al profilo reale del cliente.",
+  "landing.footer.cookiePrefs": "Preferenze cookie",
+  "cookies.banner.desc":
+    "Utilizziamo cookie per far funzionare il sito e, con il tuo consenso, misurare l'audience e personalizzare le nostre campagne.",
+  "cookies.banner.policyLink": "Scopri di più",
+  "cookies.banner.refuseAll": "Rifiuta",
+  "cookies.banner.customize": "Personalizza",
+  "cookies.banner.acceptAll": "Accetta tutto",
+  "cookies.prefs.title": "Preferenze cookie",
+  "cookies.prefs.desc":
+    "Scegli quali categorie di cookie autorizzare. Puoi modificare questa scelta in qualsiasi momento dal piè di pagina.",
+  "cookies.prefs.necessary.title": "Necessari",
+  "cookies.prefs.necessary.desc":
+    "Indispensabili al funzionamento del sito (accesso, sicurezza). Sempre attivi.",
+  "cookies.prefs.analytics.title": "Statistiche",
+  "cookies.prefs.analytics.desc":
+    "Google Analytics: pagine visitate, durata della visita, provenienza dei visitatori.",
+  "cookies.prefs.marketing.title": "Marketing",
+  "cookies.prefs.marketing.desc":
+    "Meta Pixel e LinkedIn Insight Tag: misurazione delle campagne pubblicitarie.",
+  "cookies.prefs.save": "Salva le mie preferenze",
+};

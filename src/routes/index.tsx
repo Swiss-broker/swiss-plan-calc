@@ -13,6 +13,7 @@ import { PublicLanguageSwitcher } from "@/components/common/PublicLanguageSwitch
 import { t as tStatic } from "@/lib/i18n";
 import { Link } from "@tanstack/react-router";
 import { LEGAL_PAGES } from "@/lib/legal/pages";
+import { openCookiePreferences } from "@/lib/consent";
 // Logo réel du cabinet, remplace l'icône "S" et le texte générés en CSS.
 import logoIcon from "@/assets/logo-icon.png";
 import logoFull from "@/assets/logo-full.png";
@@ -675,6 +676,13 @@ function Footer() {
               </ul>
             ))}
           </div>
+          <button
+            type="button"
+            onClick={openCookiePreferences}
+            className="mt-3 text-sm text-muted-foreground underline-offset-2 transition-colors hover:text-foreground hover:underline"
+          >
+            {t("landing.footer.cookiePrefs")}
+          </button>
         </div>
       </div>
     </footer>

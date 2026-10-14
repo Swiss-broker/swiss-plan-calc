@@ -1947,4 +1947,24 @@ export const en: Record<string, string> = {
   "calc.retirement.explain.line1": "Annuity scenario: the capital is converted into an annual annuity (conversion rate), paid each year for the specified duration, then taxed each year at the indicated marginal rate.",
   "calc.retirement.explain.line2": "Lump-sum scenario: the capital is first subject to the one-time withdrawal tax (calculated above), then the net balance is assumed to be invested at the indicated return for the same duration.",
   "calc.retirement.explain.line3": "The recommendation compares the total net amount actually received over the whole period in both scenarios. If the gap is small, a mix of annuity/lump sum is suggested to balance security and performance.",
-  "calc.global.guide.s10.body": "The final result accounts for the regime, the applicable deductions, and progression. Always verify it matches the client's actual profile.",};
+  "calc.global.guide.s10.body":
+    "The final result accounts for the regime, the applicable deductions, and progression. Always verify it matches the client's actual profile.",
+  "landing.footer.cookiePrefs": "Cookie preferences",
+  "cookies.banner.desc":
+    "We use cookies to run the site and, if you agree, to measure traffic and personalize our campaigns.",
+  "cookies.banner.policyLink": "Learn more",
+  "cookies.banner.refuseAll": "Refuse",
+  "cookies.banner.customize": "Customize",
+  "cookies.banner.acceptAll": "Accept all",
+  "cookies.prefs.title": "Cookie preferences",
+  "cookies.prefs.desc":
+    "Choose which cookie categories you allow. You can change this choice at any time from the footer.",
+  "cookies.prefs.necessary.title": "Necessary",
+  "cookies.prefs.necessary.desc": "Required for the site to work (login, security). Always active.",
+  "cookies.prefs.analytics.title": "Analytics",
+  "cookies.prefs.analytics.desc": "Google Analytics: pages viewed, time on site, visitor origin.",
+  "cookies.prefs.marketing.title": "Marketing",
+  "cookies.prefs.marketing.desc":
+    "Meta Pixel and LinkedIn Insight Tag: advertising campaign measurement.",
+  "cookies.prefs.save": "Save my preferences",
+};

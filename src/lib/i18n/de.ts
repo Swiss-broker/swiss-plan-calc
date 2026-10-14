@@ -1959,4 +1959,26 @@ export const de: Record<string, string> = {
   "calc.retirement.explain.line1": "Szenario Rente: Das Kapital wird anhand des Umwandlungssatzes in eine jährliche Rente umgewandelt, über die angegebene Dauer jährlich ausgezahlt und danach jedes Jahr zum angegebenen Grenzsteuersatz besteuert.",
   "calc.retirement.explain.line2": "Szenario Kapital: Das Kapital unterliegt zunächst der oben berechneten einmaligen Bezugssteuer, danach wird angenommen, dass der Nettosaldo über die gleiche Dauer zur angegebenen Rendite angelegt wird.",
   "calc.retirement.explain.line3": "Die Empfehlung vergleicht den über die gesamte Dauer tatsächlich erhaltenen Nettobetrag in beiden Szenarien. Ist die Differenz gering, wird eine Kombination aus Rente und Kapital vorgeschlagen, um Sicherheit und Rendite auszugleichen.",
-  "calc.global.guide.s10.body": "Das Endergebnis berücksichtigt das Regime, die anwendbaren Abzüge und die Progression. Prüfen Sie stets, ob es dem tatsächlichen Profil des Kunden entspricht.",};
+  "calc.global.guide.s10.body":
+    "Das Endergebnis berücksichtigt das Regime, die anwendbaren Abzüge und die Progression. Prüfen Sie stets, ob es dem tatsächlichen Profil des Kunden entspricht.",
+  "landing.footer.cookiePrefs": "Cookie-Einstellungen",
+  "cookies.banner.desc":
+    "Wir verwenden Cookies, um die Website zu betreiben und, mit Ihrer Zustimmung, die Nutzung zu messen und unsere Kampagnen zu personalisieren.",
+  "cookies.banner.policyLink": "Mehr erfahren",
+  "cookies.banner.refuseAll": "Ablehnen",
+  "cookies.banner.customize": "Anpassen",
+  "cookies.banner.acceptAll": "Alle akzeptieren",
+  "cookies.prefs.title": "Cookie-Einstellungen",
+  "cookies.prefs.desc":
+    "Wählen Sie, welche Cookie-Kategorien Sie zulassen. Sie können diese Wahl jederzeit über die Fusszeile ändern.",
+  "cookies.prefs.necessary.title": "Notwendig",
+  "cookies.prefs.necessary.desc":
+    "Für den Betrieb der Website erforderlich (Anmeldung, Sicherheit). Immer aktiv.",
+  "cookies.prefs.analytics.title": "Reichweitenmessung",
+  "cookies.prefs.analytics.desc":
+    "Google Analytics: besuchte Seiten, Verweildauer, Herkunft der Besucher.",
+  "cookies.prefs.marketing.title": "Marketing",
+  "cookies.prefs.marketing.desc":
+    "Meta Pixel und LinkedIn Insight Tag: Messung von Werbekampagnen.",
+  "cookies.prefs.save": "Einstellungen speichern",
+};

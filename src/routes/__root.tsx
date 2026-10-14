@@ -14,6 +14,7 @@ import { ActiveClientProvider } from "@/contexts/ActiveClientContext";
 import { PlanProvider } from "@/contexts/PlanContext";
 import { GuideProvider } from "@/contexts/GuideContext";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { CookieConsentBanner } from "@/components/common/CookieConsentBanner";
 import { t as translate } from "@/lib/i18n";
 
 const rootSearchSchema = z.object({
@@ -53,6 +54,7 @@ function LanguageScopedTree() {
         <Outlet />
       </ErrorBoundary>
       <Toaster richColors position="top-right" />
+      <CookieConsentBanner />
     </div>
   );
 }
