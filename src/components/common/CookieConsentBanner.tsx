@@ -4,7 +4,7 @@
 // enregistré, et peut être rouvert à tout moment via le lien "Préférences
 // cookies" du footer (openCookiePreferences()).
 import { useEffect, useState } from "react";
-import { Link } from "@tanstack/react-router";
+import { Link, useRouter } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import {
@@ -26,6 +26,7 @@ import { applyConsent } from "@/lib/analytics";
 
 export function CookieConsentBanner() {
   const t = useT();
+  const router = useRouter();
   const [visible, setVisible] = useState(false);
   const [customizeOpen, setCustomizeOpen] = useState(false);
   const [draft, setDraft] = useState<ConsentCategories>({ analytics: false, marketing: false });
@@ -33,10 +34,11 @@ export function CookieConsentBanner() {
   useEffect(() => {
     const existing = loadConsent();
     if (existing) {
-      applyConsent(existing);
+      applyConsent(existing, router);
     } else {
       setVisible(true);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -51,7 +53,7 @@ export function CookieConsentBanner() {
 
   function decide(categories: ConsentCategories) {
     const record = saveConsent(categories);
-    applyConsent(record);
+    applyConsent(record, router);
     setVisible(false);
     setCustomizeOpen(false);
   }
