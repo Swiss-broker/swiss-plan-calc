@@ -79,6 +79,29 @@ export function useSimCountsByCase(clientId: string) {
   });
 }
 
+// Rattache a posteriori une simulation sans dossier (case_id NULL, bucket
+// "Historique (avant dossiers)") à un dossier existant du même client — pour
+// récupérer des simulations enregistrées via le menu Calculateurs global
+// (sans passer par la fiche client) plutôt que de les laisser coincées hors
+// de tout dossier.
+export function useAssignSimulationToCase(clientId: string | undefined) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (vars: { simulationId: string; caseId: string }) => {
+      const { error } = await supabase
+        .from("simulation_history")
+        .update({ case_id: vars.caseId })
+        .eq("id", vars.simulationId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["client-simulations", clientId] });
+      qc.invalidateQueries({ queryKey: ["client-sim-counts-by-case", clientId] });
+      qc.invalidateQueries({ queryKey: ["simulation-history"] });
+    },
+  });
+}
+
 export function useSetClientCaseStatus(clientId: string | undefined) {
   const qc = useQueryClient();
   return useMutation({

@@ -84,7 +84,7 @@ const DEFAULT_B: InvestmentInput = {
 
 function InvestmentCompareCalc() {
   const t = useT();
-  const { clientId, simId } = Route.useSearch();
+  const { clientId, caseId, simId } = Route.useSearch();
   const { client, prefill } = usePrefillFromClient(clientId, "investment-compare");
   const { inputs: savedInputs, isLoading: loadingSaved } = useLoadSavedSimulation(simId);
   const [a, setA] = useState<InvestmentInput>({ ...DEFAULT_A, name: t("calc.invcompare.default_a") });
@@ -164,7 +164,7 @@ function InvestmentCompareCalc() {
   return (
     <div className="space-y-6">
       <CrossCalcImpactBanner calculator="investment-compare" clientId={clientId} />
-      {client && <ClientLinkBanner client={client} />}
+      {client && <ClientLinkBanner client={client} caseId={caseId} />}
       {simId && loadingSaved && (
         <div className="rounded-lg border border-primary/30 bg-primary/5 p-3 text-sm text-muted-foreground">
           Chargement de la sauvegarde…

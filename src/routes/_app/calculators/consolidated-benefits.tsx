@@ -120,7 +120,7 @@ function ConsolidatedBenefitsCalc() {
         </CalcCard>
       ) : (
         <>
-          <ClientLinkBanner client={bundle.client} />
+          <ClientLinkBanner client={bundle.client} caseId={caseId} />
           <ConsolidatedBenefitsCard bundle={bundle} caseId={caseId} />
         </>
       )}

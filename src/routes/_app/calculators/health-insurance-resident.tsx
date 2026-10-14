@@ -3,7 +3,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { z } from "zod";
 import { zodValidator, fallback } from "@tanstack/zod-adapter";
-import { Info } from "lucide-react";
+import { Info, ExternalLink } from "lucide-react";
 import { CalcCard, MoneyTile, Row, HelpDot } from "@/components/calculators/CalcUI";
 import { SaveSimulationButton } from "@/components/calculators/SaveSimulationButton";
 import { ClientLinkBanner } from "@/components/calculators/ClientLinkBanner";
@@ -32,7 +32,7 @@ export const Route = createFileRoute("/_app/calculators/health-insurance-residen
 });
 
 function HealthInsuranceResidentCalc() {
-  const { clientId, simId } = Route.useSearch();
+  const { clientId, caseId, simId } = Route.useSearch();
   const { client, prefill } = usePrefillFromClient(clientId, "health-insurance-resident");
   const { inputs: savedInputs, isLoading: loadingSaved } = useLoadSavedSimulation(simId);
   const [form, setForm] = useState<HealthResidentInput>({
@@ -102,7 +102,7 @@ function HealthInsuranceResidentCalc() {
       />
       {client && (
         <div className="md:col-span-5">
-          <ClientLinkBanner client={client} />
+          <ClientLinkBanner client={client} caseId={caseId} />
         </div>
       )}
       {simId && loadingSaved && (
@@ -205,6 +205,16 @@ function HealthInsuranceResidentCalc() {
             )}
           </CalcCard>
         </div>
+
+        <a
+          href="https://www.priminfo.admin.ch"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center justify-between gap-2 rounded-lg border border-primary/30 bg-primary/5 px-4 py-3 text-sm font-medium text-primary transition-colors hover:bg-primary/10"
+        >
+          <span>Comparer les caisses maladie et faire la demande sur Priminfo (OFSP)</span>
+          <ExternalLink className="h-4 w-4 shrink-0" />
+        </a>
 
         <div className="flex justify-end" data-guide="health-res-save">
           <SaveSimulationButton

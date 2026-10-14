@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { getClientDisplayName } from "@/lib/clients/to-calculator-input";
 import { useT } from "@/contexts/LanguageContext";
 
-export function ClientLinkBanner({ client }: { client: Client }) {
+export function ClientLinkBanner({ client, caseId }: { client: Client; caseId?: string }) {
   const t = useT();
   return (
     <div
@@ -36,11 +36,33 @@ export function ClientLinkBanner({ client }: { client: Client }) {
             </div>
           </div>
         </div>
-        <Link to="/clients/$clientId" params={{ clientId: client.id }}>
-          <Button variant="outline" size="sm">
-            <ArrowLeft className="h-4 w-4" /> {t("client_link.back_to_file")}
-          </Button>
-        </Link>
+        {caseId ? (
+          // Un dossier est actif : on y reste ancré par défaut, pour que la
+          // prochaine simulation lancée depuis cette fiche reste dans le
+          // même dossier (voir le bug "Retour à la fiche" qui faisait
+          // perdre le dossier actif et expédiait les simulations suivantes
+          // hors de tout dossier, difficiles à retrouver ensuite).
+          <div className="flex flex-col items-end gap-1">
+            <Link to="/clients/$clientId/cases/$caseId" params={{ clientId: client.id, caseId }}>
+              <Button variant="outline" size="sm">
+                <ArrowLeft className="h-4 w-4" /> Retour au dossier
+              </Button>
+            </Link>
+            <Link
+              to="/clients/$clientId"
+              params={{ clientId: client.id }}
+              className="text-[11px] text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
+            >
+              Quitter vers la fiche client
+            </Link>
+          </div>
+        ) : (
+          <Link to="/clients/$clientId" params={{ clientId: client.id }}>
+            <Button variant="outline" size="sm">
+              <ArrowLeft className="h-4 w-4" /> {t("client_link.back_to_file")}
+            </Button>
+          </Link>
+        )}
       </div>
       <p className="mt-2 text-[11px] text-muted-foreground">
         {t("client_link.auto_save_note", { name: getClientDisplayName(client) })}

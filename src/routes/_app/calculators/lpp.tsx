@@ -287,7 +287,7 @@ function LppCalc() {
       <GuideMode open={guideOpen} onClose={() => setGuideOpen(false)} steps={guideSteps} title={t("calc.lpp.guide_title")} guideId="calc-lpp" />
       <div className="flex justify-end"><GuideToggleButton onClick={() => setGuideOpen(true)} /></div>
 
-      {client && <ClientLinkBanner client={client} />}
+      {client && <ClientLinkBanner client={client} caseId={caseId} />}
       {simId && loadingSaved && (
         <div className="rounded-lg border border-primary/30 bg-primary/5 p-3 text-sm text-muted-foreground">
           Chargement de la sauvegarde…

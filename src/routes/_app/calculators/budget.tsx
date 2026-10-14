@@ -129,7 +129,7 @@ function BudgetCalc() {
       />
       {client && (
         <div className="md:col-span-5">
-          <ClientLinkBanner client={client} />
+          <ClientLinkBanner client={client} caseId={caseId} />
         </div>
       )}
       {simId && loadingSaved && (

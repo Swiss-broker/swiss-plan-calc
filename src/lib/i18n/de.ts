@@ -1869,6 +1869,7 @@ export const de: Record<string, string> = {
   "calc.global.section.deductions": "Optimierungen & Abzüge",
   "calc.global.section.frontalier": "Grenzgänger-Parameter",
   "calc.global.field.canton": "Arbeitskanton",
+  "calc.global.field.canton_residence": "Wohnsitzkanton",
   "calc.global.field.country": "Wohnsitzland",
   "calc.global.field.permit": "Bewilligung",
   "calc.global.field.civil_status": "Zivilstand",

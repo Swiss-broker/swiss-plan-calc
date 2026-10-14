@@ -56,7 +56,7 @@ const fmtCHF = (n: number) =>
 const fmtH = (n: number) => `${Math.round(n).toLocaleString("fr-CH")} h`;
 
 function OvertimeCalc() {
-  const { clientId, simId } = Route.useSearch();
+  const { clientId, caseId, simId } = Route.useSearch();
   const { client, prefill } = usePrefillFromClient(clientId, "overtime");
   const { inputs: savedInputs, isLoading: loadingSaved } = useLoadSavedSimulation(simId);
   const [form, setForm] = useState<OvertimeInput>({
@@ -134,7 +134,7 @@ function OvertimeCalc() {
       />
       {client && (
         <div className="md:col-span-5">
-          <ClientLinkBanner client={client} />
+          <ClientLinkBanner client={client} caseId={caseId} />
         </div>
       )}
       {simId && loadingSaved && (

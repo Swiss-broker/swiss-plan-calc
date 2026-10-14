@@ -315,7 +315,7 @@ function TaxGlobalCalc() {
       <div className="flex justify-end">
         <GuideToggleButton onClick={() => setGuideOpen(true)} />
       </div>
-      {client && <ClientLinkBanner client={client} />}
+      {client && <ClientLinkBanner client={client} caseId={caseId} />}
 
       {/* Hero */}
       <CalcCard className="bg-gradient-primary text-primary-foreground">
@@ -369,7 +369,13 @@ function TaxGlobalCalc() {
                 <AccordionTrigger>{t("calc.global.section.identity")}</AccordionTrigger>
                 <AccordionContent>
                   <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                    <Field label={t("calc.global.field.canton")}>
+                    <Field
+                      label={
+                        isFrontalier
+                          ? t("calc.global.field.canton")
+                          : t("calc.global.field.canton_residence")
+                      }
+                    >
                       <Select value={form.canton} onValueChange={(v) => set("canton", v)}>
                         <SelectTrigger>
                           <SelectValue />

@@ -1858,6 +1858,7 @@ export const it: Record<string, string> = {
   "calc.global.section.deductions": "Ottimizzazioni & deduzioni",
   "calc.global.section.frontalier": "Parametri frontaliere",
   "calc.global.field.canton": "Cantone di lavoro",
+  "calc.global.field.canton_residence": "Cantone di residenza",
   "calc.global.field.country": "Paese di residenza",
   "calc.global.field.permit": "Permesso",
   "calc.global.field.civil_status": "Stato civile",

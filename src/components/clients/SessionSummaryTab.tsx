@@ -20,7 +20,14 @@ import {
   ArchiveRestore,
   ChevronDown,
   Clock,
+  FolderInput,
 } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -42,7 +49,13 @@ import {
 import { formatCHF } from "@/lib/format";
 import { formatDateShort } from "@/lib/i18n/format";
 import { useT } from "@/contexts/LanguageContext";
-import { useClientCases, useSetClientCaseStatus, useSimCountsByCase } from "@/hooks/useClientCases";
+import {
+  useClientCases,
+  useSetClientCaseStatus,
+  useSimCountsByCase,
+  useAssignSimulationToCase,
+  type ClientCase,
+} from "@/hooks/useClientCases";
 import { SynthesisReportModal } from "./SynthesisReportModal";
 import { CaseRow } from "./ClientCasesTab";
 
@@ -118,7 +131,9 @@ export function SessionSummaryTab({
     } catch (e) {
       const msg = e instanceof Error ? e.message : "Erreur génération lien";
       if (msg.includes("Compte bancaire non configuré")) {
-        toast.error("Compte bancaire non connecté. Allez dans Mon profil → Abonnement pour connecter votre IBAN avant de facturer un client.");
+        toast.error(
+          "Compte bancaire non connecté. Allez dans Mon profil → Abonnement pour connecter votre IBAN avant de facturer un client.",
+        );
       } else {
         toast.error(msg);
       }
@@ -188,27 +203,29 @@ export function SessionSummaryTab({
   // ici. Comme une facture "payée" (status='paid') n'a pdf_unlocked=false
   // que si ce trigger l'a reverrouillée après coup, ça suffit à distinguer
   // "jamais payé" de "payé puis reverrouillé" pour le message affiché.
-  const { data: pdfUnlockResult = { unlocked: false, revokedByIdentityChange: false }, refetch: refetchPdf } =
-    useQuery({
-      queryKey: ["pdf-unlocked", clientId],
-      refetchInterval: 5000,
-      queryFn: async () => {
-        const { data } = await supabase
-          .from("rdv_invoices")
-          .select("pdf_unlocked")
-          .eq("client_id", clientId)
-          .eq("status", "paid")
-          .order("created_at", { ascending: false })
-          .limit(1);
+  const {
+    data: pdfUnlockResult = { unlocked: false, revokedByIdentityChange: false },
+    refetch: refetchPdf,
+  } = useQuery({
+    queryKey: ["pdf-unlocked", clientId],
+    refetchInterval: 5000,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("rdv_invoices")
+        .select("pdf_unlocked")
+        .eq("client_id", clientId)
+        .eq("status", "paid")
+        .order("created_at", { ascending: false })
+        .limit(1);
 
-        if (!data || data.length === 0) {
-          return { unlocked: false, revokedByIdentityChange: false };
-        }
+      if (!data || data.length === 0) {
+        return { unlocked: false, revokedByIdentityChange: false };
+      }
 
-        const unlocked = data[0].pdf_unlocked;
-        return { unlocked, revokedByIdentityChange: !unlocked };
-      },
-    });
+      const unlocked = data[0].pdf_unlocked;
+      return { unlocked, revokedByIdentityChange: !unlocked };
+    },
+  });
 
   const pdfUnlocked = pdfUnlockResult.unlocked;
   const revokedByIdentityChange = pdfUnlockResult.revokedByIdentityChange;
@@ -317,6 +334,8 @@ export function SessionSummaryTab({
     },
   });
 
+  const assignToCase = useAssignSimulationToCase(clientId);
+
   const agg = aggregateGains(entries);
   const dismissedGains = listDismissedGains(entries);
 
@@ -332,9 +351,7 @@ export function SessionSummaryTab({
         </CardHeader>
         <CardContent>
           {agg.items.length === 0 ? (
-            <p className="text-sm text-muted-foreground">
-              {t("client.session.no_gains")}
-            </p>
+            <p className="text-sm text-muted-foreground">{t("client.session.no_gains")}</p>
           ) : (
             <>
               <ul className="space-y-3">
@@ -343,7 +360,9 @@ export function SessionSummaryTab({
                     key={g.entryId}
                     gain={g}
                     onArchive={() => setGainDismissed.mutate({ id: g.entryId, dismissed: true })}
-                    archiving={setGainDismissed.isPending && setGainDismissed.variables?.id === g.entryId}
+                    archiving={
+                      setGainDismissed.isPending && setGainDismissed.variables?.id === g.entryId
+                    }
                   />
                 ))}
               </ul>
@@ -351,14 +370,20 @@ export function SessionSummaryTab({
               <div className="space-y-1">
                 {agg.totalOneTime > 0 && (
                   <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">{t("client.session.total_one_time")}</span>
+                    <span className="text-muted-foreground">
+                      {t("client.session.total_one_time")}
+                    </span>
                     <span className="font-semibold">{formatCHF(agg.totalOneTime)}</span>
                   </div>
                 )}
                 {agg.totalAnnual > 0 && (
                   <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">{t("client.session.total_annual")}</span>
-                    <span className="font-semibold">{formatCHF(agg.totalAnnual)} / {t("client.session.per_year")}</span>
+                    <span className="text-muted-foreground">
+                      {t("client.session.total_annual")}
+                    </span>
+                    <span className="font-semibold">
+                      {formatCHF(agg.totalAnnual)} / {t("client.session.per_year")}
+                    </span>
                   </div>
                 )}
                 <div className="flex items-center justify-between border-t pt-2 text-base">
@@ -399,10 +424,13 @@ export function SessionSummaryTab({
                       variant="ghost"
                       className="shrink-0 gap-1.5 text-xs"
                       onClick={() => setGainDismissed.mutate({ id: g.entryId, dismissed: false })}
-                      disabled={setGainDismissed.isPending && setGainDismissed.variables?.id === g.entryId}
+                      disabled={
+                        setGainDismissed.isPending && setGainDismissed.variables?.id === g.entryId
+                      }
                       title={t("client.session.restore_tooltip")}
                     >
-                      {setGainDismissed.isPending && setGainDismissed.variables?.id === g.entryId ? (
+                      {setGainDismissed.isPending &&
+                      setGainDismissed.variables?.id === g.entryId ? (
                         <Loader2 className="h-3.5 w-3.5 animate-spin" />
                       ) : (
                         <ArchiveRestore className="h-3.5 w-3.5" />
@@ -435,7 +463,9 @@ export function SessionSummaryTab({
               <p className="text-sm text-muted-foreground">{t("history.loading")}</p>
             ) : entries.length === 0 ? (
               <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 space-y-2">
-                <p className="text-sm font-semibold text-amber-800">Aucune simulation enregistrée</p>
+                <p className="text-sm font-semibold text-amber-800">
+                  Aucune simulation enregistrée
+                </p>
                 <p className="text-xs text-amber-700">
                   Pour générer la synthèse PDF de ce rendez-vous, vous devez d'abord sauvegarder au
                   moins une simulation depuis un calculateur.
@@ -456,6 +486,11 @@ export function SessionSummaryTab({
                     onDelete={() => remove.mutate(e.id)}
                     onToggleBaseline={() => setBaseline.mutate(e)}
                     baselineLoading={setBaseline.isPending && setBaseline.variables?.id === e.id}
+                    cases={cases}
+                    onAssignToCase={(caseId) => assignToCase.mutate({ simulationId: e.id, caseId })}
+                    assigningToCase={
+                      assignToCase.isPending && assignToCase.variables?.simulationId === e.id
+                    }
                   />
                 ))}
               </ul>
@@ -539,7 +574,10 @@ export function SessionSummaryTab({
           <div>
             <p className="text-sm font-semibold text-destructive">Synthèse PDF reverrouillée</p>
             <p className="text-xs text-muted-foreground mt-0.5">
-              Les informations d'identité de ce client (nom, prénom, date de naissance, genre, nationalité ou email) ont changé depuis le dernier paiement reçu. Pour des raisons de sécurité, la synthèse PDF est reverrouillée. Facturez à nouveau ce rendez-vous pour la débloquer.
+              Les informations d'identité de ce client (nom, prénom, date de naissance, genre,
+              nationalité ou email) ont changé depuis le dernier paiement reçu. Pour des raisons de
+              sécurité, la synthèse PDF est reverrouillée. Facturez à nouveau ce rendez-vous pour la
+              débloquer.
             </p>
           </div>
         </div>
@@ -547,11 +585,13 @@ export function SessionSummaryTab({
 
       {/* BLOC STATUT PAIEMENT */}
       {pendingInvoice && !invoiceOpen && (
-        <div className={`rounded-xl border p-4 flex items-center justify-between ${
-          pendingInvoice.status === "paid"
-            ? "border-success/30 bg-success/5"
-            : "border-amber-200 bg-amber-50"
-        }`}>
+        <div
+          className={`rounded-xl border p-4 flex items-center justify-between ${
+            pendingInvoice.status === "paid"
+              ? "border-success/30 bg-success/5"
+              : "border-amber-200 bg-amber-50"
+          }`}
+        >
           <div>
             {pendingInvoice.status === "paid" ? (
               <p className="text-sm font-semibold text-success">
@@ -570,7 +610,9 @@ export function SessionSummaryTab({
                 CHF
               </p>
             )}
-            <p className="text-xs text-muted-foreground mt-0.5">{new Date(pendingInvoice.created_at).toLocaleDateString("fr-CH")}</p>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              {new Date(pendingInvoice.created_at).toLocaleDateString("fr-CH")}
+            </p>
           </div>
           <div className="flex gap-2">
             {pendingInvoice.status === "pending" && pendingInvoice.stripe_payment_link && (
@@ -609,7 +651,9 @@ export function SessionSummaryTab({
               />
             </div>
             <div className="space-y-1.5">
-              <label className="text-xs font-medium text-muted-foreground">Description (optionnel)</label>
+              <label className="text-xs font-medium text-muted-foreground">
+                Description (optionnel)
+              </label>
               <input
                 type="text"
                 value={invoiceDesc}
@@ -627,7 +671,10 @@ export function SessionSummaryTab({
               <div className="flex gap-2">
                 <button
                   type="button"
-                  onClick={() => { navigator.clipboard.writeText(invoiceLink); toast.success("Lien copié"); }}
+                  onClick={() => {
+                    navigator.clipboard.writeText(invoiceLink);
+                    toast.success("Lien copié");
+                  }}
                   className="rounded-lg border border-border bg-background px-3 py-1.5 text-xs font-medium hover:bg-muted"
                 >
                   Copier le lien
@@ -639,22 +686,29 @@ export function SessionSummaryTab({
                   className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-60"
                 >
                   {sendingEmail && <Loader2 className="h-3 w-3 animate-spin" />}
-                  {currentIdentity?.email ? `Envoyer à ${currentIdentity.email}` : "Envoyer par email"}
+                  {currentIdentity?.email
+                    ? `Envoyer à ${currentIdentity.email}`
+                    : "Envoyer par email"}
                 </button>
               </div>
               {!currentIdentity?.email && (
                 <p className="text-[11px] text-warning-foreground">
-                  ⚠️ Ce client n'a pas d'adresse email renseignée. Ajoutez-en une dans sa fiche pour pouvoir envoyer le lien par email.
+                  ⚠️ Ce client n'a pas d'adresse email renseignée. Ajoutez-en une dans sa fiche pour
+                  pouvoir envoyer le lien par email.
                 </p>
               )}
             </div>
           ) : (
             <div className="flex gap-2">
               <Button onClick={onGenerateInvoice} disabled={invoiceLoading} className="gap-2">
-                {invoiceLoading && <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white border-t-transparent" />}
+                {invoiceLoading && (
+                  <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                )}
                 Générer le lien de paiement
               </Button>
-              <Button variant="outline" onClick={() => setInvoiceOpen(false)}>Annuler</Button>
+              <Button variant="outline" onClick={() => setInvoiceOpen(false)}>
+                Annuler
+              </Button>
             </div>
           )}
         </div>
@@ -667,7 +721,10 @@ export function SessionSummaryTab({
             size="lg"
             variant="outline"
             className="gap-2"
-            onClick={() => { setInvoiceOpen(true); setInvoiceLink(null); }}
+            onClick={() => {
+              setInvoiceOpen(true);
+              setInvoiceLink(null);
+            }}
           >
             <span>💶</span>
             Facturer ce RDV
@@ -774,7 +831,9 @@ function GainListItem({
             ? `${formatCHF(gain.amount)} / ${t("client.session.per_year")}`
             : formatCHF(gain.amount)}
           <Badge variant="outline" className="ml-2 text-[10px]">
-            {gain.type === "annual" ? t("client.session.gain.annual") : t("client.session.gain.one_time")}
+            {gain.type === "annual"
+              ? t("client.session.gain.annual")
+              : t("client.session.gain.one_time")}
           </Badge>
         </div>
       </div>
@@ -801,11 +860,17 @@ function SimItem({
   onDelete,
   onToggleBaseline,
   baselineLoading,
+  cases,
+  onAssignToCase,
+  assigningToCase,
 }: {
   entry: HistoryEntry;
   onDelete: () => void;
   onToggleBaseline: () => void;
   baselineLoading: boolean;
+  cases: ClientCase[];
+  onAssignToCase: (caseId: string) => void;
+  assigningToCase: boolean;
 }) {
   const t = useT();
   const route = KIND_ROUTES[entry.kind] as "/calculators/lpp";
@@ -833,6 +898,31 @@ function SimItem({
         </div>
       </div>
       <div className="flex shrink-0 gap-1">
+        {!entry.case_id && cases.length > 0 && (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                size="sm"
+                variant="ghost"
+                disabled={assigningToCase}
+                title="Déplacer vers un dossier"
+              >
+                {assigningToCase ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <FolderInput className="h-4 w-4 text-muted-foreground" />
+                )}
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56">
+              {cases.map((c) => (
+                <DropdownMenuItem key={c.id} onSelect={() => onAssignToCase(c.id)}>
+                  {c.title}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
         <Button
           size="sm"
           variant="ghost"
@@ -847,14 +937,16 @@ function SimItem({
           {baselineLoading ? (
             <Loader2 className="h-4 w-4 animate-spin" />
           ) : (
-            <Star className={`h-4 w-4 ${entry.is_baseline ? "fill-primary text-primary" : "text-muted-foreground"}`} />
+            <Star
+              className={`h-4 w-4 ${entry.is_baseline ? "fill-primary text-primary" : "text-muted-foreground"}`}
+            />
           )}
         </Button>
         <Button asChild size="sm" variant="ghost" title={t("history.action.open_tooltip")}>
-  <Link to={route} search={{ clientId: entry.client_id ?? undefined, simId: entry.id }}>
-    <ExternalLink className="h-4 w-4" />
-  </Link>
-</Button>
+          <Link to={route} search={{ clientId: entry.client_id ?? undefined, simId: entry.id }}>
+            <ExternalLink className="h-4 w-4" />
+          </Link>
+        </Button>
         <Button
           size="sm"
           variant="ghost"

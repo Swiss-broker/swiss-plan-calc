@@ -46,7 +46,7 @@ export const Route = createFileRoute("/_app/calculators/health-insurance-france"
 });
 
 function HealthInsuranceFranceCalc() {
-  const { clientId, simId } = Route.useSearch();
+  const { clientId, caseId, simId } = Route.useSearch();
   const { client, prefill } = usePrefillFromClient(clientId, "health-insurance-france");
   const { inputs: savedInputs, isLoading: loadingSaved } = useLoadSavedSimulation(simId);
   const [form, setForm] = useState<HealthFranceInput>({
@@ -122,7 +122,7 @@ function HealthInsuranceFranceCalc() {
       />
       {client && (
         <div className="md:col-span-5">
-          <ClientLinkBanner client={client} />
+          <ClientLinkBanner client={client} caseId={caseId} />
         </div>
       )}
       {simId && loadingSaved && (

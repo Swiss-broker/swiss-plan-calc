@@ -63,7 +63,7 @@ export const Route = createFileRoute("/_app/calculators/avs-ai")({
 function AvsAiCalc() {
   const t = useT();
   const currentYear = new Date().getFullYear();
-  const { clientId, simId } = Route.useSearch();
+  const { clientId, caseId, simId } = Route.useSearch();
   const { client, bundle, prefill } = usePrefillFromClient(clientId, "avs-ai");
   const { inputs: savedInputs, isLoading: loadingSaved } = useLoadSavedSimulation(simId);
 
@@ -235,7 +235,7 @@ function AvsAiCalc() {
         title={t("calc.avs.guide_title")}
         guideId="calc-avs-ai"
       />
-      {client && <ClientLinkBanner client={client} />}
+      {client && <ClientLinkBanner client={client} caseId={caseId} />}
       {simId && loadingSaved && (
         <div className="rounded-lg border border-primary/30 bg-primary/5 p-3 text-sm text-muted-foreground">
           Chargement de la sauvegarde…

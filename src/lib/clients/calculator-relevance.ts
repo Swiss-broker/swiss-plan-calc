@@ -19,6 +19,7 @@ export type CalcRoute =
   | "/calculators/investment-compare"
   | "/calculators/director-compensation"
   | "/calculators/health-insurance-france"
+  | "/calculators/health-insurance-resident"
   | "/calculators/overtime"
   | "/calculators/consolidated-benefits"
   | "/calculators/budget";
@@ -92,6 +93,11 @@ export function getCalculatorRelevance(c: Client, route: CalcRoute): Relevance {
       )
         return OK;
       return { relevant: false, reason: "Spécifique aux frontaliers résidents en France." };
+
+    case "/calculators/health-insurance-resident":
+      if (ts === "cross_border_fr_1983" || ts === "cross_border_ge")
+        return { relevant: false, reason: "Client frontalier : voir plutôt CMU / LAMal." };
+      return OK;
 
     case "/calculators/overtime":
       if (

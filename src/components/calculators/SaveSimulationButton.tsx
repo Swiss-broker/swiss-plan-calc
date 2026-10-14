@@ -26,6 +26,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useT } from "@/contexts/LanguageContext";
 import type { SimulationKind } from "@/lib/history/types";
+import { useClientCases } from "@/hooks/useClientCases";
 
 export function SaveSimulationButton({
   kind,
@@ -52,6 +53,12 @@ export function SaveSimulationButton({
   // dossier, tout ce qu'on enregistre y va. Absent en usage autonome
   // (menu latéral, sans client).
   const [caseId, setCaseId] = useState<string | null>(null);
+  // Dossier choisi manuellement quand le client est sélectionné dans ce
+  // dialogue (pas de caseId dans l'URL, ex. calculateur lancé depuis le menu
+  // latéral) — sans ce choix explicite, la simulation partait silencieusement
+  // dans "Historique (avant dossiers)" même pour un usage récent, ce qui l'y
+  // rendait difficile à retrouver.
+  const [manualCaseId, setManualCaseId] = useState<string>("none");
 
   // Pré-remplir depuis l'URL si on est lancé depuis une fiche client (?clientId=xxx&caseId=yyy)
   useEffect(() => {
@@ -61,6 +68,11 @@ export function SaveSimulationButton({
     if (cid) setClientId(cid);
     setCaseId(params.get("caseId"));
   }, []);
+
+  const { cases: manualClientCases } = useClientCases(
+    !caseId && clientId !== "none" ? clientId : undefined,
+  );
+  const openManualCases = manualClientCases.filter((c) => c.status === "open");
 
   const { data: clients = [] } = useQuery({
     queryKey: ["clients-mini", user?.id],
@@ -86,7 +98,7 @@ export function SaveSimulationButton({
       const payload = {
         broker_id: user.id,
         client_id: clientId === "none" ? null : clientId,
-        case_id: caseId,
+        case_id: caseId ?? (manualCaseId === "none" ? null : manualCaseId),
         kind: kind as never,
         title: title.trim() || (defaultTitle ?? t("save_sim.default_title")),
         note: note.trim() || null,
@@ -104,6 +116,7 @@ export function SaveSimulationButton({
       setTitle(defaultTitle ?? "");
       setNote("");
       setTagsRaw("");
+      setManualCaseId("none");
       // Conserver le clientId pré-rempli depuis l'URL
       if (typeof window !== "undefined") {
         const cid = new URLSearchParams(window.location.search).get("clientId");
@@ -163,7 +176,13 @@ export function SaveSimulationButton({
                   <span className="ml-auto text-[10px]">Dossier actif</span>
                 </div>
               ) : (
-                <Select value={clientId} onValueChange={setClientId}>
+                <Select
+                  value={clientId}
+                  onValueChange={(v) => {
+                    setClientId(v);
+                    setManualCaseId("none");
+                  }}
+                >
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
@@ -176,6 +195,27 @@ export function SaveSimulationButton({
                     ))}
                   </SelectContent>
                 </Select>
+              )}
+              {!caseId && clientId !== "none" && openManualCases.length > 0 && (
+                <div className="space-y-1">
+                  <Select value={manualCaseId} onValueChange={setManualCaseId}>
+                    <SelectTrigger className="h-8 text-xs">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">Sans dossier (Historique)</SelectItem>
+                      {openManualCases.map((c) => (
+                        <SelectItem key={c.id} value={c.id}>
+                          Dossier : {c.title}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-[10px] text-muted-foreground">
+                    Sans dossier choisi, cette simulation sera rangée dans "Historique" et plus
+                    difficile à retrouver.
+                  </p>
+                </div>
               )}
             </div>
             <div className="space-y-1.5">

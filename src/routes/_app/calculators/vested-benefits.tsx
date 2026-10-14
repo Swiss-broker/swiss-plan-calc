@@ -66,7 +66,7 @@ const STRATEGY_ICONS: Record<VestedStrategy, React.ElementType> = {
 
 function VestedBenefitsCalc() {
   const t = useT();
-  const { clientId, simId } = Route.useSearch();
+  const { clientId, caseId, simId } = Route.useSearch();
   const { client, prefill } = usePrefillFromClient(clientId, "vested-benefits");
   const { inputs: savedInputs, isLoading: loadingSaved } = useLoadSavedSimulation(simId);
   const [form, setForm] = useState({
@@ -90,7 +90,8 @@ function VestedBenefitsCalc() {
     setForm((f) => ({ ...f, [k]: v }));
 
   const projections = useMemo(
-    () => compareVestedStrategies(form.initialBalance, form.yearsToRetirement, form.withdrawalCanton),
+    () =>
+      compareVestedStrategies(form.initialBalance, form.yearsToRetirement, form.withdrawalCanton),
     [form],
   );
 
@@ -138,15 +139,31 @@ function VestedBenefitsCalc() {
   const [guideOpen, setGuideOpen] = useState(false);
   const guideSteps: GuideStep[] = [
     { title: t("calc.vested.step.welcome.t"), body: t("calc.vested.step.welcome.b") },
-    { target: "vested-initial-balance", title: t("calc.vested.step.capital.t"), body: t("calc.vested.step.capital.b") },
-    { target: "vested-withdrawal-canton", title: t("calc.vested.step.split.t"), body: t("calc.vested.step.split.b") },
+    {
+      target: "vested-initial-balance",
+      title: t("calc.vested.step.capital.t"),
+      body: t("calc.vested.step.capital.b"),
+    },
+    {
+      target: "vested-withdrawal-canton",
+      title: t("calc.vested.step.split.t"),
+      body: t("calc.vested.step.split.b"),
+    },
   ];
 
   return (
     <div className="space-y-6">
       <CrossCalcImpactBanner calculator="vested-benefits" clientId={clientId} />
-      <GuideMode open={guideOpen} onClose={() => setGuideOpen(false)} steps={guideSteps} title={t("calc.vested.guide_title")} guideId="calc-vested-benefits" />
-      <div className="flex justify-end"><GuideToggleButton onClick={() => setGuideOpen(true)} /></div>
+      <GuideMode
+        open={guideOpen}
+        onClose={() => setGuideOpen(false)}
+        steps={guideSteps}
+        title={t("calc.vested.guide_title")}
+        guideId="calc-vested-benefits"
+      />
+      <div className="flex justify-end">
+        <GuideToggleButton onClick={() => setGuideOpen(true)} />
+      </div>
       {simId && loadingSaved && (
         <div className="rounded-lg border border-primary/30 bg-primary/5 p-3 text-sm text-muted-foreground">
           Chargement de la sauvegarde…
@@ -154,7 +171,8 @@ function VestedBenefitsCalc() {
       )}
       {simId && !loadingSaved && savedInputs && (
         <div className="rounded-lg border border-primary/30 bg-primary/5 p-3 text-sm">
-          Vous consultez une simulation sauvegardée. Toute modification créera une nouvelle sauvegarde distincte si vous cliquez sur « Sauvegarder ».
+          Vous consultez une simulation sauvegardée. Toute modification créera une nouvelle
+          sauvegarde distincte si vous cliquez sur « Sauvegarder ».
         </div>
       )}
 
@@ -178,88 +196,155 @@ function VestedBenefitsCalc() {
       </div>
 
       <div className="grid grid-cols-1 gap-6 md:grid-cols-5">
-      {client && <div className="md:col-span-5"><ClientLinkBanner client={client} /></div>}
-      <div className="md:col-span-2">
-        <CalcCard title={t("calc.vested.params_card")} description={t("calc.vested.params_desc")}>
-          <div className="space-y-4">
-         <Field label={t("calc.vested.field.initial")} wikiId="lpp-conversion" wikiTip={t("calc.vested.tip.initial")} data-guide="vested-initial-balance">
-              <BaseNumField
-                value={String(form.initialBalance)}
-                onChange={(v) => set("initialBalance", Number(v) || 0)}
-                suffix="CHF"
-              />
-              <ClientPrefillBadge show={!!prefill?.initialBalance && form.initialBalance === prefill.initialBalance} clientName={client ? `${client.first_name} ${client.last_name}` : undefined} />
-            </Field>
-            <Field label={t("calc.vested.field.years")} wikiId="lpp-conversion" wikiTip={t("calc.vested.tip.years")}>
-              <BaseNumField
-                value={String(form.yearsToRetirement)}
-                onChange={(v) => set("yearsToRetirement", Number(v) || 0)}
-              />
-              <ClientPrefillBadge show={!!prefill?.yearsToRetirement && form.yearsToRetirement === prefill.yearsToRetirement} clientName={client ? `${client.first_name} ${client.last_name}` : undefined} />
-            </Field>
-            <Field label={t("calc.vested.field.canton")} wikiId="lpp-conversion" wikiTip={t("calc.vested.tip.canton")} data-guide="vested-withdrawal-canton">
-              <Select value={form.withdrawalCanton} onValueChange={(v) => set("withdrawalCanton", v)}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {getWithdrawalCantons().map((c) => (
-                    <SelectItem key={c.code} value={c.code}>{c.code} · {c.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </Field>
+        {client && (
+          <div className="md:col-span-5">
+            <ClientLinkBanner client={client} caseId={caseId} />
           </div>
-
-          <div className="mt-5 rounded-lg border border-primary/30 bg-primary/5 p-3 text-sm">
-            <div className="flex items-center gap-2 font-semibold">
-              <Sparkles className="h-4 w-4 text-primary" />
-              {t("calc.vested.recommendation")}
-            </div>
-            <p className="mt-1 text-xs text-muted-foreground">
-              {t("calc.vested.recommendation_body", {
-                years: form.yearsToRetirement,
-                strategy: strategyLabel(recommended),
-              })}
-            </p>
-            {gainVsCurrent > 0 && (
-              <p className="mt-2 text-xs">
-                <span className="font-semibold text-foreground">
-                  {strategyLabel(recommended)} vs {strategyLabel("current")} :
-                </span>{" "}
-                <span className="font-semibold text-success">+{formatCHF(gainVsCurrent)}</span>{" "}
-                <span className="text-muted-foreground">à l'échéance.</span>
-              </p>
-            )}
-          </div>
-        </CalcCard>
-      </div>
-
-      <div className="space-y-4 md:col-span-3">
-        <CalcCard title={t("calc.vested.projection_card")}>
-          <div className="h-72 chart-rise">
-            <ResponsiveContainer width="100%" height="100%">
-              <ComposedChart data={chartData}>
-                <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
-                <XAxis dataKey="year" tickFormatter={(v) => t("calc.vested.year_axis", { n: v })} className="text-xs" />
-                <YAxis tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} className="text-xs" />
-                <Tooltip
-                  formatter={(v: number) => formatCHF(v)}
-                  labelFormatter={(l) => t("calc.vested.year_label", { n: l })}
-                  contentStyle={{
-                    backgroundColor: "hsl(var(--card))",
-                    border: "1px solid hsl(var(--border))",
-                    borderRadius: "8px",
-                  }}
+        )}
+        <div className="md:col-span-2">
+          <CalcCard title={t("calc.vested.params_card")} description={t("calc.vested.params_desc")}>
+            <div className="space-y-4">
+              <Field
+                label={t("calc.vested.field.initial")}
+                wikiId="lpp-conversion"
+                wikiTip={t("calc.vested.tip.initial")}
+                data-guide="vested-initial-balance"
+              >
+                <BaseNumField
+                  value={String(form.initialBalance)}
+                  onChange={(v) => set("initialBalance", Number(v) || 0)}
+                  suffix="CHF"
                 />
-                <Legend />
-                <Line type="monotone" dataKey="current" name={t("calc.vested.strategy.current")} stroke="var(--destructive)" strokeWidth={2} strokeDasharray="4 4" dot={false} />
-                <Line type="monotone" dataKey="security" name={t("calc.vested.strategy.security")} stroke="var(--muted-foreground)" strokeWidth={3} dot={false} />
-                <Line type="monotone" dataKey="balanced" name={t("calc.vested.strategy.balanced")} stroke="var(--primary)" strokeWidth={3} dot={false} />
-                <Line type="monotone" dataKey="dynamic" name={t("calc.vested.strategy.dynamic")} stroke="var(--success)" strokeWidth={3} dot={false} />
-              </ComposedChart>
-            </ResponsiveContainer>
-          </div>
-        </CalcCard>
-      </div>
+                <ClientPrefillBadge
+                  show={!!prefill?.initialBalance && form.initialBalance === prefill.initialBalance}
+                  clientName={client ? `${client.first_name} ${client.last_name}` : undefined}
+                />
+              </Field>
+              <Field
+                label={t("calc.vested.field.years")}
+                wikiId="lpp-conversion"
+                wikiTip={t("calc.vested.tip.years")}
+              >
+                <BaseNumField
+                  value={String(form.yearsToRetirement)}
+                  onChange={(v) => set("yearsToRetirement", Number(v) || 0)}
+                />
+                <ClientPrefillBadge
+                  show={
+                    !!prefill?.yearsToRetirement &&
+                    form.yearsToRetirement === prefill.yearsToRetirement
+                  }
+                  clientName={client ? `${client.first_name} ${client.last_name}` : undefined}
+                />
+              </Field>
+              <Field
+                label={t("calc.vested.field.canton")}
+                wikiId="lpp-conversion"
+                wikiTip={t("calc.vested.tip.canton")}
+                data-guide="vested-withdrawal-canton"
+              >
+                <Select
+                  value={form.withdrawalCanton}
+                  onValueChange={(v) => set("withdrawalCanton", v)}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {getWithdrawalCantons().map((c) => (
+                      <SelectItem key={c.code} value={c.code}>
+                        {c.code} · {c.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </Field>
+            </div>
+
+            <div className="mt-5 rounded-lg border border-primary/30 bg-primary/5 p-3 text-sm">
+              <div className="flex items-center gap-2 font-semibold">
+                <Sparkles className="h-4 w-4 text-primary" />
+                {t("calc.vested.recommendation")}
+              </div>
+              <p className="mt-1 text-xs text-muted-foreground">
+                {t("calc.vested.recommendation_body", {
+                  years: form.yearsToRetirement,
+                  strategy: strategyLabel(recommended),
+                })}
+              </p>
+              {gainVsCurrent > 0 && (
+                <p className="mt-2 text-xs">
+                  <span className="font-semibold text-foreground">
+                    {strategyLabel(recommended)} vs {strategyLabel("current")} :
+                  </span>{" "}
+                  <span className="font-semibold text-success">+{formatCHF(gainVsCurrent)}</span>{" "}
+                  <span className="text-muted-foreground">à l'échéance.</span>
+                </p>
+              )}
+            </div>
+          </CalcCard>
+        </div>
+
+        <div className="space-y-4 md:col-span-3">
+          <CalcCard title={t("calc.vested.projection_card")}>
+            <div className="h-72 chart-rise">
+              <ResponsiveContainer width="100%" height="100%">
+                <ComposedChart data={chartData}>
+                  <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
+                  <XAxis
+                    dataKey="year"
+                    tickFormatter={(v) => t("calc.vested.year_axis", { n: v })}
+                    className="text-xs"
+                  />
+                  <YAxis tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} className="text-xs" />
+                  <Tooltip
+                    formatter={(v: number) => formatCHF(v)}
+                    labelFormatter={(l) => t("calc.vested.year_label", { n: l })}
+                    contentStyle={{
+                      backgroundColor: "hsl(var(--card))",
+                      border: "1px solid hsl(var(--border))",
+                      borderRadius: "8px",
+                    }}
+                  />
+                  <Legend />
+                  <Line
+                    type="monotone"
+                    dataKey="current"
+                    name={t("calc.vested.strategy.current")}
+                    stroke="var(--destructive)"
+                    strokeWidth={2}
+                    strokeDasharray="4 4"
+                    dot={false}
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="security"
+                    name={t("calc.vested.strategy.security")}
+                    stroke="var(--muted-foreground)"
+                    strokeWidth={3}
+                    dot={false}
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="balanced"
+                    name={t("calc.vested.strategy.balanced")}
+                    stroke="var(--primary)"
+                    strokeWidth={3}
+                    dot={false}
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="dynamic"
+                    name={t("calc.vested.strategy.dynamic")}
+                    stroke="var(--success)"
+                    strokeWidth={3}
+                    dot={false}
+                  />
+                </ComposedChart>
+              </ResponsiveContainer>
+            </div>
+          </CalcCard>
+        </div>
       </div>
 
       {/* Situation actuelle (Supplétive) : mise en avant seule, au-dessus
@@ -280,24 +365,52 @@ function VestedBenefitsCalc() {
           </div>
           <p className="mt-1 text-xs text-muted-foreground">{strategyDesc("current")}</p>
           <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
-            <MoneyTile label={t("calc.vested.final_balance")} value={currentProjection.finalBalance} tone="primary" big compact tip={t("calc.vested.tip.final_balance")} />
-            <MoneyTile label={t("calc.vested.net_gains")} value={currentProjection.totalGains} tone="success" big compact tip={t("calc.vested.tip.net_gains")} />
+            <MoneyTile
+              label={t("calc.vested.final_balance")}
+              value={currentProjection.finalBalance}
+              tone="primary"
+              big
+              compact
+              tip={t("calc.vested.tip.final_balance")}
+            />
+            <MoneyTile
+              label={t("calc.vested.net_gains")}
+              value={currentProjection.totalGains}
+              tone="success"
+              big
+              compact
+              tip={t("calc.vested.tip.net_gains")}
+            />
             {currentProjection.estimatedExitTax !== undefined && (
-              <MoneyTile label={t("calc.vested.exit_tax")} value={currentProjection.estimatedExitTax} compact />
+              <MoneyTile
+                label={t("calc.vested.exit_tax")}
+                value={currentProjection.estimatedExitTax}
+                compact
+              />
             )}
             {currentProjection.estimatedExitTax !== undefined && (
-              <MoneyTile label={t("calc.vested.net_after_tax")} value={currentProjection.finalBalance - currentProjection.estimatedExitTax} compact tone="success" />
+              <MoneyTile
+                label={t("calc.vested.net_after_tax")}
+                value={currentProjection.finalBalance - currentProjection.estimatedExitTax}
+                compact
+                tone="success"
+              />
             )}
           </div>
         </CalcCard>
       )}
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-          {projections.filter((p) => p.strategy.id !== "current").map((p) => {
+        {projections
+          .filter((p) => p.strategy.id !== "current")
+          .map((p) => {
             const Icon = STRATEGY_ICONS[p.strategy.id];
             const isRecommended = p.strategy.id === recommended;
             return (
-              <CalcCard key={p.strategy.id} className={isRecommended ? "ring-2 ring-primary/40" : undefined}>
+              <CalcCard
+                key={p.strategy.id}
+                className={isRecommended ? "ring-2 ring-primary/40" : undefined}
+              >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <Icon className="h-5 w-5 text-primary" />
@@ -311,8 +424,22 @@ function VestedBenefitsCalc() {
                 </div>
                 <p className="mt-1 text-xs text-muted-foreground">{strategyDesc(p.strategy.id)}</p>
                 <div className="mt-4 grid grid-cols-2 gap-3">
-                  <MoneyTile label={t("calc.vested.final_balance")} value={p.finalBalance} tone="primary" big compact tip={t("calc.vested.tip.final_balance")} />
-                  <MoneyTile label={t("calc.vested.net_gains")} value={p.totalGains} tone="success" big compact tip={t("calc.vested.tip.net_gains")} />
+                  <MoneyTile
+                    label={t("calc.vested.final_balance")}
+                    value={p.finalBalance}
+                    tone="primary"
+                    big
+                    compact
+                    tip={t("calc.vested.tip.final_balance")}
+                  />
+                  <MoneyTile
+                    label={t("calc.vested.net_gains")}
+                    value={p.totalGains}
+                    tone="success"
+                    big
+                    compact
+                    tip={t("calc.vested.tip.net_gains")}
+                  />
                 </div>
                 <dl className="mt-4 space-y-1.5 text-xs">
                   <Line2 label={t("calc.vested.net_return")} value={`${p.netReturn} %`} />
@@ -320,10 +447,17 @@ function VestedBenefitsCalc() {
                   <Line2 label={t("calc.vested.range_low")} value={formatCHF(p.finalLow)} />
                   <Line2 label={t("calc.vested.range_high")} value={formatCHF(p.finalHigh)} />
                   {p.estimatedExitTax !== undefined && (
-                    <Line2 label={t("calc.vested.exit_tax")} value={formatCHF(p.estimatedExitTax)} />
+                    <Line2
+                      label={t("calc.vested.exit_tax")}
+                      value={formatCHF(p.estimatedExitTax)}
+                    />
                   )}
                   {p.estimatedExitTax !== undefined && (
-                    <Line2 label={t("calc.vested.net_after_tax")} value={formatCHF(p.finalBalance - p.estimatedExitTax)} bold />
+                    <Line2
+                      label={t("calc.vested.net_after_tax")}
+                      value={formatCHF(p.finalBalance - p.estimatedExitTax)}
+                      bold
+                    />
                   )}
                 </dl>
               </CalcCard>
@@ -394,7 +528,17 @@ function VestedBenefitsCalc() {
   );
 }
 
-function Field({ label, children, wikiId, wikiTip }: { label: string; children: React.ReactNode; wikiId?: string; wikiTip?: React.ReactNode }) {
+function Field({
+  label,
+  children,
+  wikiId,
+  wikiTip,
+}: {
+  label: string;
+  children: React.ReactNode;
+  wikiId?: string;
+  wikiTip?: React.ReactNode;
+}) {
   return (
     <div className="space-y-1.5">
       <Label className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">

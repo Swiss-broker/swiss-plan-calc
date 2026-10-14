@@ -21,6 +21,7 @@ import {
   Plus,
   ChevronDown,
   Wallet,
+  HeartPulse,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import type { Client } from "@/lib/clients/types";
@@ -76,6 +77,12 @@ const CHIPS: CalcChip[] = [
     kind: "health_insurance_france",
     label: "CMU / LAMal",
     icon: ShieldPlus,
+  },
+  {
+    to: "/calculators/health-insurance-resident",
+    kind: "health_insurance_resident",
+    label: "Caisse maladie résident",
+    icon: HeartPulse,
   },
   { to: "/calculators/overtime", kind: "overtime", label: "Heures supp", icon: Clock },
   { to: "/calculators/retirement", kind: "retirement", label: "Rente vs capital", icon: Sun },
