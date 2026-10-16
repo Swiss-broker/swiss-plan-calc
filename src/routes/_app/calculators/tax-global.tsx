@@ -308,7 +308,7 @@ function TaxGlobalCalc() {
   ];
   return (
     <div className="space-y-6">
-      <CrossCalcImpactBanner calculator="tax-global" clientId={clientId} />
+      <CrossCalcImpactBanner calculator="tax-global" clientId={clientId} caseId={caseId} />
       <CrossSimulationReuseBanner
         clientId={clientId}
         caseId={caseId}

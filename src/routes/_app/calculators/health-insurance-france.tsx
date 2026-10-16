@@ -110,7 +110,13 @@ function HealthInsuranceFranceCalc() {
   return (
     <div className="grid grid-cols-1 gap-6 md:grid-cols-5">
       <div className="md:col-span-5 flex items-center justify-between gap-3">
-        <div className="flex-1"><CrossCalcImpactBanner calculator="health-insurance-france" clientId={clientId} /></div>
+        <div className="flex-1">
+          <CrossCalcImpactBanner
+            calculator="health-insurance-france"
+            clientId={clientId}
+            caseId={caseId}
+          />
+        </div>
         <GuideToggleButton onClick={() => setGuideOpen(true)} />
       </div>
       <GuideMode

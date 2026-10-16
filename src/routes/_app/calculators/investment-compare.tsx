@@ -163,7 +163,7 @@ function InvestmentCompareCalc() {
 
   return (
     <div className="space-y-6">
-      <CrossCalcImpactBanner calculator="investment-compare" clientId={clientId} />
+      <CrossCalcImpactBanner calculator="investment-compare" clientId={clientId} caseId={caseId} />
       {client && <ClientLinkBanner client={client} caseId={caseId} />}
       {simId && loadingSaved && (
         <div className="rounded-lg border border-primary/30 bg-primary/5 p-3 text-sm text-muted-foreground">

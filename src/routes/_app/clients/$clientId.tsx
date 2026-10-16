@@ -559,7 +559,7 @@ function ClientDetailPage() {
             </Button>
           </div>
           {dashboard?.hasEnoughData && (
-            <DashboardOverview dashboard={dashboard} clientId={clientId} />
+            <DashboardOverview dashboard={dashboard} clientId={clientId} caseId={caseId} />
           )}
           <div className="grid gap-4 lg:grid-cols-2">
             <Card title="Identité">
@@ -590,7 +590,7 @@ function ClientDetailPage() {
 
         <TabsContent value="fiscal" className="mt-4 space-y-6">
           {dashboard?.hasEnoughData && (
-            <DashboardFiscal dashboard={dashboard} clientId={clientId} />
+            <DashboardFiscal dashboard={dashboard} clientId={clientId} caseId={caseId} />
           )}
           <Card title="Situation fiscale">
   <Row label="Statut fiscal" value={TAX_STATUS_LABELS[client.tax_status]} />
@@ -621,10 +621,13 @@ function ClientDetailPage() {
 
         <TabsContent value="pension" className="mt-4 space-y-6">
           {dashboard?.hasEnoughData && (
-            <DashboardPension dashboard={dashboard} clientId={clientId} />
+            <DashboardPension dashboard={dashboard} clientId={clientId} caseId={caseId} />
           )}
           <Button asChild size="sm" variant="outline">
-            <Link to="/calculators/consolidated-benefits" search={{ clientId }}>
+            <Link
+              to="/calculators/consolidated-benefits"
+              search={{ clientId, ...(caseId ? { caseId } : {}) }}
+            >
               <HeartHandshake className="h-3.5 w-3.5" />
               Voir les prestations consolidées (1er + 2e + 3e pilier)
             </Link>

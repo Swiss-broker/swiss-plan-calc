@@ -122,7 +122,7 @@ const FILING_OPTIONS: { value: FilingStatus; labelKey: string }[] = [
 function DirectorCompensationCalc() {
   const t = useT();
   const brokerHeader = useBrokerPdfHeader();
-  const { clientId, companyId, simId } = Route.useSearch();
+  const { clientId, caseId, companyId, simId } = Route.useSearch();
   const { inputs: savedInputs, isLoading: loadingSaved } = useLoadSavedSimulation(simId);
 
   // Charge optionnellement le client + la société depuis l'URL.
@@ -284,7 +284,11 @@ function DirectorCompensationCalc() {
   return (
     <TooltipProvider delayDuration={150}>
       <div className="space-y-6">
-        <CrossCalcImpactBanner calculator="director-compensation" clientId={clientId} />
+        <CrossCalcImpactBanner
+          calculator="director-compensation"
+          clientId={clientId}
+          caseId={caseId}
+        />
         <GuideMode open={guideOpen} onClose={() => setGuideOpen(false)} steps={guideSteps} title={t("calc.dir.guide.title")} guideId="calc-director-compensation" />
         <div className="flex justify-end gap-2">
           <GuideToggleButton onClick={() => setGuideOpen(true)} />

@@ -227,7 +227,7 @@ function AvsAiCalc() {
 
   return (
     <div className="space-y-6">
-      <CrossCalcImpactBanner calculator="avs-ai" clientId={clientId} />
+      <CrossCalcImpactBanner calculator="avs-ai" clientId={clientId} caseId={caseId} />
         <GuideMode
         open={guideOpen}
         onClose={() => setGuideOpen(false)}

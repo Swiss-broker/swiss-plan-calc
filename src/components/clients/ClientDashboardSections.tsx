@@ -25,19 +25,27 @@ import type { ClientBundle, ClientDashboard } from "@/lib/client-dashboard";
 interface Props {
   dashboard: ClientDashboard;
   clientId: string;
+  /** Dossier actif : transmis tel quel aux calculateurs ouverts depuis
+   *  cette fiche, sinon toute simulation enregistrée ensuite perd son
+   *  dossier et atterrit dans "Historique" au lieu du dossier réellement
+   *  actif. */
+  caseId?: string;
 }
 
-const linkSearch = (clientId: string) => ({ clientId });
+const linkSearch = (clientId: string, caseId?: string) => ({
+  clientId,
+  ...(caseId ? { caseId } : {}),
+});
 
 // ─── SYNTHÈSE ────────────────────────────────────────────────────────────
 
-export function DashboardOverview({ dashboard, clientId }: Props) {
+export function DashboardOverview({ dashboard, clientId, caseId }: Props) {
   return (
     <div className="grid gap-4 lg:grid-cols-2 xl:grid-cols-4">
       <DashboardCard
         title="Charge fiscale annuelle"
         icon={Calculator}
-        detailLink={{ to: "/calculators/tax-global", search: linkSearch(clientId) }}
+        detailLink={{ to: "/calculators/tax-global", search: linkSearch(clientId, caseId) }}
       >
         {dashboard.tax ? (
           <>
@@ -71,7 +79,7 @@ export function DashboardOverview({ dashboard, clientId }: Props) {
       <DashboardCard
         title="Capital LPP projeté"
         icon={Landmark}
-        detailLink={{ to: "/calculators/lpp", search: linkSearch(clientId) }}
+        detailLink={{ to: "/calculators/lpp", search: linkSearch(clientId, caseId) }}
       >
         {dashboard.lpp ? (
           <>
@@ -103,7 +111,7 @@ export function DashboardOverview({ dashboard, clientId }: Props) {
       <DashboardCard
         title="Pilier 3a"
         icon={PiggyBank}
-        detailLink={{ to: "/calculators/pillar3a", search: linkSearch(clientId) }}
+        detailLink={{ to: "/calculators/pillar3a", search: linkSearch(clientId, caseId) }}
       >
         {dashboard.pillar3a ? (
           <>
@@ -133,7 +141,7 @@ export function DashboardOverview({ dashboard, clientId }: Props) {
       <DashboardCard
         title="Rente AVS/AI"
         icon={HeartHandshake}
-        detailLink={{ to: "/calculators/avs-ai", search: linkSearch(clientId) }}
+        detailLink={{ to: "/calculators/avs-ai", search: linkSearch(clientId, caseId) }}
       >
         {dashboard.avs ? (
           <>
@@ -175,13 +183,13 @@ export function DashboardOverview({ dashboard, clientId }: Props) {
 
 // ─── FISCALITÉ ───────────────────────────────────────────────────────────
 
-export function DashboardFiscal({ dashboard, clientId }: Props) {
+export function DashboardFiscal({ dashboard, clientId, caseId }: Props) {
   return (
     <div className="grid gap-4 lg:grid-cols-2">
       <DashboardCard
         title="Charge fiscale détaillée"
         icon={Calculator}
-        detailLink={{ to: "/calculators/tax-global", search: linkSearch(clientId) }}
+        detailLink={{ to: "/calculators/tax-global", search: linkSearch(clientId, caseId) }}
       >
         {dashboard.tax ? (
           <>
@@ -219,7 +227,7 @@ export function DashboardFiscal({ dashboard, clientId }: Props) {
         icon={Map}
         detailLink={{
           to: "/calculators/canton-compare",
-          search: linkSearch(clientId),
+          search: linkSearch(clientId, caseId),
         }}
       >
         {dashboard.cantonCompare ? (
@@ -256,13 +264,13 @@ export function DashboardFiscal({ dashboard, clientId }: Props) {
 
 // ─── PRÉVOYANCE ──────────────────────────────────────────────────────────
 
-export function DashboardPension({ dashboard, clientId }: Props) {
+export function DashboardPension({ dashboard, clientId, caseId }: Props) {
   return (
     <div className="grid gap-4 lg:grid-cols-2">
       <DashboardCard
         title="Projection LPP"
         icon={Landmark}
-        detailLink={{ to: "/calculators/lpp", search: linkSearch(clientId) }}
+        detailLink={{ to: "/calculators/lpp", search: linkSearch(clientId, caseId) }}
       >
         {dashboard.lpp ? (
           <>
@@ -292,7 +300,7 @@ export function DashboardPension({ dashboard, clientId }: Props) {
       <DashboardCard
         title="3e pilier projeté"
         icon={PiggyBank}
-        detailLink={{ to: "/calculators/pillar3a", search: linkSearch(clientId) }}
+        detailLink={{ to: "/calculators/pillar3a", search: linkSearch(clientId, caseId) }}
       >
         {dashboard.pillar3a ? (
           <>
@@ -318,7 +326,7 @@ export function DashboardPension({ dashboard, clientId }: Props) {
       <DashboardCard
         title="Rente vs capital"
         icon={Scale}
-        detailLink={{ to: "/calculators/retirement", search: linkSearch(clientId) }}
+        detailLink={{ to: "/calculators/retirement", search: linkSearch(clientId, caseId) }}
       >
         {dashboard.retirement ? (
           <>
@@ -349,7 +357,7 @@ export function DashboardPension({ dashboard, clientId }: Props) {
       <DashboardCard
         title="Rente AVS/AI (1er pilier)"
         icon={HeartHandshake}
-        detailLink={{ to: "/calculators/avs-ai", search: linkSearch(clientId) }}
+        detailLink={{ to: "/calculators/avs-ai", search: linkSearch(clientId, caseId) }}
         hint={{
           tone: "info",
           text: "Calcul basé sur les paramètres AVS 2026. La rente définitive est arrêtée par la Caisse de compensation au départ à la retraite, sur la base de l'Extrait de Compte Individuel (CI) officiel.",

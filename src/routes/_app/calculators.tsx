@@ -26,6 +26,10 @@ import { useT } from "@/contexts/LanguageContext";
 
 const layoutSearchSchema = z.object({
   clientId: fallback(z.string().uuid().optional(), undefined),
+  // Dossier actif : doit survivre au changement de calculateur via ce menu
+  // du haut, sinon toute simulation enregistrée ensuite perd son dossier et
+  // atterrit dans "Historique" au lieu du dossier réellement actif.
+  caseId: fallback(z.string().uuid().optional(), undefined),
 });
 
 export const Route = createFileRoute("/_app/calculators")({
@@ -130,8 +134,8 @@ function CalculatorsLayout() {
   const t = useT();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const navigate = useNavigate();
-  const { clientId } = Route.useSearch();
-  const tabSearch = clientId ? { clientId } : undefined;
+  const { clientId, caseId } = Route.useSearch();
+  const tabSearch = clientId ? { clientId, ...(caseId ? { caseId } : {}) } : undefined;
   const currentTab =
     [...ALL_TABS]
       .reverse()

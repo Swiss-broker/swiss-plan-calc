@@ -153,7 +153,7 @@ function VestedBenefitsCalc() {
 
   return (
     <div className="space-y-6">
-      <CrossCalcImpactBanner calculator="vested-benefits" clientId={clientId} />
+      <CrossCalcImpactBanner calculator="vested-benefits" clientId={clientId} caseId={caseId} />
       <GuideMode
         open={guideOpen}
         onClose={() => setGuideOpen(false)}

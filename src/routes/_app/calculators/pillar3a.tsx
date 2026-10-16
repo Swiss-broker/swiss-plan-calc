@@ -407,7 +407,7 @@ function Pillar3aCalc() {
 
   return (
     <div className="space-y-6">
-      <CrossCalcImpactBanner calculator="pillar3a" clientId={clientId} />
+      <CrossCalcImpactBanner calculator="pillar3a" clientId={clientId} caseId={caseId} />
       <GuideMode
         open={guideOpen}
         onClose={() => setGuideOpen(false)}

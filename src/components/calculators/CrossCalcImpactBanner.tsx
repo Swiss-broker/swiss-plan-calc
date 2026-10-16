@@ -190,9 +190,13 @@ const IMPACT_MAP: Record<CalculatorKey, ImpactConfig> = {
 interface Props {
   calculator: CalculatorKey;
   clientId?: string;
+  /** Dossier actif : transmis tel quel aux calculateurs liés, sinon toute
+   *  simulation enregistrée après ce clic perd son dossier et atterrit dans
+   *  "Historique" au lieu du dossier réellement actif. */
+  caseId?: string;
 }
 
-export function CrossCalcImpactBanner({ calculator, clientId }: Props) {
+export function CrossCalcImpactBanner({ calculator, clientId, caseId }: Props) {
   const cfg = IMPACT_MAP[calculator];
   if (!cfg || cfg.targets.length === 0) return null;
 
@@ -213,7 +217,7 @@ export function CrossCalcImpactBanner({ calculator, clientId }: Props) {
               <li key={t.to}>
                 <Link
                   to={ROUTE_MAP[t.to]}
-                  search={clientId ? { clientId } : undefined}
+                  search={clientId ? { clientId, ...(caseId ? { caseId } : {}) } : undefined}
                   className="group inline-flex items-center gap-1 rounded-full border border-border bg-background px-2.5 py-1 text-xs font-medium text-foreground/80 transition hover:border-primary hover:bg-primary/10 hover:text-primary"
                 >
                   <span className="font-semibold">{LABELS[t.to]}</span>
