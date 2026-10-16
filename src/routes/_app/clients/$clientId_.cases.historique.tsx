@@ -24,7 +24,12 @@ function HistoriquePage() {
     isLoading,
     error,
   } = useQuery({
-    queryKey: ["client", clientId],
+    // Clé dédiée, jamais "["client", clientId]" : cette clé est aussi
+    // utilisée par $clientId.tsx pour un objet { client, pension, assets,
+    // notes } (pas le client brut) — en la réutilisant ici, cette page
+    // récupérait parfois ce bundle au lieu de la ligne client, et
+    // `client.last_name` devenait undefined (crash sur .toUpperCase()).
+    queryKey: ["client-historique", clientId],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("clients")

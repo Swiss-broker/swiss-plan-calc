@@ -34,12 +34,22 @@ export const Route = createFileRoute("/_app/calculators")({
   component: CalculatorsLayout,
 });
 
+// Ordre aligné sur ClientCalculatorBar.tsx (CHIPS) : Budget, Fiscal global,
+// 1er pilier, 2e pilier, 3e pilier, puis le reste — même ordre des deux
+// côtés (barre du dossier et menu du haut), au lieu de deux listes codées
+// séparément qui avaient divergé.
 const TABS = [
   { to: "/calculators", labelKey: "calc.tab.overview", icon: Calculator, exact: true as boolean },
   {
     to: "/calculators/budget",
     labelKey: "calc.budget.title",
     icon: Wallet,
+    exact: false as boolean,
+  },
+  {
+    to: "/calculators/tax-global",
+    labelKey: "calc.global.title",
+    icon: Coins,
     exact: false as boolean,
   },
   {
@@ -53,12 +63,6 @@ const TABS = [
     to: "/calculators/pillar3a",
     labelKey: "calc.tab.pillar3a",
     icon: PiggyBank,
-    exact: false as boolean,
-  },
-  {
-    to: "/calculators/tax-global",
-    labelKey: "calc.global.title",
-    icon: Coins,
     exact: false as boolean,
   },
   {
@@ -83,9 +87,9 @@ const MORE_TABS = [
     exact: false as boolean,
   },
   {
-    to: "/calculators/director-compensation",
-    labelKey: "calc.tab.director",
-    icon: TrendingUp,
+    to: "/calculators/consolidated-benefits",
+    labelKey: "calc.consolidated.title",
+    icon: Layers,
     exact: false as boolean,
   },
   {
@@ -107,15 +111,15 @@ const MORE_TABS = [
     exact: false as boolean,
   },
   {
-    to: "/calculators/investment-compare",
-    labelKey: "calc.tab.investment_compare",
+    to: "/calculators/director-compensation",
+    labelKey: "calc.tab.director",
     icon: TrendingUp,
     exact: false as boolean,
   },
   {
-    to: "/calculators/consolidated-benefits",
-    labelKey: "calc.consolidated.title",
-    icon: Layers,
+    to: "/calculators/investment-compare",
+    labelKey: "calc.tab.investment_compare",
+    icon: TrendingUp,
     exact: false as boolean,
   },
 ] as const;

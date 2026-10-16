@@ -51,6 +51,7 @@ import { computeChildrenImpact } from "@/lib/tax-global/children-impact";
 
 import { createDefaultInput } from "@/lib/tax-global/profile";
 import type { TaxGlobalInput } from "@/lib/tax-global/types";
+import { stripUndefined } from "@/lib/clients/to-calculator-input";
 import { SUPPORTED_CURRENCIES, getAfcRate, type Currency } from "@/lib/fx/sources";
 import { fetchMarketRates } from "@/lib/fx/fetch.functions";
 import { CrossCalcImpactBanner } from "@/components/calculators/CrossCalcImpactBanner";
@@ -103,24 +104,32 @@ function TaxGlobalCalc() {
     }
     if (baselineInitializedRef.current) return;
     // Tant qu'un client est lié mais que son profil n'a pas encore fini de
-    // charger, ne pas figer la base maintenant : ce premier effet s'exécute
-    // AVANT que useHydrateFormFromPrefill n'ait eu la main (prefill encore
-    // null), donc sans cette garde la base se figeait sur le formulaire
-    // vide par défaut, jamais sur le vrai profil du client — obligeant à
-    // cliquer "Définir comme base" à chaque ouverture pour corriger ça.
+    // charger, ne pas figer la base maintenant.
     if (clientId && !prefill && !prefillError) return;
-    setBaselineState(form);
+    // Client lié : figer la base DIRECTEMENT depuis le profil (même fusion
+    // que useHydrateFormFromPrefill), jamais depuis `form`. `form` n'est mis
+    // à jour qu'au rendu SUIVANT l'arrivée de `prefill` (useHydrateFormFromPrefill
+    // appelle setForm dans son propre effet, qui ne prend effet qu'au rendu
+    // d'après) — lire `form` ici, dans ce même rendu, capturait donc
+    // systématiquement le formulaire encore vide, pas le vrai profil du
+    // client, obligeant à cliquer "Définir comme base" à chaque ouverture
+    // pour corriger ça.
+    setBaselineState(
+      clientId && prefill
+        ? ({
+            ...createDefaultInput(),
+            ...stripUndefined(prefill as Record<string, unknown>),
+          } as TaxGlobalInput)
+        : form,
+    );
     baselineInitializedRef.current = true;
+    // form : seulement lu pour le cas "pas de client lié" (capture le
+    // formulaire par défaut une seule fois, à la première exécution) —
+    // volontairement absent des deps pour ne pas redéclencher cet effet à
+    // chaque frappe une fois la base déjà figée (baselineInitializedRef
+    // s'en charge de toute façon, mais sans valeur ajoutée à re-rendre ici).
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [
-    clientId,
-    prefill,
-    prefillError,
-    form.grossSalary,
-    form.canton,
-    form.permit,
-    form.civilStatus,
-  ]);
+  }, [clientId, prefill, prefillError]);
   const setBaseline = () => setBaselineState(form);
 
   // Rechargement d'un brouillon sauvegardé : ne s'applique qu'une fois par
@@ -129,16 +138,18 @@ function TaxGlobalCalc() {
   useEffect(() => {
     if (!simId || !savedInputs) return;
     if (loadedSimRef.current === simId) return;
-    setForm((prev) => ({ ...prev, ...savedInputs }) as TaxGlobalInput);
-    loadedSimRef.current = simId;
     // Le comparateur Avant/Après doit repartir de LA SIMULATION RECHARGÉE
-    // comme base, pas du formulaire vide par défaut capturé au premier
-    // rendu (avant même que savedInputs ne soit disponible) — sans ce
-    // reset, baseline restait figée sur le défaut et le comparateur /
-    // tout ce qui en dépend (dont la sauvegarde ultérieure des
-    // compareRows dans le PDF) affichait des écarts qui ne correspondaient
-    // à rien de réel.
-    baselineInitializedRef.current = false;
+    // comme base, pas du formulaire vide par défaut. Fige la base ICI,
+    // directement, plutôt que de se reposer sur l'autre effet (ci-dessus)
+    // pour la recapturer via baselineInitializedRef : ce drapeau n'est pas
+    // dans les dépendances de cet autre effet, donc le remettre à false ne
+    // suffit pas à le redéclencher (même défaut que la course avec le
+    // profil client, voir le commentaire sur l'effet de base ci-dessus).
+    const merged = { ...createDefaultInput(), ...savedInputs } as TaxGlobalInput;
+    setForm(merged);
+    setBaselineState(merged);
+    baselineInitializedRef.current = true;
+    loadedSimRef.current = simId;
   }, [simId, savedInputs]);
 
   // Traçabilité : quand un champ reprend une simulation d'un autre
