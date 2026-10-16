@@ -81,6 +81,7 @@ export function CalcCard({
   className,
   tilt = false,
   tip,
+  "data-guide": dataGuide,
 }: {
   title?: string;
   description?: string;
@@ -88,12 +89,15 @@ export function CalcCard({
   className?: string;
   tilt?: boolean;
   tip?: ReactNode;
+  /** Id ciblé par GuideMode via data-guide="..." — voir components/calculators/GuideMode.tsx. */
+  "data-guide"?: string;
 }) {
   const tiltRef = useParallaxTilt<HTMLDivElement>({ max: 3, scale: 1.004 });
   const fallbackRef = useRef<HTMLDivElement>(null);
   return (
     <div
       ref={tilt ? tiltRef : fallbackRef}
+      data-guide={dataGuide}
       className={cn(
         "rounded-2xl border border-border bg-card bg-gradient-surface p-5 shadow-3d sm:p-6",
         tilt ? "tilt-3d" : "hover-lift",

@@ -226,6 +226,7 @@ export function TaxGlobalCompareCard({ form, result, baseline }: Props) {
   return (
     <CalcCard
       title={`Comparateur fiscal · Avant / Après${hasChanges ? ` · ${diffs.length} modification${diffs.length > 1 ? "s" : ""}` : ""}`}
+      data-guide="global-compare"
     >
       <p className="mb-3 text-xs text-muted-foreground">
         Comparez la situation de référence (base figée) avec la situation

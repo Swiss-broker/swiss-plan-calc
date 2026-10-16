@@ -1943,7 +1943,7 @@ export const it: Record<string, string> = {
   "calc.global.guide.s8.body": "Le deduzioni disponibili dipendono dal regime fiscale del cliente. Un frontaliere sotto l'accordo del 1983 non ha gli stessi diritti di un contribuente ordinario. Verifica il messaggio mostrato secondo il profilo prima di compilare questa sezione.",
   "calc.global.guide.s9.title": "Frontaliero e tasso di cambio",
   "calc.global.guide.s9.body": "Per i regimi frontalieri, il tasso di cambio EUR/CHF converte automaticamente gli importi inseriti in entrambe le direzioni.",
-  "calc.global.guide.s10.title": "Risultato",
+  "calc.global.guide.s10.title": "Sintesi del risultato",
   "calc.retirement.intro.body": "Questo calcolatore confronta due modi di percepire il capitale LPP alla pensione: il prelievo come rendita vitalizia (versata a vita, tassata ogni anno come reddito) oppure il prelievo in capitale in un'unica soluzione (tassato una sola volta, poi da far fruttare autonomamente). Modifica le ipotesi qui sotto per vedere quale opzione è più vantaggiosa per questo cliente.",
   "calc.retirement.caption.capital": "Punto di partenza di tutto il confronto: questo importo verrà convertito in rendita oppure prelevato come capitale.",
   "calc.retirement.caption.civil_status": "Determina l'aliquota applicata all'imposta unica sul capitale prelevato (coniugato/a = aliquota più favorevole).",
@@ -1955,7 +1955,16 @@ export const it: Record<string, string> = {
   "calc.retirement.explain.line2": "Scenario capitale: il capitale è prima soggetto all'imposta unica sul prelievo (calcolata sopra), poi si presume che il saldo netto venga investito al rendimento indicato per la stessa durata.",
   "calc.retirement.explain.line3": "La raccomandazione confronta il totale netto effettivamente percepito nell'intero periodo nei due scenari. Se la differenza è ridotta, viene proposto un mix rendita/capitale per bilanciare sicurezza e performance.",
   "calc.global.guide.s10.body":
-    "Il risultato finale tiene conto del regime, delle deduzioni applicabili e della progressività. Verifica sempre che corrisponda al profilo reale del cliente.",
+    "Questo blocco raggruppa l'imposta totale (federale + cantonale + comunale + ecclesiastica + sulla sostanza), il reddito netto, l'aliquota effettiva (imposta ÷ reddito lordo) e l'aliquota marginale (aliquota sul prossimo franco guadagnato, utile per quantificare una deduzione).",
+  "calc.global.guide.s11.title": "Dettaglio per tipo di imposta",
+  "calc.global.guide.s11.body":
+    "Questo riquadro scompone l'imposta totale: imposta federale diretta (IFD, aliquota progressiva federale), cantonale e comunale (aliquota del cantone × moltiplicatore comunale), imposta sulla sostanza (solo residenti ordinari) e imposta ecclesiastica (se confessione cattolica o protestante).",
+  "calc.global.guide.s12.title": "Comparatore prima / dopo",
+  "calc.global.guide.s12.body":
+    "Fissa la situazione di riferimento con il pulsante «Imposta come base» in alto nella pagina, poi modifica i campi: questo comparatore mostra in tempo reale, campo per campo, la differenza tra la base fissata e la simulazione in corso.",
+  "calc.global.guide.s13.title": "Come viene calcolato questo risultato",
+  "calc.global.guide.s13.body":
+    "Questo pannello descrive l'intera catena di calcolo: regime rilevato, aliquote e fonti utilizzate, ipotesi adottate e limiti del modello. Clicca per espanderlo.",
   "landing.footer.cookiePrefs": "Preferenze cookie",
   "cookies.banner.desc":
     "Utilizziamo cookie per far funzionare il sito e, con il tuo consenso, misurare l'audience e personalizzare le nostre campagne.",

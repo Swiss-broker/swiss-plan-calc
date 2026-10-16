@@ -1948,7 +1948,7 @@ export const de: Record<string, string> = {
   "calc.global.guide.s8.body": "Die verfügbaren Abzüge hängen vom Steuerregime des Kunden ab. Ein Grenzgänger unter dem Abkommen von 1983 hat nicht dieselben Rechte wie ein ordentlich Steuerpflichtiger. Prüfen Sie den je nach Profil angezeigten Hinweis, bevor Sie diesen Abschnitt ausfüllen.",
   "calc.global.guide.s9.title": "Grenzgänger und Wechselkurs",
   "calc.global.guide.s9.body": "Bei Grenzgänger-Regimen rechnet der EUR/CHF-Wechselkurs die eingegebenen Beträge automatisch in beide Richtungen um.",
-  "calc.global.guide.s10.title": "Ergebnis",
+  "calc.global.guide.s10.title": "Ergebnisübersicht",
   "enum.civil_status.cohabiting": "Konkubinat",
   "clients.toast.status_verified": "Steuerstatus bestätigt",
   "clients.toast.note_added": "Notiz hinzugefügt",
@@ -1967,7 +1967,16 @@ export const de: Record<string, string> = {
   "calc.retirement.explain.line2": "Szenario Kapital: Das Kapital unterliegt zunächst der oben berechneten einmaligen Bezugssteuer, danach wird angenommen, dass der Nettosaldo über die gleiche Dauer zur angegebenen Rendite angelegt wird.",
   "calc.retirement.explain.line3": "Die Empfehlung vergleicht den über die gesamte Dauer tatsächlich erhaltenen Nettobetrag in beiden Szenarien. Ist die Differenz gering, wird eine Kombination aus Rente und Kapital vorgeschlagen, um Sicherheit und Rendite auszugleichen.",
   "calc.global.guide.s10.body":
-    "Das Endergebnis berücksichtigt das Regime, die anwendbaren Abzüge und die Progression. Prüfen Sie stets, ob es dem tatsächlichen Profil des Kunden entspricht.",
+    "Dieser Block fasst die Gesamtsteuer (Bund + Kanton + Gemeinde + Kirche + Vermögen), das Nettoeinkommen, den effektiven Satz (Steuer ÷ Bruttoeinkommen) und den Grenzsteuersatz (Satz auf den nächsten verdienten Franken, nützlich zur Bezifferung eines Abzugs) zusammen.",
+  "calc.global.guide.s11.title": "Aufschlüsselung nach Steuerart",
+  "calc.global.guide.s11.body":
+    "Dieses Feld schlüsselt die Gesamtsteuer auf: direkte Bundessteuer (DBSt, progressiver Bundestarif), Kanton und Gemeinde (Kantonstarif × Gemeindemultiplikator), Vermögenssteuer (nur ordentlich Steuerpflichtige) und Kirchensteuer (bei katholischer oder reformierter Konfession).",
+  "calc.global.guide.s12.title": "Vorher-/Nachher-Vergleich",
+  "calc.global.guide.s12.body":
+    "Legen Sie die Referenzsituation über die Schaltfläche «Als Basis festlegen» oben auf der Seite fest und ändern Sie dann die Felder: Dieser Vergleich zeigt live, Feld für Feld, den Unterschied zwischen der festgelegten Basis und der aktuellen Simulation.",
+  "calc.global.guide.s13.title": "Wie dieses Ergebnis berechnet wird",
+  "calc.global.guide.s13.body":
+    "Dieses Panel zeigt die vollständige Berechnungskette: erkanntes Regime, verwendete Tarife und Quellen, getroffene Annahmen und Grenzen des Modells. Klicken Sie, um es aufzuklappen.",
   "landing.footer.cookiePrefs": "Cookie-Einstellungen",
   "cookies.banner.desc":
     "Wir verwenden Cookies, um die Website zu betreiben und, mit Ihrer Zustimmung, die Nutzung zu messen und unsere Kampagnen zu personalisieren.",

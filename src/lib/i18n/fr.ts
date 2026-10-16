@@ -1978,9 +1978,18 @@ export const fr: Record<string, string> = {
   "calc.global.guide.s8.body": "Les déductions disponibles dépendent du régime fiscal du client. Un frontalier sous accord 1983 n'a pas les mêmes droits qu'un résident ordinaire. Vérifiez la bannière affichée selon le profil avant de remplir cette section.",
   "calc.global.guide.s9.title": "Frontalier et taux de change",
   "calc.global.guide.s9.body": "Pour les régimes frontaliers, le taux de change EUR/CHF convertit automatiquement les montants saisis dans les deux sens.",
-  "calc.global.guide.s10.title": "Résultat",
+  "calc.global.guide.s10.title": "Synthèse du résultat",
   "calc.global.guide.s10.body":
-    "Le résultat final tient compte du régime, des déductions applicables et de la progressivité. Vérifiez toujours qu'il correspond au profil réel du client.",
+    "Ce bloc regroupe l'impôt total (fédéral + cantonal + communal + ecclésiastique + fortune), le revenu net, le taux effectif (impôt ÷ revenu brut) et le taux marginal (taux sur le prochain franc gagné, utile pour chiffrer une déduction).",
+  "calc.global.guide.s11.title": "Détail par type d'impôt",
+  "calc.global.guide.s11.body":
+    "Ce carré décompose l'impôt total : fédéral direct (IFD, barème progressif fédéral), cantonal et communal (barème du canton × multiplicateur de la commune), impôt sur la fortune (résident ordinaire uniquement) et impôt ecclésiastique (si confession catholique ou protestante).",
+  "calc.global.guide.s12.title": "Comparateur avant / après",
+  "calc.global.guide.s12.body":
+    "Figez la situation de référence avec le bouton « Définir comme base » en haut de page, puis modifiez les champs : ce comparateur affiche en direct l'écart entre la base figée et la simulation en cours, champ par champ.",
+  "calc.global.guide.s13.title": "Comment ce résultat est calculé",
+  "calc.global.guide.s13.body":
+    "Ce panneau détaille la chaîne de calcul complète : régime détecté, barèmes et sources utilisées, hypothèses retenues et limites du modèle. Cliquez pour le déplier.",
   "landing.footer.cookiePrefs": "Préférences cookies",
   "cookies.banner.desc":
     "Nous utilisons des cookies pour faire fonctionner le site et, si vous l'acceptez, mesurer l'audience et personnaliser nos campagnes.",

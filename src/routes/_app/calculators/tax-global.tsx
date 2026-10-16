@@ -305,6 +305,21 @@ function TaxGlobalCalc() {
       title: t("calc.global.guide.s10.title"),
       body: t("calc.global.guide.s10.body"),
     },
+    {
+      target: "global-breakdown",
+      title: t("calc.global.guide.s11.title"),
+      body: t("calc.global.guide.s11.body"),
+    },
+    {
+      target: "global-compare",
+      title: t("calc.global.guide.s12.title"),
+      body: t("calc.global.guide.s12.body"),
+    },
+    {
+      target: "global-explanation",
+      title: t("calc.global.guide.s13.title"),
+      body: t("calc.global.guide.s13.body"),
+    },
   ];
   return (
     <div className="space-y-6">
@@ -1194,7 +1209,7 @@ function TaxGlobalCalc() {
 
           {/* Breakdown, ordinaire */}
           {result.income && (
-            <CalcCard>
+            <CalcCard data-guide="global-breakdown">
               <div className="grid grid-cols-2 gap-3">
                 <MoneyTile
                   label={t("calc.global.tile.federal")}

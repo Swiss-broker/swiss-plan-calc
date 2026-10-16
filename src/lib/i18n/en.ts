@@ -1943,7 +1943,7 @@ export const en: Record<string, string> = {
   "calc.global.guide.s8.body": "Available deductions depend on the client's tax regime. A cross-border worker under the 1983 agreement does not have the same rights as an ordinary taxpayer. Check the banner shown for the profile before filling in this section.",
   "calc.global.guide.s9.title": "Cross-border and exchange rate",
   "calc.global.guide.s9.body": "For cross-border regimes, the EUR/CHF exchange rate automatically converts entered amounts in both directions.",
-  "calc.global.guide.s10.title": "Result",
+  "calc.global.guide.s10.title": "Result summary",
   "calc.retirement.intro.body": "This calculator compares two ways of receiving LPP capital at retirement: withdrawal as a lifetime annuity (paid for life, taxed each year as income) or a lump-sum withdrawal (taxed once, then to be invested by the client). Adjust the assumptions below to see which option is more advantageous for this client.",
   "calc.retirement.caption.capital": "Starting point of the whole comparison: this is the amount that will either be converted into an annuity or withdrawn as a lump sum.",
   "calc.retirement.caption.civil_status": "Determines the tax scale applied to the one-time tax on the withdrawn capital (married = more favourable scale).",
@@ -1955,7 +1955,16 @@ export const en: Record<string, string> = {
   "calc.retirement.explain.line2": "Lump-sum scenario: the capital is first subject to the one-time withdrawal tax (calculated above), then the net balance is assumed to be invested at the indicated return for the same duration.",
   "calc.retirement.explain.line3": "The recommendation compares the total net amount actually received over the whole period in both scenarios. If the gap is small, a mix of annuity/lump sum is suggested to balance security and performance.",
   "calc.global.guide.s10.body":
-    "The final result accounts for the regime, the applicable deductions, and progression. Always verify it matches the client's actual profile.",
+    "This block groups the total tax (federal + cantonal + communal + church + wealth), net income, effective rate (tax ÷ gross income) and marginal rate (rate on the next franc earned, useful to size the gain from a deduction).",
+  "calc.global.guide.s11.title": "Breakdown by tax type",
+  "calc.global.guide.s11.body":
+    "This tile breaks the total tax down: direct federal tax (IFD, federal progressive scale), cantonal and communal (canton scale × commune multiplier), wealth tax (ordinary residents only) and church tax (if the faith is Catholic or Protestant).",
+  "calc.global.guide.s12.title": "Before / after comparator",
+  "calc.global.guide.s12.body":
+    'Lock in the reference situation with the "Set as baseline" button at the top of the page, then edit the fields: this comparator shows live, field by field, the gap between the locked baseline and the current simulation.',
+  "calc.global.guide.s13.title": "How this result is calculated",
+  "calc.global.guide.s13.body":
+    "This panel details the full calculation chain: detected regime, scales and sources used, assumptions made, and the model's limitations. Click to expand it.",
   "landing.footer.cookiePrefs": "Cookie preferences",
   "cookies.banner.desc":
     "We use cookies to run the site and, if you agree, to measure traffic and personalize our campaigns.",

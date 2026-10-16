@@ -37,7 +37,7 @@ export function TaxGlobalExplanation({ form, result, client, reuseProvenance }: 
   };
 
   return (
-    <CalcCard>
+    <CalcCard data-guide="global-explanation">
       <Collapsible defaultOpen={false}>
         <CollapsibleTrigger className="flex w-full items-center justify-between gap-2 text-left">
           <div className="flex items-center gap-2">
