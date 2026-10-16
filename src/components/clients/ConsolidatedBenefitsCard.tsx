@@ -25,6 +25,7 @@ import {
 } from "@/components/calculators/SplitCompareLayout";
 import type { ClientBundle } from "@/lib/client-dashboard";
 import { useConsolidationReferences } from "@/hooks/useConsolidationReferences";
+import { ConsolidatedBenefitsExplanation } from "./ConsolidatedBenefitsExplanation";
 
 interface Props {
   bundle: ClientBundle;
@@ -97,6 +98,8 @@ export function ConsolidatedBenefitsCard({ bundle, caseId }: Props) {
           </TabsContent>
         ))}
       </Tabs>
+
+      <ConsolidatedBenefitsExplanation bundle={bundle} refs={refs} />
 
       {/* Cette vue est dérivée (recalculée à chaque ouverture depuis les
           dernières simulations AVS/AI, LPP, 3a du dossier), elle n'apparaît
