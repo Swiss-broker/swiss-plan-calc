@@ -251,8 +251,12 @@ export const de: Record<string, string> = {
   "calc.invcompare.step.welcome.b": "Geben Sie die Parameter zweier Anlagen ein, um das Netto-Endkapital nach Gebühren und Steuern zu vergleichen.",
   "calc.invcompare.step.params.t": "Wichtige Parameter",
   "calc.invcompare.step.params.b": "Anfangskapital, Einzahlungen, Rendite, Gebühren (TER) und Dauer. Der Auszahlungssteuersatz gilt für den Gewinn.",
-  "calc.invcompare.step.results.t": "Ergebnisse lesen",
-  "calc.invcompare.step.results.b": "Das Netto-Endkapital wird hervorgehoben. Die Zusammenfassung unten zeigt den Vorsprung zugunsten des Gewinners.",
+  "calc.invcompare.step.summary.t": "Fazit: Wer gewinnt und um wie viel",
+  "calc.invcompare.step.summary.b":
+    "Nettokapital = Brutto-Endkapital − kumulierte Kosten (jährliche TER) − Ausstiegssteuer auf den Gewinn. Die angezeigte Differenz ist der Unterschied zwischen den beiden Nettokapitalien, in CHF und %, über dieselbe Dauer. Ein kleiner Unterschied bei Kosten oder Rendite kann das Ergebnis langfristig umkehren: testen Sie mehrere Annahmen mit dem Kunden.",
+  "calc.invcompare.step.results.t": "Diagramm lesen",
+  "calc.invcompare.step.results.b":
+    "Die Kurve zeigt das Nettokapital jeder Anlage Jahr für Jahr. Erkennen Sie, wo sich die beiden Kurven auseinanderbewegen, um dem Kunden den kumulierten Kosteneffekt über die Zeit zu erklären.",
   "history.kind.investment_compare": "Anlagenvergleich",
   "calc.open": "Öffnen",
 
@@ -620,6 +624,12 @@ export const de: Record<string, string> = {
   "calc.avs.step.couple.b": "Bei Verheirateten wird die Ehepaarrente auf 150 % der maximalen Einzelrente plafoniert (Plafonierungseffekt).",
   "calc.avs.step.result.t": "Voraussichtliche Rente",
   "calc.avs.step.result.b": "Monatliche/jährliche Schätzung. Für eine offizielle Berechnung beantragen Sie einen IK-Auszug bei Ihrer Kasse.",
+  "calc.avs.step.detail.t": "Beitragsjahre und Kürzungsskala",
+  "calc.avs.step.detail.b":
+    "Skala = effektive Beitragsjahre ÷ 44 (volle Dauer). Jedes fehlende Jahr kürzt die Rente proportional. Die «theoretische Vollrente» setzt eine vollständige Laufbahn ohne Beitragslücke voraus.",
+  "calc.avs.step.methodology.t": "Wie diese Schätzung berechnet wird",
+  "calc.avs.step.methodology.b":
+    "Massgebendes durchschnittliches Jahreseinkommen (inkl. Erziehungs-/Betreuungsgutschriften) → Rentenskala → Kürzungsskala nach fehlenden Jahren → gesetzliche Mindest-/Höchstrenten 2026. Für eine offizielle, definitive Berechnung beantragen Sie Ihren IK-Auszug, Link unten.",
   "calc.lpp.head_title": "BVG & Einkäufe · SwissBroker Pro",
   "calc.lpp.guide_title": "Anleitung BVG",
   "calc.lpp.projection_card": "Projektion BVG-Kapital",
@@ -740,6 +750,12 @@ export const de: Record<string, string> = {
   "calc.lpp.step.buyback.b": "Einkaufspotenzial (Vorsorgeausweis) und gewünschte Dauer für die Staffelung der Steuerersparnis erfassen.",
   "calc.lpp.step.results.t": "Resultate",
   "calc.lpp.step.results.b": "Projiziertes Kapital, Monatsrente und gesamte Steuerersparnis aus den Einkäufen.",
+  "calc.lpp.step.savings.t": "Wie die Steuerersparnis berechnet wird",
+  "calc.lpp.step.savings.b":
+    "Der Einkauf wird vom steuerbaren Einkommen abgezogen, zu Ihrem effektiven Grenzsteuersatz (unten angezeigt, nach Kanton und Status). Die Jahr-für-Jahr-Aufstellung unterscheidet die Brutto-Steuerersparnis von den tatsächlichen Nettokosten (Einkauf − Ersparnis).",
+  "calc.lpp.step.compare.t": "Vorher-/Nachher-Vergleich des Einkaufs",
+  "calc.lpp.step.compare.b":
+    "Vergleicht, bei gleichem Lohn und gleicher Rendite, das Endkapital ohne jeden Einkauf (rote Spalte) mit dem oben eingegebenen Einkaufsplan (grüne Spalte). Das Zusammenfassungsbanner zeigt das gewonnene Vorsorgekapital und die durchschnittliche jährliche Steuerersparnis.",
   "calc.p3a.head_title": "Säule 3a & 3b · SwissBroker Pro",
   "calc.p3a.guide_title": "Anleitung 3. Säule",
   "calc.p3a.intro_title": "3. Säule in der Schweiz: zwei komplementäre Regelungen",
@@ -804,6 +820,12 @@ export const de: Record<string, string> = {
   "calc.p3a.step.assumptions.b": "Rendite, Dauer und Grenzsteuersatz zur Schätzung der jährlichen Steuerersparnis.",
   "calc.p3a.step.p3b.t": "Säule 3b",
   "calc.p3a.step.p3b.b": "Freie Einlage, jederzeit beziehbar, aber Prämien nicht abzugsfähig. Interessant für die Defiskalisierung über eine Lebensversicherung oder als Ergänzung der gesättigten Säule 3a.",
+  "calc.p3a.step.savings.t": "Steuerersparnis und kumulierte Projektion",
+  "calc.p3a.step.savings.b":
+    "Der 3a-Beitrag wird vom steuerbaren Einkommen zu Ihrem Grenzsteuersatz abgezogen: Ersparnis = Beitrag × Grenzsteuersatz. Der grüne Block projiziert diese Ersparnis, jedes Jahr wiederholt bis zur Pensionierung, sowohl beim aktuellen Beitrag als auch beim gesetzlichen Maximum.",
+  "calc.p3a.step.compare.t": "Vergleich aktuell vs. projiziert",
+  "calc.p3a.step.compare.b":
+    "Vergleicht Ihre aktuelle Situation mit einem optimierten Szenario (3a am Maximum + 3b-Zielbetrag + gestaffelter Bezug). Das Banner «Woher kommt der Gewinn?» schlüsselt die Differenz auf: zusätzliches 3a- und 3b-Kapital, höhere Bezugssteuer durch das grössere Kapital, und Ersparnis durch den gestaffelten Bezug.",
   "calc.p3a.step.save.t": "Vergessen Sie nicht zu speichern",
   "calc.p3a.step.save.b": "Klicken Sie unten auf der Seite auf \"Simulation speichern\", sonst erscheint diese Berechnung nicht in der RDV-Zusammenfassung des Kunden.",
   "calc.vested.head_title": "Freizügigkeit · SwissBroker Pro",
@@ -855,6 +877,15 @@ export const de: Record<string, string> = {
   "calc.vested.step.capital.b": "Saldo des Freizügigkeitskontos oder der -police beim Austritt aus der Pensionskasse.",
   "calc.vested.step.split.t": "Staffelung",
   "calc.vested.step.split.b": "Die Aufteilung des Kapitals auf 2 Freizügigkeitskonten ermöglicht den Bezug über 2 Steuerjahre und reduziert die Steuerprogression.",
+  "calc.vested.step.chart.t": "Diagramm lesen",
+  "calc.vested.step.chart.b":
+    "Jede Linie projiziert das Kapital nach einer Anlagestrategie (Sicherheit, ausgewogen, dynamisch), mit denselben Einlagen und derselben Dauer. Die rot gestrichelte Linie ist die aktuelle Situation (unverändert belassenes Kapital): das ist die Referenz zum Vergleich, keine 4. Strategie.",
+  "calc.vested.step.current.t": "Aktuelle Situation",
+  "calc.vested.step.current.b":
+    "Kapital, das bis zur Pensionierung unverändert auf dem Freizügigkeitskonto bleibt, ohne Strategiewechsel. Dies ist die Referenz: der unten angezeigte Gewinn jeder Strategie wird stets mit dieser Zahl verglichen.",
+  "calc.vested.step.strategies.t": "Die 3 Anlagestrategien",
+  "calc.vested.step.strategies.b":
+    "Projiziertes Endkapital und Nettogewinn für jede Strategie, über die eingegebene Dauer. Die empfohlene Strategie hängt nur von der Anzahl Jahre bis zur Pensionierung ab: unter 5 Jahre → Sicherheit, unter 12 Jahre → ausgewogen, darüber → dynamisch (mehr Zeit, um Schwankungen aufzufangen).",
   "calc.status.single": "Ledig",
   "calc.status.married": "Verheiratet",
   "calc.status.single_with_children": "Alleinerziehend",
@@ -994,6 +1025,15 @@ export const de: Record<string, string> = {
   "calc.retirement.guide.s2.body": "Für 2026: 6.0 % auf dem Obligatorium (weiter sinkend). Prüfen Sie den Satz Ihrer Pensionskasse.",
   "calc.retirement.guide.s3.title": "Annahmen",
   "calc.retirement.guide.s3.body": "Lebenserwartung, Rendite nach Pensionierung, Kapitalbesteuerung – die entscheidenden Parameter.",
+  "calc.retirement.guide.s5.title": "Vergleich Rente vs. Kapital",
+  "calc.retirement.guide.s5.body":
+    "Rente: Kapital × Umwandlungssatz, jedes Jahr ausgezahlt und dann als Einkommen zum Grenzsteuersatz besteuert. Kapital: einmalig ausgezahlt, sofort besteuert (die oben berechnete einmalige Steuer), danach wird angenommen, dass der Nettosaldo zur angegebenen Rendite angelegt wird. Die grün umrahmte Option ist die unter den aktuellen Annahmen empfohlene.",
+  "calc.retirement.guide.s6.title": "Wie die Empfehlung berechnet wird",
+  "calc.retirement.guide.s6.body":
+    "Dieses Panel zeigt Schritt für Schritt, wie Rente und Kapital über die gesamte Dauer (Lebenserwartung) verglichen werden: kumulierte Nettorente auf der einen Seite, Nettokapital nach Steuer und danach angelegt auf der anderen. Jede Änderung der obigen Annahmen berechnet diese 3 Zeilen automatisch neu.",
+  "calc.retirement.guide.s7.title": "Endgültige Empfehlung",
+  "calc.retirement.guide.s7.body":
+    "Eine Satz-Zusammenfassung der für diesen Kunden vorteilhaftesten Option, basierend auf den eingegebenen Annahmen. Sie ändert sich, wenn sich Lebenserwartung, erwartete Rendite oder die verwendete Besteuerung ändern, daher mit dem Kunden dokumentieren.",
   "calc.retirement.guide.s4.title": "Vergessen Sie nicht zu speichern",
   "calc.retirement.guide.s4.body": "Klicken Sie unten auf der Seite auf \"Simulation speichern\", sonst erscheint diese Berechnung nicht in der RDV-Zusammenfassung des Kunden.",
   "calc.retirement.section.title": "Annahmen",
@@ -1112,6 +1152,9 @@ export const de: Record<string, string> = {
   "calc.canton_compare.guide.s3.body": "Berechnung am Hauptort jedes Kantons (gemeindespezifisch in einer späteren Version).",
   "calc.canton_compare.guide.s4.title": "Vergessen Sie nicht zu speichern",
   "calc.canton_compare.guide.s4.body": "Klicken Sie unten auf der Seite auf \"Simulation speichern\", sonst erscheint diese Berechnung nicht in der RDV-Zusammenfassung des Kunden.",
+  "calc.canton_compare.guide.s5.title": "Die Rangliste lesen",
+  "calc.canton_compare.guide.s5.body":
+    "Die Westschweizer Kantone sind vom günstigsten (grün) zum teuersten sortiert, für dasselbe Profil. ZG und SZ werden separat als Referenz angezeigt (zu den steuerlich vorteilhaftesten Kantonen der Schweiz zählend), nicht in die Westschweizer Rangliste gemischt. Fahren Sie über einen Balken, um Details zu sehen: effektiver Satz, Steuerregime und Besteuerungsort.",
   "calc.canton_compare.mode.title": "Vergleichsmodus",
   "calc.canton_compare.mode.annual": "Jährliche Steuerbelastung",
   "calc.canton_compare.mode.annual.desc": "Aktuelle Situation: Einkommen und Vermögen erfasst.",
@@ -1350,6 +1393,9 @@ export const de: Record<string, string> = {
   "calc.dir.guide.s4.body": "Reingewinn (nach Gewinnsteuer) in der Gesellschaft belassen statt ausgeschüttet. Erzeugt keine persönliche Steuer und finanziert künftige Ausschüttungen oder einen Anteilskauf.",
   "calc.dir.guide.s5.title": "Vergleich",
   "calc.dir.guide.s5.body": "Gesamtkosten (Beiträge + Gewinnsteuer + persönliche Steuer) und Netto pro Strategie.",
+  "calc.dir.guide.s6.title": "Empfehlung",
+  "calc.dir.guide.s6.body":
+    "Die gewählte Strategie ist diejenige, die das Netto des Geschäftsführers nach allen Kosten maximiert (Sozialabgaben, Gewinnsteuer, persönliche Steuer). Die 4 Felder zeigen die Zusammensetzung: Endnetto, Bruttolohn, ausgeschüttete Dividende, in Reserve verbleibender Betrag. Der Text unter dem Titel erklärt, warum sie die anderen Strategien übertrifft.",
   "calc.dir.card.inputs.title": "Daten Gesellschaft & Geschäftsführer",
   "calc.dir.card.inputs.desc": "Jahresgewinn aufzuteilen zwischen Lohn, Dividenden und Reserven.",
   "calc.dir.field.profit": "Jahresgewinn gesamt (CHF)",

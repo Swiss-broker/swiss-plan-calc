@@ -316,6 +316,16 @@ function LppCalc() {
     { target: "lpp-conversion-rate", title: t("calc.lpp.step.assumptions.t"), body: t("calc.lpp.step.assumptions.b") },
     { target: "lpp-buyback-capacity", title: t("calc.lpp.step.buyback.t"), body: t("calc.lpp.step.buyback.b") },
     { target: "lpp-results", title: t("calc.lpp.step.results.t"), body: t("calc.lpp.step.results.b") },
+    {
+      target: "lpp-savings",
+      title: t("calc.lpp.step.savings.t"),
+      body: t("calc.lpp.step.savings.b"),
+    },
+    {
+      target: "lpp-compare",
+      title: t("calc.lpp.step.compare.t"),
+      body: t("calc.lpp.step.compare.b"),
+    },
   ];
 
 
@@ -579,7 +589,7 @@ function LppCalc() {
           </CalcCard>
         </div>
         <div className="space-y-4 md:col-span-2">
-          <CalcCard title={t("calc.lpp.savings_card")}>
+          <CalcCard title={t("calc.lpp.savings_card")} data-guide="lpp-savings">
             {regimeAwareBuyback.applicable !== "yes" && regimeAwareBuyback.note && (
               <div
                 className={`mb-3 rounded-md border p-3 text-xs ${
@@ -670,6 +680,7 @@ function LppCalc() {
         </div>
       </CalcCard>
 
+      <div data-guide="lpp-compare">
       <SplitCompareLayout
         title="Actuel (sans rachat) vs Projeté (avec rachat)"
         description="Impact du plan de rachat sur le capital final et la fiscalité, à hypothèses de salaire et rendement identiques."
@@ -693,6 +704,7 @@ function LppCalc() {
               : undefined,
         }}
       />
+      </div>
 
       <div className="flex flex-wrap justify-end gap-2">
         <SaveSimulationButton

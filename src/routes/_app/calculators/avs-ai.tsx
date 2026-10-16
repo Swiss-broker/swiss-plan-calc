@@ -223,6 +223,12 @@ function AvsAiCalc() {
     { target: "avs-income", title: t("calc.avs.step.income.t"), body: t("calc.avs.step.income.b") },
     { target: "avs-couple", title: t("calc.avs.step.couple.t"), body: t("calc.avs.step.couple.b") },
     { target: "avs-result", title: t("calc.avs.step.result.t"), body: t("calc.avs.step.result.b") },
+    { target: "avs-detail", title: t("calc.avs.step.detail.t"), body: t("calc.avs.step.detail.b") },
+    {
+      target: "avs-methodology",
+      title: t("calc.avs.step.methodology.t"),
+      body: t("calc.avs.step.methodology.b"),
+    },
   ];
 
   return (
@@ -471,7 +477,7 @@ function AvsAiCalc() {
             ) : null}
           </CalcCard></div>
 
-          <CalcCard title={t("calc.avs.detail_person_card")}>
+          <CalcCard title={t("calc.avs.detail_person_card")} data-guide="avs-detail">
             <Row>
               <StatTile label={t("calc.avs.years_paid")} value={`${projection.primary.effectiveYears} / ${AVS_2026.fullContributionYears}`} />
               <StatTile label={t("calc.avs.years_missing")} value={String(projection.primary.missingYears)} tone={projection.primary.missingYears > 0 ? "warning" : "default"} />
@@ -568,7 +574,7 @@ function AvsAiCalc() {
         </div>
       </div>
 
-      <CalcCard title={t("calc.avs.methodology_card")}>
+      <CalcCard title={t("calc.avs.methodology_card")} data-guide="avs-methodology">
         <ul className="space-y-1.5 text-xs text-muted-foreground">
           <li>• {t("calc.avs.method_1", { min: AVS_2026.minMonthlyPension, max: AVS_2026.maxMonthlyPension })}</li>
           <li>• {t("calc.avs.method_2")}</li>

@@ -136,6 +136,21 @@ function RetirementCalc() {
     { title: t("calc.retirement.guide.s1.title"), body: t("calc.retirement.guide.s1.body") },
     { target: "retirement-conversion-rate", title: t("calc.retirement.guide.s2.title"), body: t("calc.retirement.guide.s2.body") },
     { target: "retirement-lump-tax", title: t("calc.retirement.guide.s3.title"), body: t("calc.retirement.guide.s3.body") },
+    {
+      target: "retirement-scenarios",
+      title: t("calc.retirement.guide.s5.title"),
+      body: t("calc.retirement.guide.s5.body"),
+    },
+    {
+      target: "retirement-explain",
+      title: t("calc.retirement.guide.s6.title"),
+      body: t("calc.retirement.guide.s6.body"),
+    },
+    {
+      target: "retirement-reco",
+      title: t("calc.retirement.guide.s7.title"),
+      body: t("calc.retirement.guide.s7.body"),
+    },
     { target: "retirement-save", title: t("calc.retirement.guide.s4.title"), body: t("calc.retirement.guide.s4.body") },
   ];
 
@@ -265,7 +280,7 @@ function RetirementCalc() {
         const annuityWins = compare.recommendation === "annuity";
         const lumpWins = compare.recommendation === "lump_sum";
         return (
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2" data-guide="retirement-scenarios">
             <CalcCard
               title={t("calc.retirement.scen.annuity")}
               className={annuityWins ? "ring-2 ring-success/50" : undefined}
@@ -307,7 +322,7 @@ function RetirementCalc() {
       })()}
 
       {/* Bloc explicatif toujours visible : comment la reco est calculee */}
-      <div className="rounded-2xl border border-border bg-card p-5">
+      <div className="rounded-2xl border border-border bg-card p-5" data-guide="retirement-explain">
         <div className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
           {t("calc.retirement.explain.title")}
         </div>
@@ -318,11 +333,14 @@ function RetirementCalc() {
         </ul>
       </div>
 
-      <div className={`rounded-2xl border p-5 ${
-        compare.recommendation === "mixed"
-          ? "border-primary/30 bg-primary/5"
-          : "border-success/60 bg-success/15 ring-1 ring-success/30"
-      }`}>
+      <div
+        data-guide="retirement-reco"
+        className={`rounded-2xl border p-5 ${
+          compare.recommendation === "mixed"
+            ? "border-primary/30 bg-primary/5"
+            : "border-success/60 bg-success/15 ring-1 ring-success/30"
+        }`}
+      >
         <div className={`text-xs font-medium uppercase tracking-wider ${
           compare.recommendation === "mixed" ? "text-primary" : "text-success"
         }`}>{t("calc.retirement.reco.title")}</div>

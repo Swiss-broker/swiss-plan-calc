@@ -397,6 +397,11 @@ function CantonCompareCalc() {
     { title: t("calc.canton_compare.guide.s1.title"), body: t("calc.canton_compare.guide.s1.body") },
     { target: "canton-gross-salary", title: t("calc.canton_compare.guide.s2.title"), body: t("calc.canton_compare.guide.s2.body") },
     { target: "canton-ranking", title: t("calc.canton_compare.guide.s3.title"), body: t("calc.canton_compare.guide.s3.body") },
+    {
+      target: "canton-ranking",
+      title: t("calc.canton_compare.guide.s5.title"),
+      body: t("calc.canton_compare.guide.s5.body"),
+    },
     { target: "canton-save", title: t("calc.canton_compare.guide.s4.title"), body: t("calc.canton_compare.guide.s4.body") },
   ];
 

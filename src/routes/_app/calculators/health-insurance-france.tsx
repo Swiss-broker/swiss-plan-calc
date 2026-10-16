@@ -101,6 +101,11 @@ function HealthInsuranceFranceCalc() {
       body: "Le calculateur compare les deux cotisations annuelles et recommande automatiquement la moins chère. Le choix final dépend aussi du lieu de consultation médicale habituel.",
     },
     {
+      target: "health-fr-breakdown",
+      title: "Détail du calcul",
+      body: "CMU : revenu N-2 converti en euros, moins l'abattement légal de l'année, × 8 % = assiette de cotisation. LAMal : tarif adulte + tarif enfant × nombre d'enfants, × 12 mois. Chaque ligne du détail reprend ces étapes dans l'ordre, pour pouvoir justifier le chiffre final au client.",
+    },
+    {
       target: "health-fr-save",
       title: "Sauvegarder la simulation",
       body: "Pensez à sauvegarder, sinon cette simulation n'apparaîtra pas dans la synthèse du rendez-vous.",
@@ -297,7 +302,7 @@ function HealthInsuranceFranceCalc() {
           </CalcCard>
         </div>
 
-        <CalcCard title="Détail du calcul">
+        <CalcCard title="Détail du calcul" data-guide="health-fr-breakdown">
           <BreakdownSection title="CMU : cotisation maladie frontalier (URSSAF / CNTFS)" lines={result.cmuBreakdown} />
           <BreakdownSection title="LAMal : assurance maladie suisse" lines={result.lamalBreakdown} />
         </CalcCard>

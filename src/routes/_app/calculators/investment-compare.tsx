@@ -131,6 +131,11 @@ function InvestmentCompareCalc() {
   const guideSteps: GuideStep[] = [
     { title: t("calc.invcompare.step.welcome.t"), body: t("calc.invcompare.step.welcome.b") },
     { target: "invcompare-return-rate", title: t("calc.invcompare.step.params.t"), body: t("calc.invcompare.step.params.b") },
+    {
+      target: "invcompare-summary",
+      title: t("calc.invcompare.step.summary.t"),
+      body: t("calc.invcompare.step.summary.b"),
+    },
     { target: "invcompare-results", title: t("calc.invcompare.step.results.t"), body: t("calc.invcompare.step.results.b") },
   ];
 
@@ -208,6 +213,7 @@ function InvestmentCompareCalc() {
       <CalcCard
         title={t("calc.invcompare.summary_title")}
         className="border-primary/40 bg-primary/5"
+        data-guide="invcompare-summary"
       >
         {comparison.winner === "tie" ? (
           <p className="text-sm text-muted-foreground">{t("calc.invcompare.tie")}</p>

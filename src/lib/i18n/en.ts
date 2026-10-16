@@ -250,8 +250,12 @@ export const en: Record<string, string> = {
   "calc.invcompare.step.welcome.b": "Enter the parameters of two investments to compare the net final capital after fees and taxes.",
   "calc.invcompare.step.params.t": "Key parameters",
   "calc.invcompare.step.params.b": "Initial capital, contributions, return, fees (TER) and duration. The exit tax rate applies to the gain.",
-  "calc.invcompare.step.results.t": "Reading the results",
-  "calc.invcompare.step.results.b": "The net final capital is highlighted. The summary at the bottom shows the gap in favor of the winner.",
+  "calc.invcompare.step.summary.t": "Verdict: who wins, and by how much",
+  "calc.invcompare.step.summary.b":
+    "Net capital = final gross capital − cumulative fees (annual TER) − exit tax on the gain. The gap shown is the difference between the two net capitals, in CHF and %, over the same duration. A small difference in fees or return can reverse the result over the long run: test several assumptions with the client.",
+  "calc.invcompare.step.results.t": "Reading the chart",
+  "calc.invcompare.step.results.b":
+    "The curve shows each investment's net capital year by year. Spot where the two curves diverge to explain the compounding effect of fees over time to the client.",
   "history.kind.investment_compare": "Investment comparator",
   "calc.open": "Open",
 
@@ -618,6 +622,12 @@ export const en: Record<string, string> = {
   "calc.avs.step.couple.b": "If married, the couple pension is capped at 150% of the maximum individual pension (capping effect).",
   "calc.avs.step.result.t": "Projected pension",
   "calc.avs.step.result.b": "Monthly/annual estimate. For an official calculation, request an Individual Account (IK) statement from your fund.",
+  "calc.avs.step.detail.t": "Contribution years and reduction scale",
+  "calc.avs.step.detail.b":
+    'Scale = actual contribution years ÷ 44 (full duration). Each missing year reduces the pension proportionally. The "full theoretical pension" assumes a complete career with no contribution gap.',
+  "calc.avs.step.methodology.t": "How this estimate is calculated",
+  "calc.avs.step.methodology.b":
+    "Determining average annual income (including bonuses for educational/care tasks) → pension scale → reduction scale based on missing years → legal 2026 min/max pensions. For an official, definitive calculation, request your Individual Account (IK) statement, link below.",
   "calc.lpp.head_title": "BVG & buy-backs · SwissBroker Pro",
   "calc.lpp.guide_title": "BVG guide",
   "calc.lpp.projection_card": "Projected BVG capital",
@@ -738,6 +748,12 @@ export const en: Record<string, string> = {
   "calc.lpp.step.buyback.b": "Enter your buy-back potential (pension certificate) and the desired duration to spread the tax saving.",
   "calc.lpp.step.results.t": "Results",
   "calc.lpp.step.results.b": "Projected capital, monthly pension and total tax savings linked to buy-backs.",
+  "calc.lpp.step.savings.t": "How the tax saving is calculated",
+  "calc.lpp.step.savings.b":
+    "The buy-back is deducted from taxable income, at your effective marginal rate (shown below, based on canton and status). The year-by-year detail distinguishes the gross tax saving from the real net cost (buy-back − saving).",
+  "calc.lpp.step.compare.t": "Before / after buy-back comparator",
+  "calc.lpp.step.compare.b":
+    "Compares, at the same salary and return, the final capital with no buy-back at all (red column) against the buy-back plan entered above (green column). The summary banner shows the retirement capital gained and the average annual tax saving.",
   "calc.p3a.head_title": "Pillar 3a & 3b · SwissBroker Pro",
   "calc.p3a.guide_title": "Pillar 3 guide",
   "calc.p3a.intro_title": "Pillar 3 in Switzerland: two complementary regimes",
@@ -802,6 +818,12 @@ export const en: Record<string, string> = {
   "calc.p3a.step.assumptions.b": "Return, duration and marginal tax bracket to estimate the annual tax saving.",
   "calc.p3a.step.p3b.t": "Pillar 3b",
   "calc.p3a.step.p3b.b": "Free payment, withdrawal at any time, but premiums not deductible. Useful for tax planning via life insurance or to complement a saturated Pillar 3a.",
+  "calc.p3a.step.savings.t": "Tax saving and cumulative projection",
+  "calc.p3a.step.savings.b":
+    "The 3a contribution is deducted from taxable income at your marginal rate: saving = contribution × marginal rate. The green block projects this saving repeated every year until retirement, both at the current contribution and at the legal cap.",
+  "calc.p3a.step.compare.t": "Current vs projected comparator",
+  "calc.p3a.step.compare.b":
+    'Compares your current situation to an optimized scenario (3a at the cap + target 3b + staggered withdrawal). The "Where does the gain come from?" banner breaks down the gap: extra 3a and 3b capital, the higher exit tax from a larger capital, and the saving from staggering withdrawals.',
   "calc.p3a.step.save.t": "Don't forget to save",
   "calc.p3a.step.save.b": "Click \"Save simulation\" at the bottom of the page, otherwise this calculation won't appear in the client's meeting summary.",
   "calc.vested.head_title": "Vested benefits · SwissBroker Pro",
@@ -851,6 +873,15 @@ export const en: Record<string, string> = {
   "calc.vested.step.capital.b": "Balance of the vested benefits account or policy upon exit from the pension fund.",
   "calc.vested.step.split.t": "Staggering",
   "calc.vested.step.split.b": "Splitting the capital across 2 vested benefits accounts allows withdrawal across 2 tax years and reduces tax progression.",
+  "calc.vested.step.chart.t": "Reading the chart",
+  "calc.vested.step.chart.b":
+    "Each line projects the capital under one investment strategy (security, balanced, dynamic), with the same contributions and duration. The dashed red line is the current situation (capital left untouched): it's the baseline to compare against, not a 4th strategy.",
+  "calc.vested.step.current.t": "Current situation",
+  "calc.vested.step.current.b":
+    "Capital left as is in the vested benefits account until retirement, with no change of strategy. This is the baseline: the gain shown for each strategy below is always compared against this figure.",
+  "calc.vested.step.strategies.t": "The 3 investment strategies",
+  "calc.vested.step.strategies.b":
+    "Projected final capital and net gain for each strategy, over the entered duration. The recommended strategy depends only on the number of years to retirement: under 5 years → security, under 12 years → balanced, beyond that → dynamic (more time to absorb fluctuations).",
   "calc.status.single": "Single",
   "calc.status.married": "Married",
   "calc.status.single_with_children": "Single parent",
@@ -990,6 +1021,15 @@ export const en: Record<string, string> = {
   "calc.retirement.guide.s2.body": "For 2026: 6.0 % on mandatory share (continuing decline). Check your pension fund's rate.",
   "calc.retirement.guide.s3.title": "Assumptions",
   "calc.retirement.guide.s3.body": "Life expectancy, post-retirement return, lump-sum taxation · the key parameters.",
+  "calc.retirement.guide.s5.title": "Annuity vs lump sum comparison",
+  "calc.retirement.guide.s5.body":
+    "Annuity: capital × conversion rate, paid every year then taxed as income at the marginal rate. Lump sum: paid out once, taxed immediately (the one-time tax calculated above), then the net balance is assumed to be invested at the given return. The option framed in green is the one recommended under the current assumptions.",
+  "calc.retirement.guide.s6.title": "How the recommendation is calculated",
+  "calc.retirement.guide.s6.body":
+    "This panel details, step by step, how the annuity and the lump sum are compared over the whole duration (life expectancy): cumulative net annuity on one side, net capital after tax then invested on the other. Any change to the assumptions above automatically recalculates these 3 lines.",
+  "calc.retirement.guide.s7.title": "Final recommendation",
+  "calc.retirement.guide.s7.body":
+    "A one-sentence summary of the most advantageous option for this client, based on the assumptions entered. It changes if life expectancy, expected return, or the tax treatment used change, so document it with the client.",
   "calc.retirement.guide.s4.title": "Don't forget to save",
   "calc.retirement.guide.s4.body": "Click \"Save simulation\" at the bottom of the page, otherwise this calculation won't appear in the client's meeting summary.",
   "calc.retirement.section.title": "Assumptions",
@@ -1108,6 +1148,9 @@ export const en: Record<string, string> = {
   "calc.canton_compare.guide.s3.body": "Computed at each canton's capital (commune-specific in a future release).",
   "calc.canton_compare.guide.s4.title": "Don't forget to save",
   "calc.canton_compare.guide.s4.body": "Click \"Save simulation\" at the bottom of the page, otherwise this calculation won't appear in the client's meeting summary.",
+  "calc.canton_compare.guide.s5.title": "Reading the ranking",
+  "calc.canton_compare.guide.s5.body":
+    "Romandy cantons are sorted from cheapest (green) to most expensive, for the same profile. ZG and SZ are shown separately, as a reference (among the most tax-advantageous cantons in Switzerland), not mixed into the Romandy ranking. Hover a bar to see the detail: effective rate, tax regime and place of taxation.",
   "calc.canton_compare.mode.title": "Comparison mode",
   "calc.canton_compare.mode.annual": "Annual tax burden",
   "calc.canton_compare.mode.annual.desc": "Current situation: income and wealth entered.",
@@ -1346,6 +1389,9 @@ export const en: Record<string, string> = {
   "calc.dir.guide.s4.body": "Net profit (after corporate tax) kept in the company instead of distributed. Triggers no personal tax and funds future distributions or a share buyback.",
   "calc.dir.guide.s5.title": "Comparison",
   "calc.dir.guide.s5.body": "Total cost (charges + corporate tax + personal tax) and net in pocket for each strategy.",
+  "calc.dir.guide.s6.title": "Recommendation",
+  "calc.dir.guide.s6.body":
+    "The selected strategy is the one that maximizes the director's net in pocket after all costs (social charges, corporate tax, personal tax). The 4 tiles break down its composition: final net, gross salary, dividends paid, amount left in reserve. The text under the title explains why it beats the other strategies.",
   "calc.dir.card.inputs.title": "Company & director data",
   "calc.dir.card.inputs.desc": "Annual profit to allocate between salary, dividends and reserves.",
   "calc.dir.field.profit": "Total annual profit (CHF)",

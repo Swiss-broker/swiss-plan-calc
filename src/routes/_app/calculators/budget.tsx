@@ -105,6 +105,11 @@ function BudgetCalc() {
       body: "Une fois des simulations enregistrées dans ce même dossier (3a, caisse maladie, fiscal global, etc.), leurs économies mensuelles s'ajoutent ici automatiquement, poste par poste, pour afficher le budget optimisé.",
     },
     {
+      target: "budget-optimizations-detail",
+      title: "Détail des optimisations identifiées",
+      body: "Liste, poste par poste, chaque simulation annuelle de ce dossier non archivée qui génère un gain mensuel récurrent (ex. économie d'impôt 3a, baisse de prime LAMal). Le total de cette liste est exactement le « Total optimisations » ajouté au budget actuel pour obtenir le budget optimisé.",
+    },
+    {
       target: "budget-save",
       title: "Sauvegarder la simulation",
       body: "Sauvegardez une première fois en début de rendez-vous (budget actuel), puis une seconde fois en fin de rendez-vous (budget optimisé) pour que les deux apparaissent dans la synthèse.",
@@ -254,6 +259,7 @@ function BudgetCalc() {
         <CalcCard
           title="Détail des optimisations identifiées"
           description="Chaque gain mensuel récurrent déjà identifié dans ce dossier (simulations 'annual' non archivées), poste par poste."
+          data-guide="budget-optimizations-detail"
         >
           {result.optimizations.length === 0 ? (
             <p className="flex items-center gap-2 text-sm text-muted-foreground">

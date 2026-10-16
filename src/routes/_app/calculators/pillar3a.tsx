@@ -402,6 +402,16 @@ function Pillar3aCalc() {
       body: t("calc.p3a.step.assumptions.b"),
     },
     { target: "p3a-3b-yearly", title: t("calc.p3a.step.p3b.t"), body: t("calc.p3a.step.p3b.b") },
+    {
+      target: "p3a-savings",
+      title: t("calc.p3a.step.savings.t"),
+      body: t("calc.p3a.step.savings.b"),
+    },
+    {
+      target: "p3a-compare",
+      title: t("calc.p3a.step.compare.t"),
+      body: t("calc.p3a.step.compare.b"),
+    },
     { target: "p3a-save", title: t("calc.p3a.step.save.t"), body: t("calc.p3a.step.save.b") },
   ];
 
@@ -533,7 +543,7 @@ function Pillar3aCalc() {
           </CalcCard>
         </div>
         <div className="space-y-4 md:col-span-2">
-          <CalcCard title={t("calc.p3a.savings_card")}>
+          <CalcCard title={t("calc.p3a.savings_card")} data-guide="p3a-savings">
             {savings.applicable !== "yes" && savings.note && (
               <div
                 className={`mb-3 rounded-md border p-3 text-xs ${
@@ -649,6 +659,7 @@ function Pillar3aCalc() {
         )}
       </div>
 
+      <div data-guide="p3a-compare">
       <SplitCompareLayout
         title="Actuel vs Projeté, Prévoyance privée totale (3a + 3b)"
         description={
@@ -699,6 +710,7 @@ function Pillar3aCalc() {
           ),
         }}
       />
+      </div>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <CalcCard title={t("calc.p3a.projection_card")}>

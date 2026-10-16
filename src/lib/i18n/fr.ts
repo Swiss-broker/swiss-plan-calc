@@ -265,9 +265,12 @@ export const fr: Record<string, string> = {
   "calc.invcompare.step.params.t": "Paramètres clés",
   "calc.invcompare.step.params.b":
     "Capital initial, versements, rendement, frais (TER) et durée. Le taux d'imposition à la sortie s'applique au gain.",
-  "calc.invcompare.step.results.t": "Lecture des résultats",
+  "calc.invcompare.step.summary.t": "Verdict : qui gagne et de combien",
+  "calc.invcompare.step.summary.b":
+    "Capital net = capital brut final − frais cumulés (TER annuel) − impôt de sortie sur le gain. L'écart affiché est la différence entre les deux capitaux nets, en CHF et en %, sur la même durée. Un petit écart de frais ou de rendement peut inverser le résultat sur le long terme : testez plusieurs hypothèses avec le client.",
+  "calc.invcompare.step.results.t": "Lecture du graphique",
   "calc.invcompare.step.results.b":
-    "Le capital final net est mis en avant. La synthèse en bas affiche la différence en faveur du gagnant.",
+    "La courbe montre l'évolution du capital net de chaque investissement, année par année. Repérez le point où les deux courbes s'écartent pour expliquer au client l'effet cumulé des frais dans le temps.",
   "history.kind.investment_compare": "Comparateur d'investissements",
   "calc.open": "Ouvrir",
 
@@ -642,6 +645,12 @@ export const fr: Record<string, string> = {
   "calc.avs.step.couple.b": "Si marié·e, la rente du couple est plafonnée à 150 % de la rente max individuelle (effet de plafonnement).",
   "calc.avs.step.result.t": "Rente prévisionnelle",
   "calc.avs.step.result.b": "Estimation mensuelle/annuelle. Pour un calcul officiel, demandez un Extrait de Compte Individuel (CI) à votre caisse.",
+  "calc.avs.step.detail.t": "Années de cotisation et échelle de réduction",
+  "calc.avs.step.detail.b":
+    "L'échelle = années de cotisation effectives ÷ 44 (durée complète). Chaque année manquante réduit la rente proportionnellement. La « rente théorique pleine » suppose une carrière complète, sans lacune de cotisation.",
+  "calc.avs.step.methodology.t": "Comment cette estimation est calculée",
+  "calc.avs.step.methodology.b":
+    "Revenu annuel moyen déterminant (bonifications pour tâches éducatives/d'assistance incluses) → barème des rentes → échelle de réduction selon les années manquantes → rentes min/max légales 2026. Pour un calcul officiel et définitif, demandez votre Extrait de Compte Individuel (CI), lien ci-dessous.",
   "calc.lpp.head_title": "LPP & rachats · SwissBroker Pro",
   "calc.lpp.guide_title": "Guide LPP",
   "calc.lpp.projection_card": "Projection capital LPP",
@@ -762,6 +771,12 @@ export const fr: Record<string, string> = {
   "calc.lpp.step.buyback.b": "Renseignez votre capacité de rachat (visible sur le certificat) et la durée souhaitée pour étaler l'économie fiscale.",
   "calc.lpp.step.results.t": "Résultats",
   "calc.lpp.step.results.b": "Capital projeté, rente mensuelle et économies fiscales totales liées aux rachats.",
+  "calc.lpp.step.savings.t": "Comment l'économie fiscale est calculée",
+  "calc.lpp.step.savings.b":
+    "Le rachat est déduit du revenu imposable, à votre taux marginal effectif (indiqué ci-dessous, selon canton et statut). Le détail année par année distingue l'économie fiscale brute du coût net réel (rachat − économie).",
+  "calc.lpp.step.compare.t": "Comparateur avant / après rachat",
+  "calc.lpp.step.compare.b":
+    "Compare, à salaire et rendement identiques, le capital final sans aucun rachat (colonne rouge) et avec le plan de rachat saisi ci-dessus (colonne verte). Le bandeau résumé affiche le capital de retraite gagné et l'économie fiscale annuelle moyenne.",
   "calc.p3a.head_title": "3e pilier A & B · SwissBroker Pro",
   "calc.p3a.guide_title": "Guide 3e pilier",
   "calc.p3a.intro_title": "3e pilier en Suisse : deux régimes complémentaires",
@@ -826,6 +841,12 @@ export const fr: Record<string, string> = {
   "calc.p3a.step.assumptions.b": "Rendement, durée et tranche marginale d'imposition pour estimer l'économie fiscale annuelle.",
   "calc.p3a.step.p3b.t": "3e pilier B",
   "calc.p3a.step.p3b.b": "Versement libre, retrait à tout moment, mais primes non déductibles. Intéressant pour défiscaliser via assurance-vie ou compléter le 3a saturé.",
+  "calc.p3a.step.savings.t": "Économie fiscale et projection cumulée",
+  "calc.p3a.step.savings.b":
+    "La cotisation 3a est déduite du revenu imposable à votre taux marginal : économie = cotisation × taux marginal. Le bloc vert projette cette économie répétée chaque année jusqu'à la retraite, au versement actuel et au plafond légal.",
+  "calc.p3a.step.compare.t": "Comparateur actuel vs projeté",
+  "calc.p3a.step.compare.b":
+    "Compare votre situation actuelle à un scénario optimisé (3a au plafond + 3b cible + retrait fractionné). Le bandeau « D'où vient le gain ? » décompose l'écart : capital 3a et 3b supplémentaires, impôt de sortie en plus lié au capital plus élevé, et économie du fractionnement des retraits.",
   "calc.p3a.step.save.t": "N'oubliez pas de sauvegarder",
   "calc.p3a.step.save.b": "Cliquez sur \"Sauvegarder la simulation\" en bas de page, sinon ce calcul n'apparaîtra pas dans la synthèse RDV du client.",
   "calc.vested.head_title": "Libre passage · SwissBroker Pro",
@@ -877,6 +898,15 @@ export const fr: Record<string, string> = {
   "calc.vested.step.capital.b": "Solde du compte ou de la police de libre passage à la sortie de la caisse de pension.",
   "calc.vested.step.split.t": "Échelonnement",
   "calc.vested.step.split.b": "Diviser le capital en 2 comptes LP permet un retrait sur 2 années fiscales et réduit la progression de l'impôt.",
+  "calc.vested.step.chart.t": "Lecture du graphique",
+  "calc.vested.step.chart.b":
+    "Chaque courbe projette le capital selon une stratégie de placement (sécurité, équilibrée, dynamique), aux mêmes versements et durée. La courbe rouge en pointillés est la situation actuelle (capital bloqué, sans mouvement) : c'est la référence à comparer, pas une 4e stratégie.",
+  "calc.vested.step.current.t": "Situation actuelle",
+  "calc.vested.step.current.b":
+    "Capital laissé tel quel sur le compte de libre passage jusqu'à la retraite, sans changement de stratégie. C'est la référence : le gain affiché sur chaque stratégie ci-dessous se compare toujours à ce chiffre.",
+  "calc.vested.step.strategies.t": "Les 3 stratégies de placement",
+  "calc.vested.step.strategies.b":
+    "Capital final et gain net projetés pour chaque stratégie, sur la durée saisie. La stratégie recommandée dépend uniquement du nombre d'années jusqu'à la retraite : moins de 5 ans → sécurité, moins de 12 ans → équilibrée, au-delà → dynamique (plus de temps pour absorber les fluctuations).",
   "calc.status.single": "Célibataire",
   "calc.status.married": "Marié·e",
   "calc.status.single_with_children": "Famille monoparentale",
@@ -1062,6 +1092,15 @@ export const fr: Record<string, string> = {
   "calc.retirement.guide.s2.body": "Pour 2026 : 6.0 % sur la part obligatoire (en baisse continue). Vérifiez le taux de votre caisse.",
   "calc.retirement.guide.s3.title": "Hypothèses",
   "calc.retirement.guide.s3.body": "Espérance de vie, rendement post-retraite, fiscalité du capital · paramètres clés du verdict.",
+  "calc.retirement.guide.s5.title": "Comparaison rente vs capital",
+  "calc.retirement.guide.s5.body":
+    "Rente : capital × taux de conversion, versée chaque année puis imposée comme revenu au taux marginal. Capital : versé en une fois, taxé immédiatement (impôt ponctuel calculé ci-dessus), puis le solde net est supposé investi au rendement indiqué. L'option encadrée en vert est celle recommandée pour les hypothèses actuelles.",
+  "calc.retirement.guide.s6.title": "Comment la recommandation est calculée",
+  "calc.retirement.guide.s6.body":
+    "Ce panneau détaille, étape par étape, comment la rente et le capital sont comparés sur toute la durée (espérance de vie) : rente nette cumulée d'un côté, capital net après impôt puis investi de l'autre. Toute modification des hypothèses ci-dessus recalcule automatiquement ces 3 lignes.",
+  "calc.retirement.guide.s7.title": "Recommandation finale",
+  "calc.retirement.guide.s7.body":
+    "Synthèse en une phrase de l'option la plus avantageuse pour ce client, selon les hypothèses saisies. Elle change si l'espérance de vie, le rendement attendu ou la fiscalité retenue changent, à documenter avec le client.",
   "calc.retirement.guide.s4.title": "N'oubliez pas de sauvegarder",
   "calc.retirement.guide.s4.body": "Cliquez sur \"Sauvegarder la simulation\" en bas de page, sinon ce calcul n'apparaîtra pas dans la synthèse RDV du client.",
   "calc.retirement.section.title": "Hypothèses",
@@ -1180,6 +1219,9 @@ export const fr: Record<string, string> = {
   "calc.canton_compare.guide.s3.body": "Calcul effectué sur le chef-lieu de chaque canton (commune-précise viendra dans une prochaine version).",
   "calc.canton_compare.guide.s4.title": "N'oubliez pas de sauvegarder",
   "calc.canton_compare.guide.s4.body": "Cliquez sur \"Sauvegarder la simulation\" en bas de page, sinon ce calcul n'apparaîtra pas dans la synthèse RDV du client.",
+  "calc.canton_compare.guide.s5.title": "Lire le classement",
+  "calc.canton_compare.guide.s5.body":
+    "Les cantons romands sont triés du moins cher (vert) au plus cher, pour le même profil. ZG et SZ sont affichés à part, en référence (cantons parmi les plus avantageux de Suisse), sans être mélangés au classement romand. Survolez une barre pour voir le détail : taux effectif, régime d'imposition et lieu d'imposition.",
   "calc.canton_compare.mode.title": "Mode de comparaison",
   "calc.canton_compare.mode.annual": "Charge fiscale annuelle",
   "calc.canton_compare.mode.annual.desc": "Situation actuelle : revenu et fortune renseignés.",
@@ -1418,6 +1460,9 @@ export const fr: Record<string, string> = {
   "calc.dir.guide.s4.body": "Bénéfice net (après IS) laissé dans la société au lieu d'être distribué. Ne crée pas d'impôt personnel et finance les futures distributions ou un rachat de parts.",
   "calc.dir.guide.s5.title": "Comparatif",
   "calc.dir.guide.s5.body": "Coût total (cotisations + impôt société + impôt personnel) et net en poche pour chaque stratégie.",
+  "calc.dir.guide.s6.title": "Recommandation",
+  "calc.dir.guide.s6.body":
+    "La stratégie retenue est celle qui maximise le net en poche du dirigeant, tous coûts déduits (cotisations sociales, impôt société, impôt personnel). Les 4 cases détaillent sa composition : net final, salaire brut, dividende versé, montant laissé en réserve. Le texte sous le titre explique pourquoi elle l'emporte sur les autres stratégies.",
   "calc.dir.card.inputs.title": "Données société & dirigeant",
   "calc.dir.card.inputs.desc": "Bénéfice annuel à répartir entre salaire, dividendes et réserves.",
   "calc.dir.field.profit": "Bénéfice annuel total (CHF)",

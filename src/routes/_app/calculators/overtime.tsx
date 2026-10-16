@@ -113,6 +113,11 @@ function OvertimeCalc() {
       body: "Le montant exonéré et l'économie d'impôt qui en résulte, en euros et en francs.",
     },
     {
+      target: "overtime-detail",
+      title: "Détail du calcul",
+      body: "Cliquez sur « Afficher les étapes » pour dérouler les 5 formules du calcul : heures annuelles → heures exonérables (plafonnées) → salaire exonéré théorique → plafond fiscal 2026 → économie fiscale au taux marginal IR France. De quoi justifier chaque chiffre au client.",
+    },
+    {
       target: "overtime-save",
       title: "Sauvegarder la simulation",
       body: "Pensez à sauvegarder, sinon cette simulation n'apparaîtra pas dans la synthèse du rendez-vous.",
@@ -349,7 +354,7 @@ function OvertimeCalc() {
         </div>
 
         <Collapsible open={detailOpen} onOpenChange={setDetailOpen}>
-          <CalcCard title="Détail du calcul">
+          <CalcCard title="Détail du calcul" data-guide="overtime-detail">
             <CollapsibleTrigger className="flex w-full items-center justify-between text-sm font-medium text-primary">
               <span className="flex items-center gap-2">
                 <FileText className="h-4 w-4" />

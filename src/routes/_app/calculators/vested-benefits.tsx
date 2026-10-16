@@ -149,6 +149,21 @@ function VestedBenefitsCalc() {
       title: t("calc.vested.step.split.t"),
       body: t("calc.vested.step.split.b"),
     },
+    {
+      target: "vested-projection",
+      title: t("calc.vested.step.chart.t"),
+      body: t("calc.vested.step.chart.b"),
+    },
+    {
+      target: "vested-current",
+      title: t("calc.vested.step.current.t"),
+      body: t("calc.vested.step.current.b"),
+    },
+    {
+      target: "vested-strategies",
+      title: t("calc.vested.step.strategies.t"),
+      body: t("calc.vested.step.strategies.b"),
+    },
   ];
 
   return (
@@ -286,7 +301,7 @@ function VestedBenefitsCalc() {
         </div>
 
         <div className="space-y-4 md:col-span-3">
-          <CalcCard title={t("calc.vested.projection_card")}>
+          <CalcCard title={t("calc.vested.projection_card")} data-guide="vested-projection">
             <div className="h-72 chart-rise">
               <ResponsiveContainer width="100%" height="100%">
                 <ComposedChart data={chartData}>
@@ -351,7 +366,10 @@ function VestedBenefitsCalc() {
           des 3 stratégies de projection — pour ne jamais la confondre avec
           une 4e option de placement au même niveau que les autres. */}
       {currentProjection && (
-        <CalcCard className="border-2 border-destructive/30 bg-destructive/5">
+        <CalcCard
+          className="border-2 border-destructive/30 bg-destructive/5"
+          data-guide="vested-current"
+        >
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Info className="h-5 w-5 text-destructive" />
@@ -400,7 +418,7 @@ function VestedBenefitsCalc() {
         </CalcCard>
       )}
 
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3" data-guide="vested-strategies">
         {projections
           .filter((p) => p.strategy.id !== "current")
           .map((p) => {

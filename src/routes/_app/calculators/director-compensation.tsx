@@ -278,6 +278,11 @@ function DirectorCompensationCalc() {
     { target: "dir-total-profit", title: t("calc.dir.guide.s2.title"), body: t("calc.dir.guide.s2.body") },
     { target: "dir-strategies", title: t("calc.dir.guide.s3.title"), body: t("calc.dir.guide.s3.body") },
     { target: "dir-reserve-target", title: t("calc.dir.guide.s4.title"), body: t("calc.dir.guide.s4.body") },
+    {
+      target: "dir-recommendation",
+      title: t("calc.dir.guide.s6.title"),
+      body: t("calc.dir.guide.s6.body"),
+    },
     { target: "dir-compare", title: t("calc.dir.guide.s5.title"), body: t("calc.dir.guide.s5.body") },
   ];
 
@@ -952,7 +957,10 @@ function RecommendationCard({
   const lowSalaryWarning = salaryRatio < 0.5 && best.company.totalSalaryCost > 0;
 
   return (
-    <div className="rounded-2xl border border-success/40 bg-gradient-to-br from-success/10 to-primary/5 p-5 shadow-3d">
+    <div
+      data-guide="dir-recommendation"
+      className="rounded-2xl border border-success/40 bg-gradient-to-br from-success/10 to-primary/5 p-5 shadow-3d"
+    >
       <div className="flex items-start gap-3">
         <div className="rounded-full bg-success/15 p-2">
           <TrendingUp className="h-5 w-5 text-success-foreground" />
