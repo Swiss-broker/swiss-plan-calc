@@ -123,6 +123,24 @@ export function usePrefillFromClient<K extends CalculatorKind>(
 const IDENTITY_FIELDS = ["status", "canton", "children", "childrenAges", "confession"] as const;
 
 /**
+ * Égalité qui tient compte des tableaux (ex. childrenAges) : `prefill` est
+ * recalculé à CHAQUE rendu par usePrefillFromClient (jamais mémoïsé), donc
+ * un champ tableau y est un nouvel objet à chaque fois même quand son
+ * contenu n'a pas changé. Une comparaison par référence (`!==`) les
+ * considère donc toujours différents, déclenchant setForm à chaque rendu,
+ * donc un nouveau rendu, donc un nouvel appel de cet effet, donc un nouveau
+ * setForm, ... : boucle de rendu infinie (React error #185, confirmée par
+ * reproduction isolée). Les champs primitifs (string/number) continuent de
+ * se comparer normalement.
+ */
+function identityValuesEqual(a: unknown, b: unknown): boolean {
+  if (Array.isArray(a) && Array.isArray(b)) {
+    return a.length === b.length && a.every((v, i) => v === b[i]);
+  }
+  return a === b;
+}
+
+/**
  * Helper : hydrate UNE SEULE FOIS un useState form avec les valeurs prefill,
  * en ignorant les undefined (pour préserver les défauts du calculateur).
  * Les modifications "what-if" du courtier ne sont JAMAIS écrasées —
@@ -153,7 +171,7 @@ export function useHydrateFormFromPrefill<T extends Record<string, unknown>>(
     for (const k of IDENTITY_FIELDS) {
       const next = (prefill as Record<string, unknown>)[k];
       if (next === undefined) continue;
-      if (next !== lastIdentityRef.current[k]) {
+      if (!identityValuesEqual(next, lastIdentityRef.current[k])) {
         patch[k] = next;
         lastIdentityRef.current[k] = next;
       }
