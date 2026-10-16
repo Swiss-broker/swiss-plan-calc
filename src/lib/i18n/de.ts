@@ -1117,6 +1117,8 @@ export const de: Record<string, string> = {
   "calc.canton_compare.mode.lump": "Steuer auf BVG-Kapitalleistung bei Pensionierung",
   "calc.canton_compare.mode.lump.has_capital": "Projiziertes Kapital mit 65 (inkl. geplanter BVG-Einkäufe): {amount}",
   "calc.canton_compare.mode.lump.no_capital": "Projiziertes BVG-Kapital nicht verfügbar (BVG im Dossier erfassen).",
+  "calc.canton_compare.mode.caption":
+    "Diese beiden Ansichten lassen sich nicht kombinieren: die jährliche Steuerlast und die BVG-Kapitalauszahlungssteuer sind zwei getrennte Berechnungen mit je eigenem kantonalen Tarif. Vergleichen Sie die eine, dann die andere.",
   "calc.canton_compare.profile.title": "Zu vergleichendes Profil",
   "calc.canton_compare.profile.desc.lump": "Einmalige Steuer auf Kapitalleistung von {amount} (1/5-Tarif Bund + Kanton).",
   "calc.canton_compare.profile.desc.annual": "Simulierte jährliche Steuerbelastung für das erfasste Profil.",

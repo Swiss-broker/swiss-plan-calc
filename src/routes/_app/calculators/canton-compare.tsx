@@ -482,6 +482,9 @@ function CantonCompareCalc() {
               </div>
             </label>
           </RadioGroup>
+          <p className="mt-3 text-[11px] text-muted-foreground">
+            {t("calc.canton_compare.mode.caption")}
+          </p>
         </CalcCard>
       )}
 

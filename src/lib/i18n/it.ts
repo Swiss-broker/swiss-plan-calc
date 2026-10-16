@@ -1113,6 +1113,8 @@ export const it: Record<string, string> = {
   "calc.canton_compare.mode.lump": "Imposta su prestazione LPP al pensionamento",
   "calc.canton_compare.mode.lump.has_capital": "Capitale proiettato a 65 anni (incl. riscatti LPP pianificati): {amount}",
   "calc.canton_compare.mode.lump.no_capital": "Capitale LPP proiettato non disponibile (inserire LPP nella scheda).",
+  "calc.canton_compare.mode.caption":
+    "Queste due viste non si combinano: il carico fiscale annuale e l'imposta sulla prestazione in capitale LPP sono due calcoli distinti, ciascuno con il proprio barème cantonale. Confrontate l'una, poi l'altra.",
   "calc.canton_compare.profile.title": "Profilo da confrontare",
   "calc.canton_compare.profile.desc.lump": "Imposta unica su prestazione in capitale di {amount} (1/5 della tariffa federale + cantonale).",
   "calc.canton_compare.profile.desc.annual": "Carico fiscale annuo simulato per il profilo inserito.",

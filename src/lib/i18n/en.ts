@@ -1113,6 +1113,8 @@ export const en: Record<string, string> = {
   "calc.canton_compare.mode.lump": "Tax on BVG lump sum at retirement",
   "calc.canton_compare.mode.lump.has_capital": "Projected capital at 65 (incl. planned LPP buybacks): {amount}",
   "calc.canton_compare.mode.lump.no_capital": "Projected BVG capital unavailable (enter BVG in the client file).",
+  "calc.canton_compare.mode.caption":
+    "These two views don't combine: annual tax burden and the BVG lump-sum withdrawal tax are two separate calculations, each with its own cantonal scale. Compare one, then the other.",
   "calc.canton_compare.profile.title": "Profile to compare",
   "calc.canton_compare.profile.desc.lump": "One-off tax on capital benefit of {amount} (1/5 federal + cantonal scale).",
   "calc.canton_compare.profile.desc.annual": "Simulated annual tax burden for the entered profile.",
