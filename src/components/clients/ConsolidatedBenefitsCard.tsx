@@ -174,11 +174,19 @@ function SplitPanel({
       current: sumByPillar(cur.pillar2.items, "LPP"),
       projected: sumByPillar(opt.pillar2.items, "LPP"),
     },
-    {
-      label: "3e pilier A",
-      current: sumByPillar(cur.pillar2.items, "3A"),
-      projected: sumByPillar(opt.pillar2.items, "3A"),
-    },
+    (() => {
+      const pillar3aCurrent = sumByPillar(cur.pillar2.items, "3A");
+      const pillar3aProjected = sumByPillar(opt.pillar2.items, "3A");
+      return {
+        label: "3e pilier A",
+        current: pillar3aCurrent,
+        projected: pillar3aProjected,
+        hint:
+          event !== "retirement" && pillar3aCurrent === 0 && pillar3aProjected === 0
+            ? `0 CHF : les champs "Rente invalidité" et "Capital décès" du 3e pilier n'ont pas été renseignés lors de la dernière simulation sauvegardée. Pas une erreur, à compléter dans le calculateur 3e pilier si le produit en prévoit.`
+            : undefined,
+      };
+    })(),
   ];
 
   const annualGain = opt.combinedAnnual - cur.combinedAnnual;
