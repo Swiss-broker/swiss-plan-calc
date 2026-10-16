@@ -252,6 +252,9 @@ export function SplitCompareLayout({
                       ) : null}
                     </div>
                   </div>
+                  {r.hint && (
+                    <p className="text-[10px] leading-snug text-muted-foreground/80">{r.hint}</p>
+                  )}
                   {r.breakdown && isOpen && (
                     <div className="rounded-md border border-success/20 bg-background/70 p-2 text-[11px] text-foreground/80">
                       {r.breakdown}

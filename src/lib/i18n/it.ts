@@ -751,8 +751,9 @@ export const it: Record<string, string> = {
   "calc.p3a.field.contribution_max": "Contributo versato (max {max})",
   "calc.p3a.tip.contribution_max": "Massimale 2026: 7'258 CHF se affiliato LPP, altrimenti 20 % del reddito (max 36'288 CHF).",
   "calc.p3a.savings_card": "Risparmio fiscale immediato",
-  "calc.p3a.tax_savings_label": "Risparmio d'imposta",
-  "calc.p3a.tip.tax_savings": "Imposta federale + cantonale + comunale risparmiata grazie alla deduzione.",
+  "calc.p3a.tax_savings_label": "Risparmio d'imposta (contributo attuale)",
+  "calc.p3a.tip.tax_savings":
+    "Imposta federale + cantonale + comunale risparmiata grazie alla deduzione, sul contributo 3a inserito sopra. Il confronto più sotto mostra una cifra diversa se lo si porta al massimale legale.",
   "calc.p3a.effective_cost": "Costo netto",
   "calc.p3a.tip.effective_cost": "Contributo meno il risparmio d'imposta. Sforzo reale di risparmio.",
   "calc.p3a.marginal_rate": "Aliquota marginale stimata: {rate} %",

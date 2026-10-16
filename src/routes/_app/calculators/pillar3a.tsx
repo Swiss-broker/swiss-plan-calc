@@ -304,7 +304,7 @@ function Pillar3aCalc() {
         current: savings.taxSavings,
         projected: optimizedSavings.taxSavings,
         betterWhen: "higher",
-        hint: "Le 3B n'est pas déductible du revenu.",
+        hint: "Actuel = sur votre cotisation 3a saisie ci-dessus. Projeté = sur le plafond légal (3a maximisé). Deux scénarios différents, pas une erreur. Le 3b n'est pas déductible du revenu, il n'apparaît pas ici.",
       },
       {
         label: `Capital 3a à la retraite (${form.yearsToRetirement} ans)`,

@@ -775,8 +775,9 @@ export const fr: Record<string, string> = {
   "calc.p3a.field.contribution_max": "Cotisation versée (max {max})",
   "calc.p3a.tip.contribution_max": "Plafond 2026 : 7 258 CHF si affilié LPP, sinon 20 % du revenu (max 36 288 CHF).",
   "calc.p3a.savings_card": "Économie fiscale immédiate",
-  "calc.p3a.tax_savings_label": "Économie d'impôt",
-  "calc.p3a.tip.tax_savings": "Impôt fédéral + cantonal + communal économisé grâce à la déduction.",
+  "calc.p3a.tax_savings_label": "Économie d'impôt (cotisation actuelle)",
+  "calc.p3a.tip.tax_savings":
+    "Impôt fédéral + cantonal + communal économisé grâce à la déduction, sur la cotisation 3a saisie ci-dessus. Le comparatif plus bas affiche un autre chiffre si vous le poussez au plafond légal.",
   "calc.p3a.effective_cost": "Coût net",
   "calc.p3a.tip.effective_cost": "Ce que le versement coûte réellement après déduction fiscale. Exemple : 7 258 CHF versés − 2 500 CHF d'économie = 4 758 CHF de coût réel.",
   "calc.p3a.marginal_rate": "Taux marginal estimé : {rate} %",

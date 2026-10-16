@@ -753,8 +753,9 @@ export const de: Record<string, string> = {
   "calc.p3a.field.contribution_max": "Geleisteter Beitrag (max {max})",
   "calc.p3a.tip.contribution_max": "Plafond 2026: 7'258 CHF bei BVG-Anschluss, sonst 20 % des Einkommens (max 36'288 CHF).",
   "calc.p3a.savings_card": "Sofortige Steuerersparnis",
-  "calc.p3a.tax_savings_label": "Steuerersparnis",
-  "calc.p3a.tip.tax_savings": "Eingesparte direkte Bundessteuer + Staats- und Gemeindesteuer dank Abzug.",
+  "calc.p3a.tax_savings_label": "Steuerersparnis (aktueller Beitrag)",
+  "calc.p3a.tip.tax_savings":
+    "Eingesparte direkte Bundessteuer + Staats- und Gemeindesteuer dank Abzug, auf den oben eingegebenen 3a-Beitrag. Der Vergleich weiter unten zeigt einen anderen Betrag, wenn Sie bis zum gesetzlichen Maximum gehen.",
   "calc.p3a.effective_cost": "Nettokosten",
   "calc.p3a.tip.effective_cost": "Beitrag abzüglich Steuerersparnis. Tatsächlicher Sparaufwand.",
   "calc.p3a.marginal_rate": "Geschätzter Grenzsteuersatz: {rate} %",

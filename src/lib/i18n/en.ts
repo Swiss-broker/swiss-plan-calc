@@ -751,8 +751,9 @@ export const en: Record<string, string> = {
   "calc.p3a.field.contribution_max": "Contribution paid (max {max})",
   "calc.p3a.tip.contribution_max": "2026 ceiling: CHF 7,258 if BVG-affiliated, otherwise 20% of income (max CHF 36,288).",
   "calc.p3a.savings_card": "Immediate tax saving",
-  "calc.p3a.tax_savings_label": "Tax saving",
-  "calc.p3a.tip.tax_savings": "Federal + cantonal + communal tax saved thanks to the deduction.",
+  "calc.p3a.tax_savings_label": "Tax saving (current contribution)",
+  "calc.p3a.tip.tax_savings":
+    "Federal + cantonal + communal tax saved thanks to the deduction, on the 3a contribution entered above. The comparison below shows a different figure if you max it out to the legal ceiling.",
   "calc.p3a.effective_cost": "Net cost",
   "calc.p3a.tip.effective_cost": "Contribution paid minus tax saving. Real saving effort.",
   "calc.p3a.marginal_rate": "Estimated marginal rate: {rate}%",
