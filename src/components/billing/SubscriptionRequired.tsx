@@ -64,7 +64,7 @@ export function SubscriptionRequired({
 
         <Button onClick={handlePay} disabled={paying} className="mt-5 h-11 w-full shadow-elegant">
           {paying ? <Loader2 className="h-4 w-4 animate-spin" /> : <CreditCard className="h-4 w-4" />}
-          Payer la cotisation annuelle — 99 CHF/an
+          Payer la cotisation annuelle (99 CHF/an)
         </Button>
 
         <p className="mt-4 text-xs text-muted-foreground">

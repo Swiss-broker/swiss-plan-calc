@@ -110,7 +110,7 @@ export function computeRegimeAwareDeduction(
     return {
       ...result,
       applicable: "no",
-      note: `Frontalier sous l'accord franco-suisse de 1983 (travail ${g.canton}) : ce client est imposé exclusivement en France. Un versement 3e pilier A ou un rachat LPP suisse n'ouvre aucun droit à déduction, ni côté suisse ni côté français — aucune économie réelle ici.`,
+      note: `Frontalier sous l'accord franco-suisse de 1983 (travail ${g.canton}) : ce client est imposé exclusivement en France. Un versement 3e pilier A ou un rachat LPP suisse n'ouvre aucun droit à déduction, ni côté suisse ni côté français, donc aucune économie réelle ici.`,
     };
   }
 

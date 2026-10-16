@@ -67,7 +67,9 @@ const PLAN_CONFIG: Record<string, { label: string; color: string; features: stri
   cabinet: {
     label: "Cabinet (ancien plan, inactif)",
     color: "bg-purple-100 text-purple-800 border-purple-200",
-    features: ["Ce plan n'est plus proposé — contactez notre équipe pour passer à la cotisation annuelle."],
+    features: [
+      "Ce plan n'est plus proposé. Contactez notre équipe pour passer à la cotisation annuelle.",
+    ],
   },
   internal: {
     label: "Accès interne",

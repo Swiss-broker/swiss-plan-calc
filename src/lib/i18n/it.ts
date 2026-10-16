@@ -594,7 +594,7 @@ export const it: Record<string, string> = {
   "calc.avs.tip.contrib_start": "Anno del primo contributo AVS. Scala 44 = rendita completa. Ogni anno mancante = circa 1/44 perso.",
   "calc.avs.tip.retirement_year": "Anticipazione: -6,8 % per anno. Differimento: da +5,2 % a +31,5 % secondo la durata.",
   "calc.avs.tip.income":
-    "Media indicizzata dei redditi AVS SOLO SUGLI ANNI EFFETTIVAMENTE LAVORATI — non diluire mai questo reddito sugli anni di lacuna indicati qui sotto. Oltre il massimale, la rendita è plafonata alla rendita massima UFAS.",
+    "Media indicizzata dei redditi AVS SOLO SUGLI ANNI EFFETTIVAMENTE LAVORATI, mai diluita sugli anni di lacuna indicati qui sotto. Oltre il massimale, la rendita è plafonata alla rendita massima UFAS.",
   "calc.avs.tip.departure": "Se indicato (≠ 0), i contributi si fermano a questa data invece dell'anno di pensionamento. Critico per frontalieri/espatriati.",
   "calc.avs.tip.career_gap_years":
     "Numero di anni, all'interno del periodo contributivo, senza alcuna attività professionale né contributo AVS (interruzione di lavoro, disoccupazione non indennizzata, ecc.). Esempio: arrivato/a in Svizzera 10 anni fa ma solo 5 anni effettivamente lavorati → inserire 5 qui. Riduce direttamente gli anni effettivi di contribuzione (quindi la scala della rendita), in aggiunta agli anni mancanti già calcolati automaticamente.",
@@ -1496,7 +1496,7 @@ export const it: Record<string, string> = {
   "wizard.field.other_income.retired": "Altri redditi (affitti, dividendi…)",
   "wizard.field.family_allowances": "Assegni familiari (annuo)",
   "wizard.field.family_allowances.hint.salaried":
-    "Già compreso nel salario lordo (cifra 1 del certificato di salario) — inserito qui solo per mostrarlo separatamente, non aggiunto al calcolo.",
+    "Già compreso nel salario lordo (cifra 1 del certificato di salario), inserito qui solo per mostrarlo separatamente, non aggiunto al calcolo.",
   "wizard.field.family_allowances.hint.self_employed":
     "Nessun certificato di salario per un indipendente: questo importo è un reddito distinto, aggiunto al calcolo fiscale.",
   "wizard.field.civil_status": "Stato civile",
@@ -1514,14 +1514,16 @@ export const it: Record<string, string> = {
   "wizard.lpp.title_retired": "2° pilastro (LPP) · capitale residuo",
   "wizard.lpp.balance": "Avere LPP attuale",
   "wizard.lpp.insured": "Stipendio assicurato LPP",
-  "wizard.lpp.insured.hint": "Valore precompilato automaticamente stimato dal salario lordo — se disponibile, riportare l'importo esatto indicato sul certificato di previdenza, per calcoli più affidabili senza doverlo reinserire in ogni calcolatore.",
+  "wizard.lpp.insured.hint":
+    "Valore precompilato automaticamente stimato dal salario lordo: se disponibile, riportare l'importo esatto indicato sul certificato di previdenza, per calcoli più affidabili senza doverlo reinserire in ogni calcolatore.",
   "wizard.lpp.buyback": "Capacità di riscatto LPP",
   "wizard.lpp.buyback.hint": "Massimo indicato dalla cassa",
   "wizard.lpp.plan": "Piano LPP",
   "wizard.lpp.plan.hint": "Obbligatoria: tetto legale CHF 90'720. Sovraobbligatoria (quadri): fino a ~CHF 362'880. Piano 1e: riservato a salari da ~CHF 132'300, investimenti a scelta del dipendente, fino a CHF 860'000. In caso di dubbio, scegliere Obbligatoria.",
   "wizard.lpp.balance_remaining": "Capitale LPP non ritirato",
   "wizard.lpp.buybacks_done.label": "Riscatti LPP già effettuati",
-  "wizard.lpp.buybacks_done.hint": "Storico dei riscatti effettivamente pagati dal cliente, anno per anno — distinto da un riscatto semplicemente pianificato nel calcolatore LPP. Serve a calcolare la capacità di riscatto residua e a evitare di superare il tetto legale.",
+  "wizard.lpp.buybacks_done.hint":
+    "Storico dei riscatti effettivamente pagati dal cliente, anno per anno: distinto da un riscatto semplicemente pianificato nel calcolatore LPP. Serve a calcolare la capacità di riscatto residua e a evitare di superare il tetto legale.",
   "wizard.lpp.buybacks_done.empty": "Nessun riscatto registrato",
   "wizard.lpp.buybacks_done.year": "Anno",
   "wizard.lpp.buybacks_done.amount": "Importo",
@@ -1807,7 +1809,7 @@ export const it: Record<string, string> = {
   "calc.lpp.cert.orphan_title": "Rendita per orfani",
   "calc.lpp.cert.orphan_amount_label": "Importo per figlio (certificato)",
   "calc.lpp.cert.orphan_children_used": "Figli considerati: {n} (dalla scheda cliente)",
-  "calc.lpp.cert.orphan_cap_note": "— limitato al massimo LPP di 3 figli",
+  "calc.lpp.cert.orphan_cap_note": "limitato al massimo LPP di 3 figli",
   "calc.lpp.cert.orphan_total_month": "Totale rendite per orfani / mese",
   "calc.lpp.cert.orphan_total_year": "Totale rendite per orfani / anno",
   "calc.lpp.cert.widow_title": "Rendita vedovile",

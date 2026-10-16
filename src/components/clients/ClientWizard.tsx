@@ -716,7 +716,7 @@ export function ClientWizard({ initial, mode, clientId }: ClientWizardProps) {
             ))}
           </ul>
           <p className="mt-1.5 text-xs text-muted-foreground">
-            Vérifiez ces champs avant d'enregistrer — à corriger si c'est une erreur de saisie, ou à
+            Vérifiez ces champs avant d'enregistrer : à corriger si c'est une erreur de saisie, ou à
             ignorer si c'est un cas particulier que vous connaissez.
           </p>
         </div>

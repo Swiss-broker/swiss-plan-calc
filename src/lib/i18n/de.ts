@@ -590,13 +590,14 @@ export const de: Record<string, string> = {
   "calc.avs.bonus_departure": "Geplanter Wegzug in {year}: {effective} effektive Beitragsjahre, {missing} fehlende Jahre.",
   "calc.avs.bonus_amount": "Bonus auf das massgebende Einkommen: +{bonus} CHF/Jahr (massgebendes Endeinkommen: {income} CHF).",
   "calc.avs.bonus_capped": "⚠️ Bonus wirkungslos: Einkommen bereits am Maximum ({cap} CHF) → Maximalrente bereits erreicht.",
-  "calc.avs.retroactive_limit_note": "⚠️ Über {years} Jahre hinaus ist keine rückwirkende Regularisierung von AHV-Beiträgen möglich (Art. 16 AHVG): fehlende Jahre reduzieren die Rente dauerhaft. Das ist kein käuflicher Einkauf — die wirklichen Hebel sind ein LPP-Einkauf (2. Säule) und die 3. Säule.",
+  "calc.avs.retroactive_limit_note":
+    "⚠️ Über {years} Jahre hinaus ist keine rückwirkende Regularisierung von AHV-Beiträgen möglich (Art. 16 AHVG): fehlende Jahre reduzieren die Rente dauerhaft. Das ist kein käuflicher Einkauf: die wirklichen Hebel sind ein LPP-Einkauf (2. Säule) und die 3. Säule.",
   "calc.avs.tip.birth": "Bestimmt das AHV-Referenzalter (AHV 21: 64/65 Jahre je nach Geschlecht).",
   "calc.avs.tip.gender": "AHV 21: Frauen der Jahrgänge 1961-1969 erhalten ein schrittweise von 64 auf 65 Jahre erhöhtes Referenzalter.",
   "calc.avs.tip.contrib_start": "Jahr des 1. AHV-Beitrags. Skala 44 = Vollrente. Jedes fehlende Jahr = ca. 1/44 weniger.",
   "calc.avs.tip.retirement_year": "Vorbezug: -6.8 % pro Jahr. Aufschub: +5.2 % bis +31.5 % je nach Dauer.",
   "calc.avs.tip.income":
-    "Indexierter Durchschnitt der AHV-Einkommen NUR ÜBER DIE TATSÄCHLICH GEARBEITETEN JAHRE — nie über die unten angegebenen Lückenjahre verdünnen. Über dem Plafond ist die Rente auf die BSV-Maximalrente begrenzt.",
+    "Indexierter Durchschnitt der AHV-Einkommen NUR ÜBER DIE TATSÄCHLICH GEARBEITETEN JAHRE, nie über die unten angegebenen Lückenjahre verdünnt. Über dem Plafond ist die Rente auf die BSV-Maximalrente begrenzt.",
   "calc.avs.tip.departure": "Wenn angegeben (≠ 0), enden die Beiträge zu diesem Datum statt im Pensionierungsjahr. Wichtig für Grenzgänger/Expats.",
   "calc.avs.tip.career_gap_years":
     "Anzahl Jahre innerhalb der Beitragsperiode ohne jegliche Erwerbstätigkeit oder AHV-Beitrag (Erwerbsunterbruch, unentschädigte Arbeitslosigkeit usw.). Beispiel: vor 10 Jahren in die Schweiz eingereist, aber nur 5 Jahre tatsächlich gearbeitet → hier 5 eingeben. Reduziert direkt die effektiven Beitragsjahre (und damit die Rentenskala), zusätzlich zu den bereits automatisch berechneten fehlenden Jahren.",
@@ -1500,7 +1501,7 @@ export const de: Record<string, string> = {
   "wizard.field.other_income.retired": "Übrige Einkünfte (Mieten, Dividenden…)",
   "wizard.field.family_allowances": "Familienzulagen (jährlich)",
   "wizard.field.family_allowances.hint.salaried":
-    "Bereits im Bruttolohn enthalten (Ziffer 1 des Lohnausweises) — hier nur zur separaten Anzeige erfasst, nicht zur Berechnung hinzugefügt.",
+    "Bereits im Bruttolohn enthalten (Ziffer 1 des Lohnausweises), hier nur zur separaten Anzeige erfasst, nicht zur Berechnung hinzugefügt.",
   "wizard.field.family_allowances.hint.self_employed":
     "Kein Lohnausweis bei Selbstständigen: dieser Betrag ist ein eigenständiges Einkommen und wird zur Steuerberechnung hinzugefügt.",
   "wizard.field.civil_status": "Zivilstand",
@@ -1518,14 +1519,16 @@ export const de: Record<string, string> = {
   "wizard.lpp.title_retired": "2. Säule (BVG) · verbleibendes Kapital",
   "wizard.lpp.balance": "Aktuelles BVG-Guthaben",
   "wizard.lpp.insured": "Versicherter BVG-Lohn",
-  "wizard.lpp.insured.hint": "Automatisch geschätzt aus dem Bruttolohn — bei Verfügbarkeit den genauen Betrag aus dem Vorsorgeausweis übernehmen, um die Berechnungen zuverlässiger zu machen, ohne ihn in jedem Rechner erneut einzugeben.",
+  "wizard.lpp.insured.hint":
+    "Automatisch geschätzt aus dem Bruttolohn: bei Verfügbarkeit den genauen Betrag aus dem Vorsorgeausweis übernehmen, um die Berechnungen zuverlässiger zu machen, ohne ihn in jedem Rechner erneut einzugeben.",
   "wizard.lpp.buyback": "BVG-Einkaufspotenzial",
   "wizard.lpp.buyback.hint": "Maximum gemäss Pensionskasse",
   "wizard.lpp.plan": "BVG-Plan",
   "wizard.lpp.plan.hint": "Obligatorisch: gesetzliche Grenze CHF 90'720. Überobligatorisch (Kader): bis ca. CHF 362'880. 1e-Plan: ab einem Lohn von ca. CHF 132'300, Anlagewahl durch die versicherte Person, bis CHF 860'000. Im Zweifel Obligatorisch wählen.",
   "wizard.lpp.balance_remaining": "Nicht bezogenes BVG-Kapital",
   "wizard.lpp.buybacks_done.label": "Bereits getätigte BVG-Einkäufe",
-  "wizard.lpp.buybacks_done.hint": "Verlauf der tatsächlich vom Kunden bezahlten Einkäufe, Jahr für Jahr — nicht zu verwechseln mit einem im BVG-Rechner nur geplanten Einkauf. Dient zur Berechnung des verbleibenden Einkaufspotenzials und zur Vermeidung einer Überschreitung der gesetzlichen Grenze.",
+  "wizard.lpp.buybacks_done.hint":
+    "Verlauf der tatsächlich vom Kunden bezahlten Einkäufe, Jahr für Jahr: nicht zu verwechseln mit einem im BVG-Rechner nur geplanten Einkauf. Dient zur Berechnung des verbleibenden Einkaufspotenzials und zur Vermeidung einer Überschreitung der gesetzlichen Grenze.",
   "wizard.lpp.buybacks_done.empty": "Kein Einkauf erfasst",
   "wizard.lpp.buybacks_done.year": "Jahr",
   "wizard.lpp.buybacks_done.amount": "Betrag",
@@ -1819,7 +1822,7 @@ export const de: Record<string, string> = {
   "calc.lpp.cert.orphan_title": "Waisenrente",
   "calc.lpp.cert.orphan_amount_label": "Betrag pro Kind (Vorsorgeausweis)",
   "calc.lpp.cert.orphan_children_used": "Berücksichtigte Kinder: {n} (aus Kundendossier)",
-  "calc.lpp.cert.orphan_cap_note": "— begrenzt auf max. 3 Kinder (BVG)",
+  "calc.lpp.cert.orphan_cap_note": "begrenzt auf max. 3 Kinder (BVG)",
   "calc.lpp.cert.orphan_total_month": "Total Waisenrenten / Monat",
   "calc.lpp.cert.orphan_total_year": "Total Waisenrenten / Jahr",
   "calc.lpp.cert.widow_title": "Witwen- / Witwerrente",

@@ -588,13 +588,14 @@ export const en: Record<string, string> = {
   "calc.avs.bonus_departure": "Planned departure in {year}: {effective} effective contribution years, {missing} missing years.",
   "calc.avs.bonus_amount": "Determining income bonus: +CHF {bonus}/year (final determining income: CHF {income}).",
   "calc.avs.bonus_capped": "⚠️ Bonus has no effect: income already at the ceiling (CHF {cap}) → maximum pension already reached.",
-  "calc.avs.retroactive_limit_note": "⚠️ Beyond {years} years, no retroactive regularization of AVS contributions is possible (art. 16 LAVS): missing years permanently reduce the pension. This is not a purchasable buyback — the real levers are an LPP buyback (2nd pillar) and the 3rd pillar.",
+  "calc.avs.retroactive_limit_note":
+    "⚠️ Beyond {years} years, no retroactive regularization of AVS contributions is possible (art. 16 LAVS): missing years permanently reduce the pension. This is not a purchasable buyback: the real levers are an LPP buyback (2nd pillar) and the 3rd pillar.",
   "calc.avs.tip.birth": "Determines the AHV reference age (AHV 21: 64/65 years depending on gender).",
   "calc.avs.tip.gender": "AHV 21: women born 1961-1969 have their reference age gradually raised from 64 to 65.",
   "calc.avs.tip.contrib_start": "Year of the 1st AHV contribution. Scale 44 = full pension. Each missing year = roughly 1/44 lost.",
   "calc.avs.tip.retirement_year": "Early withdrawal: -6.8% per year. Deferral: +5.2% to +31.5% depending on duration.",
   "calc.avs.tip.income":
-    "Indexed average of AHV income OVER THE YEARS ACTUALLY WORKED ONLY — never dilute this over the gap years entered below. Above the ceiling, the pension is capped at the FSIO maximum pension.",
+    "Indexed average of AHV income OVER THE YEARS ACTUALLY WORKED ONLY, never diluted over the gap years entered below. Above the ceiling, the pension is capped at the FSIO maximum pension.",
   "calc.avs.tip.departure": "If set (≠ 0), contributions end at this date instead of the retirement year. Critical for cross-border workers/expats.",
   "calc.avs.tip.career_gap_years":
     "Number of years, within the contribution period, with no professional activity or AHV contribution at all (career break, uncompensated unemployment, etc.). Example: arrived in Switzerland 10 years ago but only actually worked 5 years → enter 5 here. Directly reduces the effective contribution years (and therefore the pension scale), on top of the missing years already computed automatically.",
@@ -1496,7 +1497,7 @@ export const en: Record<string, string> = {
   "wizard.field.other_income.retired": "Other income (rent, dividends…)",
   "wizard.field.family_allowances": "Family allowances (annual)",
   "wizard.field.family_allowances.hint.salaried":
-    "Already included in the gross salary (box 1 of the salary certificate) — entered here only to show it separately, not added to the calculation.",
+    "Already included in the gross salary (box 1 of the salary certificate), entered here only to show it separately, not added to the calculation.",
   "wizard.field.family_allowances.hint.self_employed":
     "No salary certificate for a self-employed person: this is a separate income, added to the tax calculation.",
   "wizard.field.civil_status": "Civil status",
@@ -1514,14 +1515,16 @@ export const en: Record<string, string> = {
   "wizard.lpp.title_retired": "Pillar 2 (BVG) · remaining capital",
   "wizard.lpp.balance": "Current Pillar 2 balance",
   "wizard.lpp.insured": "BVG insured salary",
-  "wizard.lpp.insured.hint": "Auto-filled estimate from gross salary — use the exact figure from the pension certificate when available, to make calculations more reliable without re-entering it in every calculator.",
+  "wizard.lpp.insured.hint":
+    "Auto-filled estimate from gross salary: use the exact figure from the pension certificate when available, to make calculations more reliable without re-entering it in every calculator.",
   "wizard.lpp.buyback": "BVG buyback capacity",
   "wizard.lpp.buyback.hint": "Maximum stated by the pension fund",
   "wizard.lpp.plan": "BVG plan",
   "wizard.lpp.plan.hint": "Mandatory: legal cap CHF 90,720. Supplementary (executive): up to ~CHF 362,880. 1e plan: for salaries above ~CHF 132,300, employee-chosen investments, up to CHF 860,000. If unsure, choose Mandatory.",
   "wizard.lpp.balance_remaining": "Pillar 2 capital not withdrawn",
   "wizard.lpp.buybacks_done.label": "BVG buybacks already made",
-  "wizard.lpp.buybacks_done.hint": "History of buybacks actually paid by the client, year by year — distinct from a buyback merely planned in the BVG calculator. Used to compute the remaining buyback capacity and avoid exceeding the legal cap.",
+  "wizard.lpp.buybacks_done.hint":
+    "History of buybacks actually paid by the client, year by year: distinct from a buyback merely planned in the BVG calculator. Used to compute the remaining buyback capacity and avoid exceeding the legal cap.",
   "wizard.lpp.buybacks_done.empty": "No buyback recorded",
   "wizard.lpp.buybacks_done.year": "Year",
   "wizard.lpp.buybacks_done.amount": "Amount",
@@ -1807,7 +1810,7 @@ export const en: Record<string, string> = {
   "calc.lpp.cert.orphan_title": "Orphan's pension",
   "calc.lpp.cert.orphan_amount_label": "Amount per child (certificate)",
   "calc.lpp.cert.orphan_children_used": "Children counted: {n} (from client file)",
-  "calc.lpp.cert.orphan_cap_note": "— capped at LPP maximum of 3 children",
+  "calc.lpp.cert.orphan_cap_note": "capped at LPP maximum of 3 children",
   "calc.lpp.cert.orphan_total_month": "Total orphan pensions / month",
   "calc.lpp.cert.orphan_total_year": "Total orphan pensions / year",
   "calc.lpp.cert.widow_title": "Widow / widower pension",

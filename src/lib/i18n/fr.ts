@@ -612,13 +612,14 @@ export const fr: Record<string, string> = {
   "calc.avs.bonus_departure": "Départ prévu en {year} : {effective} années cotisées effectivement, {missing} années manquantes.",
   "calc.avs.bonus_amount": "Bonus revenu déterminant : +{bonus} CHF/an (revenu déterminant final : {income} CHF).",
   "calc.avs.bonus_capped": "⚠️ Bonus sans effet : revenu déjà au plafond ({cap} CHF) → rente max déjà atteinte.",
-  "calc.avs.retroactive_limit_note": "⚠️ Au-delà de {years} ans, aucune régularisation rétroactive des cotisations AVS n'est possible (art. 16 LAVS) : les années manquantes réduisent la rente de façon définitive. Ce n'est pas un rachat proposable — les vrais leviers sont le rachat LPP (2e pilier) et le 3e pilier.",
+  "calc.avs.retroactive_limit_note":
+    "⚠️ Au-delà de {years} ans, aucune régularisation rétroactive des cotisations AVS n'est possible (art. 16 LAVS) : les années manquantes réduisent la rente de façon définitive. Ce n'est pas un rachat proposable : les vrais leviers sont le rachat LPP (2e pilier) et le 3e pilier.",
   "calc.avs.tip.birth": "Détermine l'âge AVS de référence (AVS21 : 64/65 ans selon genre).",
   "calc.avs.tip.gender": "AVS21 : femmes nées 1961-1969 voient leur âge de référence relevé progressivement de 64 à 65 ans.",
   "calc.avs.tip.contrib_start": "Année de la 1re cotisation AVS. Échelle 44 = rente complète. Chaque année manquante = environ 1/44 perdu.",
   "calc.avs.tip.retirement_year": "Anticipation : -6.8 % par année. Ajournement : +5.2 % à +31.5 % selon durée.",
   "calc.avs.tip.income":
-    "Moyenne indexée des revenus AVS SUR LES ANNÉES RÉELLEMENT TRAVAILLÉES uniquement — ne jamais diluer ce revenu sur les années de lacune saisies ci-dessous. Au-delà du plafond, la rente est plafonnée à la rente max OFAS.",
+    "Moyenne indexée des revenus AVS SUR LES ANNÉES RÉELLEMENT TRAVAILLÉES uniquement, à ne jamais diluer sur les années de lacune saisies ci-dessous. Au-delà du plafond, la rente est plafonnée à la rente max OFAS.",
   "calc.avs.tip.departure": "Si renseigné (≠ 0), les cotisations s'arrêtent à cette date au lieu de l'année de retraite. Critique pour frontaliers/expatriés.",
   "calc.avs.tip.career_gap_years":
     "Nombre d'années, à l'intérieur de la période de cotisation, sans aucune activité professionnelle ni cotisation AVS (coupure de travail, sans-emploi non indemnisé, etc.). Exemple : arrivé(e) en Suisse il y a 10 ans mais seulement 5 ans réellement travaillés → saisir 5 ici. Réduit directement les années effectives de cotisation (donc l'échelle de rente), en plus des années manquantes déjà calculées automatiquement.",
@@ -1571,7 +1572,7 @@ export const fr: Record<string, string> = {
   "wizard.field.other_income.retired": "Autres revenus (loyers, dividendes…)",
   "wizard.field.family_allowances": "Allocations familiales (annuel)",
   "wizard.field.family_allowances.hint.salaried":
-    "Montant déjà compris dans le salaire brut (chiffre 1 du certificat de salaire) — saisi ici uniquement pour l'afficher séparément, pas rajouté au calcul.",
+    "Montant déjà compris dans le salaire brut (chiffre 1 du certificat de salaire), saisi ici uniquement pour l'afficher séparément, pas rajouté au calcul.",
   "wizard.field.family_allowances.hint.self_employed":
     "Pas de certificat de salaire pour un indépendant : ce montant est un revenu distinct, ajouté au calcul fiscal.",
   "wizard.field.civil_status": "État civil",
@@ -1589,18 +1590,21 @@ export const fr: Record<string, string> = {
   "wizard.lpp.title_retired": "2e pilier (LPP) · capital restant",
   "wizard.lpp.balance": "Avoir LPP actuel",
   "wizard.lpp.insured": "Salaire assuré LPP",
-  "wizard.lpp.insured.hint": "Préremplissage automatique (estimation depuis le salaire brut) — reprenez le montant exact du certificat de prévoyance si disponible, pour fiabiliser les calculs sans le ressaisir dans chaque calculateur.",
+  "wizard.lpp.insured.hint":
+    "Préremplissage automatique (estimation depuis le salaire brut) : reprenez le montant exact du certificat de prévoyance si disponible, pour fiabiliser les calculs sans le ressaisir dans chaque calculateur.",
   "wizard.lpp.buyback": "Capacité de rachat LPP",
   "wizard.lpp.buyback.hint": "Maximum mentionné par la caisse",
   "wizard.field.activity_sector": "Secteur d'activité / Métier",
-  "wizard.field.activity_sector.hint": "Informatif — aide le courtier au suivi et à la personnalisation",
+  "wizard.field.activity_sector.hint":
+    "Informatif : aide le courtier au suivi et à la personnalisation",
   "wizard.field.spouse_salary_mode": "Mode salaire conjoint",
   "wizard.field.spouse_work_location": "Lieu de travail du conjoint",
   "wizard.lpp.plan": "Plan LPP",
   "wizard.lpp.plan.hint": "Obligatoire : plafond légal 90'720 CHF. Sur-obligatoire (cadres) : jusqu'à ~362'880 CHF. Plan 1e : réservé aux salaires dès ~132'300 CHF, placements au choix de l'employé, jusqu'à 860'000 CHF. En cas de doute, choisissez Obligatoire.",
   "wizard.lpp.balance_remaining": "Capital LPP non retiré",
   "wizard.lpp.buybacks_done.label": "Rachats LPP déjà effectués",
-  "wizard.lpp.buybacks_done.hint": "Historique des rachats réellement payés par le client, année par année — distinct d'un rachat simplement planifié dans le calculateur LPP. Sert à calculer la capacité de rachat restante et à éviter de dépasser le plafond légal.",
+  "wizard.lpp.buybacks_done.hint":
+    "Historique des rachats réellement payés par le client, année par année : distinct d'un rachat simplement planifié dans le calculateur LPP. Sert à calculer la capacité de rachat restante et à éviter de dépasser le plafond légal.",
   "wizard.lpp.buybacks_done.empty": "Aucun rachat enregistré",
   "wizard.lpp.buybacks_done.year": "Année",
   "wizard.lpp.buybacks_done.amount": "Montant",
