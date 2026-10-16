@@ -70,21 +70,6 @@ const TABS = [
     exact: false as boolean,
   },
   {
-    to: "/calculators/canton-compare",
-    labelKey: "calc.tab.canton_compare",
-    icon: Map,
-    exact: false as boolean,
-  },
-  {
-    to: "/calculators/retirement",
-    labelKey: "calc.tab.retirement",
-    icon: TrendingUp,
-    exact: false as boolean,
-  },
-] as const;
-
-const MORE_TABS = [
-  {
     to: "/calculators/vested-benefits",
     labelKey: "calc.tab.vested_benefits",
     icon: Landmark,
@@ -102,6 +87,21 @@ const MORE_TABS = [
     icon: Coins,
     exact: false as boolean,
   },
+  {
+    to: "/calculators/canton-compare",
+    labelKey: "calc.tab.canton_compare",
+    icon: Map,
+    exact: false as boolean,
+  },
+  {
+    to: "/calculators/retirement",
+    labelKey: "calc.tab.retirement",
+    icon: TrendingUp,
+    exact: false as boolean,
+  },
+] as const;
+
+const MORE_TABS = [
   {
     to: "/calculators/health-insurance-resident",
     labelKey: "calc.tab.health_resident",
