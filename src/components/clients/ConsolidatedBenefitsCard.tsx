@@ -4,6 +4,7 @@
 import { useMemo, useState } from "react";
 import { HeartHandshake, ShieldAlert, Cross } from "lucide-react";
 import { DashboardCard } from "./DashboardCard";
+import { SaveSimulationButton } from "@/components/calculators/SaveSimulationButton";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { formatCHF } from "@/lib/format";
 import {
@@ -96,6 +97,32 @@ export function ConsolidatedBenefitsCard({ bundle, caseId }: Props) {
           </TabsContent>
         ))}
       </Tabs>
+
+      {/* Cette vue est dérivée (recalculée à chaque ouverture depuis les
+          dernières simulations AVS/AI, LPP, 3a du dossier), elle n'apparaît
+          donc jamais dans l'historique ni dans la synthèse PDF du
+          rendez-vous tant qu'elle n'a pas été explicitement sauvegardée
+          comme un instantané, comme les autres calculateurs. */}
+      <div className="mt-4 flex items-center justify-between gap-3 border-t border-border/60 pt-3">
+        <p className="text-[11px] text-muted-foreground">
+          Sauvegardez cet instantané pour qu'il apparaisse dans l'historique du dossier et dans la
+          synthèse PDF du rendez-vous.
+        </p>
+        <SaveSimulationButton
+          kind="consolidated_benefits"
+          inputs={{ clientId: bundle.client.id, caseId: caseId ?? null }}
+          summary={{
+            currentCombinedAnnual: current.retirement?.combinedAnnual ?? 0,
+            optimizedCombinedAnnual: optimized.retirement?.combinedAnnual ?? 0,
+            annualGain:
+              (optimized.retirement?.combinedAnnual ?? 0) -
+              (current.retirement?.combinedAnnual ?? 0),
+            currentTotalCapitalNet: capitals.totalCapitalNet,
+            optimizedTotalCapitalNet: optimizedCapitals.totalCapitalNet,
+          }}
+          defaultTitle="Prestations consolidées"
+        />
+      </div>
     </DashboardCard>
   );
 }

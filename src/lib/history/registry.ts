@@ -151,6 +151,30 @@ export function extractKpis(kind: SimulationKind, summary: SummaryShape): Histor
         { label: "Revenus mensuels", value: num(summary.totalMonthlyIncomeCHF), unit: "CHF" },
         { label: "Charges mensuelles", value: num(summary.totalMonthlyExpensesCHF), unit: "CHF" },
       ];
+    case "consolidated_benefits":
+      return [
+        {
+          label: "Rente annuelle consolidée (actuelle)",
+          value: num(summary.currentCombinedAnnual),
+          unit: "CHF",
+        },
+        {
+          label: "Rente annuelle consolidée (optimisée)",
+          value: num(summary.optimizedCombinedAnnual),
+          unit: "CHF",
+        },
+        { label: "Gain rente annuelle", value: num(summary.annualGain), unit: "CHF" },
+        {
+          label: "Capital net total (actuel)",
+          value: num(summary.currentTotalCapitalNet),
+          unit: "CHF",
+        },
+        {
+          label: "Capital net total (optimisé)",
+          value: num(summary.optimizedTotalCapitalNet),
+          unit: "CHF",
+        },
+      ];
   }
 }
 

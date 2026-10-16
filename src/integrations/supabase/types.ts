@@ -2326,6 +2326,7 @@ export type Database = {
         | "fx_claim"
         | "health_insurance_resident"
         | "budget"
+        | "consolidated_benefits";
       tax_status:
         | "resident"
         | "source_taxed"
@@ -2570,6 +2571,7 @@ export const Constants = {
         "fx_claim",
         "health_insurance_resident",
         "budget",
+        "consolidated_benefits",
       ],
       tax_status: [
         "resident",
