@@ -29,6 +29,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useT } from "@/contexts/LanguageContext";
 import { CANTONS } from "@/lib/swiss/cantons";
+import { WikiHelpLink } from "@/components/wiki/WikiHelpLink";
 import {
   IDE_REGEX,
   getLegalFormOptions,
@@ -195,6 +196,9 @@ export function CompanyForm({ mode, initial }: CompanyFormProps) {
           <p className="mt-1 text-sm text-muted-foreground">
             {t("company_form.subtitle")}
           </p>
+          <div className="mt-1.5">
+            <WikiHelpLink article="societes-creation" />
+          </div>
         </div>
 
         {/* Identité */}

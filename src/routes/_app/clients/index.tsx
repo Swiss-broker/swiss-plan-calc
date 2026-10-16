@@ -44,6 +44,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
+import { WikiHelpLink } from "@/components/wiki/WikiHelpLink";
 import { CANTON_BY_CODE } from "@/lib/swiss/cantons";
 import { TAX_STATUS_LABELS, CIVIL_STATUS_LABELS } from "@/lib/swiss/enums";
 import { ageFromDob, type Client } from "@/lib/clients/types";
@@ -129,6 +130,9 @@ function ClientsListPage() {
         <div>
           <h1 className="text-3xl font-bold tracking-tight">{t("clients.title")}</h1>
           <p className="mt-1 text-sm text-muted-foreground">{t("clients.subtitle")}</p>
+          <div className="mt-1.5">
+            <WikiHelpLink article="clients-liste" />
+          </div>
         </div>
         <div className="flex flex-col items-end gap-1">
           <Button

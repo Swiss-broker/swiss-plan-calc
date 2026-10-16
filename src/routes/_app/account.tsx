@@ -17,6 +17,7 @@ import { getSelectableCantons, isSelectableCanton, CANTON_BY_CODE } from "@/lib/
 import { tCanton, t as translate } from "@/lib/i18n";
 import { zodValidator, fallback } from "@tanstack/zod-adapter";
 import { z } from "zod";
+import { WikiHelpLink } from "@/components/wiki/WikiHelpLink";
 
 const searchSchema = z.object({
   tab: fallback(z.string().optional(), undefined),
@@ -39,6 +40,17 @@ const TABS = [
 ] as const;
 
 type TabId = typeof TABS[number]["id"];
+
+// Article wiki "comment utiliser cet onglet" associé à chaque onglet du compte.
+const ACCOUNT_TAB_WIKI_SLUGS: Record<TabId, string> = {
+  profil: "compte-profil",
+  cabinet: "compte-cabinet",
+  abonnement: "compte-abonnement",
+  avantages: "compte-avantages",
+  paiements: "compte-paiements",
+  pdf: "compte-rapports-pdf",
+  emails: "compte-modeles-emails",
+};
 
 const PLAN_CONFIG: Record<string, { label: string; color: string; features: string[] }> = {
   active: {
@@ -247,8 +259,15 @@ function AccountPage() {
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-8 sm:px-6 lg:px-8">
-      <h1 className="text-3xl font-bold tracking-tight">Mon profil</h1>
-      <p className="mt-1 text-sm text-muted-foreground">Gérez vos informations, votre abonnement et vos préférences.</p>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Mon profil</h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Gérez vos informations, votre abonnement et vos préférences.
+          </p>
+        </div>
+        <WikiHelpLink article={ACCOUNT_TAB_WIKI_SLUGS[activeTab]} />
+      </div>
 
       {/* Onglets horizontaux */}
       <div className="mt-6 flex gap-1 rounded-xl border border-border bg-muted/40 p-1">

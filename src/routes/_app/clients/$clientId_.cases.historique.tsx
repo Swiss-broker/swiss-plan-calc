@@ -10,6 +10,7 @@ import { ArrowLeft, Clock, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { SessionSummaryTab } from "@/components/clients/SessionSummaryTab";
 import type { Client } from "@/lib/clients/types";
+import { WikiHelpLink } from "@/components/wiki/WikiHelpLink";
 
 export const Route = createFileRoute("/_app/clients/$clientId_/cases/historique")({
   head: () => ({ meta: [{ title: "Historique · SwissBroker Pro" }] }),
@@ -85,6 +86,9 @@ function HistoriquePage() {
             Simulations enregistrées avant l'introduction des dossiers. Consultation uniquement :
             pour lancer un nouveau calcul, ouvrez ou créez un dossier.
           </p>
+          <div className="mt-1">
+            <WikiHelpLink article="historique-avant-dossiers" />
+          </div>
         </div>
       </div>
 

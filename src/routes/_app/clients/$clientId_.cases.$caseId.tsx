@@ -14,6 +14,7 @@ import { ClientCalculatorBar } from "@/components/clients/ClientCalculatorBar";
 import { SessionSummaryTab } from "@/components/clients/SessionSummaryTab";
 import { useSetClientCaseStatus, type ClientCase } from "@/hooks/useClientCases";
 import type { Client } from "@/lib/clients/types";
+import { WikiHelpLink } from "@/components/wiki/WikiHelpLink";
 
 export const Route = createFileRoute("/_app/clients/$clientId_/cases/$caseId")({
   head: () => ({ meta: [{ title: "Dossier · SwissBroker Pro" }] }),
@@ -107,6 +108,9 @@ function CaseDetailPage() {
               {clientCase.closed_at &&
                 ` · Terminé le ${new Date(clientCase.closed_at).toLocaleDateString("fr-CH")}`}
             </p>
+            <div className="mt-1">
+              <WikiHelpLink article="dossier-calculateurs" />
+            </div>
           </div>
         </div>
         <Button

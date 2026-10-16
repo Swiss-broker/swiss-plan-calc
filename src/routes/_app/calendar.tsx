@@ -22,6 +22,7 @@ import { AppointmentDialog } from "@/components/appointments/AppointmentDialog";
 import { MonthView, WeekView, DayView, AppointmentListView } from "@/components/calendar/CalendarViews";
 import type { Appointment } from "@/lib/appointments/types";
 import { cn } from "@/lib/utils";
+import { WikiHelpLink } from "@/components/wiki/WikiHelpLink";
 
 export const Route = createFileRoute("/_app/calendar")({
   head: () => ({ meta: [{ title: "Calendrier · SwissBroker Pro" }] }),
@@ -123,9 +124,12 @@ function CalendarPage() {
           <CalendarDays className="h-5 w-5 text-primary" />
           <h1 className="text-xl font-semibold sm:text-2xl">Calendrier</h1>
         </div>
-        <Button onClick={() => openCreate()} className="w-full sm:w-auto">
-          <Plus className="h-4 w-4" /> Nouveau rendez-vous
-        </Button>
+        <div className="flex items-center gap-3">
+          <WikiHelpLink article="calendrier-rdv" />
+          <Button onClick={() => openCreate()} className="w-full sm:w-auto">
+            <Plus className="h-4 w-4" /> Nouveau rendez-vous
+          </Button>
+        </div>
       </div>
 
       <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">

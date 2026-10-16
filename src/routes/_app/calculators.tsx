@@ -23,6 +23,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useT } from "@/contexts/LanguageContext";
+import { WikiHelpLink } from "@/components/wiki/WikiHelpLink";
 
 const layoutSearchSchema = z.object({
   clientId: fallback(z.string().uuid().optional(), undefined),
@@ -130,6 +131,26 @@ const MORE_TABS = [
 
 const ALL_TABS = [...TABS, ...MORE_TABS] as const;
 
+// Article wiki "comment utiliser ce calculateur" associé à chaque route,
+// affiché en tête de page via WikiHelpLink.
+const CALC_WIKI_SLUGS: Record<string, string> = {
+  "/calculators": "calc-vue-ensemble",
+  "/calculators/budget": "calc-budget",
+  "/calculators/tax-global": "calc-fiscal-global",
+  "/calculators/avs-ai": "calc-avs-ai",
+  "/calculators/lpp": "calc-lpp",
+  "/calculators/pillar3a": "calc-pillar3a",
+  "/calculators/vested-benefits": "calc-vested-benefits",
+  "/calculators/consolidated-benefits": "calc-consolidated-benefits",
+  "/calculators/health-insurance-france": "calc-health-france",
+  "/calculators/canton-compare": "calc-canton-compare",
+  "/calculators/retirement": "calc-retirement",
+  "/calculators/health-insurance-resident": "calc-health-resident",
+  "/calculators/overtime": "calc-overtime",
+  "/calculators/director-compensation": "calc-director-compensation",
+  "/calculators/investment-compare": "calc-investment-compare",
+};
+
 function CalculatorsLayout() {
   const t = useT();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
@@ -158,8 +179,13 @@ function CalculatorsLayout() {
               {t("calc.client_mode")}
             </div>
           )}
-          <h1 className="text-3xl font-bold tracking-tight">{t("nav.calculators")}</h1>
-          <p className="mt-1 text-sm text-muted-foreground">{t("calc.subtitle")}</p>
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <h1 className="text-3xl font-bold tracking-tight">{t("nav.calculators")}</h1>
+              <p className="mt-1 text-sm text-muted-foreground">{t("calc.subtitle")}</p>
+            </div>
+            {CALC_WIKI_SLUGS[currentTab] && <WikiHelpLink article={CALC_WIKI_SLUGS[currentTab]} />}
+          </div>
         </div>
 
         {/* Mobile: select fallback for quick switching */}

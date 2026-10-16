@@ -79,6 +79,7 @@ import { EmailsTab } from "@/components/clients/EmailsTab";
 import { FollowUpTab } from "@/components/clients/FollowUpTab";
 import { zodValidator, fallback } from "@tanstack/zod-adapter";
 import { z } from "zod";
+import { WikiHelpLink } from "@/components/wiki/WikiHelpLink";
 
 const CLIENT_TABS = [
   "overview",
@@ -97,6 +98,25 @@ const CLIENT_TABS = [
   "cases",
 ] as const;
 type ClientTab = (typeof CLIENT_TABS)[number];
+
+// Article wiki "comment utiliser cet onglet" associé à chaque onglet de la
+// fiche client, affiché via WikiHelpLink au-dessus des onglets.
+const CLIENT_TAB_WIKI_SLUGS: Record<ClientTab, string> = {
+  overview: "client-onglet-synthese",
+  session: "client-onglet-synthese-rdv",
+  optimizations: "client-onglet-optimisations",
+  fiscal: "client-onglet-fiscalite",
+  pension: "client-onglet-prevoyance",
+  consolidated: "calc-consolidated-benefits",
+  patrimoine: "client-onglet-patrimoine",
+  family: "client-onglet-famille",
+  notes: "client-onglet-notes",
+  ai: "client-onglet-ia",
+  documents: "client-onglet-documents",
+  emails: "client-onglet-emails",
+  followup: "client-onglet-suivi-rdv",
+  cases: "client-onglet-dossiers",
+};
 
 const searchSchema = z.object({
   tab: fallback(z.enum(CLIENT_TABS).optional(), undefined),
@@ -418,6 +438,10 @@ function ClientDetailPage() {
         <AiAnalysis client={client} pension={pension} assets={assets} />
       </div>
 
+      <div className="mt-8 flex justify-end">
+        <WikiHelpLink article={CLIENT_TAB_WIKI_SLUGS[(tab ?? "overview") as ClientTab]} />
+      </div>
+
       <Tabs
         value={tab ?? "overview"}
         onValueChange={(v) =>
@@ -426,7 +450,7 @@ function ClientDetailPage() {
             replace: true,
           })
         }
-        className="mt-8"
+        className="mt-2"
       >
         <TabsList className="flex h-auto w-full flex-wrap justify-start gap-1 bg-muted p-1">
           <TabsTrigger value="overview">Synthèse</TabsTrigger>

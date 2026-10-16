@@ -1,5 +1,6 @@
 // src/routes/_app/history.tsx
 import { AiConversationsHistory } from "@/components/ai/AiConversationsHistory";
+import { WikiHelpLink } from "@/components/wiki/WikiHelpLink";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -219,6 +220,9 @@ function HistoryPage() {
           <p className="mt-1 text-sm text-muted-foreground">
             {t("history.subtitle")}
           </p>
+          <div className="mt-1.5">
+            <WikiHelpLink article="historique-simulations" />
+          </div>
         </div>
         {selected.size >= 2 && (
           <Button

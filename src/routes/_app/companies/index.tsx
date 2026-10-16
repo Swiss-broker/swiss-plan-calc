@@ -43,6 +43,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { WikiHelpLink } from "@/components/wiki/WikiHelpLink";
 import {
   Select,
   SelectContent,
@@ -160,6 +161,9 @@ function CompaniesListPage() {
         <div>
           <h1 className="text-3xl font-bold tracking-tight">{t("companies.title")}</h1>
           <p className="mt-1 text-sm text-muted-foreground">{t("companies.subtitle")}</p>
+          <div className="mt-1.5">
+            <WikiHelpLink article="societes-liste" />
+          </div>
         </div>
         <div className="flex flex-col items-end gap-1">
           <Button

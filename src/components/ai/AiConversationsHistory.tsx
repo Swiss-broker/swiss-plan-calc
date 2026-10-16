@@ -6,6 +6,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { formatDateShort } from "@/lib/i18n/format";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Link } from "@tanstack/react-router";
+import { WikiHelpLink } from "@/components/wiki/WikiHelpLink";
 
 interface Message {
   role: "user" | "assistant";
@@ -46,11 +47,12 @@ export function AiConversationsHistory() {
 
   return (
     <Card className="mt-6">
-      <CardHeader>
+      <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-3 space-y-0">
         <CardTitle className="flex items-center gap-2 text-base">
           <Sparkles className="h-5 w-5 text-primary" />
           Conversations IA ({conversations.length})
         </CardTitle>
+        <WikiHelpLink article="ia-conversations-globales" />
       </CardHeader>
       <CardContent className="space-y-3">
         {conversations.map((conv) => {

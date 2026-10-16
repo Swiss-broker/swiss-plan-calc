@@ -44,6 +44,7 @@ import {
   type Gender,
 } from "@/lib/swiss/enums";
 import type { Child, Client } from "@/lib/clients/types";
+import { WikiHelpLink } from "@/components/wiki/WikiHelpLink";
 import { getWorkStatusRules } from "@/lib/clients/work-status-rules";
 import { suggestTaxStatus } from "@/lib/clients/suggest-tax-status";
 import { checkClientConsistency } from "@/lib/clients/consistency-check";
@@ -677,6 +678,11 @@ export function ClientWizard({ initial, mode, clientId }: ClientWizardProps) {
             {t("wizard.step_of", { step, total: STEP_COUNT })} · {currentTitle}
             <span className="text-muted-foreground/70"> · {currentDesc}</span>
           </p>
+          {mode === "create" && (
+            <div className="mt-1.5">
+              <WikiHelpLink article="clients-creation" />
+            </div>
+          )}
         </div>
         <div className="flex items-center gap-2">
           {canReturnToProfile ? (

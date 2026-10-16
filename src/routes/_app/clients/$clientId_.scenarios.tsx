@@ -18,6 +18,7 @@ import {
   type ScenarioDef,
 } from "@/lib/scenarios/presets";
 import type { Client, ClientPension, ClientAssets } from "@/lib/clients/types";
+import { WikiHelpLink } from "@/components/wiki/WikiHelpLink";
 
 export const Route = createFileRoute("/_app/clients/$clientId_/scenarios")({
   head: () => ({ meta: [{ title: "Comparateur de scénarios · SwissBroker Pro" }] }),
@@ -131,6 +132,9 @@ function ScenariosPage() {
           <p className="mt-1 text-sm text-muted-foreground">
             Sélectionnez jusqu'à 4 scénarios pour comparer impôts, taux et prévoyance côte à côte.
           </p>
+          <div className="mt-1.5">
+            <WikiHelpLink article="comparateur-scenarios" />
+          </div>
         </div>
         <Badge variant="secondary" className="self-start sm:self-auto">
           {selected.length}/4 sélectionnés

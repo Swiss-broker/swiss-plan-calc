@@ -29,6 +29,7 @@ import { formatDateShort } from "@/lib/i18n/format";
 import { t as translate } from "@/lib/i18n";
 import { KIND_LABELS } from "@/lib/history/types";
 import { AdvantagesReminderBanner } from "@/components/billing/AdvantagesReminderBanner";
+import { WikiHelpLink } from "@/components/wiki/WikiHelpLink";
 export const Route = createFileRoute("/_app/dashboard")({
   head: () => ({ meta: [{ title: translate("dash.head.title") }] }),
   component: Dashboard,
@@ -134,6 +135,9 @@ function Dashboard() {
                 {profile?.brokerage_name ? `${profile.brokerage_name} · ` : ""}
                 {t("dash.subtitle")}
               </p>
+              <div className="mt-1.5">
+                <WikiHelpLink article="tableau-de-bord" />
+              </div>
             </div>
           </div>
           <div className="flex flex-wrap gap-2">

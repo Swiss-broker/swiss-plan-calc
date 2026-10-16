@@ -49,11 +49,22 @@ import { DeleteConfirmDialog } from "@/components/common/DeleteConfirmDialog";
 import { ArchiveConfirmDialog } from "@/components/common/ArchiveConfirmDialog";
 import { AttachDirectorDialog } from "@/components/companies/AttachDirectorDialog";
 import { AiAnalysisCompany } from "@/components/ai/AiAnalysis";
+import { WikiHelpLink } from "@/components/wiki/WikiHelpLink";
 
 export const Route = createFileRoute("/_app/companies/$companyId")({
   head: () => ({ meta: [{ title: "Société · SwissBroker Pro" }] }),
   component: CompanyDetailPage,
 });
+
+// Article wiki "comment utiliser cet onglet" associé à chaque onglet de la
+// fiche société, affiché via WikiHelpLink au-dessus des onglets.
+const COMPANY_TAB_WIKI_SLUGS: Record<string, string> = {
+  overview: "societe-onglet-synthese",
+  financials: "societe-onglet-finances",
+  directors: "societe-onglet-dirigeants",
+  calc: "societe-onglet-calculs",
+  notes: "societe-onglet-notes",
+};
 
 function CompanyDetailPage() {
   const { companyId } = Route.useParams();
@@ -314,7 +325,10 @@ function CompanyDetailPage() {
           </div>
         </div>
       </div>
-      <Tabs value={tab} onValueChange={setTab} className="mt-8">
+      <div className="mt-8 flex justify-end">
+        <WikiHelpLink article={COMPANY_TAB_WIKI_SLUGS[tab] ?? "societe-onglet-synthese"} />
+      </div>
+      <Tabs value={tab} onValueChange={setTab} className="mt-2">
         <TabsList className="flex h-auto w-full flex-wrap justify-start gap-1 bg-muted p-1">
           <TabsTrigger value="overview">Synthèse</TabsTrigger>
           <TabsTrigger value="financials">Données financières</TabsTrigger>

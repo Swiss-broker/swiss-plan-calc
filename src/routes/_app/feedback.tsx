@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { WikiHelpLink } from "@/components/wiki/WikiHelpLink";
 
 type Message = {
   id: string;
@@ -122,14 +123,17 @@ function FeedbackPage() {
 
   return (
     <div className="mx-auto w-full max-w-5xl space-y-6 p-6">
-      <div className="flex items-center gap-3">
-        <MessageSquare className="h-6 w-6 text-primary" />
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Mes feedbacks</h1>
-          <p className="text-sm text-muted-foreground">
-            Historique des retours envoyés à l'équipe SwissBroker.
-          </p>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <MessageSquare className="h-6 w-6 text-primary" />
+          <div>
+            <h1 className="text-2xl font-semibold tracking-tight">Mes feedbacks</h1>
+            <p className="text-sm text-muted-foreground">
+              Historique des retours envoyés à l'équipe SwissBroker.
+            </p>
+          </div>
         </div>
+        <WikiHelpLink article="feedback" />
       </div>
 
       {rows === null ? (
