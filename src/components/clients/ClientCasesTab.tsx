@@ -3,7 +3,7 @@
 // simulations enregistrées avant cette fonctionnalité (case_id NULL) —
 // jamais une vraie ligne en base, calculé ici à l'affichage pour ne rien
 // perdre sans réécrire en masse les anciennes simulations.
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { FolderOpen, Clock, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -23,6 +23,8 @@ export function ClientCasesTab({
   activeCaseId,
   onSelectCase,
   onCreateCase,
+  autoOpenNewCase,
+  onAutoOpenHandled,
 }: {
   clientId: string;
   activeCaseId: string | undefined;
@@ -34,6 +36,14 @@ export function ClientCasesTab({
    *  quel que soit l'endroit de la fiche depuis lequel le dossier a été
    *  créé. Si absent, retombe sur le comportement onSelectCase habituel. */
   onCreateCase?: (caseId: string) => void;
+  /** Ouvre directement le formulaire de création au montage de cet onglet,
+   *  pour le CTA "Nouveau dossier" de l'onglet Aperçu : un seul clic doit
+   *  amener jusqu'au champ de saisie, sans ré-cliquer une fois ici. */
+  autoOpenNewCase?: boolean;
+  /** Appelé une fois le signal autoOpenNewCase consommé, pour que l'appelant
+   *  le retire de l'URL (sinon il rouvrirait le formulaire à chaque retour
+   *  sur cet onglet). */
+  onAutoOpenHandled?: () => void;
 }) {
   const { cases, isLoading } = useClientCases(clientId);
   const { data: counts } = useSimCountsByCase(clientId);
@@ -42,6 +52,13 @@ export function ClientCasesTab({
 
   const [showNewCaseForm, setShowNewCaseForm] = useState(false);
   const [newCaseName, setNewCaseName] = useState("");
+
+  useEffect(() => {
+    if (!autoOpenNewCase) return;
+    setShowNewCaseForm(true);
+    onAutoOpenHandled?.();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoOpenNewCase]);
 
   const submitNewCase = () => {
     const title = newCaseName.trim();

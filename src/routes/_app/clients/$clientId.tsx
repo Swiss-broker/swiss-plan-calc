@@ -104,6 +104,10 @@ const searchSchema = z.object({
   // survivre à un rechargement de page, et transmis tel quel aux
   // calculateurs ouverts depuis cette fiche (?clientId=X&caseId=Y).
   caseId: fallback(z.string().uuid().optional(), undefined),
+  // Signal éphémère : ouvre directement le formulaire de création de
+  // dossier dans l'onglet Dossiers, pour que le CTA "Nouveau dossier" de
+  // l'onglet Aperçu n'exige pas un second clic une fois l'onglet affiché.
+  openNewCase: fallback(z.boolean().optional(), undefined),
 });
 
 export const Route = createFileRoute("/_app/clients/$clientId")({
@@ -116,7 +120,7 @@ function ClientDetailPage() {
   const t = useT();
   const { setActiveClient, setActiveBundle } = useActiveClient();
   const { clientId } = Route.useParams();
-  const { tab, caseId } = Route.useSearch();
+  const { tab, caseId, openNewCase } = Route.useSearch();
   const { user } = useAuth();
   const navigate = useNavigate({ from: Route.fullPath });
   const qc = useQueryClient();
@@ -470,6 +474,15 @@ function ClientDetailPage() {
           <ClientCasesTab
             clientId={clientId}
             activeCaseId={caseId}
+            autoOpenNewCase={openNewCase}
+            onAutoOpenHandled={() =>
+              navigate({
+                search: (prev: z.infer<typeof searchSchema>) => ({
+                  ...prev,
+                  openNewCase: undefined,
+                }),
+              })
+            }
             onSelectCase={(id) =>
               // "Ouvrir" un dossier amène sur sa page dédiée : calculateurs
               // de CE dossier en haut, ses simulations juste en dessous. Un
@@ -550,7 +563,11 @@ function ClientDetailPage() {
               className="shrink-0 gap-1.5"
               onClick={() =>
                 navigate({
-                  search: (prev: z.infer<typeof searchSchema>) => ({ ...prev, tab: "cases" }),
+                  search: (prev: z.infer<typeof searchSchema>) => ({
+                    ...prev,
+                    tab: "cases",
+                    openNewCase: true,
+                  }),
                 })
               }
             >
