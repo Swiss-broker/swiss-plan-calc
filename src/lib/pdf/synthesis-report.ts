@@ -1511,17 +1511,20 @@ function formatInputs(entry: HistoryEntry): Array<[string, string]> {
   return rows;
 }
 
+// Les trois helpers ci-dessous utilisent has(), pas un simple if(n) : 0 est
+// une valeur légitime (avoir LPP actuel à 0 pour un jeune actif, rachat non
+// testé, etc.), pas une donnée absente — cf. le commentaire sur has() plus
+// haut. Avant ce correctif, ces lignes disparaissaient silencieusement dès
+// qu'un champ valait 0, ce qui pouvait vider une bonne partie, voire la
+// totalité, de la section "Paramètres utilisés" (cahier des charges point 8).
 function pushIf(rows: Array<[string, string]>, label: string, v: unknown) {
-  const n = num(v);
-  if (n) rows.push([label, String(n)]);
+  if (has(v)) rows.push([label, String(num(v))]);
 }
 function pushIfChf(rows: Array<[string, string]>, label: string, v: unknown) {
-  const n = num(v);
-  if (n) rows.push([label, formatCHF(n)]);
+  if (has(v)) rows.push([label, formatCHF(num(v))]);
 }
 function pushIfPct(rows: Array<[string, string]>, label: string, v: unknown) {
-  const n = num(v);
-  if (n) rows.push([label, formatPct(n, 2)]);
+  if (has(v)) rows.push([label, formatPct(num(v), 2)]);
 }
 function pushStr(rows: Array<[string, string]>, label: string, v: string | undefined) {
   if (v) rows.push([label, v]);
