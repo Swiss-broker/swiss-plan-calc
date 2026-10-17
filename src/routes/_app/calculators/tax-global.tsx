@@ -339,14 +339,6 @@ function TaxGlobalCalc() {
   ];
   return (
     <div className="space-y-6">
-      <CrossCalcImpactBanner calculator="tax-global" clientId={clientId} caseId={caseId} />
-      <CrossSimulationReuseBanner
-        clientId={clientId}
-        caseId={caseId}
-        currentLppBuyback={form.lppBuyback ?? 0}
-        currentPillar3aContributions={form.pillar3aContributions ?? 0}
-        onApply={applyReuse}
-      />
       <GuideMode
         open={guideOpen}
         onClose={() => setGuideOpen(false)}
@@ -357,6 +349,14 @@ function TaxGlobalCalc() {
       <div className="flex justify-end">
         <GuideToggleButton onClick={() => setGuideOpen(true)} />
       </div>
+      <CrossCalcImpactBanner calculator="tax-global" clientId={clientId} caseId={caseId} />
+      <CrossSimulationReuseBanner
+        clientId={clientId}
+        caseId={caseId}
+        currentLppBuyback={form.lppBuyback ?? 0}
+        currentPillar3aContributions={form.pillar3aContributions ?? 0}
+        onApply={applyReuse}
+      />
       {client && <ClientLinkBanner client={client} caseId={caseId} />}
 
       {/* Hero */}

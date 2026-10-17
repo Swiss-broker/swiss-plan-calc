@@ -289,15 +289,21 @@ function DirectorCompensationCalc() {
   return (
     <TooltipProvider delayDuration={150}>
       <div className="space-y-6">
+        <GuideMode
+          open={guideOpen}
+          onClose={() => setGuideOpen(false)}
+          steps={guideSteps}
+          title={t("calc.dir.guide.title")}
+          guideId="calc-director-compensation"
+        />
+        <div className="flex justify-end gap-2">
+          <GuideToggleButton onClick={() => setGuideOpen(true)} />
+        </div>
         <CrossCalcImpactBanner
           calculator="director-compensation"
           clientId={clientId}
           caseId={caseId}
         />
-        <GuideMode open={guideOpen} onClose={() => setGuideOpen(false)} steps={guideSteps} title={t("calc.dir.guide.title")} guideId="calc-director-compensation" />
-        <div className="flex justify-end gap-2">
-          <GuideToggleButton onClick={() => setGuideOpen(true)} />
-        </div>
         {simId && loadingSaved && (
           <div className="rounded-lg border border-primary/30 bg-primary/5 p-3 text-sm text-muted-foreground">
             Chargement de la sauvegarde…

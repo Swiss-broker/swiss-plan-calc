@@ -168,6 +168,16 @@ function InvestmentCompareCalc() {
 
   return (
     <div className="space-y-6">
+      <GuideMode
+        open={guideOpen}
+        onClose={() => setGuideOpen(false)}
+        steps={guideSteps}
+        title={t("calc.invcompare.guide_title")}
+        guideId="calc-investment-compare"
+      />
+      <div className="flex justify-end gap-2">
+        <GuideToggleButton onClick={() => setGuideOpen(true)} />
+      </div>
       <CrossCalcImpactBanner calculator="investment-compare" clientId={clientId} caseId={caseId} />
       {client && <ClientLinkBanner client={client} caseId={caseId} />}
       {simId && loadingSaved && (
@@ -180,13 +190,6 @@ function InvestmentCompareCalc() {
           Vous consultez une simulation sauvegardée. Toute modification créera une nouvelle sauvegarde distincte si vous cliquez sur « Sauvegarder ».
         </div>
       )}
-      <GuideMode
-        open={guideOpen}
-        onClose={() => setGuideOpen(false)}
-        steps={guideSteps}
-        title={t("calc.invcompare.guide_title")}
-        guideId="calc-investment-compare"
-      />
 
       <div className="flex items-start justify-between gap-3">
         <div>
@@ -197,7 +200,6 @@ function InvestmentCompareCalc() {
           <p className="mt-1 text-sm text-muted-foreground">{t("calc.invcompare.subtitle")}</p>
         </div>
         <div className="flex gap-2">
-          <GuideToggleButton onClick={() => setGuideOpen(true)} />
           <Button variant="outline" size="sm" onClick={reset} className="gap-2">
             <RotateCcw className="h-4 w-4" />
             {t("calc.invcompare.reset")}

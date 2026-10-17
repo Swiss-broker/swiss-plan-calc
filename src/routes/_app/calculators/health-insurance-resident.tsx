@@ -89,16 +89,6 @@ function HealthInsuranceResidentCalc() {
 
   return (
     <div className="grid grid-cols-1 gap-6 md:grid-cols-5">
-      <div className="md:col-span-5 flex items-center justify-between gap-3">
-        <div className="flex-1">
-          <CrossCalcImpactBanner
-            calculator="health-insurance-resident"
-            clientId={clientId}
-            caseId={caseId}
-          />
-        </div>
-        <GuideToggleButton onClick={() => setGuideOpen(true)} />
-      </div>
       <GuideMode
         open={guideOpen}
         onClose={() => setGuideOpen(false)}
@@ -106,6 +96,16 @@ function HealthInsuranceResidentCalc() {
         title="Guide, Caisse maladie résident"
         guideId="calc-health-insurance-resident"
       />
+      <div className="md:col-span-5 flex justify-end gap-2">
+        <GuideToggleButton onClick={() => setGuideOpen(true)} />
+      </div>
+      <div className="md:col-span-5">
+        <CrossCalcImpactBanner
+          calculator="health-insurance-resident"
+          clientId={clientId}
+          caseId={caseId}
+        />
+      </div>
       {client && (
         <div className="md:col-span-5">
           <ClientLinkBanner client={client} caseId={caseId} />

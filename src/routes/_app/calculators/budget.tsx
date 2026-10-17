@@ -161,13 +161,6 @@ function BudgetCalc() {
 
   return (
     <div className="grid grid-cols-1 gap-6 md:grid-cols-5">
-      <div className="md:col-span-5 flex items-center justify-between gap-3">
-        <div className="flex flex-1 items-center gap-2">
-          <Wallet className="h-5 w-5 text-primary" />
-          <h1 className="text-lg font-semibold">Budget</h1>
-        </div>
-        <GuideToggleButton onClick={() => setGuideOpen(true)} />
-      </div>
       <GuideMode
         open={guideOpen}
         onClose={() => setGuideOpen(false)}
@@ -175,6 +168,13 @@ function BudgetCalc() {
         title="Guide, Budget"
         guideId="calc-budget"
       />
+      <div className="md:col-span-5 flex justify-end gap-2">
+        <GuideToggleButton onClick={() => setGuideOpen(true)} />
+      </div>
+      <div className="md:col-span-5 flex items-center gap-2">
+        <Wallet className="h-5 w-5 text-primary" />
+        <h1 className="text-lg font-semibold">Budget</h1>
+      </div>
       {client && (
         <div className="md:col-span-5">
           <ClientLinkBanner client={client} caseId={caseId} />

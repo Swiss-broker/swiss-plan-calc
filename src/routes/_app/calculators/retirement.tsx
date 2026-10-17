@@ -156,9 +156,9 @@ function RetirementCalc() {
 
   return (
     <div className="space-y-6">
-      <CrossCalcImpactBanner calculator="retirement" clientId={clientId} caseId={caseId} />
       <GuideMode open={guideOpen} onClose={() => setGuideOpen(false)} steps={guideSteps} title={t("calc.retirement.guide.title")} guideId="calc-retirement" />
       <div className="flex justify-end"><GuideToggleButton onClick={() => setGuideOpen(true)} /></div>
+      <CrossCalcImpactBanner calculator="retirement" clientId={clientId} caseId={caseId} />
 
       {client && <ClientLinkBanner client={client} caseId={caseId} />}
       {simId && loadingSaved && (

@@ -233,14 +233,17 @@ function AvsAiCalc() {
 
   return (
     <div className="space-y-6">
-      <CrossCalcImpactBanner calculator="avs-ai" clientId={clientId} caseId={caseId} />
-        <GuideMode
+      <GuideMode
         open={guideOpen}
         onClose={() => setGuideOpen(false)}
         steps={guideSteps}
         title={t("calc.avs.guide_title")}
         guideId="calc-avs-ai"
       />
+      <div className="flex justify-end gap-2">
+        <GuideToggleButton onClick={() => setGuideOpen(true)} />
+      </div>
+      <CrossCalcImpactBanner calculator="avs-ai" clientId={clientId} caseId={caseId} />
       {client && <ClientLinkBanner client={client} caseId={caseId} />}
       {simId && loadingSaved && (
         <div className="rounded-lg border border-primary/30 bg-primary/5 p-3 text-sm text-muted-foreground">
@@ -252,9 +255,6 @@ function AvsAiCalc() {
           Vous consultez une simulation sauvegardée. Toute modification créera une nouvelle sauvegarde distincte si vous cliquez sur « Sauvegarder ».
         </div>
       )}
-      <div className="flex justify-end gap-2">
-        <GuideToggleButton onClick={() => setGuideOpen(true)} />
-      </div>
       <div className="grid grid-cols-1 gap-6 md:grid-cols-5">
         <div className="space-y-4 md:col-span-3">
           <CalcCard

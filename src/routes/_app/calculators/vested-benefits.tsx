@@ -168,7 +168,6 @@ function VestedBenefitsCalc() {
 
   return (
     <div className="space-y-6">
-      <CrossCalcImpactBanner calculator="vested-benefits" clientId={clientId} caseId={caseId} />
       <GuideMode
         open={guideOpen}
         onClose={() => setGuideOpen(false)}
@@ -179,6 +178,7 @@ function VestedBenefitsCalc() {
       <div className="flex justify-end">
         <GuideToggleButton onClick={() => setGuideOpen(true)} />
       </div>
+      <CrossCalcImpactBanner calculator="vested-benefits" clientId={clientId} caseId={caseId} />
       {simId && loadingSaved && (
         <div className="rounded-lg border border-primary/30 bg-primary/5 p-3 text-sm text-muted-foreground">
           Chargement de la sauvegarde…
