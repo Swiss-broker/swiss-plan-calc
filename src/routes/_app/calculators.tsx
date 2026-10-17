@@ -39,22 +39,17 @@ export const Route = createFileRoute("/_app/calculators")({
   component: CalculatorsLayout,
 });
 
-// Ordre aligné sur ClientCalculatorBar.tsx (CHIPS) : Budget, Fiscal global,
-// 1er pilier, 2e pilier, 3e pilier, puis le reste — même ordre des deux
-// côtés (barre du dossier et menu du haut), au lieu de deux listes codées
-// séparément qui avaient divergé.
+// Ordre aligné sur ClientCalculatorBar.tsx (CHIPS) : Budget, 1er pilier,
+// 2e pilier, 3e pilier, Prestations consolidées, Fiscal global, puis le
+// reste — même ordre des deux côtés (barre du dossier et menu du haut) et
+// même ordre que le PDF de synthèse (cahier des charges point 7), au lieu
+// de listes codées séparément qui avaient divergé.
 const TABS = [
   { to: "/calculators", labelKey: "calc.tab.overview", icon: Calculator, exact: true as boolean },
   {
     to: "/calculators/budget",
     labelKey: "calc.budget.title",
     icon: Wallet,
-    exact: false as boolean,
-  },
-  {
-    to: "/calculators/tax-global",
-    labelKey: "calc.global.title",
-    icon: Coins,
     exact: false as boolean,
   },
   {
@@ -71,15 +66,21 @@ const TABS = [
     exact: false as boolean,
   },
   {
-    to: "/calculators/vested-benefits",
-    labelKey: "calc.tab.vested_benefits",
-    icon: Landmark,
-    exact: false as boolean,
-  },
-  {
     to: "/calculators/consolidated-benefits",
     labelKey: "calc.consolidated.title",
     icon: Layers,
+    exact: false as boolean,
+  },
+  {
+    to: "/calculators/tax-global",
+    labelKey: "calc.global.title",
+    icon: Coins,
+    exact: false as boolean,
+  },
+  {
+    to: "/calculators/vested-benefits",
+    labelKey: "calc.tab.vested_benefits",
+    icon: Landmark,
     exact: false as boolean,
   },
   {

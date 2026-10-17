@@ -55,22 +55,27 @@ type CalcChip = {
   icon: LucideIcon;
 };
 
+// Ordre demandé par le cabinet (cahier des charges point 7) : Budget, puis
+// 1er/2e/3e pilier, puis Prestations consolidées, puis fiscalité globale,
+// puis le reste dans son ordre d'origine — même logique que KIND_ORDER dans
+// le PDF de synthèse (src/lib/pdf/synthesis-report.ts), pour que l'ordre des
+// onglets du dossier corresponde à l'ordre des pages du PDF.
 const CHIPS: CalcChip[] = [
   { to: "/calculators/budget", kind: "budget", label: "Budget", icon: Wallet },
-  { to: "/calculators/tax-global", kind: "income_tax", label: "Fiscalité globale", icon: Receipt },
   { to: "/calculators/avs-ai", kind: "avs_ai", label: "1er pilier AVS/AI", icon: HeartHandshake },
   { to: "/calculators/lpp", kind: "lpp", label: "2e pilier LPP & rachats", icon: Landmark },
   { to: "/calculators/pillar3a", kind: "pillar3a", label: "3e pilier A & B", icon: PiggyBank },
+  {
+    to: "/calculators/consolidated-benefits",
+    label: "Prestations consolidées",
+    icon: Layers,
+  },
+  { to: "/calculators/tax-global", kind: "income_tax", label: "Fiscalité globale", icon: Receipt },
   {
     to: "/calculators/vested-benefits",
     kind: "vested_benefits",
     label: "Libre passage",
     icon: Vault,
-  },
-  {
-    to: "/calculators/consolidated-benefits",
-    label: "Prestations consolidées",
-    icon: Layers,
   },
   {
     to: "/calculators/health-insurance-france",

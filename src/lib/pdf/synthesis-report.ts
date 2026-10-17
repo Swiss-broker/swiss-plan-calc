@@ -384,14 +384,22 @@ const EXPLAIN_FR: Partial<Record<SimulationKind, string>> = {
 };
 
 // Ordre de lecture demandé par le cabinet pour les simulations du dossier
-// PDF : 1er pilier, puis 2e, puis 3e, puis fiscalité globale, puis le
-// reste dans son ordre d'origine (index élevé = pas de priorité).
+// PDF (cahier des charges point 7, même ordre que ClientCalculatorBar.tsx
+// et routes/_app/calculators.tsx côté app) : Budget, puis 1er pilier, puis
+// 2e, puis 3e, puis « Prestations consolidées » (page fixe, hors
+// SimulationKind — insérée entre PRE_CONSOLIDATED_MAX_ORDER et
+// tax_global, cf. exportSynthesisReportPdf), puis fiscalité globale, puis
+// le reste dans son ordre d'origine (index élevé = pas de priorité).
 const KIND_ORDER: Partial<Record<SimulationKind, number>> = {
-  avs_ai: 0,
-  lpp: 1,
-  pillar3a: 2,
-  tax_global: 3,
+  budget: 0,
+  avs_ai: 1,
+  lpp: 2,
+  pillar3a: 3,
+  tax_global: 4,
 };
+// Les kinds d'index ≤ cette valeur se dessinent AVANT la page « Prestations
+// consolidées », les autres (tax_global inclus, puis le reste) après.
+const PRE_CONSOLIDATED_MAX_ORDER = 3;
 function kindOrderIndex(kind: SimulationKind): number {
   return KIND_ORDER[kind] ?? 10;
 }
@@ -447,17 +455,6 @@ export function exportSynthesisReportPdf(args: SynthesisReportArgs): void {
   toc.push({ title: "Profil client", page: pdf.doc.getCurrentPageInfo().pageNumber });
   drawClientProfile(pdf, client, pension, assets, company);
 
-  // ---------- PRESTATIONS CONSOLIDÉES ----------
-  // Chiffre de référence unique (1er + 2e + 3e pilier), calculé par le même
-  // module que la fiche client (src/lib/pension-consolidation), AVANT le
-  // détail des simulations : celles-ci explorent des scénarios "what-if"
-  // (rachat étalé sur X ans, capital saisi à la main, etc.) qui peuvent
-  // légitimement diverger de ce chiffre officiel — le situer en premier
-  // évite de faire passer une divergence pour une erreur de calcul.
-  pdf.newPage();
-  toc.push({ title: "Prestations consolidées", page: pdf.doc.getCurrentPageInfo().pageNumber });
-  drawConsolidatedBenefitsPage(pdf, client, pension, assets, entries);
-
   // ---------- PAGES SIMULATIONS ----------
   // Les simulations s'enchaînent à la suite les unes des autres, sans saut
   // de page forcé entre chacune (le passage à la page suivante ne se
@@ -487,26 +484,34 @@ export function exportSynthesisReportPdf(args: SynthesisReportArgs): void {
     spreadPairs.set(kind, { baseline, projected });
   }
 
-  // Ordre de présentation demandé par le cabinet : 1er pilier, puis 2e,
-  // puis 3e, puis fiscalité globale, puis le reste dans l'ordre où les
-  // simulations ont été sélectionnées (au lieu de l'ordre de sélection
-  // brut, qui ne suit aucune logique de lecture pour le client).
+  // Ordre de présentation demandé par le cabinet (cahier des charges point
+  // 7) : Budget, puis 1er pilier, puis 2e, puis 3e, puis « Prestations
+  // consolidées » (voir plus bas), puis fiscalité globale, puis le reste
+  // dans l'ordre où les simulations ont été sélectionnées (au lieu de
+  // l'ordre de sélection brut, qui ne suit aucune logique de lecture pour
+  // le client).
   const orderedEntries = [...entries].sort(
     (a, b) => kindOrderIndex(a.kind as SimulationKind) - kindOrderIndex(b.kind as SimulationKind),
   );
+  const beforeConsolidated = orderedEntries.filter(
+    (e) => kindOrderIndex(e.kind as SimulationKind) <= PRE_CONSOLIDATED_MAX_ORDER,
+  );
+  const afterConsolidated = orderedEntries.filter(
+    (e) => kindOrderIndex(e.kind as SimulationKind) > PRE_CONSOLIDATED_MAX_ORDER,
+  );
 
   const drawnPairKinds = new Set<SimulationKind>();
-  for (const entry of orderedEntries) {
+  const drawEntry = (entry: HistoryEntry) => {
     const kind = entry.kind as SimulationKind;
     const pair = spreadPairs.get(kind);
     if (pair) {
-      if (drawnPairKinds.has(kind)) continue; // l'autre moitié de la paire a déjà tout dessiné
+      if (drawnPairKinds.has(kind)) return; // l'autre moitié de la paire a déjà tout dessiné
       drawnPairKinds.add(kind);
       pdf.spacer(6);
       const kindLabel = KIND_LABELS[kind] || kind;
       toc.push({ title: `${kindLabel} : actuelle / projetée`, page: pdf.doc.getCurrentPageInfo().pageNumber });
       drawComparisonSpread(pdf, kind, pair.baseline, pair.projected, options.includeCharts);
-      continue;
+      return;
     }
     pdf.spacer(6);
     const kindLabel = KIND_LABELS[kind] || kind;
@@ -515,7 +520,22 @@ export function exportSynthesisReportPdf(args: SynthesisReportArgs): void {
       : kindLabel;
     toc.push({ title, page: pdf.doc.getCurrentPageInfo().pageNumber });
     drawSimulationPage(pdf, entry, options.includeCharts);
-  }
+  };
+  for (const entry of beforeConsolidated) drawEntry(entry);
+
+  // ---------- PRESTATIONS CONSOLIDÉES ----------
+  // Chiffre de référence unique (1er + 2e + 3e pilier), calculé par le même
+  // module que la fiche client (src/lib/pension-consolidation). Les
+  // simulations ci-dessus explorent des scénarios "what-if" (rachat étalé
+  // sur X ans, capital saisi à la main, etc.) qui peuvent légitimement
+  // diverger de ce chiffre officiel — le situer juste après le 3e pilier,
+  // avant la fiscalité globale, évite de faire passer une divergence pour
+  // une erreur de calcul tout en respectant l'ordre de lecture du cabinet.
+  pdf.newPage();
+  toc.push({ title: "Prestations consolidées", page: pdf.doc.getCurrentPageInfo().pageNumber });
+  drawConsolidatedBenefitsPage(pdf, client, pension, assets, entries);
+
+  for (const entry of afterConsolidated) drawEntry(entry);
 
   // ---------- AVANT/APRÈS ----------
   pdf.newPage();
@@ -779,8 +799,14 @@ function drawOverviewPage(
   // — sinon la même catégorie se répète avec des chiffres identiques.
   // Un kind par ligne, et seulement s'il a une simulation active (non
   // archivée) — cohérent avec Recommandations chiffrées / Gain total, qui
-  // appliquent déjà cette même règle (voir pickLatestNonDismissed).
-  const kindsPresent = new Set<SimulationKind>(entries.map((e) => e.kind as SimulationKind));
+  // appliquent déjà cette même règle (voir pickLatestNonDismissed). Trié
+  // selon le même ordre de lecture que les pages de détail plus loin dans
+  // le document (KIND_ORDER, cahier des charges point 7) : sans ce tri, ce
+  // tableau de la toute première page pouvait annoncer un ordre que les
+  // pages suivantes ne respectaient pas.
+  const kindsPresent = [
+    ...new Set<SimulationKind>(entries.map((e) => e.kind as SimulationKind)),
+  ].sort((a, b) => kindOrderIndex(a) - kindOrderIndex(b));
   for (const k of kindsPresent) {
     const e = pickLatestNonDismissed(entries, k);
     if (!e) continue;
