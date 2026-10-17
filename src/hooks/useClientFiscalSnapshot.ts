@@ -14,6 +14,15 @@ export interface ClientFiscalSnapshot {
   lastUpdated: string;
 }
 
+/** Distingue "la donnée existe, y compris si elle vaut 0" de "la donnée
+ *  est absente" — contrairement à `Number(v ?? 0)` qui rend les deux
+ *  indiscernables. */
+function numOrUndef(v: unknown): number | undefined {
+  if (typeof v === "number" && Number.isFinite(v)) return v;
+  if (typeof v === "string" && v.trim() !== "" && Number.isFinite(Number(v))) return Number(v);
+  return undefined;
+}
+
 // Filtré par dossier (case_id) : une simulation fiscale enregistrée dans
 // un dossier ne doit jamais être reprise comme référence dans un AUTRE
 // dossier du même client, sinon un courtier voit un taux marginal qui ne
@@ -40,13 +49,19 @@ export function useClientFiscalSnapshot(clientId: string | undefined, caseId: st
       if (error || !data) return null;
       const s = (data.summary ?? {}) as Record<string, unknown>;
       // income_tax et tax_global stockent effectiveRate/marginalRate ;
-      // source_tax stocke rate.
-      const avg = Number(s.effectiveRate ?? s.rate ?? 0);
-      if (!Number.isFinite(avg) || avg <= 0) return null;
-      const marginal = Number(s.marginalRate ?? 0);
+      // source_tax stocke rate. numOrUndef distingue "la donnée existe et
+      // vaut 0" (taux parfaitement possible pour un revenu bas, dans la
+      // tranche exonérée) de "la donnée n'a jamais été sauvegardée" — avant
+      // ce correctif, `?? 0` puis `> 0` traitaient un taux à 0% comme
+      // absent et retombaient sur l'estimation approximative (taux moyen +
+      // 5 points) au lieu du vrai taux marginal du fiscal global, créant un
+      // écart entre les deux calculateurs (cahier des charges point 14).
+      const avg = numOrUndef(s.effectiveRate) ?? numOrUndef(s.rate);
+      if (avg === undefined) return null;
+      const marginal = numOrUndef(s.marginalRate);
       return {
         averageRate: avg,
-        marginalRateEstimate: Number.isFinite(marginal) && marginal > 0 ? marginal : Math.min(avg + 5, 40),
+        marginalRateEstimate: marginal !== undefined ? marginal : Math.min(avg + 5, 40),
         source: data.kind as "income_tax" | "source_tax" | "tax_global",
         lastUpdated: data.created_at,
       };
