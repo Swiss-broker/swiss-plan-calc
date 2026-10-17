@@ -16,6 +16,9 @@ import { getTotalGrossIncomeOrUndef, getTotalGrossIncome } from "./income";
 import { estimateRetroactiveLppBalance, deriveBuybackYears } from "@/lib/lpp";
 import { getWorkStatusRules } from "./work-status-rules";
 import { getCommunalMultiplier, getVsIndexation } from "@/lib/swiss/communal-multipliers";
+import { computeTaxGlobal } from "@/lib/tax-global/engine";
+import { createDefaultInput } from "@/lib/tax-global/profile";
+import type { TaxGlobalInput } from "@/lib/tax-global/types";
 
 /**
  * Estime la capacité de rachat LPP quand `lpp_max_buyback` est manquant ou = 0
@@ -574,11 +577,40 @@ export function toOvertimeInput(b: ClientBundle) {
 // BUDGET (revenus / charges mensuels, établi en début de rendez-vous)
 // ──────────────────────────────────────────────────────────────────────────
 export function toBudgetInput(b: ClientBundle) {
-  // Même estimation "net ≈ 80% du brut" que toOvertimeInput ci-dessus — un
-  // point de départ réaliste à ajuster en direct avec le client, jamais une
-  // valeur fiscalement engageante (pas de calcul d'impôt ici).
   const main = getTotalGrossIncomeOrUndef(b.client);
   const spouse = numOrUndef(b.client.spouse_gross_annual_salary);
+
+  // Salaire net réel (cahier des charges point 11 : "on ne peut pas faire
+  // de l'approximatif" dès qu'un vrai chiffre existe) : repris du résultat
+  // du calculateur fiscal global (netAnnualCHF = brut − impôt total −
+  // charges sociales), déjà calculable dès que la fiche client est
+  // renseignée — pas besoin qu'une simulation fiscale ait été
+  // explicitement sauvegardée dans un dossier. Pour un couple, c'est un
+  // revenu net DE FOYER (imposition commune) : pas de répartition "à moi /
+  // au conjoint" possible, donc tout part dans netSalaryMonthlyCHF et
+  // spouseNetSalaryMonthlyCHF reste à 0 pour ne pas compter le revenu du
+  // conjoint deux fois.
+  if (main !== undefined) {
+    try {
+      const taxGlobalInput = { ...createDefaultInput(), ...toTaxGlobalInput(b) } as TaxGlobalInput;
+      const netAnnualCHF = computeTaxGlobal(taxGlobalInput).netAnnualCHF;
+      if (netAnnualCHF > 0) {
+        return {
+          netSalaryMonthlyCHF: Math.round(netAnnualCHF / 12),
+          spouseNetSalaryMonthlyCHF: 0,
+        };
+      }
+    } catch {
+      // Profil insuffisant pour un calcul fiscal complet : on retombe sur
+      // l'estimation forfaitaire ci-dessous plutôt que de faire échouer le
+      // pré-remplissage du budget.
+    }
+  }
+
+  // Repli : estimation forfaitaire "net ≈ 80% du brut" (même logique que
+  // toOvertimeInput ci-dessus) — un point de départ réaliste à ajuster en
+  // direct avec le client, utilisée uniquement quand le calcul fiscal réel
+  // ci-dessus n'a pas pu produire de résultat (profil incomplet).
   const netSalaryMonthlyCHF = main !== undefined ? Math.round((main * 0.8) / 12) : undefined;
   const spouseNetSalaryMonthlyCHF =
     spouse !== undefined ? Math.round((spouse * 0.8) / 12) : undefined;

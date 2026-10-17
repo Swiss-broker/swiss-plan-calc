@@ -69,5 +69,28 @@ export function checkSynthesisConsistency(entries: HistoryEntry[]): string[] {
     }
   }
 
+  // 4. Budget potentiellement obsolète : une autre simulation sélectionnée
+  // pour ce dossier est plus récente que la dernière sauvegarde Budget
+  // retenue. Le budget optimisé affiché dans ce PDF reste celui figé au
+  // moment de cette sauvegarde, donc n'inclut pas forcément les gains des
+  // simulations faites depuis (cahier des charges point 9a) — rouvrir puis
+  // ressauvegarder Budget suffit à le remettre à jour (salaire net et
+  // optimisations s'y recalculent automatiquement, voir toBudgetInput /
+  // computeBudget).
+  const budget = pickLatestNonDismissed(entries, "budget");
+  if (budget) {
+    const budgetDate = new Date(budget.created_at).getTime();
+    const isNewerThanBudget = (e: HistoryEntry) =>
+      e.kind !== "budget" && !e.gain_dismissed && new Date(e.created_at).getTime() > budgetDate;
+    const newer = entries.filter(isNewerThanBudget);
+    if (newer.length > 0) {
+      const newerLabel =
+        newer.length === 1 ? `« ${KIND_LABELS[newer[0].kind]} »` : "plusieurs autres simulations";
+      warnings.push(
+        `La simulation « Budget » sélectionnée (${budget.title}) a été sauvegardée avant ${newerLabel} de ce dossier. Son budget optimisé risque de ne pas inclure ce(s) gain(s). Rouvrez puis ressauvegardez Budget avant de générer ce dossier.`,
+      );
+    }
+  }
+
   return warnings;
 }

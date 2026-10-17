@@ -19,6 +19,7 @@ import { usePrefillFromClient, useHydrateFormFromPrefill } from "@/hooks/usePref
 import { useLoadSavedSimulation } from "@/hooks/useLoadSavedSimulation";
 import { useCaseSimulations } from "@/hooks/useCaseSimulations";
 import { computeBudget, type BudgetInput } from "@/lib/budget";
+import { pickLatestNonDismissed } from "@/lib/simulations/extract-gain";
 import { KIND_LABELS } from "@/lib/history/types";
 import { formatCHF } from "@/lib/format";
 import { GuideMode, GuideToggleButton, type GuideStep } from "@/components/calculators/GuideMode";
@@ -59,9 +60,9 @@ const DEFAULT_FORM: BudgetInput = {
 
 function BudgetCalc() {
   const { clientId, caseId, simId } = Route.useSearch();
-  const { client, prefill } = usePrefillFromClient(clientId, "budget");
+  const { client, prefill, isLoading: loadingPrefill } = usePrefillFromClient(clientId, "budget");
   const { inputs: savedInputs, isLoading: loadingSaved } = useLoadSavedSimulation(simId);
-  const { entries } = useCaseSimulations(clientId, caseId);
+  const { entries, isLoading: loadingEntries } = useCaseSimulations(clientId, caseId);
   const [form, setForm] = useState<BudgetInput>(DEFAULT_FORM);
   useHydrateFormFromPrefill(simId ? null : prefill, setForm);
 
@@ -72,6 +73,48 @@ function BudgetCalc() {
     setForm((prev) => ({ ...prev, ...savedInputs }) as BudgetInput);
     loadedSimRef.current = simId;
   }, [simId, savedInputs]);
+
+  // Rouvrir Budget dans un dossier (depuis la barre du dossier, sans simId
+  // explicite) ne doit pas remettre les charges/revenus saisis à zéro — on
+  // recharge la dernière sauvegarde Budget active de ce même dossier
+  // (cahier des charges point 9b). Le salaire net, lui, N'EST JAMAIS repris
+  // de cette ancienne sauvegarde : priorité à la dernière simulation
+  // « Fiscal global » active de ce même dossier si elle existe (elle
+  // reflète les vrais ajustements faits par le courtier, ex. déductions
+  // saisies, régime détecté) ; à défaut, on garde celui déjà hydraté juste
+  // au-dessus depuis la fiche client à jour (toBudgetInput, point 11).
+  // Attend explicitement que les deux sources (fiche client ET simulations
+  // du dossier) soient chargées avant d'appliquer quoi que ce soit, pour ne
+  // jamais appliquer ce correctif avant l'hydratation de base ci-dessus et
+  // se faire écraser par elle une fois celle-ci arrivée.
+  const loadedCaseRef = useRef<string | undefined>(undefined);
+  useEffect(() => {
+    if (simId || !caseId) return;
+    if (loadedCaseRef.current === caseId) return;
+    if (clientId && loadingPrefill) return;
+    if (loadingEntries) return;
+    loadedCaseRef.current = caseId;
+
+    const lastBudget = pickLatestNonDismissed(entries, "budget");
+    const lastTaxGlobal = pickLatestNonDismissed(entries, "tax_global");
+    const taxGlobalNetAnnualCHF = Number(
+      (lastTaxGlobal?.summary as Record<string, unknown> | undefined)?.netAnnualCHF ?? 0,
+    );
+
+    setForm((prev) => {
+      const next = {
+        ...prev,
+        ...(lastBudget ? (lastBudget.inputs as Partial<BudgetInput>) : {}),
+        netSalaryMonthlyCHF: prev.netSalaryMonthlyCHF,
+        spouseNetSalaryMonthlyCHF: prev.spouseNetSalaryMonthlyCHF,
+      };
+      if (taxGlobalNetAnnualCHF > 0) {
+        next.netSalaryMonthlyCHF = Math.round(taxGlobalNetAnnualCHF / 12);
+        next.spouseNetSalaryMonthlyCHF = 0;
+      }
+      return next as BudgetInput;
+    });
+  }, [simId, caseId, clientId, loadingPrefill, loadingEntries, entries]);
 
   const set = <K extends keyof BudgetInput>(k: K, v: BudgetInput[K]) =>
     setForm((f) => ({ ...f, [k]: v }));
