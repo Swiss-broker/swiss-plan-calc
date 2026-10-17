@@ -525,6 +525,12 @@ export function toHealthInsuranceFranceInput(b: ClientBundle) {
     civilStatus: isCouple ? ("married" as const) : ("single" as const),
     childrenCount,
     yearsToRetirement: age !== null ? Math.max(1, 65 - age) : undefined,
+    currentRegime:
+      b.client.health_insurance_regime === "cmu"
+        ? ("CMU" as const)
+        : b.client.health_insurance_regime === "lamal"
+          ? ("LAMAL" as const)
+          : undefined,
   };
 }
 

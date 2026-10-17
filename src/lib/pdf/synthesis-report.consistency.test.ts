@@ -146,15 +146,23 @@ const FIXTURE_ENTRIES: HistoryEntry[] = [
     { a: { name: "Fonds A" }, b: { name: "Fonds B" } },
   ),
   makeEntry("health_insurance_france", {
-    recommended: "CMU",
+    // Régime actuel réellement renseigné = CMU, qui n'est PAS le plus
+    // avantageux ici (cahier des charges point 5 : la comparaison dépend du
+    // régime réel du client, jamais présumé CMU par défaut).
+    recommended: "LAMAL",
     recommendedAnnualCHF: 3_200,
     savingsCHF: 800,
-    cmuAnnualCHF: 3_200,
-    lamalAnnualCHF: 4_000,
+    cmuAnnualCHF: 4_000,
+    lamalAnnualCHF: 3_200,
+    currentRegime: "CMU",
+    currentAnnualCHF: 4_000,
+    alternativeRegime: "LAMAL",
+    alternativeAnnualCHF: 3_200,
+    isCurrentOptimal: false,
     yearsToRetirement: 15,
-    cmuToLamalAnnualSavingsCHF: -800,
-    cmuToLamalMonthlySavingsCHF: -67,
-    cmuToLamalCumulativeSavingsCHF: -12_000,
+    cmuToLamalAnnualSavingsCHF: 800,
+    cmuToLamalMonthlySavingsCHF: 67,
+    cmuToLamalCumulativeSavingsCHF: 12_000,
   }),
   makeEntry("health_insurance_resident", {
     currentMonthlyCHF: 400,
@@ -561,7 +569,10 @@ const CONSISTENCY_RULES: ConsistencyRule[] = [
     indicator: "Économie annuelle (savingsCHF)",
     probes: [
       { section: "Recommandations / Gain total (extractGain)", value: (e) => extractGain(e).amount },
-      { section: "Détail · Résultats clés (formatMetrics)", value: (e) => metricValue(e, "Économie vs autre option") },
+      {
+        section: "Détail · Résultats clés (formatMetrics)",
+        value: (e) => metricValue(e, "Écart entre les deux options"),
+      },
     ],
   },
   // ── health_insurance_resident ────────────────────────────────────────────

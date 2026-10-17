@@ -163,15 +163,21 @@ export function extractGain(entry: HistoryEntry): ExtractedGain {
       };
     }
     case "health_insurance_france": {
+      // Un vrai gain "à saisir" suppose de savoir que le client n'est PAS
+      // déjà sur la meilleure option — sans régime actuel connu, ou si le
+      // client y est déjà, il n'y a rien à recommander ici (cahier des
+      // charges point 5 : jamais présumer un changement non avéré).
+      const current = s(summary.currentRegime);
+      if (current !== "CMU" && current !== "LAMAL") return none();
+      if (summary.isCurrentOptimal !== false) return none();
       const amount = num(summary.savingsCHF);
       if (amount <= 0) return none();
-      const reco = s(summary.recommended);
-      const recoLabel = reco === "LAMAL" ? "LAMal" : "CMU";
+      const alternativeLabel = current === "CMU" ? "LAMal" : "CMU";
       return {
         type: "annual",
         amount: Math.round(amount),
-        label: `Droit d'option santé : CMU vs LAMal (${recoLabel})`,
-        details: "Économie annuelle vs autre option",
+        label: `Droit d'option santé : passage à ${alternativeLabel}`,
+        details: `Économie annuelle vs ${current === "CMU" ? "CMU" : "LAMal"} actuel`,
       };
     }
     case "health_insurance_resident": {

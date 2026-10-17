@@ -150,11 +150,12 @@ export interface DerivedComparison {
 // sans ambiguïté (une vraie option recommandée face à la situation de
 // départ) ; les comparaisons "option A vs option B" sans situation de départ
 // identifiable (rente vs capital, placement A vs B) restent volontairement
-// en dehors. CMU vs LAMal fait exception : le cabinet demande explicitement
-// de toujours traiter la CMU
-// comme la situation actuelle et LAMal comme l'optimisation proposée (cahier
-// des charges point 3), même si le calculateur reste capable de recommander
-// l'un ou l'autre selon le profil.
+// en dehors. CMU vs LAMal (cas health_insurance_france ci-dessous) a
+// longtemps fait exception en traitant TOUJOURS la CMU comme "actuelle" et
+// la LAMal comme "l'optimisation", même pour un client déjà à la LAMal —
+// ça affichait un faux avant/après. Corrigé : la situation actuelle suit
+// désormais le régime réellement choisi par le client (currentRegime), et
+// sans cette info, aucun avant/après n'est affiché du tout.
 export function buildDerivedComparison(entry: HistoryEntry): DerivedComparison | null {
   const s = entry.summary ?? {};
   switch (entry.kind) {
@@ -193,18 +194,32 @@ export function buildDerivedComparison(entry: HistoryEntry): DerivedComparison |
       };
     }
     case "health_insurance_france": {
-      // Situation actuelle = CMU (régime CNTFS), optimisation proposée =
-      // LAMal — demande explicite du cabinet (cahier des charges point 3),
-      // pas "l'option la moins chère" (qui varie selon le profil).
-      const cmu = num(s.cmuAnnualCHF);
-      const lamal = num(s.lamalAnnualCHF);
-      if (!cmu || !lamal) return null;
+      // Situation actuelle = régime RÉELLEMENT choisi par le client
+      // (currentRegime, renseigné dans sa fiche ou le calculateur), jamais
+      // présumé. Avant ce correctif, la CMU était toujours traitée comme
+      // "actuelle" et la LAMal comme "l'optimisation", y compris pour des
+      // clients qui ont en réalité déjà la LAMal — ce qui affichait un faux
+      // avant/après (cahier des charges point 5). Sans régime connu, pas de
+      // comparatif avant/après du tout : les deux options restent visibles
+      // à égalité dans "Résultats clés", avec la recommandation en texte.
+      const current = str(s.currentRegime);
+      if (current !== "CMU" && current !== "LAMAL") return null;
+      const currentAnnual = num(s.currentAnnualCHF);
+      const alternativeAnnual = num(s.alternativeAnnualCHF);
+      if (!currentAnnual || !alternativeAnnual) return null;
       return {
-        rows: [{ label: "Cotisation santé annuelle", current: cmu, projected: lamal, betterWhen: "lower" }],
+        rows: [
+          {
+            label: "Cotisation santé annuelle",
+            current: currentAnnual,
+            projected: alternativeAnnual,
+            betterWhen: "lower",
+          },
+        ],
         currentLabel: "Situation actuelle",
-        projectedLabel: "Optimisation LAMal",
-        currentBadge: "CMU / CNTFS",
-        projectedBadge: "LAMal",
+        projectedLabel: "Autre option",
+        currentBadge: current === "CMU" ? "CMU / CNTFS" : "LAMal",
+        projectedBadge: current === "CMU" ? "LAMal" : "CMU / CNTFS",
       };
     }
     case "health_insurance_resident": {
@@ -1436,6 +1451,15 @@ function formatInputs(entry: HistoryEntry): Array<[string, string]> {
       pushIf(rows, "Enfants à charge", i.childrenCount);
       if (num(i.chfToEurRate)) rows.push(["Taux CHF→EUR", String(i.chfToEurRate)]);
       pushIf(rows, "Années jusqu'à la retraite", i.yearsToRetirement);
+      pushStr(
+        rows,
+        "Régime actuel du client",
+        i.currentRegime === "LAMAL"
+          ? "LAMal (Suisse)"
+          : i.currentRegime === "CMU"
+            ? "CMU (France)"
+            : undefined,
+      );
       break;
     case "health_insurance_resident":
       pushIfChf(rows, "Assurance de base actuelle (CHF/mois)", i.currentBaseMonthlyCHF);
@@ -1567,17 +1591,48 @@ export function formatMetrics(
       break;
     }
     case "health_insurance_france": {
+      const current = str(s.currentRegime);
+      const currentLabel =
+        current === "LAMAL"
+          ? "LAMal (Suisse)"
+          : current === "CMU"
+            ? "CMU (France)"
+            : "Non renseigné";
+      out.push({
+        label: "Régime actuel du client",
+        value: currentLabel,
+        tone: current ? "primary" : undefined,
+      });
       const reco = str(s.recommended);
       const recoLabel = reco === "LAMAL" ? "LAMal (Suisse)" : reco === "CMU" ? "CMU (France)" : "—";
-      if (reco) out.push({ label: "Option recommandée", value: recoLabel, tone: "primary" });
-      if (has(s.recommendedAnnualCHF)) out.push({ label: "Cotisation annuelle (recommandé)", value: num(s.recommendedAnnualCHF), tone: "success" });
-      if (has(s.savingsCHF)) out.push({ label: "Économie vs autre option", value: num(s.savingsCHF), tone: "success" });
+      if (reco)
+        out.push({ label: "Option la plus avantageuse", value: recoLabel, tone: "primary" });
+      if (has(s.recommendedAnnualCHF))
+        out.push({
+          label: "Cotisation annuelle (meilleure option)",
+          value: num(s.recommendedAnnualCHF),
+          tone: "success",
+        });
+      if (has(s.savingsCHF))
+        out.push({
+          label: "Écart entre les deux options",
+          value: num(s.savingsCHF),
+          tone: "success",
+        });
       if (has(s.cmuAnnualCHF)) out.push({ label: "CMU", value: num(s.cmuAnnualCHF) });
       if (has(s.lamalAnnualCHF)) out.push({ label: "LAMal", value: num(s.lamalAnnualCHF) });
-      if (has(s.cmuToLamalCumulativeSavingsCHF) && num(s.yearsToRetirement) > 0)
+      if (
+        current &&
+        has(s.cmuToLamalCumulativeSavingsCHF) &&
+        num(s.yearsToRetirement) > 0 &&
+        s.isCurrentOptimal === false
+      )
         out.push({
-          label: `Économie CMU → LAMal cumulée (${num(s.yearsToRetirement)} ans)`,
-          value: num(s.cmuToLamalCumulativeSavingsCHF),
+          label: `Économie en changeant de régime, cumulée (${num(s.yearsToRetirement)} ans)`,
+          value:
+            current === "CMU"
+              ? num(s.cmuToLamalCumulativeSavingsCHF)
+              : -num(s.cmuToLamalCumulativeSavingsCHF),
           tone: "success",
         });
       break;
@@ -1904,20 +1959,24 @@ export function buildComment(entry: HistoryEntry): string | null {
       return `Sur ${years || "l'horizon retenu"} an${(years || 0) > 1 ? "s" : ""}, ${winnerName} vous dégage un capital net de ${formatCHF(winnerNet)} contre ${formatCHF(loserNet)} pour ${loserName}, un avantage net de ${formatCHF(diff)}${pctTxt} en faveur de ${winnerName}. Cette comparaison intègre les frais de gestion annuels et l'imposition à la sortie, et reste exprimée en valeurs nominales, sans effet de l'inflation.${entry.note ? ` ${entry.note.trim()}` : ""}`;
     }
     case "health_insurance_france": {
+      // Reprend telle quelle la phrase de recommandation déjà construite
+      // par le calculateur (jamais présumer un régime actuel — cahier des
+      // charges point 5), identique quel que soit le cas : régime connu
+      // déjà optimal, régime connu à changer, ou non renseigné.
+      const recommendationText = str(s.recommendationText);
+      const methodologyTxt =
+        " Ce calcul s'appuie sur les barèmes 2026 (PASS 47'100 EUR, taux CMU 8 %, abattement individuel de 25 % du PASS). Point de vigilance : le choix entre CMU et LAMal engage sur une période donnée et a des conséquences sur la couverture maladie de toute la famille, à valider au cas par cas.";
+      if (recommendationText) {
+        return `${recommendationText}${methodologyTxt}${entry.note ? ` ${entry.note.trim()}` : ""}`;
+      }
+      // Simulation enregistrée avant ce correctif : summary.recommendationText
+      // n'existe pas encore, repli sur l'ancien texte générique sans jamais
+      // présumer un régime "actuel".
       const reco = str(s.recommended);
       const cot = num(s.recommendedAnnualCHF);
-      const sav = num(s.savingsCHF);
       if (!reco) return entry.note?.trim() || null;
       const recoLabel = reco === "LAMAL" ? "LAMal (Suisse)" : "CMU (France, gérée par le CNTFS via l'URSSAF)";
-      const otherLabel = reco === "LAMAL" ? "CMU" : "LAMal";
-      const savTxt = sav > 0 ? ` Cela représente pour vous une économie annuelle de ${formatCHF(sav)} par rapport à l'option ${otherLabel}.` : "";
-      const cumulative = num(s.cmuToLamalCumulativeSavingsCHF);
-      const years = num(s.yearsToRetirement);
-      const cumulativeTxt =
-        cumulative > 0 && years > 0
-          ? ` En passant de la CMU à la LAMal, l'économie cumulée jusqu'à la retraite (${years} ans) est estimée à ${formatCHF(cumulative)}.`
-          : "";
-      return `Pour votre profil de frontalier, l'affiliation ${recoLabel} ressort comme la plus avantageuse, avec une cotisation annuelle estimée à ${formatCHF(cot)}.${savTxt}${cumulativeTxt} Ce calcul s'appuie sur les barèmes 2026 (PASS 47'100 EUR, taux CMU 8 %, abattement individuel de 25 % du PASS). Point de vigilance : le choix entre CMU et LAMal vous engage sur une période donnée et a des conséquences sur la couverture maladie de toute votre famille, à valider au cas par cas.${entry.note ? ` ${entry.note.trim()}` : ""}`;
+      return `L'affiliation ${recoLabel} ressort comme la plus avantageuse pour ce profil, avec une cotisation annuelle estimée à ${formatCHF(cot)}.${methodologyTxt}${entry.note ? ` ${entry.note.trim()}` : ""}`;
     }
     case "health_insurance_resident": {
       const current = num(s.currentAnnualCHF);
@@ -2196,10 +2255,18 @@ function drawComparisonPage(
         rowsGoodness.push(isRowGood(r, r.projected - r.current));
       }
     }
-    const cumulative = num(hif.summary?.cmuToLamalCumulativeSavingsCHF);
-    const years = num(hif.summary?.yearsToRetirement);
-    const monthly = num(hif.summary?.cmuToLamalMonthlySavingsCHF);
-    if (cumulative > 0 && years > 0) hifCumulative = { amount: cumulative, years, monthly };
+    // Uniquement si le régime actuel du client est connu ET n'est pas déjà
+    // le plus avantageux : sinon il n'y a rien à "économiser en changeant",
+    // le client est déjà bien placé ou sa situation n'est pas connue.
+    const current = hif.summary?.currentRegime;
+    if ((current === "CMU" || current === "LAMAL") && hif.summary?.isCurrentOptimal === false) {
+      const raw = num(hif.summary?.cmuToLamalCumulativeSavingsCHF);
+      const cumulative = current === "CMU" ? raw : -raw;
+      const years = num(hif.summary?.yearsToRetirement);
+      const rawMonthly = num(hif.summary?.cmuToLamalMonthlySavingsCHF);
+      const monthly = current === "CMU" ? rawMonthly : -rawMonthly;
+      if (cumulative > 0 && years > 0) hifCumulative = { amount: cumulative, years, monthly };
+    }
   }
   // Caisse maladie résident — avant = prime actuelle, après = prime
   // optimisée, même logique que CNTFS/LAMal ci-dessus (cahier des charges

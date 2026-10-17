@@ -1047,6 +1047,7 @@ export type Database = {
           first_name: string
           gender: Database["public"]["Enums"]["gender"] | null
           gross_annual_salary: number | null
+          health_insurance_regime: Database["public"]["Enums"]["health_insurance_regime"] | null
           id: string
           income_conversion_rate: number | null
           income_currency: string
@@ -1099,6 +1100,7 @@ export type Database = {
           first_name: string
           gender?: Database["public"]["Enums"]["gender"] | null
           gross_annual_salary?: number | null
+          health_insurance_regime?: Database["public"]["Enums"]["health_insurance_regime"] | null
           id?: string
           income_conversion_rate?: number | null
           income_currency?: string
@@ -1151,6 +1153,7 @@ export type Database = {
           first_name?: string
           gender?: Database["public"]["Enums"]["gender"] | null
           gross_annual_salary?: number | null
+          health_insurance_regime?: Database["public"]["Enums"]["health_insurance_regime"] | null
           id?: string
           income_conversion_rate?: number | null
           income_currency?: string
@@ -2287,6 +2290,7 @@ export type Database = {
         | "resolved"
         | "dismissed"
       gender: "male" | "female" | "other"
+      health_insurance_regime: "cmu" | "lamal"
       lpp_plan_type:
         | "mandatory"
         | "extra_mandatory"
@@ -2326,7 +2330,7 @@ export type Database = {
         | "fx_claim"
         | "health_insurance_resident"
         | "budget"
-        | "consolidated_benefits";
+        | "consolidated_benefits"
       tax_status:
         | "resident"
         | "source_taxed"
@@ -2530,6 +2534,7 @@ export const Constants = {
       feedback_category: ["bug", "suggestion", "calculation", "ux", "other"],
       feedback_status: ["new", "in_review", "planned", "resolved", "dismissed"],
       gender: ["male", "female", "other"],
+      health_insurance_regime: ["cmu", "lamal"],
       lpp_plan_type: [
         "mandatory",
         "extra_mandatory",

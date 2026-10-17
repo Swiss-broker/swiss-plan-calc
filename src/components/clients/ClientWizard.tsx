@@ -124,6 +124,9 @@ interface FormState {
   commune: string;
   postal_code: string;
   tax_status: TaxStatus;
+  // Régime santé réellement choisi par un client frontalier (CMU ou LAMal),
+  // sans objet pour un résident suisse (toujours LAMal, pas de choix).
+  health_insurance_regime: "cmu" | "lamal" | "";
   source_tax_scale: SourceTaxScale | "";
   confession: Confession;
   parish: string;
@@ -202,6 +205,7 @@ function initialForm(initial?: WizardInitialData): FormState {
     commune: c?.commune ?? "",
     postal_code: c?.postal_code ?? "",
     tax_status: c?.tax_status ?? "resident",
+    health_insurance_regime: c?.health_insurance_regime ?? "",
     source_tax_scale: (c?.source_tax_scale as SourceTaxScale | null) ?? "",
     confession: c?.confession ?? "none",
     parish: c?.parish ?? "",
@@ -453,6 +457,7 @@ export function ClientWizard({ initial, mode, clientId }: ClientWizardProps) {
         commune: form.commune || null,
         postal_code: form.postal_code || null,
         tax_status: form.tax_status,
+        health_insurance_regime: form.health_insurance_regime || null,
         source_tax_scale: form.source_tax_scale || null,
         confession: form.confession,
         parish: form.parish || null,
@@ -924,6 +929,11 @@ function StepFiscal({ form, update, errors }: StepProps) {
     form.tax_status === "cross_border_fr_1983" ||
     form.tax_status === "cross_border_ge" ||
     form.tax_status === "tou";
+  // CMU vs LAMal n'est un vrai choix que pour un frontalier (droit d'option
+  // franco-suisse) : un résident suisse est toujours assuré LAMal, sans
+  // alternative, donc cette question ne le concerne pas.
+  const isFrontalier =
+    form.tax_status === "cross_border_fr_1983" || form.tax_status === "cross_border_ge";
   return (
     <div className="grid gap-4 sm:grid-cols-2">
       <Field label={t("wizard.field.country_residence")} htmlFor="cor">
@@ -998,6 +1008,30 @@ function StepFiscal({ form, update, errors }: StepProps) {
           </SelectContent>
         </Select>
       </Field>
+      {isFrontalier ? (
+        <Field
+          label="Régime santé actuel"
+          hint="CMU ou LAMal : le choix réellement exercé par le client via le droit d'option franco-suisse. Laissez vide si vous ne savez pas."
+        >
+          <Select
+            value={form.health_insurance_regime || "unset"}
+            onValueChange={(v) =>
+              update("health_insurance_regime", v === "unset" ? "" : (v as "cmu" | "lamal"))
+            }
+          >
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="unset">Non renseigné</SelectItem>
+              <SelectItem value="cmu">CMU (France)</SelectItem>
+              <SelectItem value="lamal">LAMal (Suisse)</SelectItem>
+            </SelectContent>
+          </Select>
+        </Field>
+      ) : (
+        <div />
+      )}
       {isSource ? (
         <Field label={t("wizard.field.source_scale")} hint={t("wizard.field.source_scale.hint")}>
           <Select

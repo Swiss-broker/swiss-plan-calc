@@ -983,19 +983,29 @@ export function exportHealthFrancePdf(args: {
     { label: `Abattement ${input.taxYear} (EUR)`, value: result.abatementEUR },
   ]);
 
-  // Économie CMU → LAMal (mensuelle/annuelle/cumulée) : même donnée que le
-  // bloc dédié de la synthèse globale (cahier des charges point 3), ajoutée
-  // ici aussi pour que ce PDF individuel reste cohérent avec elle.
-  if (result.cmuToLamalAnnualSavingsCHF !== 0) {
-    pdf.section("Économie CMU → LAMal");
+  // Économie en changeant de régime (mensuelle/annuelle/cumulée) : affichée
+  // uniquement quand le régime actuel du client est connu ET n'est pas déjà
+  // le plus avantageux — sinon il n'y a rien à "économiser en changeant"
+  // (cahier des charges point 5 : jamais présumer un changement non avéré).
+  if (result.currentRegime !== null && result.isCurrentOptimal === false) {
+    const sign = result.currentRegime === "CMU" ? 1 : -1;
+    pdf.section("Économie en changeant de régime");
     pdf.metricsGrid([
-      { label: "Économie mensuelle", value: result.cmuToLamalMonthlySavingsCHF, tone: "success" },
-      { label: "Économie annuelle", value: result.cmuToLamalAnnualSavingsCHF, tone: "success" },
+      {
+        label: "Économie mensuelle",
+        value: sign * result.cmuToLamalMonthlySavingsCHF,
+        tone: "success",
+      },
+      {
+        label: "Économie annuelle",
+        value: sign * result.cmuToLamalAnnualSavingsCHF,
+        tone: "success",
+      },
       ...(result.cmuToLamalCumulativeSavingsCHF !== null
         ? [
             {
               label: `Économie cumulée (${result.yearsToRetirement} ans)`,
-              value: result.cmuToLamalCumulativeSavingsCHF,
+              value: sign * result.cmuToLamalCumulativeSavingsCHF,
               tone: "success" as const,
             },
           ]
@@ -1010,6 +1020,14 @@ export function exportHealthFrancePdf(args: {
     ["Enfants à charge", String(input.childrenCount ?? 0)],
     ["Taux CHF→EUR", String(input.chfToEurRate)],
     ["Année fiscale", String(input.taxYear)],
+    [
+      "Régime actuel du client",
+      result.currentRegime === "LAMAL"
+        ? "LAMal (Suisse)"
+        : result.currentRegime === "CMU"
+          ? "CMU (France)"
+          : "Non renseigné",
+    ],
   ]);
 
   pdf.section("Comparatif");

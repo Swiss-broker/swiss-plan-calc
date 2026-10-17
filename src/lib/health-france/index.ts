@@ -38,6 +38,10 @@ export interface HealthFranceInput {
   lamalChildMonthlyCHF?: number;
   /** Années restantes avant la retraite, pour chiffrer l'économie cumulée */
   yearsToRetirement?: number;
+  /** Régime réellement choisi par le client aujourd'hui (droit d'option
+   *  franco-suisse), s'il est connu. undefined = non renseigné : on ne doit
+   *  alors jamais prétendre connaître sa situation actuelle. */
+  currentRegime?: "CMU" | "LAMAL";
   [key: string]: unknown;
 }
 
@@ -60,6 +64,20 @@ export interface HealthFranceResult {
   recommended: "CMU" | "LAMAL";
   recommendedAnnualCHF: number;
   savingsCHF: number;
+  /** Régime réellement choisi par le client aujourd'hui, repris tel quel de
+   *  l'input. null = non renseigné : aucune des deux sections n'est alors
+   *  "actuelle" ou "optimisation", les deux options sont présentées à
+   *  égalité et seule une phrase de recommandation tranche. */
+  currentRegime: "CMU" | "LAMAL" | null;
+  currentAnnualCHF: number | null;
+  alternativeRegime: "CMU" | "LAMAL" | null;
+  alternativeAnnualCHF: number | null;
+  /** true si le régime actuel du client est déjà le moins cher des deux. */
+  isCurrentOptimal: boolean | null;
+  /** Phrase de synthèse toujours renseignée, quel que soit le cas (régime
+   *  connu optimal, régime connu à changer, ou non renseigné) : jamais de
+   *  silence ni de recommandation tue. */
+  recommendationText: string;
   /** Économie annuelle d'un passage CMU → LAMal (négatif si LAMal coûte plus cher). */
   cmuToLamalAnnualSavingsCHF: number;
   cmuToLamalMonthlySavingsCHF: number;
@@ -118,6 +136,35 @@ export function computeHealthFrance(input: HealthFranceInput): HealthFranceResul
     cmuAnnualCHF <= lamalAnnualCHF ? "CMU" : "LAMAL";
   const recommendedAnnualCHF = recommended === "CMU" ? cmuAnnualCHF : lamalAnnualCHF;
   const savingsCHF = Math.abs(lamalAnnualCHF - cmuAnnualCHF);
+  const regimeAnnualCHF = { CMU: cmuAnnualCHF, LAMAL: lamalAnnualCHF } as const;
+  const regimeLabel = { CMU: "la CMU", LAMAL: "la LAMal" } as const;
+
+  // Régime réellement choisi par le client aujourd'hui, s'il est connu : ne
+  // jamais le déduire ou le présumer, uniquement reprendre ce qui a été
+  // explicitement renseigné (fiche client → saisie manuelle du calculateur).
+  const currentRegime: "CMU" | "LAMAL" | null = input.currentRegime ?? null;
+  const alternativeRegime: "CMU" | "LAMAL" | null =
+    currentRegime === "CMU" ? "LAMAL" : currentRegime === "LAMAL" ? "CMU" : null;
+  const currentAnnualCHF = currentRegime ? regimeAnnualCHF[currentRegime] : null;
+  const alternativeAnnualCHF = alternativeRegime ? regimeAnnualCHF[alternativeRegime] : null;
+  const isCurrentOptimal =
+    currentRegime !== null && currentAnnualCHF !== null && alternativeAnnualCHF !== null
+      ? currentAnnualCHF <= alternativeAnnualCHF
+      : null;
+
+  let recommendationText: string;
+  if (currentRegime === null) {
+    recommendationText =
+      `Aucun régime actuel n'est renseigné pour ce client dans sa fiche : nous ne pouvons donc pas dire s'il est aujourd'hui à la CMU ou à la LAMal. Sur la seule base des chiffres ci-dessus, ${regimeLabel[recommended]} serait la plus avantageuse ` +
+      `(${fmtCHF(recommendedAnnualCHF)}/an contre ${fmtCHF(recommended === "CMU" ? lamalAnnualCHF : cmuAnnualCHF)}/an pour l'autre option).`;
+  } else if (isCurrentOptimal) {
+    recommendationText =
+      savingsCHF > 0
+        ? `Le client est déjà affilié à ${regimeLabel[currentRegime]}, l'option la plus avantageuse pour sa situation (${fmtCHF(savingsCHF)}/an de moins que ${regimeLabel[alternativeRegime as "CMU" | "LAMAL"]}).`
+        : `Le client est déjà affilié à ${regimeLabel[currentRegime]} ; les deux options coûtent le même montant pour sa situation.`;
+  } else {
+    recommendationText = `Le client est actuellement affilié à ${regimeLabel[currentRegime]} (${fmtCHF(currentAnnualCHF as number)}/an), mais passer à ${regimeLabel[alternativeRegime as "CMU" | "LAMAL"]} lui ferait économiser ${fmtCHF(savingsCHF)}/an.`;
+  }
 
   // Comparatif "avant/après" (situation actuelle CMU → optimisation LAMal),
   // pour la synthèse globale du PDF : économie signée, positive si LAMal est
@@ -177,6 +224,12 @@ export function computeHealthFrance(input: HealthFranceInput): HealthFranceResul
     recommended,
     recommendedAnnualCHF,
     savingsCHF,
+    currentRegime,
+    currentAnnualCHF,
+    alternativeRegime,
+    alternativeAnnualCHF,
+    isCurrentOptimal,
+    recommendationText,
     cmuToLamalAnnualSavingsCHF,
     cmuToLamalMonthlySavingsCHF,
     cmuToLamalCumulativeSavingsCHF,

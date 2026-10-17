@@ -32,6 +32,8 @@ import {
 import { CrossCalcImpactBanner } from "@/components/calculators/CrossCalcImpactBanner";
 import { GuideMode, GuideToggleButton, type GuideStep } from "@/components/calculators/GuideMode";
 import { formatCHF } from "@/lib/format";
+import { getCalculatorRelevance } from "@/lib/clients/calculator-relevance";
+import { AlertTriangle } from "lucide-react";
 
 const searchSchema = z.object({
   clientId: fallback(z.string().uuid().optional(), undefined),
@@ -78,7 +80,15 @@ function HealthInsuranceFranceCalc() {
   const brokerHeader = useBrokerPdfHeader();
   const [guideOpen, setGuideOpen] = useState(false);
 
-  const recoLabel = result.recommended === "CMU" ? "CMU (France)" : "LAMal (Suisse)";
+  // Ce calculateur ne concerne que les frontaliers résidents en France (seuls
+  // à avoir un vrai choix CMU/LAMal) : un résident suisse n'a pas cette
+  // option, il est automatiquement assuré LAMal. getCalculatorRelevance le
+  // sait déjà (utilisé pour griser le chip dans la barre du dossier), mais
+  // jusqu'ici rien ne le rappelait une fois DANS le calculateur ni dans le
+  // PDF, qui affichait "Santé frontalier" comme un fait acquis.
+  const relevance = client
+    ? getCalculatorRelevance(client, "/calculators/health-insurance-france")
+    : null;
 
   const guideSteps: GuideStep[] = [
     {
@@ -134,6 +144,19 @@ function HealthInsuranceFranceCalc() {
       {client && (
         <div className="md:col-span-5">
           <ClientLinkBanner client={client} caseId={caseId} />
+        </div>
+      )}
+      {relevance && !relevance.relevant && (
+        <div className="md:col-span-5 flex items-start gap-2 rounded-lg border border-warning/40 bg-warning/5 p-3 text-sm text-warning-foreground">
+          <AlertTriangle className="mt-0.5 h-4 w-4 flex-shrink-0 text-warning" />
+          <span>
+            <strong>{relevance.reason}</strong>{" "}
+            {client?.tax_status === "resident"
+              ? "Ce client n'a normalement pas le choix CMU/LAMal : résident suisse, il est automatiquement assuré LAMal, sans alternative. Pour lui, utilisez plutôt le calculateur « Caisse maladie résident »."
+              : "Ce calculateur ne s'applique normalement pas à ce profil."}{" "}
+            Ce que vous voyez ici reste une simulation exploratoire, pas la situation réelle du
+            client.
+          </span>
         </div>
       )}
       {simId && loadingSaved && (
@@ -196,13 +219,34 @@ function HealthInsuranceFranceCalc() {
                 onChange={(v) => set("yearsToRetirement", v)}
                 tip="Utilisé uniquement pour chiffrer l'économie CMU/LAMal cumulée jusqu'à la retraite dans la synthèse."
               />
+              <Field label="Régime actuel du client">
+                <Select
+                  value={form.currentRegime ?? "unset"}
+                  onValueChange={(v) =>
+                    set("currentRegime", v === "unset" ? undefined : (v as "CMU" | "LAMAL"))
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="unset">Non renseigné</SelectItem>
+                    <SelectItem value="CMU">CMU (France)</SelectItem>
+                    <SelectItem value="LAMAL">LAMal (Suisse)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </Field>
             </div>
             <div className="mt-3 flex items-start gap-2 rounded-md border bg-muted/30 p-3 text-xs text-muted-foreground">
               <Info className="mt-0.5 h-4 w-4 flex-shrink-0 text-primary" />
               <span>
-                Le salaire indiqué doit correspondre au <strong>revenu N-2</strong> (pour {form.taxYear} = revenus {form.taxYear - 2}).
-                La cotisation CMU est <strong>individuelle</strong> : situation civile et enfants n'impactent ni l'abattement
-                ni l'assiette. Les enfants sont pris en compte pour la prime LAMal.
+                Le salaire indiqué doit correspondre au <strong>revenu N-2</strong> (pour{" "}
+                {form.taxYear} = revenus {form.taxYear - 2}). La cotisation CMU est{" "}
+                <strong>individuelle</strong> : situation civile et enfants n'impactent ni
+                l'abattement ni l'assiette. Les enfants sont pris en compte pour la prime LAMal. «
+                Régime actuel du client » : ce qu'il a réellement choisi aujourd'hui via le droit
+                d'option, pas une estimation. Laissez « Non renseigné » si vous ne savez pas — le
+                logiciel ne le devinera jamais à votre place.
               </span>
             </div>
           </CalcCard>
@@ -246,20 +290,24 @@ function HealthInsuranceFranceCalc() {
 
       <div className="space-y-4 md:col-span-2">
         <div data-guide="health-fr-result">
-          <CalcCard title={`Option recommandée : ${recoLabel}`}>
-            <Row>
-              <MoneyTile
-                label="Cotisation annuelle (recommandé)"
-                value={result.recommendedAnnualCHF}
-                tone="success"
-                big
-              />
-              <MoneyTile
-                label={result.recommended === "CMU" ? "Économie annuelle vs LAMal" : "Économie annuelle vs CMU"}
-                value={result.savingsCHF}
-                tone="primary"
-              />
-            </Row>
+          <CalcCard
+            title={
+              result.currentRegime
+                ? `Votre situation : ${result.currentRegime === "CMU" ? "CMU (France)" : "LAMal (Suisse)"}`
+                : "CMU vs LAMal : comparatif"
+            }
+          >
+            <div
+              className={`rounded-md border p-3 text-sm ${
+                result.currentRegime === null
+                  ? "border-border bg-muted/30 text-muted-foreground"
+                  : result.isCurrentOptimal
+                    ? "border-success/40 bg-success/5 text-success-foreground"
+                    : "border-warning/40 bg-warning/5 text-warning-foreground"
+              }`}
+            >
+              {result.recommendationText}
+            </div>
             <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
               <MoneyTile
                 label="CMU (France)"
@@ -273,19 +321,26 @@ function HealthInsuranceFranceCalc() {
                 tone={result.recommended === "LAMAL" ? "success" : "default"}
               />
             </div>
-            {result.cmuToLamalCumulativeSavingsCHF !== null && (
-              <div className="mt-3 rounded-lg border-2 border-success/40 bg-success/5 p-3">
-                <div className="text-xs font-semibold uppercase tracking-wide text-success">
-                  Économie CMU → LAMal jusqu'à la retraite ({form.yearsToRetirement} ans)
+            {result.currentRegime !== null &&
+              result.isCurrentOptimal === false &&
+              result.cmuToLamalCumulativeSavingsCHF !== null && (
+                <div className="mt-3 rounded-lg border-2 border-success/40 bg-success/5 p-3">
+                  <div className="text-xs font-semibold uppercase tracking-wide text-success">
+                    Économie cumulée jusqu'à la retraite ({form.yearsToRetirement} ans)
+                  </div>
+                  <div className="mt-1 text-2xl font-bold tabular-nums text-success">
+                    {formatCHF(
+                      result.currentRegime === "CMU"
+                        ? result.cmuToLamalCumulativeSavingsCHF
+                        : -result.cmuToLamalCumulativeSavingsCHF,
+                    )}
+                  </div>
+                  <div className="mt-1 text-xs text-muted-foreground">
+                    Si le client passe de{" "}
+                    {result.currentRegime === "CMU" ? "CMU à LAMal" : "LAMal à CMU"}.
+                  </div>
                 </div>
-                <div className="mt-1 text-2xl font-bold tabular-nums text-success">
-                  {formatCHF(result.cmuToLamalCumulativeSavingsCHF)}
-                </div>
-                <div className="mt-1 text-xs text-muted-foreground">
-                  Soit {formatCHF(result.cmuToLamalMonthlySavingsCHF)} / mois · {formatCHF(result.cmuToLamalAnnualSavingsCHF)} / an
-                </div>
-              </div>
-            )}
+              )}
             <div className="mt-3 flex items-start gap-2 rounded-md border bg-muted/30 p-3 text-xs text-muted-foreground">
               <Shield className="mt-0.5 h-4 w-4 flex-shrink-0 text-primary" />
               <span>
@@ -318,6 +373,17 @@ function HealthInsuranceFranceCalc() {
               lamalAnnualCHF: result.lamalAnnualCHF,
               savingsCHF: result.savingsCHF,
               rfrEUR: result.rfrEUR,
+              // Régime réellement choisi par le client aujourd'hui (saisi
+              // dans ce calculateur ou pré-rempli depuis sa fiche), repris
+              // tel quel par la synthèse PDF pour ne jamais présumer un
+              // sens avant/après CMU → LAMal qui ne correspondrait pas à sa
+              // situation réelle (cahier des charges point 5).
+              currentRegime: result.currentRegime,
+              currentAnnualCHF: result.currentAnnualCHF,
+              alternativeRegime: result.alternativeRegime,
+              alternativeAnnualCHF: result.alternativeAnnualCHF,
+              isCurrentOptimal: result.isCurrentOptimal,
+              recommendationText: result.recommendationText,
               // Comparatif avant (CMU) / après (LAMal) pour la synthèse
               // globale du PDF, avec l'économie cumulée jusqu'à la retraite
               // mise en évidence (cahier des charges point 3).
