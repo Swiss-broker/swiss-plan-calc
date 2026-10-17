@@ -37,7 +37,12 @@ import { SaveSimulationButton } from "@/components/calculators/SaveSimulationBut
 import { useBrokerPdfHeader } from "@/hooks/useBrokerPdfHeader";
 import { TaxGlobalExplanation } from "@/components/calculators/TaxGlobalExplanation";
 import { TaxGlobalCompareCard } from "@/components/calculators/TaxGlobalCompareCard";
-import { GuideMode, GuideToggleButton, type GuideStep } from "@/components/calculators/GuideMode";
+import {
+  GuideMode,
+  GuideToggleButton,
+  GuideSlot,
+  type GuideStep,
+} from "@/components/calculators/GuideMode";
 import { CANTONS } from "@/lib/swiss/cantons";
 import { formatCHF } from "@/lib/format";
 import { useT } from "@/contexts/LanguageContext";
@@ -346,9 +351,9 @@ function TaxGlobalCalc() {
         title={t("calc.global.guide.title")}
         guideId="calc-tax-global"
       />
-      <div className="flex justify-end">
+      <GuideSlot>
         <GuideToggleButton onClick={() => setGuideOpen(true)} />
-      </div>
+      </GuideSlot>
       <CrossCalcImpactBanner calculator="tax-global" clientId={clientId} caseId={caseId} />
       <CrossSimulationReuseBanner
         clientId={clientId}

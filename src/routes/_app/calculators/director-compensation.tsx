@@ -38,7 +38,12 @@ import { supabase } from "@/integrations/supabase/client";
 import { CalcCard, MoneyTile, Row } from "@/components/calculators/CalcUI";
 import { SaveSimulationButton } from "@/components/calculators/SaveSimulationButton";
 import { useBrokerPdfHeader } from "@/hooks/useBrokerPdfHeader";
-import { GuideMode, GuideToggleButton, type GuideStep } from "@/components/calculators/GuideMode";
+import {
+  GuideMode,
+  GuideToggleButton,
+  GuideSlot,
+  type GuideStep,
+} from "@/components/calculators/GuideMode";
 import { WikiTip } from "@/components/calculators/WikiTip";
 import { useT } from "@/contexts/LanguageContext";
 import { t as translate } from "@/lib/i18n";
@@ -296,9 +301,9 @@ function DirectorCompensationCalc() {
           title={t("calc.dir.guide.title")}
           guideId="calc-director-compensation"
         />
-        <div className="flex justify-end gap-2">
+        <GuideSlot>
           <GuideToggleButton onClick={() => setGuideOpen(true)} />
-        </div>
+        </GuideSlot>
         <CrossCalcImpactBanner
           calculator="director-compensation"
           clientId={clientId}

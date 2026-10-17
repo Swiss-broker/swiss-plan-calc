@@ -59,7 +59,12 @@ import { z } from "zod";
 import { usePrefillFromClient } from "@/hooks/usePrefillFromClient";
 import { useLoadSavedSimulation } from "@/hooks/useLoadSavedSimulation";
 import { ClientLinkBanner } from "@/components/calculators/ClientLinkBanner";
-import { GuideMode, GuideToggleButton, type GuideStep } from "@/components/calculators/GuideMode";
+import {
+  GuideMode,
+  GuideToggleButton,
+  GuideSlot,
+  type GuideStep,
+} from "@/components/calculators/GuideMode";
 import { WikiTip } from "@/components/calculators/WikiTip";
 import { CrossCalcImpactBanner } from "@/components/calculators/CrossCalcImpactBanner";
 
@@ -411,7 +416,9 @@ function CantonCompareCalc() {
   return (
     <div className="space-y-6">
       <GuideMode open={guideOpen} onClose={() => setGuideOpen(false)} steps={guideSteps} title={t("calc.canton_compare.guide.title")} guideId="calc-canton-compare" />
-      <div className="flex justify-end"><GuideToggleButton onClick={() => setGuideOpen(true)} /></div>
+      <GuideSlot>
+        <GuideToggleButton onClick={() => setGuideOpen(true)} />
+      </GuideSlot>
       <CrossCalcImpactBanner calculator="canton-compare" clientId={clientId} caseId={caseId} />
 
       {client && <ClientLinkBanner client={client} caseId={caseId} />}

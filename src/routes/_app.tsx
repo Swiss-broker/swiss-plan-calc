@@ -1,5 +1,4 @@
 // src/routes/_app.tsx
-import { FeedbackWidget } from "@/components/feedback/FeedbackWidget";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { AiChat } from "@/components/ai/AiChat";
 import { CompleteProfileModal } from "@/components/CompleteProfileModal";
@@ -84,9 +83,6 @@ function AppShell() {
           <CompleteProfileModal />
           <AdvantagesModal />
         </main>
-        <div className="fixed bottom-6 left-6 z-50">
-          <FeedbackWidget />
-        </div>
       </div>
     </div>
   );

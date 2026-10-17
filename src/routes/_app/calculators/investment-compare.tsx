@@ -31,7 +31,12 @@ import {
 } from "@/components/ui/select";
 import { SaveSimulationButton } from "@/components/calculators/SaveSimulationButton";
 import { useBrokerPdfHeader } from "@/hooks/useBrokerPdfHeader";
-import { GuideMode, GuideToggleButton, type GuideStep } from "@/components/calculators/GuideMode";
+import {
+  GuideMode,
+  GuideToggleButton,
+  GuideSlot,
+  type GuideStep,
+} from "@/components/calculators/GuideMode";
 import { useT } from "@/contexts/LanguageContext";
 import { formatCHF, formatPct } from "@/lib/format";
 import {
@@ -175,9 +180,9 @@ function InvestmentCompareCalc() {
         title={t("calc.invcompare.guide_title")}
         guideId="calc-investment-compare"
       />
-      <div className="flex justify-end gap-2">
+      <GuideSlot>
         <GuideToggleButton onClick={() => setGuideOpen(true)} />
-      </div>
+      </GuideSlot>
       <CrossCalcImpactBanner calculator="investment-compare" clientId={clientId} caseId={caseId} />
       {client && <ClientLinkBanner client={client} caseId={caseId} />}
       {simId && loadingSaved && (

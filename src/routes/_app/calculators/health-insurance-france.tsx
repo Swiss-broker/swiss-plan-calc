@@ -30,7 +30,12 @@ import {
   type HealthFranceInput,
 } from "@/lib/health-france";
 import { CrossCalcImpactBanner } from "@/components/calculators/CrossCalcImpactBanner";
-import { GuideMode, GuideToggleButton, type GuideStep } from "@/components/calculators/GuideMode";
+import {
+  GuideMode,
+  GuideToggleButton,
+  GuideSlot,
+  type GuideStep,
+} from "@/components/calculators/GuideMode";
 import { formatCHF } from "@/lib/format";
 import { getCalculatorRelevance } from "@/lib/clients/calculator-relevance";
 import { AlertTriangle } from "lucide-react";
@@ -131,9 +136,9 @@ function HealthInsuranceFranceCalc() {
         title="Guide, CMU vs LAMal"
         guideId="calc-health-insurance-france"
       />
-      <div className="md:col-span-5 flex justify-end gap-2">
+      <GuideSlot>
         <GuideToggleButton onClick={() => setGuideOpen(true)} />
-      </div>
+      </GuideSlot>
       <div className="md:col-span-5">
         <CrossCalcImpactBanner
           calculator="health-insurance-france"

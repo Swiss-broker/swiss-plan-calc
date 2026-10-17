@@ -8,6 +8,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { zodValidator, fallback } from "@tanstack/zod-adapter";
 import { z } from "zod";
+import { useState } from "react";
 import { HeartHandshake } from "lucide-react";
 
 import { supabase } from "@/integrations/supabase/client";
@@ -23,6 +24,12 @@ import {
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import type { Client, ClientPension, ClientAssets } from "@/lib/clients/types";
+import {
+  GuideMode,
+  GuideToggleButton,
+  GuideSlot,
+  type GuideStep,
+} from "@/components/calculators/GuideMode";
 
 const searchSchema = z.object({
   clientId: fallback(z.string().uuid().optional(), undefined),
@@ -71,8 +78,42 @@ function ConsolidatedBenefitsCalc() {
     },
   });
 
+  const [guideOpen, setGuideOpen] = useState(false);
+  const guideSteps: GuideStep[] = [
+    {
+      title: "Bienvenue sur Prestations consolidées",
+      body: "Cette page réunit en un seul endroit ce que le dossier finance pour le client en cas de retraite, d'invalidité ou de décès, en additionnant 1er pilier (AVS/AI), 2e pilier (LPP) et 3e pilier (3a). Ce n'est pas un nouveau calcul : c'est une vue consolidée des simulations déjà réalisées ailleurs.",
+    },
+    {
+      title: "D'où viennent les chiffres « Actuel »",
+      body: "La colonne « Actuel » reprend les dernières simulations AVS/AI, LPP et 3a réellement sauvegardées pour ce client DANS CE DOSSIER — jamais un recalcul indépendant, ni une simulation d'un autre dossier du même client. C'est exactement la même sélection que celle utilisée par le PDF de synthèse.",
+    },
+    {
+      title: "Ce que représente « Optimisé »",
+      body: "La colonne « Optimisé » n'est pas basée sur une simulation que vous auriez faite dans ce dossier : elle sature automatiquement la capacité de rachat LPP restante du client et porte le versement 3a au plafond légal salarié (si celui-ci est inférieur), puis projette le capital et les rentes obtenus — à comparer directement à la situation actuelle, sans optimisation.",
+    },
+    {
+      title: "Trois volets : retraite, invalidité, décès",
+      body: "Les onglets en haut de la carte permettent de voir ce que finance le dossier pour chacun des trois événements. Les montants changent d'un onglet à l'autre : une rente d'invalidité n'est pas une rente de retraite.",
+    },
+    {
+      title: "Cohérence avec le PDF de synthèse",
+      body: "Les chiffres affichés ici sont les mêmes que ceux de la page « Prestations consolidées » du PDF de synthèse du dossier. Si une nouvelle simulation AVS/AI, LPP ou 3a est sauvegardée dans ce dossier, revenez sur cette page pour voir l'effet sur la colonne « Actuel » avant de générer le PDF.",
+    },
+  ];
+
   return (
     <div className="space-y-6">
+      <GuideMode
+        open={guideOpen}
+        onClose={() => setGuideOpen(false)}
+        steps={guideSteps}
+        title="Guide, Prestations consolidées"
+        guideId="calc-consolidated-benefits"
+      />
+      <GuideSlot>
+        <GuideToggleButton onClick={() => setGuideOpen(true)} />
+      </GuideSlot>
       <CalcCard className="bg-gradient-primary text-primary-foreground">
         <div className="flex items-start gap-3">
           <HeartHandshake className="mt-1 h-6 w-6" />

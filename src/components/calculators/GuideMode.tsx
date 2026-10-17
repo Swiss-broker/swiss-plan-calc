@@ -4,13 +4,48 @@
 // chaque champ ciblé par un id (`data-guide="<id>"`).
 // Si guideId est fourni : auto-ouverture à la première visite (persistée via
 // GuideContext/Supabase), puis réutilisable manuellement via GuideToggleButton.
-import { useEffect, useState, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { Sparkles, ArrowRight, ArrowLeft, X, Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useT } from "@/contexts/LanguageContext";
 import { useGuide } from "@/contexts/GuideContext";
+
+// Emplacement partagé du bouton "Mode guide" (cahier des charges point 12) :
+// chaque calculateur garde son propre state/steps, mais son
+// GuideToggleButton se téléporte via portail vers UN SEUL emplacement rendu
+// par la page parente des calculateurs (entre la barre d'onglets et le
+// titre), pour un positionnement identique sur toutes les pages au lieu
+// d'un bouton dessiné séparément par chaque fichier.
+interface GuideSlotCtx {
+  el: HTMLElement | null;
+  setEl: (el: HTMLElement | null) => void;
+}
+const GuideSlotContext = createContext<GuideSlotCtx | null>(null);
+
+export function GuideSlotProvider({ children }: { children: ReactNode }) {
+  const [el, setEl] = useState<HTMLElement | null>(null);
+  return <GuideSlotContext.Provider value={{ el, setEl }}>{children}</GuideSlotContext.Provider>;
+}
+
+/** À rendre UNE SEULE FOIS, dans la page parente des calculateurs, à
+ *  l'endroit exact où le bouton "Mode guide" de chaque calculateur doit
+ *  apparaître. */
+export function GuideSlotTarget({ className }: { className?: string }) {
+  const ctx = useContext(GuideSlotContext);
+  return <div ref={ctx?.setEl} className={className} />;
+}
+
+/** À utiliser dans chaque calculateur à la place du rendu direct du
+ *  bouton : téléporte son contenu (le GuideToggleButton) vers
+ *  GuideSlotTarget ci-dessus. Rend null si aucun slot n'est monté (ex.
+ *  calculateur utilisé hors de la page parente des calculateurs). */
+export function GuideSlot({ children }: { children: ReactNode }) {
+  const ctx = useContext(GuideSlotContext);
+  if (!ctx?.el) return null;
+  return createPortal(children, ctx.el);
+}
 
 export type GuideStep = {
   /** Id ciblé via data-guide="..." sur l'élément à surligner. Optionnel pour intro/outro. */

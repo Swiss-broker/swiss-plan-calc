@@ -24,6 +24,7 @@ import {
 } from "@/components/ui/select";
 import { useT } from "@/contexts/LanguageContext";
 import { WikiHelpLink } from "@/components/wiki/WikiHelpLink";
+import { GuideSlotProvider, GuideSlotTarget } from "@/components/calculators/GuideMode";
 
 const layoutSearchSchema = z.object({
   clientId: fallback(z.string().uuid().optional(), undefined),
@@ -166,6 +167,7 @@ function CalculatorsLayout() {
   const isMoreActive = MORE_TABS.some((tab) => pathname.startsWith(tab.to));
   const inClientContext = Boolean(clientId);
   return (
+    <GuideSlotProvider>
     <div
       className={cn(
         "min-h-[calc(100vh-3.5rem)] transition-colors",
@@ -188,6 +190,11 @@ function CalculatorsLayout() {
             {CALC_WIKI_SLUGS[currentTab] && <WikiHelpLink article={CALC_WIKI_SLUGS[currentTab]} />}
           </div>
         </div>
+
+          {/* Emplacement unique du bouton "Mode guide" de chaque calculateur,
+            entre le titre et la barre d'onglets (cahier des charges point 12) —
+            voir GuideSlot/GuideSlotTarget dans GuideMode.tsx. */}
+          <GuideSlotTarget className="mb-4 flex justify-end" />
 
         {/* Mobile: select fallback for quick switching */}
         <div className="mb-4 sm:hidden">
@@ -264,5 +271,6 @@ function CalculatorsLayout() {
         <Outlet />
       </div>
     </div>
+    </GuideSlotProvider>
   );
 }

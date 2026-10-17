@@ -414,8 +414,12 @@ function ClientDetailPage() {
         </div>
       )}
 
+      <div className="mt-6 flex justify-end">
+        <WikiHelpLink article={CLIENT_TAB_WIKI_SLUGS[(tab ?? "overview") as ClientTab]} />
+      </div>
+
       {/* KPI summary */}
-      <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="mt-2 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Kpi label="Revenu brut total" value={formatCHF(totalIncome)} icon={Briefcase} />
         <Kpi
           label="Avoir LPP"
@@ -436,10 +440,6 @@ function ClientDetailPage() {
 
       <div className="mt-6">
         <AiAnalysis client={client} pension={pension} assets={assets} />
-      </div>
-
-      <div className="mt-8 flex justify-end">
-        <WikiHelpLink article={CLIENT_TAB_WIKI_SLUGS[(tab ?? "overview") as ClientTab]} />
       </div>
 
       <Tabs

@@ -31,7 +31,12 @@ import { z } from "zod";
 import { usePrefillFromClient, useHydrateFormFromPrefill } from "@/hooks/usePrefillFromClient";
 import { useLoadSavedSimulation } from "@/hooks/useLoadSavedSimulation";
 import { ClientLinkBanner } from "@/components/calculators/ClientLinkBanner";
-import { GuideMode, GuideToggleButton, type GuideStep } from "@/components/calculators/GuideMode";
+import {
+  GuideMode,
+  GuideToggleButton,
+  GuideSlot,
+  type GuideStep,
+} from "@/components/calculators/GuideMode";
 import { WikiTip } from "@/components/calculators/WikiTip";
 import { FiscalSnapshotBanner } from "@/components/calculators/FiscalSnapshotBanner";
 import { SplitCompareLayout, type SplitRow } from "@/components/calculators/SplitCompareLayout";
@@ -424,9 +429,9 @@ function Pillar3aCalc() {
         title={t("calc.p3a.guide_title")}
         guideId="calc-pillar3a"
       />
-      <div className="flex justify-end">
+      <GuideSlot>
         <GuideToggleButton onClick={() => setGuideOpen(true)} />
-      </div>
+      </GuideSlot>
       <CrossCalcImpactBanner calculator="pillar3a" clientId={clientId} caseId={caseId} />
 
       {client && <ClientLinkBanner client={client} caseId={caseId} />}

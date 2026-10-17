@@ -22,7 +22,12 @@ import { computeBudget, type BudgetInput } from "@/lib/budget";
 import { pickLatestNonDismissed } from "@/lib/simulations/extract-gain";
 import { KIND_LABELS } from "@/lib/history/types";
 import { formatCHF } from "@/lib/format";
-import { GuideMode, GuideToggleButton, type GuideStep } from "@/components/calculators/GuideMode";
+import {
+  GuideMode,
+  GuideToggleButton,
+  GuideSlot,
+  type GuideStep,
+} from "@/components/calculators/GuideMode";
 import { Label } from "@/components/ui/label";
 import { NumField as BaseNumField } from "@/components/ui/num-field";
 
@@ -168,9 +173,9 @@ function BudgetCalc() {
         title="Guide, Budget"
         guideId="calc-budget"
       />
-      <div className="md:col-span-5 flex justify-end gap-2">
+      <GuideSlot>
         <GuideToggleButton onClick={() => setGuideOpen(true)} />
-      </div>
+      </GuideSlot>
       <div className="md:col-span-5 flex items-center gap-2">
         <Wallet className="h-5 w-5 text-primary" />
         <h1 className="text-lg font-semibold">Budget</h1>

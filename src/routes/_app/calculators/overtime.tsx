@@ -35,7 +35,12 @@ import {
 import { usePrefillFromClient, useHydrateFormFromPrefill } from "@/hooks/usePrefillFromClient";
 import { useLoadSavedSimulation } from "@/hooks/useLoadSavedSimulation";
 import { CrossCalcImpactBanner } from "@/components/calculators/CrossCalcImpactBanner";
-import { GuideMode, GuideToggleButton, type GuideStep } from "@/components/calculators/GuideMode";
+import {
+  GuideMode,
+  GuideToggleButton,
+  GuideSlot,
+  type GuideStep,
+} from "@/components/calculators/GuideMode";
 
 const searchSchema = z.object({
   clientId: fallback(z.string().uuid().optional(), undefined),
@@ -133,9 +138,9 @@ function OvertimeCalc() {
         title="Guide, Heures supplémentaires"
         guideId="calc-overtime"
       />
-      <div className="md:col-span-5 flex justify-end gap-2">
+      <GuideSlot>
         <GuideToggleButton onClick={() => setGuideOpen(true)} />
-      </div>
+      </GuideSlot>
       <div className="md:col-span-5">
         <CrossCalcImpactBanner calculator="overtime" clientId={clientId} caseId={caseId} />
       </div>

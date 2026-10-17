@@ -15,7 +15,12 @@ import {
 } from "@/lib/health-resident";
 import { formatCHF } from "@/lib/format";
 import { CrossCalcImpactBanner } from "@/components/calculators/CrossCalcImpactBanner";
-import { GuideMode, GuideToggleButton, type GuideStep } from "@/components/calculators/GuideMode";
+import {
+  GuideMode,
+  GuideToggleButton,
+  GuideSlot,
+  type GuideStep,
+} from "@/components/calculators/GuideMode";
 import { Label } from "@/components/ui/label";
 import { NumField as BaseNumField } from "@/components/ui/num-field";
 
@@ -96,9 +101,9 @@ function HealthInsuranceResidentCalc() {
         title="Guide, Caisse maladie résident"
         guideId="calc-health-insurance-resident"
       />
-      <div className="md:col-span-5 flex justify-end gap-2">
+      <GuideSlot>
         <GuideToggleButton onClick={() => setGuideOpen(true)} />
-      </div>
+      </GuideSlot>
       <div className="md:col-span-5">
         <CrossCalcImpactBanner
           calculator="health-insurance-resident"

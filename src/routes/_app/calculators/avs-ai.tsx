@@ -26,7 +26,12 @@ import {
 } from "@/hooks/usePrefillFromClient";
 import { useLoadSavedSimulation } from "@/hooks/useLoadSavedSimulation";
 import { ClientLinkBanner } from "@/components/calculators/ClientLinkBanner";
-import { GuideMode, GuideToggleButton, type GuideStep } from "@/components/calculators/GuideMode";
+import {
+  GuideMode,
+  GuideToggleButton,
+  GuideSlot,
+  type GuideStep,
+} from "@/components/calculators/GuideMode";
 import { WikiTip } from "@/components/calculators/WikiTip";
 import { SaveSimulationButton } from "@/components/calculators/SaveSimulationButton";
 import { useBrokerPdfHeader } from "@/hooks/useBrokerPdfHeader";
@@ -240,9 +245,9 @@ function AvsAiCalc() {
         title={t("calc.avs.guide_title")}
         guideId="calc-avs-ai"
       />
-      <div className="flex justify-end gap-2">
+      <GuideSlot>
         <GuideToggleButton onClick={() => setGuideOpen(true)} />
-      </div>
+      </GuideSlot>
       <CrossCalcImpactBanner calculator="avs-ai" clientId={clientId} caseId={caseId} />
       {client && <ClientLinkBanner client={client} caseId={caseId} />}
       {simId && loadingSaved && (

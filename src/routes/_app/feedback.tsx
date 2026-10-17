@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { WikiHelpLink } from "@/components/wiki/WikiHelpLink";
+import { FeedbackWidget } from "@/components/feedback/FeedbackWidget";
 
 type Message = {
   id: string;
@@ -133,7 +134,10 @@ function FeedbackPage() {
             </p>
           </div>
         </div>
-        <WikiHelpLink article="feedback" />
+        <div className="flex items-center gap-2">
+          <WikiHelpLink article="feedback" />
+          <FeedbackWidget onSubmitted={loadFeedback} />
+        </div>
       </div>
 
       {rows === null ? (
@@ -143,7 +147,8 @@ function FeedbackPage() {
       ) : rows.length === 0 ? (
         <Card>
           <CardContent className="py-12 text-center text-sm text-muted-foreground">
-            Aucun feedback pour le moment. Utilisez le bouton Feedback en bas au centre.
+            Aucun feedback pour le moment. Utilisez le bouton « Feedback » ci-dessus pour en envoyer
+            un.
           </CardContent>
         </Card>
       ) : (

@@ -40,7 +40,12 @@ import { usePrefillFromClient, useHydrateFormFromPrefill } from "@/hooks/usePref
 import { useLoadSavedSimulation } from "@/hooks/useLoadSavedSimulation";
 import { ClientLinkBanner } from "@/components/calculators/ClientLinkBanner";
 import { ClientPrefillBadge } from "@/components/calculators/ClientPrefillBadge";
-import { GuideMode, GuideToggleButton, type GuideStep } from "@/components/calculators/GuideMode";
+import {
+  GuideMode,
+  GuideToggleButton,
+  GuideSlot,
+  type GuideStep,
+} from "@/components/calculators/GuideMode";
 import { WikiTip } from "@/components/calculators/WikiTip";
 import { useT } from "@/contexts/LanguageContext";
 import { CrossCalcImpactBanner } from "@/components/calculators/CrossCalcImpactBanner";
@@ -175,9 +180,9 @@ function VestedBenefitsCalc() {
         title={t("calc.vested.guide_title")}
         guideId="calc-vested-benefits"
       />
-      <div className="flex justify-end">
+      <GuideSlot>
         <GuideToggleButton onClick={() => setGuideOpen(true)} />
-      </div>
+      </GuideSlot>
       <CrossCalcImpactBanner calculator="vested-benefits" clientId={clientId} caseId={caseId} />
       {simId && loadingSaved && (
         <div className="rounded-lg border border-primary/30 bg-primary/5 p-3 text-sm text-muted-foreground">

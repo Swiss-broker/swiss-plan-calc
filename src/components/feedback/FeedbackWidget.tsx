@@ -41,7 +41,7 @@ const CATEGORIES = [
   { value: "other", label: "Autre" },
 ] as const;
 
-export function FeedbackWidget() {
+export function FeedbackWidget({ onSubmitted }: { onSubmitted?: () => void } = {}) {
   const { user } = useAuth();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const [open, setOpen] = useState(false);
@@ -89,6 +89,7 @@ export function FeedbackWidget() {
     toast.success("Merci ! Votre retour a bien été enregistré.");
     reset();
     setOpen(false);
+    onSubmitted?.();
   };
 
   return (

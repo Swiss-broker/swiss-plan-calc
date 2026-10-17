@@ -28,7 +28,12 @@ import { usePrefillFromClient, useHydrateFormFromPrefill } from "@/hooks/usePref
 import { useLoadSavedSimulation } from "@/hooks/useLoadSavedSimulation";
 import { ClientLinkBanner } from "@/components/calculators/ClientLinkBanner";
 import { ClientPrefillBadge } from "@/components/calculators/ClientPrefillBadge";
-import { GuideMode, GuideToggleButton, type GuideStep } from "@/components/calculators/GuideMode";
+import {
+  GuideMode,
+  GuideToggleButton,
+  GuideSlot,
+  type GuideStep,
+} from "@/components/calculators/GuideMode";
 import { WikiTip } from "@/components/calculators/WikiTip";
 import { CrossCalcImpactBanner } from "@/components/calculators/CrossCalcImpactBanner";
 
@@ -157,7 +162,9 @@ function RetirementCalc() {
   return (
     <div className="space-y-6">
       <GuideMode open={guideOpen} onClose={() => setGuideOpen(false)} steps={guideSteps} title={t("calc.retirement.guide.title")} guideId="calc-retirement" />
-      <div className="flex justify-end"><GuideToggleButton onClick={() => setGuideOpen(true)} /></div>
+      <GuideSlot>
+        <GuideToggleButton onClick={() => setGuideOpen(true)} />
+      </GuideSlot>
       <CrossCalcImpactBanner calculator="retirement" clientId={clientId} caseId={caseId} />
 
       {client && <ClientLinkBanner client={client} caseId={caseId} />}

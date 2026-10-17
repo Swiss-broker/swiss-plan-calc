@@ -7,7 +7,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { logClientError } from "@/lib/error-logging";
 import { getWorkStatusRules, effectivePillar3aCap } from "@/lib/clients/work-status-rules";
 import { WORK_STATUS_LABELS } from "@/lib/swiss/enums";
-import { WikiHelpLink } from "@/components/wiki/WikiHelpLink";
 
 interface Props {
   client: Client;
@@ -97,7 +96,6 @@ IMPORTANT : pour tout plafond, seuil ou montant légal (3a, LPP, AVS...), utilis
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <WikiHelpLink article="ia-analyse-client" className="hidden sm:inline-flex" />
           {analysis && (
             <button onClick={() => setOpen(v => !v)} className="text-muted-foreground hover:text-foreground">
               {open ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
