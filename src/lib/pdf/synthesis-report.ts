@@ -2346,10 +2346,13 @@ function drawComparisonPage(
       }
     }
   }
-  // Tous gains agrégés
-  for (const e of entries) {
+  // Tous gains agrégés — un seul candidat par kind (voir
+  // latestActivePerKind) : une même catégorie relancée plusieurs fois dans
+  // ce dossier ne doit pas apparaître en plusieurs lignes ici, sinon le
+  // total consolidé plus loin dans le document compte plusieurs fois le
+  // même calculateur (cahier des charges point 13).
+  for (const e of latestActivePerKind(entries)) {
     if (["lpp", "pillar3a", "canton_compare", "director_compensation", "retirement", "vested_benefits", "cross_border", "health_insurance_france", "health_insurance_resident", "investment_compare", "tax_global", "budget"].includes(e.kind)) continue;
-    if (e.gain_dismissed) continue;
     const g = extractGain(e);
     if (g.type === "none") continue;
     rows.push([
@@ -2432,12 +2435,29 @@ export interface Totals {
   annual: number;
   details: string[];
 }
+
+/** Un seul candidat par kind — le plus récent actif (non archivé) — parmi
+ *  les entrées sélectionnées pour ce document. Une même catégorie relancée
+ *  plusieurs fois dans le même dossier (ex. LPP testé avec plusieurs
+ *  montants de rachat) ne doit compter qu'une fois dans les totaux et
+ *  recommandations chiffrées du PDF, sinon le gain total est gonflé en
+ *  additionnant plusieurs essais du même calculateur au lieu d'une seule
+ *  recommandation par sujet (cahier des charges point 13). Même règle que
+ *  "Résumé par catégorie" (drawOverviewPage) et aggregateGains côté
+ *  dossier client.
+ */
+function latestActivePerKind(entries: HistoryEntry[]): HistoryEntry[] {
+  const kinds = [...new Set(entries.map((e) => e.kind as SimulationKind))];
+  return kinds
+    .map((k) => pickLatestNonDismissed(entries, k))
+    .filter((e): e is HistoryEntry => e !== undefined);
+}
+
 export function computeTotals(entries: HistoryEntry[]): Totals {
   let oneTime = 0;
   let annual = 0;
   const details: string[] = [];
-  for (const e of entries) {
-    if (e.gain_dismissed) continue;
+  for (const e of latestActivePerKind(entries)) {
     const g = extractGain(e);
     if (g.type === "annual") {
       annual += g.amount;
@@ -2523,8 +2543,11 @@ function drawLabeledHighlight(pdf: ReportPdf, label: string, amount: number, sub
 // ============================================================================
 function drawConclusionPage(pdf: ReportPdf, entries: HistoryEntry[]) {
   pdf.section("Recommandations chiffrées");
-  const gains = entries
-    .filter((e) => !e.gain_dismissed)
+  // Un seul candidat par kind (voir latestActivePerKind) : une même
+  // catégorie relancée plusieurs fois dans ce dossier ne doit pas générer
+  // plusieurs lignes de recommandation ni gonfler le total ci-dessous
+  // (cahier des charges point 13).
+  const gains = latestActivePerKind(entries)
     .map((e) => ({ entry: e, gain: extractGain(e) }))
     .filter((x) => x.gain.type !== "none")
     .sort((a, b) => b.gain.amount - a.gain.amount);
