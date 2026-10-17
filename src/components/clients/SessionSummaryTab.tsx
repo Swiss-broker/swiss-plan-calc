@@ -31,6 +31,7 @@ import {
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
+import { NumField as BaseNumField } from "@/components/ui/num-field";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
@@ -642,12 +643,9 @@ export function SessionSummaryTab({
           <div className="grid gap-3 sm:grid-cols-2">
             <div className="space-y-1.5">
               <label className="text-xs font-medium text-muted-foreground">Montant (CHF)</label>
-              <input
-                type="number"
-                min={150}
-                value={invoiceAmount}
-                onChange={(e) => setInvoiceAmount(Number(e.target.value))}
-                className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+              <BaseNumField
+                value={String(invoiceAmount)}
+                onChange={(v) => setInvoiceAmount(Number(v) || 0)}
               />
             </div>
             <div className="space-y-1.5">
@@ -943,7 +941,14 @@ function SimItem({
           )}
         </Button>
         <Button asChild size="sm" variant="ghost" title={t("history.action.open_tooltip")}>
-          <Link to={route} search={{ clientId: entry.client_id ?? undefined, simId: entry.id }}>
+          <Link
+            to={route}
+            search={{
+              clientId: entry.client_id ?? undefined,
+              caseId: entry.case_id ?? undefined,
+              simId: entry.id,
+            }}
+          >
             <ExternalLink className="h-4 w-4" />
           </Link>
         </Button>

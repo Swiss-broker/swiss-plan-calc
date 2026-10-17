@@ -389,6 +389,20 @@ export class ReportPdf {
     return this;
   }
 
+  /** Estime la hauteur qu'occupera `text` une fois dessiné par paragraph(),
+   *  sans rien dessiner. Sert à réserver la place d'un bloc composé (ex. un
+   *  tableau + la note qui l'explique juste en dessous) en un seul
+   *  ensureSpace() avant de commencer à dessiner, pour que la note ne parte
+   *  jamais seule en page suivante, détachée du tableau qu'elle explique
+   *  (même logique que les autres blocs combinés de ce fichier). */
+  estimateParagraphHeight(text: string): number {
+    const { doc, contentWidth } = this;
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(10);
+    const lines = doc.splitTextToSize(sanitizePdfText(text), contentWidth) as string[];
+    return lines.length * 4.6 + 3;
+  }
+
   paragraph(text: string, opts?: { italic?: boolean; muted?: boolean }) {
     text = sanitizePdfText(text);
     const { doc, margin, contentWidth } = this;

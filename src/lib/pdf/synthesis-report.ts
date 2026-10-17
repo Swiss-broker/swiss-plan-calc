@@ -144,7 +144,7 @@ export interface DerivedComparison {
 // Pour les calculateurs sans SplitCompareLayout à l'écran (donc sans
 // compareRows sauvegardé), reconstruit un comparatif "actuel vs
 // optimisé/alternatif" à partir des mêmes champs de summary déjà utilisés
-// par formatMetrics()/drawSimpleChart() ci-dessous — jamais de nouveau
+// par formatMetrics()/computeSimpleChartPair() ci-dessous — jamais de nouveau
 // calcul, uniquement une mise en forme différente de valeurs déjà
 // retranscrites. Limité aux cas où la sémantique "actuel vs optimisé" est
 // sans ambiguïté (une vraie option recommandée face à la situation de
@@ -992,21 +992,36 @@ function drawConsolidatedBenefitsPage(
       formatCHF(it.annual),
       formatCHF(it.monthly),
     ]);
-    if (detailRows.length > 0) {
-      pdf.spacer(3);
-      pdf.paragraph("Détail situation actuelle :", { muted: true });
-      pdf.table(["Prestation", "Pilier", "Annuel", "Mensuel"], detailRows);
-    }
 
     // dédoublonné : actuel et optimisé partagent souvent la même remarque
     // (ex. "3a annualisé à titre indicatif"), qui n'a pas besoin d'être
     // répétée deux fois de suite.
     const notes = [...new Set([...cur.notes, ...opt.notes])];
-    if (notes.length > 0) {
+    const drawNotes = () => {
+      if (notes.length === 0) return;
       pdf.spacer(2);
       for (const note of notes) {
         pdf.paragraph(`• ${note}`, { muted: true, italic: true });
       }
+    };
+
+    if (detailRows.length > 0) {
+      // Réserve la place du libellé + du tableau ET des notes qui le
+      // suivent, en un seul bloc, avant de rien dessiner. Sans ça, le
+      // tableau se dessinait seul en bas de page, puis la note constatait
+      // qu'elle ne tenait pas et sautait seule à la page suivante, détachée
+      // du tableau qu'elle explique (ex. la note sur le 3a exprimé en rente,
+      // atterrissant seule en haut de la page suivante sous "Vieillesse").
+      const notesHeight = notes.reduce((sum, n) => sum + pdf.estimateParagraphHeight(`• ${n}`), 0);
+      pdf.spacer(3);
+      pdf.ensureSpace(
+        9 + 10 + detailRows.length * 8.5 + 4 + (notes.length > 0 ? notesHeight + 2 : 0),
+      );
+      pdf.paragraph("Détail situation actuelle :", { muted: true });
+      pdf.table(["Prestation", "Pilier", "Annuel", "Mensuel"], detailRows);
+      drawNotes();
+    } else {
+      drawNotes();
     }
   }
 }
@@ -1057,9 +1072,37 @@ function drawSimulationPage(pdf: ReportPdf, entry: HistoryEntry, includeCharts: 
     pdf.kvTable(params);
   }
 
+  // Comparatif "Actuel vs Projeté", exactement comme affiché dans le
+  // calculateur (compareRows sauvegardé dans le summary) — pas un recalcul
+  // indépendant, une retranscription fidèle du tableau que le courtier a
+  // sous les yeux au moment de sauvegarder. Calculé ici, avant "Résultats
+  // clés" ci-dessous, pour savoir si un graphique va suivre sur cette page
+  // (voir commentaire sur willShowChart).
+  const savedRows = extractSavedCompareRows(entry);
+  const derivedComparison = savedRows.rows.length === 0 ? buildDerivedComparison(entry) : null;
+  const compareRows = savedRows.rows.length > 0 ? savedRows.rows : (derivedComparison?.rows ?? []);
+  const chartRows = compareRows
+    .filter(
+      (r) =>
+        (r.format === "chf" || !r.format) &&
+        typeof r.current === "number" &&
+        typeof r.projected === "number",
+    )
+    .slice(0, 4);
+  const simpleChartPair = computeSimpleChartPair(entry);
+  // Un graphique (comparatif ou "simple chart") va-t-il réellement s'afficher
+  // plus bas sur cette page ? Si oui, "Résultats clés" ne fait que répéter
+  // en chiffres bruts ce que le graphique montre déjà visuellement juste
+  // après — Sarah : "ce qui nous intéresse c'est ce qui a après [...] on a
+  // déjà les résultats dans le graphique, c'est ça qu'on veut". On ne le
+  // masque que dans ce cas précis : pour les calculateurs sans comparatif ni
+  // graphique (ex. certains anciens kinds hérités), "Résultats clés" reste
+  // la seule info chiffrée de la page et doit continuer à s'afficher.
+  const willShowChart = includeCharts && (chartRows.length > 0 || simpleChartPair !== null);
+
   // Section 2 · résultats clés
   const metrics = formatMetrics(entry);
-  if (metrics.length) {
+  if (metrics.length && !willShowChart) {
     // On réserve la place du bandeau "Résultats clés" ET de la grille de
     // tuiles qui le suit, avant de dessiner quoi que ce soit. Sans ça, le
     // bandeau seul passe le test de place, se dessine, puis la grille
@@ -1073,13 +1116,7 @@ function drawSimulationPage(pdf: ReportPdf, entry: HistoryEntry, includeCharts: 
     pdf.metricsGrid(metrics);
   }
 
-  // Section 2bis · comparatif détaillé "Actuel vs Projeté", exactement comme
-  // affiché dans le calculateur (compareRows sauvegardé dans le summary) —
-  // pas un recalcul indépendant, une retranscription fidèle du tableau que
-  // le courtier a sous les yeux au moment de sauvegarder.
-  const savedRows = extractSavedCompareRows(entry);
-  const derivedComparison = savedRows.rows.length === 0 ? buildDerivedComparison(entry) : null;
-  const compareRows = savedRows.rows.length > 0 ? savedRows.rows : derivedComparison?.rows ?? [];
+  // Section 2bis · comparatif détaillé "Actuel vs Projeté"
   if (compareRows.length > 0) {
     // Réserve la place du bandeau, du paragraphe ET des cartes qui suivent
     // avant de dessiner quoi que ce soit (même logique que "Résultats clés"
@@ -1124,16 +1161,8 @@ function drawSimulationPage(pdf: ReportPdf, entry: HistoryEntry, includeCharts: 
   // Section 3 · graphique simplifié si pertinent — reprend les mêmes lignes
   // que le comparatif ci-dessus quand elles existent (aucune valeur
   // recalculée), sinon retombe sur la paire de valeurs spécifique au
-  // calculateur (drawSimpleChart).
+  // calculateur (simpleChartPair, calculé plus haut).
   if (includeCharts) {
-    const chartRows = compareRows
-      .filter(
-        (r) =>
-          (r.format === "chf" || !r.format) &&
-          typeof r.current === "number" &&
-          typeof r.projected === "number",
-      )
-      .slice(0, 4);
     if (chartRows.length > 0) {
       pdf.spacer(2);
       pdf.section("Comparaison visuelle");
@@ -1142,8 +1171,10 @@ function drawSimulationPage(pdf: ReportPdf, entry: HistoryEntry, includeCharts: 
         seriesLabels: ["Actuel", "Projeté"],
         colors: [COMPARE_RED, COMPARE_GREEN],
       });
-    } else {
-      drawSimpleChart(pdf, entry);
+    } else if (simpleChartPair) {
+      pdf.spacer(2);
+      pdf.section("Comparaison visuelle");
+      drawBarPair(pdf, simpleChartPair.left, simpleChartPair.right);
     }
     drawTrajectoryChart(pdf, entry);
   }
@@ -1581,7 +1612,14 @@ export function formatMetrics(
 }
 
 // Petit graphique natif : barres horizontales comparatives quand on a deux valeurs.
-function drawSimpleChart(pdf: ReportPdf, entry: HistoryEntry) {
+// Calcule la paire de valeurs à comparer pour le graphique simplifié d'un
+// calculateur sans compareRows sauvegardé — extrait de l'ancien
+// drawSimpleChart() pour pouvoir savoir, avant de dessiner quoi que ce soit,
+// si un graphique va réellement s'afficher sur cette page (voir
+// willShowChart dans drawSimulationPage ci-dessus), sans dessiner deux fois.
+function computeSimpleChartPair(
+  entry: HistoryEntry,
+): { left: { label: string; value: number }; right: { label: string; value: number } } | null {
   const s = entry.summary ?? {};
   let pair: { left: { label: string; value: number }; right: { label: string; value: number } } | null = null;
   switch (entry.kind) {
@@ -1683,10 +1721,7 @@ function drawSimpleChart(pdf: ReportPdf, entry: HistoryEntry) {
         };
       break;
   }
-  if (!pair) return;
-  pdf.spacer(2);
-  pdf.section("Comparaison visuelle");
-  drawBarPair(pdf, pair.left, pair.right);
+  return pair;
 }
 
 // Courbe d'évolution du capital dans le temps (LPP, 3a), à partir de la

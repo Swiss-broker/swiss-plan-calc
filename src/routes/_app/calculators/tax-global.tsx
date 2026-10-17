@@ -78,7 +78,11 @@ function TaxGlobalCalc() {
   const t = useT();
   const { clientId, caseId, simId } = Route.useSearch();
   const { client, prefill, error: prefillError } = usePrefillFromClient(clientId, "tax-global");
-  const { inputs: savedInputs, isLoading: loadingSaved } = useLoadSavedSimulation(simId);
+  const {
+    inputs: savedInputs,
+    entry: savedEntry,
+    isLoading: loadingSaved,
+  } = useLoadSavedSimulation(simId);
 
   const [form, setForm] = useState<TaxGlobalInput>(() => createDefaultInput());
   useHydrateFormFromPrefill(
@@ -138,19 +142,31 @@ function TaxGlobalCalc() {
   useEffect(() => {
     if (!simId || !savedInputs) return;
     if (loadedSimRef.current === simId) return;
-    // Le comparateur Avant/Après doit repartir de LA SIMULATION RECHARGÉE
-    // comme base, pas du formulaire vide par défaut. Fige la base ICI,
-    // directement, plutôt que de se reposer sur l'autre effet (ci-dessus)
-    // pour la recapturer via baselineInitializedRef : ce drapeau n'est pas
-    // dans les dépendances de cet autre effet, donc le remettre à false ne
-    // suffit pas à le redéclencher (même défaut que la course avec le
-    // profil client, voir le commentaire sur l'effet de base ci-dessus).
     const merged = { ...createDefaultInput(), ...savedInputs } as TaxGlobalInput;
     setForm(merged);
-    setBaselineState(merged);
-    baselineInitializedRef.current = true;
+    // Restaure la vraie base "avant" telle que sauvegardée avec cette
+    // simulation (summary.baselineInputs). Avant ce correctif, cet effet
+    // figeait la base sur les MÊMES valeurs que le formulaire rechargé : le
+    // comparateur Avant/Après affichait alors deux fois le même chiffre
+    // (ex. 146 vs 146) au lieu d'opposer la situation réellement avant
+    // modification (1304) à la situation après déductions (146) — la base
+    // n'était tout simplement jamais sauvegardée séparément du formulaire.
+    // Absent sur les simulations enregistrées avant ce correctif : dans ce
+    // cas, on ne touche pas à la base ici, on laisse l'autre effet
+    // (ci-dessus) la calculer normalement depuis le profil du client,
+    // plutôt que de la forcer à égaler le formulaire rechargé.
+    const savedBaselineInputs = (
+      savedEntry?.summary as { baselineInputs?: unknown } | null | undefined
+    )?.baselineInputs;
+    if (savedBaselineInputs && typeof savedBaselineInputs === "object") {
+      setBaselineState({
+        ...createDefaultInput(),
+        ...(savedBaselineInputs as Record<string, unknown>),
+      } as TaxGlobalInput);
+      baselineInitializedRef.current = true;
+    }
     loadedSimRef.current = simId;
-  }, [simId, savedInputs]);
+  }, [simId, savedInputs, savedEntry]);
 
   // Traçabilité : quand un champ reprend une simulation d'un autre
   // calculateur (bandeau ci-dessous) plutôt que le profil de base du
@@ -1478,6 +1494,12 @@ function TaxGlobalCalc() {
             socialChargesCHF: result.socialChargesCHF,
             bestScenarioSavings: bestScenario ? Math.round(-bestScenario.deltaVsBaseline) : 0,
             bestScenarioLabel: bestScenario ? bestScenario.label : undefined,
+            // Snapshot complet de la base "avant" (bouton "Définir comme
+            // base"), pour pouvoir restaurer fidèlement le comparatif
+            // Avant/Après à la réouverture de cette simulation — sans ça, la
+            // base se perdait et se retrouvait écrasée par le formulaire
+            // rechargé lui-même (voir l'effet de rechargement plus haut).
+            baselineInputs: baseline as unknown as Record<string, unknown>,
             // Comparatif avant/après tel qu'affiché à l'écran (bouton
             // "Définir comme base" en haut de page) : sans ce champ, le PDF
             // ne peut reprendre que ce seul résultat courant, sans référence
