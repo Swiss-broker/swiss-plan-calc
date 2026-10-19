@@ -318,14 +318,25 @@ function computeSourceTaxCore(opts: SourceTaxOptions): Omit<SourceTaxResult, "ma
     // au lieu de l'approximation générique courbe GE × coefficient 0.95.
     // Barèmes A et H : pas de table officielle fournie pour le Jura, reste
     // sur l'approximation générique (voir branche else ci-dessous).
-    const n = Math.min(opts.children ?? 0, 2);
+    // Même règle "0 enfant par défaut" que GE ci-dessus (voir commentaire) :
+    // sous-indice par enfant UNIQUEMENT pour le scénario explicite "après
+    // rectification" (régression repérée via le même bug sur cross-border.ts :
+    // les tests officiels de ce fichier utilisaient déjà opts.children sans
+    // passer useRectifiedScale, ce qui appliquait l'enfant par défaut).
+    const n = opts.useRectifiedScale ? Math.min(opts.children ?? 0, 2) : 0;
     const scaleKey = `${opts.scale}${n}`;
     const baseRate = interpolateJURate(determinationBase, scaleKey);
     rate = Math.max(0, baseRate + churchAddition);
   } else {
     const baseRateAtGE = baseRateGE(determinationBase, opts.scale);
     const cantonCoef = CANTON_SOURCE_COEF[opts.canton] ?? 0.95;
-    const reduction = childReduction(opts.scale, opts.children ?? 0, baseRateAtGE);
+    // Même règle "0 enfant par défaut" (voir commentaires ci-dessus) : la
+    // réduction par enfant de l'approximation générique (VD/VS/FR/NE, et
+    // JU pour les barèmes A/H) ne s'applique qu'au scénario "après
+    // rectification", jamais par défaut.
+    const reduction = opts.useRectifiedScale
+      ? childReduction(opts.scale, opts.children ?? 0, baseRateAtGE)
+      : 0;
     rate = Math.max(0, baseRateAtGE * cantonCoef - reduction + churchAddition);
   }
 

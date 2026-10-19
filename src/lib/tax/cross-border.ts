@@ -253,12 +253,19 @@ function friburgSourceTax(
   status: "single" | "married",
   children: number,
   spouseEmployed: boolean = false,
+  // Barème appliqué par l'employeur SANS tenir compte des enfants par
+  // défaut (A0/B0/C0 systématique) — même règle que inferSourceScale /
+  // computeSourceTax (source.ts) : la prise en compte des enfants ne se
+  // fait qu'après une démarche de rectification l'année suivante, jamais
+  // automatiquement (confirmé par Sarah). true = scénario "après
+  // rectification" explicite, pas encore câblé dans l'UI frontalier.
+  useRectifiedScale: boolean = false,
 ): number {
-  const n = Math.min(children, 3);
+  const n = useRectifiedScale ? Math.min(children, 3) : 0;
   let scaleKey: string;
 
   if (status === "single") {
-    // Célibataire sans enfant → A0, avec enfants → H
+    // Célibataire sans enfant → A0, avec enfants (après rectification) → H
     scaleKey = n > 0 ? `H${n}` : "A0";
   } else {
     if (spouseEmployed) {
@@ -293,8 +300,14 @@ function genevaSourceTax(
   status: "single" | "married",
   children: number,
   spouseEmployed: boolean = false,
+  // Même règle que friburgSourceTax ci-dessus et que inferSourceScale /
+  // computeSourceTax (source.ts) : barème par défaut A0/B0/C0 systématique,
+  // jamais piloté par le nombre d'enfants sans démarche de rectification
+  // (confirmé par Sarah — repéré en test : célibataire 1 enfant 60'000 CHF
+  // à Genève donnait 25 CHF d'impôt au lieu du barème A0 ~3'300 CHF).
+  useRectifiedScale: boolean = false,
 ): number {
-  const n = Math.min(children, 2);
+  const n = useRectifiedScale ? Math.min(children, 2) : 0;
 
   let scaleKey: string;
   if (status === "single") {
@@ -385,6 +398,11 @@ export function computeCrossBorder(input: CrossBorderInput): CrossBorderResult {
         "Fribourg n'est pas couvert par l'accord franco-suisse de 1983.",
         "L'impôt est prélevé à la source par l'employeur selon le barème cantonal FR.",
         "Possibilité de demander la TOU si quasi-résident (≥90% des revenus en CH).",
+        ...(children > 0
+          ? [
+              `Barème appliqué par défaut sans tenir compte ${children > 1 ? "des enfants" : "de l'enfant"} à charge (comme pour l'impôt à la source classique) : une démarche de rectification auprès de l'employeur/canton l'année suivante peut réduire l'impôt.`,
+            ]
+          : []),
       ],
     };
   }
@@ -417,6 +435,11 @@ export function computeCrossBorder(input: CrossBorderInput): CrossBorderResult {
         "GE rétrocède 3.5 % du brut au département français de résidence.",
         "Imposition principale en CH ; la France n'impose que via taux effectif (crédit d'impôt = impôt FR).",
         "Vérifier l'éligibilité TOU si déductions élevées (intérêts d'emprunt résidence principale, 3a).",
+        ...(children > 0
+          ? [
+              `Barème appliqué par défaut sans tenir compte ${children > 1 ? "des enfants" : "de l'enfant"} à charge (comme pour l'impôt à la source classique) : une démarche de rectification auprès de l'employeur/canton l'année suivante peut réduire l'impôt.`,
+            ]
+          : []),
       ],
       alternative: {
         regime: "fr_accord_45",
