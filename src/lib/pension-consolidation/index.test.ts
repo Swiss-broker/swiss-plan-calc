@@ -206,6 +206,40 @@ describe("consolidatePensionBenefits — priorité des sources (certificat > sim
   });
 });
 
+describe("consolidatePensionBenefits — rente d'enfant retraite : éligibilité à la date de retraite projetée", () => {
+  it("n'affiche aucune rente d'enfant si l'enfant aura plus de 25 ans à la retraite du client", () => {
+    const b = makeBundle({
+      client: {
+        date_of_birth: "1995-01-01", // retraite vers 2060-2062
+        children: [
+          { first_name: "Léo", date_of_birth: "2015-01-01" },
+        ] as unknown as Client["children"],
+      },
+    });
+    const result = consolidatePensionBenefits(b, {});
+    const childAvsItem = result.retirement?.pillar1.items.find((i) =>
+      i.label.includes("Rente enfant"),
+    );
+    expect(childAvsItem).toBeUndefined();
+  });
+
+  it("affiche la rente d'enfant si l'enfant aura 25 ans ou moins à la retraite du client", () => {
+    const b = makeBundle({
+      client: {
+        date_of_birth: "1965-01-01", // retraite vers 2030-2032
+        children: [
+          { first_name: "Léo", date_of_birth: "2020-01-01" },
+        ] as unknown as Client["children"],
+      },
+    });
+    const result = consolidatePensionBenefits(b, {});
+    const childAvsItem = result.retirement?.pillar1.items.find((i) =>
+      i.label.includes("Rente enfant"),
+    );
+    expect(childAvsItem).toBeDefined();
+  });
+});
+
 describe("getConsolidatedCapitals — priorité simulation sauvegardée > estimation live", () => {
   it("utilise le capital de la simulation LPP sauvegardée quand elle existe", () => {
     const b = makeBundle({});

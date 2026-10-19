@@ -26,7 +26,7 @@
 //   utilisé uniquement en repli (source 3 ci-dessus).
 
 import type { ClientBundle } from "@/lib/client-dashboard";
-import { ageFromDob, parseChildren } from "@/lib/clients/types";
+import { ageFromDob, parseChildren, type Child } from "@/lib/clients/types";
 import { getTotalGrossIncome } from "@/lib/clients/income";
 import {
   AVS_2026,
@@ -138,6 +138,24 @@ function childLabelsFromBundle(b: ClientBundle): string[] {
   return parseChildren(b.client.children).map(
     (c, i) => c.first_name?.trim() || `Enfant ${i + 1}`,
   );
+}
+
+/** Enfants encore éligibles à une rente d'enfant AVS/LPP à la date de
+ *  retraite PROJETÉE du client (art. 22ter LAVS : droit jusqu'à 25 ans
+ *  révolus si encore en formation, 18 ans sinon — 25 ans retenu ici comme
+ *  limite haute, impossible de vérifier un statut "aux études" aussi loin
+ *  dans le futur). Un enfant qui aura dépassé cet âge au moment où le
+ *  client partira à la retraite ne doit jamais apparaître dans les rentes
+ *  d'enfant de la projection retraite, même s'il est aujourd'hui mineur —
+ *  contrairement aux sections invalidité/décès (événement hypothétique
+ *  AUJOURD'HUI, pas dans plusieurs décennies), qui continuent de compter
+ *  tous les enfants actuels de la fiche. */
+function childrenEligibleAtRetirement(b: ClientBundle, retirementYear: number): Child[] {
+  return parseChildren(b.client.children).filter((c) => {
+    const birthYear = getBirthYear(c.date_of_birth);
+    if (!birthYear) return true; // date de naissance inconnue : ne pas exclure à tort
+    return retirementYear - birthYear <= 25;
+  });
 }
 
 interface CertificatePensions {
@@ -284,14 +302,17 @@ function buildRetirement(
     );
   }
 
-  const childrenCount = parseChildren(b.client.children).length;
+  const eligibleChildren = childrenEligibleAtRetirement(b, retirementYear);
+  const childrenCount = eligibleChildren.length;
   const benefits: AvsRetirementBenefits = buildRetirementBenefits({
     primaryTheoreticalAnnual,
     primaryReducedAnnual,
     spouseLabel: "Conjoint (AVS)",
     spouseReducedAnnual: avs.spouse?.annualPension,
     childrenCount,
-    childLabels: childLabelsFromBundle(b).map((n) => `Rente enfant · ${n}`),
+    childLabels: eligibleChildren.map(
+      (c, i) => `Rente enfant · ${c.first_name?.trim() || `Enfant ${i + 1}`}`,
+    ),
   });
 
   const pillar1Items: ConsolidatedItem[] = [
@@ -328,17 +349,18 @@ function buildRetirement(
 
   // Rente d'enfant de retraité (LPP) : saisie manuelle uniquement (certificat),
   // aucune approximation live — pas de formule officielle équivalente à celle
-  // de l'invalidité/décès pour ce cas.
+  // de l'invalidité/décès pour ce cas. Mêmes enfants éligibles à la date de
+  // retraite que la rente d'enfant AVS ci-dessus (eligibleChildren).
   if (cert?.child) {
-    for (let i = 0; i < childrenCount; i++) {
+    eligibleChildren.forEach((c, i) => {
       pillar2Items.push(
         toItem(
-          `Rente enfant LPP (certificat) · ${childLabelsFromBundle(b)[i] ?? `Enfant ${i + 1}`}`,
-          cert.child,
+          `Rente enfant LPP (certificat) · ${c.first_name?.trim() || `Enfant ${i + 1}`}`,
+          cert.child as number,
           "LPP",
         ),
       );
-    }
+    });
   }
 
   // Pilier 3a : rente de vieillesse = capital final ÷ 25 ans ÷ 12 (même
