@@ -472,7 +472,26 @@ function TaxGlobalCalc() {
                     <Field label={t("calc.global.field.permit")}>
                       <Select
                         value={form.permit}
-                        onValueChange={(v) => set("permit", v as TaxGlobalInput["permit"])}
+                        onValueChange={(v) =>
+                          setForm((f) => ({
+                            ...f,
+                            permit: v as TaxGlobalInput["permit"],
+                            // Auto-cohérence résidence ↔ permis (même logique que le
+                            // sélecteur "Pays de résidence" ci-dessus, dans l'autre
+                            // sens) : le permis G est par définition un permis de
+                            // frontalier (résidence à l'étranger), donc le choisir
+                            // seul — sans toucher "Pays de résidence" — ne doit pas
+                            // laisser le régime détecté comme "résident CH" (ce qui
+                            // ne change rien à l'impôt calculé, symptôme observé :
+                            // "l'impôt ne bouge pas" en testant le permis G).
+                            countryOfResidence:
+                              v === "G" && f.countryOfResidence === "CH"
+                                ? "FR"
+                                : (v === "swiss" || v === "C") && f.countryOfResidence !== "CH"
+                                  ? "CH"
+                                  : f.countryOfResidence,
+                          }))
+                        }
                       >
                         <SelectTrigger>
                           <SelectValue />
