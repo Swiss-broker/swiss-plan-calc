@@ -478,16 +478,19 @@ function TaxGlobalCalc() {
                             permit: v as TaxGlobalInput["permit"],
                             // Auto-cohérence résidence ↔ permis (même logique que le
                             // sélecteur "Pays de résidence" ci-dessus, dans l'autre
-                            // sens) : le permis G est par définition un permis de
-                            // frontalier (résidence à l'étranger), donc le choisir
-                            // seul — sans toucher "Pays de résidence" — ne doit pas
-                            // laisser le régime détecté comme "résident CH" (ce qui
-                            // ne change rien à l'impôt calculé, symptôme observé :
-                            // "l'impôt ne bouge pas" en testant le permis G).
+                            // sens) : le permis G est le SEUL permis de frontalier
+                            // (résidence à l'étranger) dans ce modèle — tous les
+                            // autres (swiss/C/B/L/Ci/F) supposent une résidence CH.
+                            // Le choisir seul — sans toucher "Pays de résidence" —
+                            // ne doit pas laisser le régime détecté incohérent avec
+                            // le permis choisi (ce qui ne change rien à l'impôt
+                            // calculé : symptôme observé en testant le permis G,
+                            // et son inverse en repassant sur un permis non-G sans
+                            // repasser "Pays de résidence" sur Suisse).
                             countryOfResidence:
                               v === "G" && f.countryOfResidence === "CH"
                                 ? "FR"
-                                : (v === "swiss" || v === "C") && f.countryOfResidence !== "CH"
+                                : v !== "G" && f.countryOfResidence !== "CH"
                                   ? "CH"
                                   : f.countryOfResidence,
                           }))
@@ -633,9 +636,23 @@ function TaxGlobalCalc() {
                       <NumField
                         label={t("calc.global.field.spouse_salary")}
                         value={form.spouseGrossSalary}
-                        onChange={(v) => set("spouseGrossSalary", v)}
+                        onChange={(v) =>
+                          setForm((f) => ({
+                            ...f,
+                            spouseGrossSalary: v,
+                            // Pour les régimes source/TOU, le salaire du conjoint
+                            // n'est pris en compte QUE si "conjoint actif" est
+                            // coché (voir computeGrossForRegime) — saisir un
+                            // montant ici sans cocher la case le fait ignorer
+                            // silencieusement (repéré en test : 70'000 CHF saisis,
+                            // aucun effet sur l'impôt). On coche automatiquement
+                            // dès qu'un montant > 0 est saisi, plutôt que de
+                            // compter sur l'utilisateur pour penser à la case.
+                            spouseEmployed: v > 0 ? true : f.spouseEmployed,
+                          }))
+                        }
                         suffix="CHF"
-                        tip="Salaire brut annuel du conjoint. Cumulé au revenu du ménage en taxation ordinaire."
+                        tip="Salaire brut annuel du conjoint. Cumulé au revenu du ménage en taxation ordinaire. Coche automatiquement « Conjoint actif » dès qu'un montant est saisi (nécessaire pour qu'il soit pris en compte en imposition à la source/TOU)."
                       />
                     )}
                     <div data-guide="global-other-income">
