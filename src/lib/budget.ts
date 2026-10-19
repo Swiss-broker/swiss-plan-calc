@@ -87,11 +87,21 @@ export function computeBudgetTotals(input: BudgetInput): {
  * kind — même sélection que aggregateGains). Toujours affiché poste par
  * poste, même quand le total net ne change presque pas : "il faut pouvoir
  * parer à toutes les éventualités".
+ *
+ * "director_compensation" est volontairement exclu, même si son gain est
+ * de type "annual" : ce n'est pas un revenu personnel récurrent comme une
+ * économie d'assurance maladie ou un changement de canton, mais le gain
+ * d'une restructuration salaire/dividendes au niveau d'une SOCIÉTÉ, qui
+ * suppose une décision du conseil/de l'AG, pas un ajustement automatique
+ * du budget personnel du mois prochain — et son montant, calculé sur le
+ * profit de la société, peut être totalement disproportionné par rapport
+ * au salaire personnel déclaré dans Budget (observé en production : gain
+ * annuel à 6 chiffres ajouté au budget d'un salaire de 4'000 CHF/mois).
  */
 export function computeBudgetOptimizations(entries: HistoryEntry[]): BudgetOptimizationItem[] {
   const { items } = aggregateGains(entries);
   return items
-    .filter((i) => i.type === "annual")
+    .filter((i) => i.type === "annual" && i.kind !== "director_compensation")
     .map((i) => ({
       label: i.label,
       monthlyCHF: i.amount / 12,

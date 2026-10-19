@@ -69,6 +69,24 @@ describe("computeBudget — budget optimisé", () => {
     expect(result.optimizedMarginCHF).toBeCloseTo(result.currentMarginCHF + 1_800 / 12, 6);
   });
 
+  it("exclut l'optimisation rémunération dirigeant (gain d'une société, pas un revenu personnel récurrent)", () => {
+    const entries: HistoryEntry[] = [
+      entry({
+        kind: "director_compensation",
+        summary: {
+          gainAnnual: 111_116,
+          currentDirectorNet: 167_138,
+          recommendedDirectorNet: 278_253,
+        },
+      }),
+      entry({ kind: "health_insurance_resident", summary: { annualSavingsCHF: 600 } }),
+    ];
+    const result = computeBudget(BASE_INPUT, entries);
+    expect(result.optimizations).toHaveLength(1);
+    expect(result.optimizations[0].sourceKind).toBe("health_insurance_resident");
+    expect(result.totalMonthlyOptimizationCHF).toBeCloseTo(600 / 12, 6);
+  });
+
   it("exclut les gains 'one_time' (ex. rachat LPP) du budget mensuel récurrent", () => {
     const entries: HistoryEntry[] = [
       entry({
