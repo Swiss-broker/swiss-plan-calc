@@ -30,7 +30,13 @@ async function callAnthropic(apiKey: string, model: string, system: unknown, mes
     // "thinking" mais AUCUN bloc "text" -- ecran vide cote courtier, sans
     // la moindre erreur remontee (statut 200). Ces prompts n'ont pas besoin
     // de raisonnement etendu, une reponse directe suffit.
-    body: JSON.stringify({ model, max_tokens: 1024, system, messages, thinking: { type: "disabled" } }),
+    //
+    // max_tokens releve de 1024 a 2048 : les briefings structures en 3
+    // sections (client ou societe, plusieurs puces chiffrees chacune)
+    // depassaient regulierement 1024 tokens et se faisaient tronquer en
+    // plein mot par l'API (reponse terminee sans avoir fini sa derniere
+    // phrase, repere en test sur "Preparer le RDV").
+    body: JSON.stringify({ model, max_tokens: 2048, system, messages, thinking: { type: "disabled" } }),
   });
   const data = await response.json();
   return { response, data };
