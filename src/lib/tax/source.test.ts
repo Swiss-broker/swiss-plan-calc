@@ -40,3 +40,27 @@ describe("computeSourceTax JU — barèmes officiels B/C", () => {
     expect(r.rate).toBeGreaterThan(0);
   });
 });
+
+describe("computeSourceTax — taux marginal distinct du taux moyen (régression)", () => {
+  it("VD, barème A0, 5'000 CHF/mois (60'000/an, palier croissant) : le marginal est strictement supérieur au taux moyen, jamais identique", () => {
+    const r = computeSourceTax({ monthlyGross: 5_000, canton: "VD", scale: "A" });
+    expect(r.marginalRate).toBeGreaterThan(r.rate);
+  });
+
+  it("revenu sous le premier palier (taux 0 des deux côtés) : marginal et moyen peuvent coïncider à 0", () => {
+    const r = computeSourceTax({ monthlyGross: 500, canton: "VD", scale: "A" });
+    expect(r.rate).toBe(0);
+    expect(r.marginalRate).toBeGreaterThanOrEqual(0);
+  });
+
+  it("frontalier France (retenue fixe 4.5 %) : marginal = moyen, cas légitime de taux plat", () => {
+    const r = computeSourceTax({
+      monthlyGross: 5_000,
+      canton: "GE",
+      scale: "A",
+      isCrossBorderFR: true,
+    });
+    expect(r.rate).toBe(4.5);
+    expect(r.marginalRate).toBeCloseTo(4.5, 1);
+  });
+});

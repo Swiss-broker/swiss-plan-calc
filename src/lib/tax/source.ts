@@ -175,6 +175,12 @@ export interface SourceTaxOptions {
 export interface SourceTaxResult {
   /** Taux moyen appliqué (%), sur le revenu propre */
   rate: number;
+  /** Taux marginal (%) : pente réelle de la courbe de barème au niveau de
+   *  revenu actuel (dérivée numérique, voir calcul ci-dessous) — distinct
+   *  du taux moyen `rate` dès qu'on est dans un palier croissant du barème
+   *  (cas normal), jamais identique sauf palier plat (taux à 0 ou plafond
+   *  du barème) ou frontalier France (retenue fixe 4.5 %). */
+  marginalRate: number;
   /** Impôt mensuel CHF */
   monthlyTax: number;
   /** Impôt annuel CHF (12 × monthlyTax) */
@@ -278,7 +284,7 @@ function childReduction(scale: SourceScale, children: number, baseRate: number):
   return 0;
 }
 
-export function computeSourceTax(opts: SourceTaxOptions): SourceTaxResult {
+function computeSourceTaxCore(opts: SourceTaxOptions): Omit<SourceTaxResult, "marginalRate"> {
   const monthly = Math.max(0, opts.monthlyGross || 0);
   const spouse = Math.max(0, opts.spouseMonthlyGross || 0);
   const isC = opts.scale === "C";
@@ -354,6 +360,32 @@ export function computeSourceTax(opts: SourceTaxOptions): SourceTaxResult {
     scaleUsed: opts.isCrossBorderFR ? "FR-frontalier" : scaleSuffix,
     crossBorderNote,
   };
+}
+
+// Granularité (CHF/mois) de la dérivée numérique du taux marginal — assez
+// fine pour capter un changement de palier du barème sans être sensible au
+// bruit d'arrondi (Math.round à 2 décimales dans computeSourceTaxCore).
+const MARGINAL_RATE_DELTA_CHF = 100;
+
+export function computeSourceTax(opts: SourceTaxOptions): SourceTaxResult {
+  const base = computeSourceTaxCore(opts);
+  // Taux marginal = pente réelle de la courbe de barème (impôt mensuel en
+  // fonction du revenu mensuel) au niveau de revenu actuel, PAS le taux
+  // moyen `rate` : le barème source est une courbe par paliers (voir
+  // baseRateGE/interpolateGERate/interpolateJURate), donc gagner 1 CHF de
+  // plus coûte en général PLUS que le taux moyen actuel tant qu'on est dans
+  // un palier croissant — exactement comme un barème progressif classique.
+  // Calculée par dérivée numérique (bump de MARGINAL_RATE_DELTA_CHF CHF/mois)
+  // plutôt qu'analytiquement : le barème combine plusieurs sources (courbes
+  // interpolées, tables officielles GE/JU, coefficient cantonal), pas une
+  // seule formule dont on pourrait dériver le taux directement.
+  const bumped = computeSourceTaxCore({
+    ...opts,
+    monthlyGross: (opts.monthlyGross || 0) + MARGINAL_RATE_DELTA_CHF,
+  });
+  const marginalRate =
+    Math.round(((bumped.monthlyTax - base.monthlyTax) / MARGINAL_RATE_DELTA_CHF) * 100 * 100) / 100;
+  return { ...base, marginalRate };
 }
 
 /** Détermine automatiquement le barème à partir de la situation civile/familiale */

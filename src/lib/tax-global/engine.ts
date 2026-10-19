@@ -340,7 +340,7 @@ export function computeTaxGlobal(g: TaxGlobalInput): TaxGlobalResult {
     const gross = computeGrossForRegime(g, det.regime);
     // Idem résident : pas d'estimation LAMal automatique pour source/TOU (résident CH).
     const lamal = 0;
-    const marginal = useOrdinary ? touComparison.marginalRate : source.rate;
+    const marginal = useOrdinary ? touComparison.marginalRate : source.marginalRate;
     return {
       regime: det.regime,
       regimeLabel: det.regimeLabel,
@@ -375,7 +375,7 @@ export function computeTaxGlobal(g: TaxGlobalInput): TaxGlobalResult {
             : "Aucune déduction saisie",
         ],
         limits: [
-          "Taux IS = taux moyen (le marginal réel dépend du barème détaillé)",
+          "Taux marginal IS = dérivée numérique de la courbe de barème (pas un vrai saut de palier officiel) : approximation, pas la valeur exacte de la table ESTV",
           "Bonus / 13e salaire annualisés via la part fixe, vérifier le mode de prélèvement employeur",
           "Pour appliquer les déductions, démarche administrative requise (TOU ou rectification IS)",
         ],
