@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Link, useNavigate } from "@tanstack/react-router";
-import { Building2, ExternalLink, Link2Off, Plus } from "lucide-react";
+import { Building2, ExternalLink, Link2Off, Plus, TrendingUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -142,6 +142,17 @@ export function ClientCompanyCard({ clientId, companyId, companyRole }: ClientCo
               </datalist>
             </div>
           </div>
+
+          {/* Accès direct au comparateur rémunération dirigeant depuis la
+              fiche du dirigeant lui-même — avant, il fallait passer par
+              l'onglet "Calculs" générique (liste de tous les calculateurs)
+              pour le retrouver, peu visible pour ce cas d'usage précis. */}
+          <Button asChild size="sm" className="w-full gap-2">
+            <Link to="/calculators/director-compensation" search={{ clientId, companyId }}>
+              <TrendingUp className="h-3.5 w-3.5" />
+              Comparateur rémunération dirigeant
+            </Link>
+          </Button>
 
           <div className="flex flex-wrap gap-2 pt-1">
             <Button

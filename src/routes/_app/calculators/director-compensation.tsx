@@ -36,6 +36,7 @@ import {
 
 import { supabase } from "@/integrations/supabase/client";
 import { CalcCard, MoneyTile, Row } from "@/components/calculators/CalcUI";
+import { ClientLinkBanner } from "@/components/calculators/ClientLinkBanner";
 import { SaveSimulationButton } from "@/components/calculators/SaveSimulationButton";
 import { useBrokerPdfHeader } from "@/hooks/useBrokerPdfHeader";
 import {
@@ -304,6 +305,7 @@ function DirectorCompensationCalc() {
         <GuideSlot>
           <GuideToggleButton onClick={() => setGuideOpen(true)} />
         </GuideSlot>
+        {linkedClient && <ClientLinkBanner client={linkedClient} caseId={caseId} />}
         <CrossCalcImpactBanner
           calculator="director-compensation"
           clientId={clientId}
@@ -504,6 +506,22 @@ function DirectorCompensationCalc() {
             >
               <CustomStrategySliders value={custom} onChange={setCustom} />
             </CalcCard>
+
+            <DirectorLppBuybackCard
+              best={recommendation.best}
+              retirementAge={65}
+              initialBalance={
+                Number(
+                  (linkedClient as unknown as { lpp_current_balance?: number } | null)
+                    ?.lpp_current_balance ?? 0,
+                ) || 0
+              }
+              clientGrossSalary={
+                linkedClient?.gross_annual_salary
+                  ? Number(linkedClient.gross_annual_salary)
+                  : undefined
+              }
+            />
           </div>
 
           {/* Results */}
@@ -535,22 +553,6 @@ function DirectorCompensationCalc() {
             >
               <ComparisonChart results={tableResults} />
             </CalcCard>
-
- <DirectorLppBuybackCard
-              best={recommendation.best}
-              retirementAge={65}
-              initialBalance={
-                Number(
-                  (linkedClient as unknown as { lpp_current_balance?: number } | null)
-                    ?.lpp_current_balance ?? 0,
-                ) || 0
-              }
-              clientGrossSalary={
-                linkedClient?.gross_annual_salary
-                  ? Number(linkedClient.gross_annual_salary)
-                  : undefined
-              }
-            />
           </div>
         </div>
 

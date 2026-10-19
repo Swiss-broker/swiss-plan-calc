@@ -165,8 +165,13 @@ export function StatTile({
       </div>
       <div
         className={cn(
-          "mt-1 break-words font-semibold leading-tight tabular-nums transition-transform duration-300 group-hover:translate-y-[-1px]",
-          big ? "text-2xl" : "text-lg sm:text-xl",
+          // whitespace-nowrap, jamais break-words : un montant CHF ne doit
+          // jamais se couper en plein milieu d'un chiffre (repéré en test,
+          // tuile "Net dirigeant" coupée "CHF 137'19" / "9" sur deux
+          // lignes) — la taille réduite sur mobile (big ? text-xl : text-base)
+          // laisse de la marge à la tuile plutôt que de forcer la coupure.
+          "mt-1 whitespace-nowrap font-semibold leading-tight tabular-nums transition-transform duration-300 group-hover:translate-y-[-1px]",
+          big ? "text-xl sm:text-2xl" : "text-base sm:text-lg md:text-xl",
           valueToneCls,
         )}
         title={value}
