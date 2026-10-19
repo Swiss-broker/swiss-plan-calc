@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__Composio_for_you__COMPOSIO_SEARCH_TOOLS",
+      "mcp__Composio_for_you__COMPOSIO_GET_TOOL_SCHEMAS",
+      "mcp__Composio_for_you__COMPOSIO_MULTI_EXECUTE_TOOL"
+    ]
+  }
+}
