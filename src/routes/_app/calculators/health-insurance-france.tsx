@@ -152,7 +152,7 @@ function HealthInsuranceFranceCalc() {
         </div>
       )}
       {relevance && !relevance.relevant && (
-        <div className="md:col-span-5 flex items-start gap-2 rounded-lg border border-warning/40 bg-warning/5 p-3 text-sm text-warning-foreground">
+        <div className="md:col-span-5 flex items-start gap-2 rounded-lg border border-warning/40 bg-warning/5 p-3 text-sm text-warning">
           <AlertTriangle className="mt-0.5 h-4 w-4 flex-shrink-0 text-warning" />
           <span>
             <strong>{relevance.reason}</strong>{" "}
@@ -307,8 +307,8 @@ function HealthInsuranceFranceCalc() {
                 result.currentRegime === null
                   ? "border-border bg-muted/30 text-muted-foreground"
                   : result.isCurrentOptimal
-                    ? "border-success/40 bg-success/5 text-success-foreground"
-                    : "border-warning/40 bg-warning/5 text-warning-foreground"
+                    ? "border-success/40 bg-success/5 text-success"
+                    : "border-warning/40 bg-warning/5 text-warning"
               }`}
             >
               {result.recommendationText}
