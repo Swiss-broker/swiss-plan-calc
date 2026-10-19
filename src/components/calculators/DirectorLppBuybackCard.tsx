@@ -31,10 +31,18 @@ export function DirectorLppBuybackCard({
   const salaryEdited = grossSalary !== initialGrossSalary;
   const insuredCap =
     inputs.lppPlan === "executive_1e" ? LPP_2026.oneEPlanCap : LPP_2026.maxInsuredSalary;
-  const insuredSalary = useMemo(
+  // Estimation par la formule légale (salaire brut − déduction de
+  // coordination, plafonné) — remplaçable par le montant exact du
+  // certificat de prévoyance (même priorité certificat > estimation
+  // qu'ailleurs dans l'app). Tant qu'aucune saisie manuelle n'a été faite,
+  // suit automatiquement le salaire brut édité ci-dessus (pas un simple
+  // pré-remplissage figé au premier rendu).
+  const estimatedInsuredSalary = useMemo(
     () => computeLppInsuredSalary(grossSalary, insuredCap),
     [grossSalary, insuredCap],
   );
+  const [insuredSalaryOverride, setInsuredSalaryOverride] = useState<number | null>(null);
+  const insuredSalary = insuredSalaryOverride ?? estimatedInsuredSalary;
 
   const estimatedCapacity = useMemo(
     () => Math.max(0, Math.round(insuredSalary * 6 - initialBalance)),
@@ -133,12 +141,21 @@ export function DirectorLppBuybackCard({
             </p>
           </div>
           <div>
-            <Label className="text-xs font-medium text-muted-foreground">Salaire assuré LPP</Label>
-            <div className="mt-1 rounded-md border border-border bg-muted/30 px-3 py-2 text-sm tabular-nums">
-              {formatCHF(insuredSalary)}
-            </div>
+            <Label className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
+              Salaire assuré LPP
+              {insuredSalaryOverride !== null && (
+                <Badge variant="secondary" className="bg-primary/15 text-[10px] text-primary">
+                  modifié
+                </Badge>
+              )}
+            </Label>
+            <NumField
+              value={String(insuredSalary)}
+              onChange={(v) => setInsuredSalaryOverride(Number(v) || 0)}
+            />
             <p className="mt-1 text-[10px] text-muted-foreground">
-              Plafond {inputs.lppPlan === "executive_1e" ? "plan 1e cadres" : "obligatoire"} appliqué.
+              Estimé (plafond {inputs.lppPlan === "executive_1e" ? "plan 1e cadres" : "obligatoire"}
+              {" appliqué). Saisissez le montant exact du certificat de prévoyance si différent."}
             </p>
           </div>
           <div>
