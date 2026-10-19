@@ -363,15 +363,15 @@ function buildRetirement(
     });
   }
 
-  // Pilier 3a : rente de vieillesse = capital final ÷ 25 ans ÷ 12 (même
-  // hypothèse partout dans l'app, voir PILLAR3A_OLD_AGE_ANNUITY_YEARS dans
-  // pillar3a.tsx) — reprend le montant déjà calculé et sauvegardé par le
+  // Pilier 3a : rente de vieillesse = capital NET d'impôt sur les
+  // prestations en capital (un retrait 3a en capital est toujours net
+  // d'impôt dans la réalité, jamais brut) ÷ 25 ans ÷ 12 — même hypothèse de
+  // durée que partout dans l'app (PILLAR3A_OLD_AGE_ANNUITY_YEARS dans
+  // pillar3a.tsx), même moteur fiscal que getConsolidatedCapitals
+  // (capitalWithdrawalTax), appliqué au capital déjà sauvegardé par le
   // calculateur 3e pilier quand disponible, plutôt que de le recalculer ici
   // à partir d'un capital potentiellement différent.
   const p3aRefBalance = pillar3aRefBalance(refs?.pillar3a);
-  const p3aRefMonthlyPension = Number(
-    (refs?.pillar3a?.summary as Record<string, unknown> | undefined)?.oldAgeMonthlyPension ?? 0,
-  );
   let p3aBalance = 0;
   if (p3aRefBalance) {
     p3aBalance = p3aRefBalance;
@@ -384,12 +384,23 @@ function buildRetirement(
       );
     }
   }
-  if (p3aRefMonthlyPension > 0) {
-    pillar2Items.push(toItem("3a (rente de vieillesse, capital ÷ 25 ans)", p3aRefMonthlyPension * 12, "3A"));
-    notes.push("3a exprimé en rente pour comparaison (capital ÷ 25 ans) : en pratique, le 3e pilier est généralement retiré en capital, pas versé sous forme de rente.");
-  } else if (p3aBalance > 0) {
-    pillar2Items.push(toItem("3a (rente de vieillesse, capital ÷ 25 ans)", Math.round(p3aBalance / 25), "3A"));
-    notes.push("3a exprimé en rente pour comparaison (capital ÷ 25 ans) : en pratique, le 3e pilier est généralement retiré en capital, pas versé sous forme de rente.");
+  if (p3aBalance > 0) {
+    const canton = b.client.canton;
+    const status = taxStatusFromClient(b);
+    const p3aCapitalTax = canton
+      ? capitalWithdrawalTax({ capital: p3aBalance, canton, status }).total
+      : 0;
+    const p3aBalanceNet = Math.max(0, p3aBalance - p3aCapitalTax);
+    pillar2Items.push(
+      toItem(
+        "3a (rente de vieillesse, capital net d'impôt ÷ 25 ans)",
+        Math.round(p3aBalanceNet / 25),
+        "3A",
+      ),
+    );
+    notes.push(
+      "3a exprimé en rente pour comparaison (capital net d'impôt sur les prestations en capital ÷ 25 ans) : en pratique, le 3e pilier est généralement retiré en capital, pas versé sous forme de rente.",
+    );
   }
 
   // Rachats planifiés : n'affiche la note d'étalement que si on est bien
@@ -430,7 +441,17 @@ function buildRetirement(
       const idx = pillar2Items.findIndex((i) => i.pillar === "3A");
       if (idx >= 0) {
         const optimizedBalance = p3aBalance * factor;
-        pillar2Items[idx] = toItem(pillar2Items[idx].label, Math.round(optimizedBalance / 25), "3A");
+        const canton = b.client.canton;
+        const status = taxStatusFromClient(b);
+        const optimizedTax = canton
+          ? capitalWithdrawalTax({ capital: optimizedBalance, canton, status }).total
+          : 0;
+        const optimizedBalanceNet = Math.max(0, optimizedBalance - optimizedTax);
+        pillar2Items[idx] = toItem(
+          pillar2Items[idx].label,
+          Math.round(optimizedBalanceNet / 25),
+          "3A",
+        );
       }
     }
   }
@@ -507,9 +528,14 @@ function buildDisability(
   const pillar2Items: ConsolidatedItem[] = [];
   const cert = certificatePensionsFromRef(refs?.lpp);
   const lppRef = lppRefFigures(refs?.lpp);
+  // Index des lignes sourcées du certificat (jamais extrapolées vers le
+  // scénario optimisé ci-dessous) — la rente d'invalidité et la rente
+  // d'enfant peuvent avoir des sources différentes.
+  const certificateSourcedIndices = new Set<number>();
   let proratized = 0;
   if (cert?.disability) {
     proratized = Math.round(cert.disability * (disabilityPct / 100));
+    certificateSourcedIndices.add(pillar2Items.length);
     pillar2Items.push(toItem(`Rente invalidité LPP (certificat, ${disabilityPct} %)`, proratized, "LPP"));
   } else if (lppRef) {
     const fullDisabilityPension = lppRef.projectedBalance * lppRef.impliedConversionRate;
@@ -527,8 +553,22 @@ function buildDisability(
       );
     }
   }
-  if (proratized > 0) {
-    // Rente d'enfant LPP = 20% de la rente invalidité LPP, par enfant
+  // Rente d'enfant LPP : certificat (même montant, par enfant, que celui
+  // utilisé pour la rente de vieillesse — un certificat réel n'indique
+  // qu'un seul montant "rente d'enfant", valable pour les deux cas) >
+  // 20 % de la rente d'invalidité LPP (estimation), par enfant.
+  if (cert?.child) {
+    for (let i = 0; i < childrenCount; i++) {
+      certificateSourcedIndices.add(pillar2Items.length);
+      pillar2Items.push(
+        toItem(
+          `Rente enfant LPP (certificat) · ${childLabelsFromBundle(b)[i] ?? `Enfant ${i + 1}`}`,
+          cert.child,
+          "LPP",
+        ),
+      );
+    }
+  } else if (proratized > 0) {
     for (let i = 0; i < childrenCount; i++) {
       const childAnn = Math.round(proratized * 0.2);
       pillar2Items.push(
@@ -541,12 +581,13 @@ function buildDisability(
     }
   }
 
-  if (optimizedBundle && proratized > 0 && !cert?.disability) {
+  if (optimizedBundle && pillar2Items.length > certificateSourcedIndices.size) {
     const liveCurrentLpp = projectClientLPP(b);
     const liveOptimizedLpp = projectClientLPP(optimizedBundle);
     if (liveCurrentLpp && liveOptimizedLpp) {
       const factor = growthFactor(liveCurrentLpp.projectedCapitalAt65, liveOptimizedLpp.projectedCapitalAt65);
       for (let i = 0; i < pillar2Items.length; i++) {
+        if (certificateSourcedIndices.has(i)) continue;
         pillar2Items[i] = toItem(pillar2Items[i].label, Math.round(pillar2Items[i].annual * factor), "LPP");
       }
     }

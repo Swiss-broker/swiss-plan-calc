@@ -119,15 +119,43 @@ describe("consolidatePensionBenefits — priorité des sources (certificat > sim
     expect(result.retirement?.notes.some((n) => n.includes("Rente LPP estimée"))).toBe(true);
   });
 
-  it("vieillesse : 3e pilier reprend exactement capital ÷ 25 ÷ 12 × 12 de la simulation sauvegardée", () => {
+  it("vieillesse : 3e pilier reprend le capital de la simulation sauvegardée, converti en rente NET d'impôt sur les prestations en capital (÷ 25 ans)", () => {
     const b = makeBundle({});
     const refs: ConsolidationReferenceSimulations = {
       pillar3a: makeEntry("pillar3a", { finalBalance: 600_000, oldAgeMonthlyPension: 2_000 }),
     };
     const result = consolidatePensionBenefits(b, refs);
     const p3aItem = result.retirement?.pillar2.items.find((i) => i.pillar === "3A");
-    expect(p3aItem?.annual).toBe(24_000);
-    expect(p3aItem?.monthly).toBe(2_000);
+    const expectedTax = capitalWithdrawalTax({
+      capital: 600_000,
+      canton: "VD",
+      status: "single",
+    }).total;
+    const expectedAnnual = Math.round((600_000 - expectedTax) / 25);
+    expect(p3aItem?.annual).toBe(expectedAnnual);
+    expect(p3aItem?.annual).toBeLessThan(24_000); // net < brut (600'000 / 25 = 24'000)
+    expect(p3aItem?.label).toContain("net d'impôt");
+  });
+
+  it("vieillesse optimisée (3a maximisé) : le capital extrapolé reste converti en rente NET d'impôt, pas brut (même capital net que getOptimizedConsolidatedCapitals)", () => {
+    const b = makeBundle({
+      client: { canton: "GE" },
+      pension: { lpp_max_buyback: 0, pillar_3a_annual_contribution: 0 },
+    });
+    const refs: ConsolidationReferenceSimulations = {
+      pillar3a: makeEntry("pillar3a", { finalBalance: 100_000 }),
+    };
+    const optimized = consolidateOptimizedBenefits(b, refs);
+    const p3aItem = optimized.retirement?.pillar2.items.find((i) => i.pillar === "3A");
+    const optimizedCapitals = getOptimizedConsolidatedCapitals(b, refs);
+    const expectedAnnual = Math.round(
+      (optimizedCapitals.pillar3aProjectedCapital - optimizedCapitals.pillar3aCapitalTax) / 25,
+    );
+    expect(p3aItem).toBeDefined();
+    expect(p3aItem!.annual).toBe(expectedAnnual);
+    expect(p3aItem!.annual).toBeLessThan(
+      Math.round(optimizedCapitals.pillar3aProjectedCapital / 25),
+    );
   });
 
   it("invalidité : ajoute la rente d'invalidité 3e pilier saisie manuellement, sans jamais la recalculer", () => {
@@ -143,6 +171,56 @@ describe("consolidatePensionBenefits — priorité des sources (certificat > sim
     expect(currentP3a?.annual).toBe(15_000);
     // Jamais extrapolée vers le scénario optimisé (saisie manuelle, police figée).
     expect(optimizedP3a?.annual).toBe(15_000);
+  });
+
+  it("invalidité : rente d'enfant LPP utilise le montant du certificat (même valeur que pour la retraite), jamais 20 % de la rente d'invalidité (régression : certificat 6'000 écrasé par 3'200 = 20 % × 16'000)", () => {
+    const b = makeBundle({
+      client: { children: [{ first_name: "Léo", date_of_birth: "2015-01-01" }] },
+    });
+    const refs: ConsolidationReferenceSimulations = {
+      lpp: makeEntry("lpp", {
+        projectedBalance: 200_000,
+        annualPension: 12_000,
+        certificateAnnualPensions: { disability: 16_000, child: 6_000 },
+      }),
+    };
+    const result = consolidatePensionBenefits(b, refs);
+    const childItem = result.disability?.pillar2.items.find((i) => i.label.includes("enfant"));
+    expect(childItem?.annual).toBe(6_000);
+    expect(childItem?.label).toContain("certificat");
+  });
+
+  it("invalidité : sans montant de certificat pour l'enfant, retombe sur 20 % de la rente d'invalidité LPP", () => {
+    const b = makeBundle({
+      client: { children: [{ first_name: "Léo", date_of_birth: "2015-01-01" }] },
+    });
+    const refs: ConsolidationReferenceSimulations = {
+      lpp: makeEntry("lpp", {
+        projectedBalance: 200_000,
+        annualPension: 12_000,
+        certificateAnnualPensions: { disability: 16_000 },
+      }),
+    };
+    const result = consolidatePensionBenefits(b, refs);
+    const childItem = result.disability?.pillar2.items.find((i) => i.label.includes("enfant"));
+    expect(childItem?.annual).toBe(3_200); // 20 % × 16'000
+  });
+
+  it("invalidité optimisée : la rente d'enfant du certificat n'est jamais extrapolée vers le scénario optimisé", () => {
+    const b = makeBundle({
+      client: { children: [{ first_name: "Léo", date_of_birth: "2015-01-01" }] },
+      pension: { lpp_max_buyback: 50_000 },
+    });
+    const refs: ConsolidationReferenceSimulations = {
+      lpp: makeEntry("lpp", {
+        projectedBalance: 200_000,
+        annualPension: 12_000,
+        certificateAnnualPensions: { disability: 16_000, child: 6_000 },
+      }),
+    };
+    const optimized = consolidateOptimizedBenefits(b, refs);
+    const childItem = optimized.disability?.pillar2.items.find((i) => i.label.includes("enfant"));
+    expect(childItem?.annual).toBe(6_000);
   });
 
   it("décès : ajoute le capital décès 3e pilier saisi manuellement, exprimé en rente équivalente (÷ 25 ans), sans jamais le recalculer", () => {
