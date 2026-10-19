@@ -20,7 +20,11 @@ function toSwissSeparator(s: string): string {
 export function formatCHF(value: number | null | undefined, decimals = 0): string {
   if (value === null || value === undefined || Number.isNaN(value)) return "—";
   const fmt = decimals === 0 ? numFmt : numFmt2;
-  return `CHF ${toSwissSeparator(fmt.format(value))}`;
+  // Espace insécable entre "CHF" et le montant : un espace normal se
+  // transforme en saut de ligne dans une colonne de tableau étroite
+  // ("CHF" sur une ligne, le montant sur la suivante), repéré en test
+  // sur le comparatif des stratégies dirigeant.
+  return `CHF\u00A0${toSwissSeparator(fmt.format(value))}`;
 }
 
 export function formatNumber(value: number | null | undefined, decimals = 0): string {

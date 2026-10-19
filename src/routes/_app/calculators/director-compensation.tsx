@@ -463,14 +463,6 @@ function DirectorCompensationCalc() {
             </CalcCard>
 
            <CalcCard
-              title={t("calc.dir.card.custom.title")}
-              description={t("calc.dir.card.custom.desc")}
-              data-guide="dir-strategies"
-            >
-              <CustomStrategySliders value={custom} onChange={setCustom} />
-            </CalcCard>
-
-            <CalcCard
               title={t("calc.dir.card.current.title")}
               description={t("calc.dir.card.current.desc")}
             >
@@ -503,6 +495,14 @@ function DirectorCompensationCalc() {
                   </AccordionContent>
                 </AccordionItem>
               </Accordion>
+            </CalcCard>
+
+            <CalcCard
+              title={t("calc.dir.card.custom.title")}
+              description={t("calc.dir.card.custom.desc")}
+              data-guide="dir-strategies"
+            >
+              <CustomStrategySliders value={custom} onChange={setCustom} />
             </CalcCard>
           </div>
 
