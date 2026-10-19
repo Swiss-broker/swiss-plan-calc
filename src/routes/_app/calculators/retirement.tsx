@@ -84,15 +84,28 @@ function RetirementCalc() {
   }
 }, [projectedCapital, simId]);
 
-  // Pré-remplir le taux marginal depuis la dernière simulation fiscale du client
+  // Pré-remplir le taux marginal depuis la dernière simulation fiscale du
+  // client — et continuer à le suivre automatiquement tant que l'utilisateur
+  // ne l'a pas modifié manuellement (même convention que les champs
+  // "Depuis la fiche" ailleurs dans l'app) : si le fiscal global change
+  // (nouvelle simulation sauvegardée), ce champ doit refléter le nouveau
+  // taux sans attendre un rechargement complet de la page — demandé
+  // explicitement, l'ancien pré-remplissage ne se faisait qu'une seule fois
+  // par montage du composant.
   const { data: snapshot } = useClientFiscalSnapshot(clientId, caseId);
-  const marginalAutofilled = useRef(false);
+  const lastAutofilledRate = useRef<number | null>(null);
   useEffect(() => {
     if (simId) return; // brouillon chargé : ne pas écraser avec la fiche vivante
-    if (snapshot && !marginalAutofilled.current) {
-      setForm((f) => ({ ...f, rentMarginalRate: Math.round(snapshot.marginalRateEstimate * 10) / 10 }));
-      marginalAutofilled.current = true;
-    }
+    if (!snapshot) return;
+    const newRate = Math.round(snapshot.marginalRateEstimate * 10) / 10;
+    if (lastAutofilledRate.current === newRate) return;
+    setForm((f) => {
+      if (lastAutofilledRate.current === null || f.rentMarginalRate === lastAutofilledRate.current) {
+        return { ...f, rentMarginalRate: newRate };
+      }
+      return f; // taux modifié manuellement entre-temps : ne pas écraser
+    });
+    lastAutofilledRate.current = newRate;
   }, [snapshot, simId]);
 
   // Rechargement d'un brouillon sauvegardé : ne s'applique qu'une fois par
