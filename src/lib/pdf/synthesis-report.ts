@@ -384,22 +384,25 @@ const EXPLAIN_FR: Partial<Record<SimulationKind, string>> = {
 };
 
 // Ordre de lecture demandé par le cabinet pour les simulations du dossier
-// PDF (cahier des charges point 7, même ordre que ClientCalculatorBar.tsx
-// et routes/_app/calculators.tsx côté app) : Budget, puis 1er pilier, puis
-// 2e, puis 3e, puis « Prestations consolidées » (page fixe, hors
-// SimulationKind — insérée entre PRE_CONSOLIDATED_MAX_ORDER et
-// tax_global, cf. exportSynthesisReportPdf), puis fiscalité globale, puis
-// le reste dans son ordre d'origine (index élevé = pas de priorité).
+// PDF (cahier des charges point 7, révisé : fiscal global doit précéder
+// les piliers pour que son taux marginal soit déjà disponible quand le
+// courtier arrive sur le 3e pilier — même ordre que ClientCalculatorBar.tsx
+// et routes/_app/calculators.tsx côté app) : Budget, puis fiscalité
+// globale, puis 1er pilier, puis 2e, puis 3e, puis « Prestations
+// consolidées » (page fixe, hors SimulationKind — insérée juste après,
+// entre PRE_CONSOLIDATED_MAX_ORDER et le reste, cf.
+// exportSynthesisReportPdf), puis le reste dans son ordre d'origine
+// (index élevé = pas de priorité).
 const KIND_ORDER: Partial<Record<SimulationKind, number>> = {
   budget: 0,
-  avs_ai: 1,
-  lpp: 2,
-  pillar3a: 3,
-  tax_global: 4,
+  tax_global: 1,
+  avs_ai: 2,
+  lpp: 3,
+  pillar3a: 4,
 };
 // Les kinds d'index ≤ cette valeur se dessinent AVANT la page « Prestations
-// consolidées », les autres (tax_global inclus, puis le reste) après.
-const PRE_CONSOLIDATED_MAX_ORDER = 3;
+// consolidées », les autres (le reste) après.
+const PRE_CONSOLIDATED_MAX_ORDER = 4;
 function kindOrderIndex(kind: SimulationKind): number {
   return KIND_ORDER[kind] ?? 10;
 }
@@ -485,11 +488,11 @@ export function exportSynthesisReportPdf(args: SynthesisReportArgs): void {
   }
 
   // Ordre de présentation demandé par le cabinet (cahier des charges point
-  // 7) : Budget, puis 1er pilier, puis 2e, puis 3e, puis « Prestations
-  // consolidées » (voir plus bas), puis fiscalité globale, puis le reste
-  // dans l'ordre où les simulations ont été sélectionnées (au lieu de
-  // l'ordre de sélection brut, qui ne suit aucune logique de lecture pour
-  // le client).
+  // 7, révisé) : Budget, puis fiscalité globale, puis 1er pilier, puis 2e,
+  // puis 3e, puis « Prestations consolidées » (voir plus bas), puis le
+  // reste dans l'ordre où les simulations ont été sélectionnées (au lieu
+  // de l'ordre de sélection brut, qui ne suit aucune logique de lecture
+  // pour le client).
   const orderedEntries = [...entries].sort(
     (a, b) => kindOrderIndex(a.kind as SimulationKind) - kindOrderIndex(b.kind as SimulationKind),
   );
@@ -528,9 +531,10 @@ export function exportSynthesisReportPdf(args: SynthesisReportArgs): void {
   // module que la fiche client (src/lib/pension-consolidation). Les
   // simulations ci-dessus explorent des scénarios "what-if" (rachat étalé
   // sur X ans, capital saisi à la main, etc.) qui peuvent légitimement
-  // diverger de ce chiffre officiel — le situer juste après le 3e pilier,
-  // avant la fiscalité globale, évite de faire passer une divergence pour
-  // une erreur de calcul tout en respectant l'ordre de lecture du cabinet.
+  // diverger de ce chiffre officiel — le situer juste après le 3e pilier
+  // évite de faire passer une divergence pour une erreur de calcul tout en
+  // respectant l'ordre de lecture du cabinet (fiscalité globale en amont
+  // des piliers, pour que son taux marginal soit déjà disponible).
   pdf.newPage();
   toc.push({ title: "Prestations consolidées", page: pdf.doc.getCurrentPageInfo().pageNumber });
   drawConsolidatedBenefitsPage(pdf, client, pension, assets, entries);
