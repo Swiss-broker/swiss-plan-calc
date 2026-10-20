@@ -200,29 +200,33 @@ export function DirectorLppBuybackCard({
                     </Badge>
                   )}
                 </div>
-                <div className="mt-3 space-y-2 text-xs">
-                  <div className="flex flex-wrap items-baseline justify-between gap-x-2 gap-y-0.5">
-                    <span className="text-muted-foreground">Versement annuel</span>
+                {/* Libellé au-dessus, valeur en dessous (comme MoneyTile) plutôt
+                    qu'une ligne label/valeur côte à côte : avec 3 cartes sur une
+                    même rangée, un libellé de 2-3 mots + un montant CHF ne tient
+                    jamais sur une seule ligne étroite sans se chevaucher. */}
+                <div className="mt-3 space-y-2.5 text-xs">
+                  <div>
+                    <div className="text-muted-foreground">Versement annuel</div>
                     <strong className="tabular-nums">{formatCHF(s.result.yearlyAmount)}</strong>
                   </div>
-                  <div className="flex flex-wrap items-baseline justify-between gap-x-2 gap-y-0.5">
-                    <span className="text-muted-foreground">Économie d'impôt totale</span>
+                  <div>
+                    <div className="text-muted-foreground">Économie d'impôt totale</div>
                     <strong className="tabular-nums text-success-foreground">
                       {formatCHF(s.result.totalTaxSavings)}
                     </strong>
                   </div>
-                  <div className="flex flex-wrap items-baseline justify-between gap-x-2 gap-y-0.5">
-                    <span className="text-muted-foreground">Coût net (après impôt)</span>
+                  <div>
+                    <div className="text-muted-foreground">Coût net (après impôt)</div>
                     <strong className="tabular-nums">
                       {formatCHF(s.result.totalBought - s.result.totalTaxSavings)}
                     </strong>
                   </div>
-                  <div className="flex flex-wrap items-baseline justify-between gap-x-2 gap-y-0.5 border-t border-border pt-2">
-                    <span className="text-muted-foreground">ROI fiscal moyen</span>
+                  <div className="border-t border-border pt-2.5">
+                    <div className="text-muted-foreground">ROI fiscal moyen</div>
                     <strong className="tabular-nums text-primary">{s.result.averageReturn.toFixed(1)} %</strong>
                   </div>
-                  <div className="flex flex-wrap items-baseline justify-between gap-x-2 gap-y-0.5">
-                    <span className="text-muted-foreground">Marginal effectif (an 1)</span>
+                  <div>
+                    <div className="text-muted-foreground">Marginal effectif (an 1)</div>
                     <span className="tabular-nums">{s.result.effectiveMarginalRate.toFixed(1)} %</span>
                   </div>
                 </div>
