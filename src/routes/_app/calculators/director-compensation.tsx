@@ -506,22 +506,6 @@ function DirectorCompensationCalc() {
             >
               <CustomStrategySliders value={custom} onChange={setCustom} />
             </CalcCard>
-
-            <DirectorLppBuybackCard
-              best={recommendation.best}
-              retirementAge={65}
-              initialBalance={
-                Number(
-                  (linkedClient as unknown as { lpp_current_balance?: number } | null)
-                    ?.lpp_current_balance ?? 0,
-                ) || 0
-              }
-              clientGrossSalary={
-                linkedClient?.gross_annual_salary
-                  ? Number(linkedClient.gross_annual_salary)
-                  : undefined
-              }
-            />
           </div>
 
           {/* Results */}
@@ -555,6 +539,26 @@ function DirectorCompensationCalc() {
             </CalcCard>
           </div>
         </div>
+
+        {/* Pleine largeur, pas dans la colonne de gauche (2/5 de la page) :
+            ses 3 cartes d'horizon (1 an / 5 ans / jusqu'à la retraite) ont
+            besoin de place sur une même rangée, pas d'être écrasées dans
+            une colonne étroite et haute (demandé par Sarah). */}
+        <DirectorLppBuybackCard
+          best={recommendation.best}
+          retirementAge={65}
+          initialBalance={
+            Number(
+              (linkedClient as unknown as { lpp_current_balance?: number } | null)
+                ?.lpp_current_balance ?? 0,
+            ) || 0
+          }
+          clientGrossSalary={
+            linkedClient?.gross_annual_salary
+              ? Number(linkedClient.gross_annual_salary)
+              : undefined
+          }
+        />
 
         <LegalDisclaimer />
         <div className="flex flex-wrap justify-end gap-2">

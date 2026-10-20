@@ -171,7 +171,11 @@ export function StatTile({
           // lignes) — la taille réduite sur mobile (big ? text-xl : text-base)
           // laisse de la marge à la tuile plutôt que de forcer la coupure.
           "mt-1 whitespace-nowrap font-semibold leading-tight tabular-nums transition-transform duration-300 group-hover:translate-y-[-1px]",
-          big ? "text-xl sm:text-2xl" : "text-base sm:text-lg md:text-xl",
+          // "big" réduit d'un cran (text-lg/xl au lieu de text-xl/2xl) : dans
+          // une grille à 2 colonnes serrée (ex. tuile "Net dirigeant"), un
+          // montant à 6 chiffres en text-2xl dépassait du cadre de la tuile
+          // (repéré en test, calculateur dirigeant).
+          big ? "text-lg sm:text-xl" : "text-base sm:text-lg md:text-xl",
           valueToneCls,
         )}
         title={value}
