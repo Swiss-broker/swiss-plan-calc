@@ -211,7 +211,7 @@ export function DirectorLppBuybackCard({
                   </div>
                   <div>
                     <div className="text-muted-foreground">Économie d'impôt totale</div>
-                    <strong className="tabular-nums text-success-foreground">
+                    <strong className="tabular-nums text-success">
                       {formatCHF(s.result.totalTaxSavings)}
                     </strong>
                   </div>
