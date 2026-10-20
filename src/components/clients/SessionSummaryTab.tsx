@@ -390,7 +390,7 @@ export function SessionSummaryTab({
                 <div className="flex items-center justify-between border-t pt-2 text-base">
                   <span className="font-semibold">{t("client.session.total_gain")}</span>
                   <span className="text-lg font-bold text-primary">
-                    {formatCHF(agg.totalOneTime + agg.totalAnnual)}
+                    {formatCHF(agg.totalProjected)}
                   </span>
                 </div>
                 <p className="text-[11px] text-muted-foreground">

@@ -13,7 +13,13 @@ import {
 } from "@/lib/swiss/enums";
 import { LEGAL_FORM_LABELS, type Company } from "@/lib/companies/types";
 import { ageFromDob, parseChildren, type Client, type ClientPension, type ClientAssets } from "@/lib/clients/types";
-import { extractGain, pickLatestNonDismissed, type ExtractedGain } from "@/lib/simulations/extract-gain";
+import {
+  extractGain,
+  GAIN_HORIZON_YEARS,
+  pickLatestNonDismissed,
+  projectGainTotal,
+  type ExtractedGain,
+} from "@/lib/simulations/extract-gain";
 import type { HistoryEntry, HistoryKpi, SimulationKind } from "@/lib/history/types";
 import { KIND_LABELS } from "@/lib/history/types";
 import { extractKpis } from "@/lib/history/registry";
@@ -410,7 +416,7 @@ function kindOrderIndex(kind: SimulationKind): number {
 function explainKind(kind: SimulationKind): string {
   return (
     EXPLAIN_FR[kind] ??
-    "Cette simulation présente les résultats du calculateur correspondant, sur la base des données saisies pour ce client."
+    "Cette simulation présente les résultats du calculateur correspondant, sur la base des données saisies pour vous."
   );
 }
 // ============================================================================
@@ -775,7 +781,7 @@ function drawOverviewPage(
   // de la page comparatif avant/après : ce chiffre est un teaser, il ne
   // doit jamais diverger de celui détaillé plus loin dans le même dossier.
   const totals = computeTotals(entries);
-  const totalGain = totals.oneTime + totals.annual * 10;
+  const totalGain = projectGainTotal(totals.oneTime, totals.annual);
   if (totalGain > 0) {
     tiles.push({ label: "Gain identifié (sur 10 ans)", value: totalGain, tone: "accent" });
   }
@@ -947,7 +953,7 @@ function drawConsolidatedBenefitsPage(
 ) {
   pdf.section("Prestations consolidées");
   pdf.richParagraph(
-    "Ce chiffre réunit **tout ce que votre dossier finance à la retraite** : 1er pilier AVS/AI, 2e pilier LPP et 3e pilier. C'est notre référence officielle. Quand une simulation « Rente AVS/AI », « LPP & rachats » ou « Pilier 3a » a été enregistrée pour ce client, ce sont exactement ses résultats qui sont repris ici, les mêmes que sur la page dédiée de ce document, jamais un recalcul différent. À défaut de simulation enregistrée pour un pilier, une estimation est utilisée et signalée comme telle ci-dessous.",
+    "Ce chiffre réunit **tout ce que votre dossier finance à la retraite** : 1er pilier AVS/AI, 2e pilier LPP et 3e pilier. C'est notre référence officielle. Quand une simulation « Rente AVS/AI », « LPP & rachats » ou « Pilier 3a » a été enregistrée pour vous, ce sont exactement ses résultats qui sont repris ici, les mêmes que sur la page dédiée de ce document, jamais un recalcul différent. À défaut de simulation enregistrée pour un pilier, une estimation est utilisée et signalée comme telle ci-dessous.",
   );
 
   const bundle = { client, pension, assets };
@@ -2113,7 +2119,7 @@ function drawComparisonPage(
 ) {
   pdf.section("Synthèse globale · Situation avant et après optimisation");
   pdf.paragraph(
-    "Ce tableau agrège les résultats de l'ensemble des simulations sélectionnées et chiffre l'impact global des optimisations identifiées pour ce client. Chaque ligne compare la situation de départ (avant toute action) à la situation projetée une fois l'optimisation mise en oeuvre.",
+    "Ce tableau agrège les résultats de l'ensemble des simulations sélectionnées et chiffre l'impact global des optimisations identifiées pour vous. Chaque ligne compare la situation de départ (avant toute action) à la situation projetée une fois l'optimisation mise en oeuvre.",
     { muted: true, italic: true },
   );
 
@@ -2212,20 +2218,11 @@ function drawComparisonPage(
       rowsGoodness.push(totalRow.projected < totalRow.current);
     }
   }
-  // Canton compare — avant = charge fiscale du canton de référence, après =
-  // charge fiscale du canton le moins cher, tous deux déjà dans le summary.
-  // Un "-" en avant à côté d'un delta chiffré donnait l'impression que le
-  // tableau était cassé (rien à comparer), alors que les deux montants
-  // existent et sont ceux affichés dans le comparateur.
-  const cc = pickLatestNonDismissed(entries, "canton_compare");
-  if (cc) {
-    const before = num(cc.summary?.referenceTax);
-    const after = num(cc.summary?.cheapestTax);
-    if (before > 0) {
-      rows.push(["Charge fiscale annuelle (déménagement)", formatCHF(before), formatCHF(after), formatDelta(after - before)]);
-      rowsGoodness.push(after < before);
-    }
-  }
+  // Canton compare volontairement absent de cette synthèse avant/après : un
+  // déménagement de canton n'est pas un levier actionnable à mettre sur le
+  // même plan que les autres optimisations de ce tableau (voir extractGain,
+  // cas "canton_compare"). Le comparateur reste détaillé, à titre indicatif,
+  // sur sa propre page du dossier.
   // Director
   const dc = pickLatestNonDismissed(entries, "director_compensation");
   if (dc) {
@@ -2475,8 +2472,7 @@ export function computeTotals(entries: HistoryEntry[]): Totals {
 }
 
 function drawGainHighlight(pdf: ReportPdf, totals: Totals) {
-  const HORIZON = 10;
-  const total = totals.oneTime + totals.annual * HORIZON;
+  const total = projectGainTotal(totals.oneTime, totals.annual);
   const { doc, margin, contentWidth } = pdf;
   const h = 38;
   pdf.ensureSpace(h + 4);
@@ -2498,7 +2494,7 @@ function drawGainHighlight(pdf: ReportPdf, totals: Totals) {
   const detail =
     `Détail : ${formatCHF(totals.oneTime)} de gains ponctuels` +
     (totals.annual > 0
-      ? ` + ${formatCHF(totals.annual)}/an récurrents (= ${formatCHF(totals.annual * HORIZON)} sur 10 ans)`
+      ? ` + ${formatCHF(totals.annual)}/an récurrents (= ${formatCHF(totals.annual * GAIN_HORIZON_YEARS)} sur 10 ans)`
       : "");
   const lines = doc.splitTextToSize(detail, contentWidth - 12) as string[];
   doc.text(lines, margin + 6, y + 28);

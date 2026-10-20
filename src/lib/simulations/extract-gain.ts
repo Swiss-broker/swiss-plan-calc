@@ -4,6 +4,16 @@ import type { HistoryEntry, SimulationKind } from "@/lib/history/types";
 
 export type GainKind = "one_time" | "annual" | "none";
 
+// Horizon de projection utilisé PARTOUT où un total "gain identifié" agrège
+// des gains ponctuels et des gains annuels (fiche client ET rapport PDF,
+// voir computeTotals dans lib/pdf/synthesis-report.ts) — une seule
+// constante pour que les deux ne puissent plus jamais diverger.
+export const GAIN_HORIZON_YEARS = 10;
+
+export function projectGainTotal(oneTime: number, annual: number): number {
+  return oneTime + annual * GAIN_HORIZON_YEARS;
+}
+
 export interface ExtractedGain {
   type: GainKind;
   amount: number;
@@ -54,18 +64,15 @@ export function extractGain(entry: HistoryEntry): ExtractedGain {
         details: "Économie fiscale annuelle",
       };
     }
-    case "canton_compare": {
-      const amount = num(summary.maxSavings);
-      if (amount <= 0) return none();
-      const cheap = s(summary.cheapestCanton);
-      const ref = s(summary.referenceCanton);
-      return {
-        type: "annual",
-        amount,
-        label: ref && cheap ? `Déménagement ${ref} → ${cheap}` : "Optimisation cantonale",
-        details: "Économie annuelle si déménagement",
-      };
-    }
+    case "canton_compare":
+      // Volontairement exclu du bloc "Optimisations identifiées", du total
+      // "Gain identifié" et des "Recommandations chiffrées" : un changement
+      // de canton de domicile n'est pas un levier actionnable au même titre
+      // qu'un rachat LPP ou un versement 3a (déménager pour l'impôt n'est
+      // en pratique jamais la décision d'un client). Ce comparateur reste
+      // disponible et chiffré sur sa propre page du dossier, à titre
+      // purement indicatif.
+      return none();
     case "retirement": {
       const annuity = num(summary.netAnnuity);
       const lump = num(summary.netLumpSum);
@@ -295,11 +302,17 @@ export function aggregateGains(entries: HistoryEntry[]): {
   items: GainItem[];
   totalOneTime: number;
   totalAnnual: number;
+  totalProjected: number;
 } {
   const items = selectGains(entries, false);
   const totalOneTime = items.filter((i) => i.type === "one_time").reduce((s, i) => s + i.amount, 0);
   const totalAnnual = items.filter((i) => i.type === "annual").reduce((s, i) => s + i.amount, 0);
-  return { items, totalOneTime, totalAnnual };
+  // Même formule que "Gain total identifié" dans le PDF (computeTotals +
+  // drawGainHighlight) : sans ça, la fiche client et le PDF affichaient deux
+  // totaux différents pour la même notion ("gain identifié"), l'un cumulant
+  // un an de gains annuels, l'autre dix.
+  const totalProjected = projectGainTotal(totalOneTime, totalAnnual);
+  return { items, totalOneTime, totalAnnual, totalProjected };
 }
 
 /** Gains archivés (masqués de la synthèse), pour l'affichage "Restaurer". */

@@ -3,6 +3,7 @@
 
 import { computeIFD } from "@/lib/tax/ifd";
 import { computeCantonalCommunal } from "@/lib/tax/cantons";
+import { formatCHF } from "@/lib/format";
 import {
   SOCIAL_RATES_2026 as SR,
   FAMILY_ALLOWANCE_RATE,
@@ -110,8 +111,8 @@ export function computeStrategy(
   if (reserveTarget > 0) {
     if (reserveTarget >= totalProfit) {
       warnings.push(
-        `Réserve cible (${round(reserveTarget)} CHF) supérieure ou égale au bénéfice ` +
-          `total (${round(totalProfit)} CHF) : aucune répartition salaire/dividende possible.`,
+        `Réserve cible (${formatCHF(reserveTarget)}) supérieure ou égale au bénéfice ` +
+          `total (${formatCHF(totalProfit)}) : aucune répartition salaire/dividende possible.`,
       );
       availableProfit = 0;
     } else {
@@ -142,9 +143,9 @@ export function computeStrategy(
     dividendsPaid = Math.max(0, netProfitAfterTax);
     retainedActual = 0;
     warnings.push(
-      `Dividendes ciblés (${round(dividendsTargeted)} CHF) supérieurs au bénéfice ` +
-        `net après IS (${round(netProfitAfterTax)} CHF). Cappés à ` +
-        `${round(dividendsPaid)} CHF (delta ${round(delta)} CHF absorbé par les ` +
+      `Dividendes ciblés (${formatCHF(dividendsTargeted)}) supérieurs au bénéfice ` +
+        `net après IS (${formatCHF(netProfitAfterTax)}). Cappés à ` +
+        `${formatCHF(dividendsPaid)} (delta ${formatCHF(delta)} absorbé par les ` +
         `charges sociales et l'impôt société).`,
     );
   } else if (dividendsTargeted + retainedTargeted > netProfitAfterTax + 1) {
@@ -281,9 +282,9 @@ export function computeStrategyFromAbsolute(
     dividendShortfall = true;
     dividendsPaid = Math.max(0, netProfitAfterTax);
     warnings.push(
-      `Situation actuelle : dividendes saisis (${round(dividendsTargeted)} CHF) ` +
-        `supérieurs au bénéfice net après IS (${round(netProfitAfterTax)} CHF). ` +
-        `Cappés à ${round(dividendsPaid)} CHF.`,
+      `Situation actuelle : dividendes saisis (${formatCHF(dividendsTargeted)}) ` +
+        `supérieurs au bénéfice net après IS (${formatCHF(netProfitAfterTax)}). ` +
+        `Cappés à ${formatCHF(dividendsPaid)}.`,
     );
   }
   const retainedActual =
@@ -360,8 +361,8 @@ export function recommendBestStrategy(results: CompensationResult[]): {
   const sorted = [...results].sort((a, b) => b.directorNet - a.directorNet);
   const best = sorted[0];
   const reason =
-    `Net dirigeant maximal (${round(best.directorNet)} CHF) parmi ${results.length} ` +
-    `stratégies évaluées. Coût fiscal et social total : ${round(best.totalTaxAndCharges)} CHF.`;
+    `Net dirigeant maximal (${formatCHF(best.directorNet)}) parmi ${results.length} ` +
+    `stratégies évaluées. Coût fiscal et social total : ${formatCHF(best.totalTaxAndCharges)}.`;
   return { best, reason };
 }
 

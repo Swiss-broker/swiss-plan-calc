@@ -255,8 +255,6 @@ const CONSISTENCY_RULES: ConsistencyRule[] = [
     probes: [
       // Résumé page 3 : drawOverviewPage → cantonCompareSummaryRow(e).current
       { section: "Résumé page 3 (cantonCompareSummaryRow)", value: (e) => cantonCompareSummaryRow(e)!.current as number },
-      // Synthèse globale : drawComparisonPage → num(cc.summary?.referenceTax)
-      { section: "Synthèse globale (referenceTax)", value: (e) => Number(e.summary.referenceTax) },
       // Détail · Résultats clés : formatMetrics → "Charge fiscale actuelle"
       { section: "Détail · Résultats clés (formatMetrics)", value: (e) => metricValue(e, "Charge fiscale actuelle") },
     ],
@@ -266,26 +264,16 @@ const CONSISTENCY_RULES: ConsistencyRule[] = [
     indicator: "Charge fiscale la plus basse (canton optimisé)",
     probes: [
       { section: "Résumé page 3 (cantonCompareSummaryRow)", value: (e) => cantonCompareSummaryRow(e)!.projected as number },
-      { section: "Synthèse globale (cheapestTax)", value: (e) => Number(e.summary.cheapestTax) },
       { section: "Détail · Résultats clés (formatMetrics)", value: (e) => metricValue(e, "Charge fiscale la plus basse") },
     ],
   },
-  {
-    kind: "canton_compare",
-    indicator: "Économie identifiée (maxSavings vs écart réel)",
-    probes: [
-      // Recommandations chiffrées / Gain total : extractGain → summary.maxSavings
-      { section: "Recommandations / Gain total (extractGain)", value: (e) => extractGain(e).amount },
-      { section: "Détail · Résultats clés (formatMetrics)", value: (e) => metricValue(e, "Économie max annuelle") },
-      {
-        section: "Écart réel (référence − moins cher, cantonCompareSummaryRow)",
-        value: (e) => {
-          const r = cantonCompareSummaryRow(e)!;
-          return (r.current as number) - (r.projected as number);
-        },
-      },
-    ],
-  },
+  // Pas de rule "Économie identifiée" ici : un déménagement de canton n'est
+  // plus traité comme une optimisation actionnable (voir extractGain, cas
+  // "canton_compare", et la suppression de la ligne "Charge fiscale
+  // annuelle (déménagement)" dans drawComparisonPage) — ni la Synthèse
+  // globale ni les Recommandations chiffrées / Gain total n'affichent plus
+  // cette économie, volontairement. Le comparateur cantonal reste chiffré,
+  // à titre indicatif, uniquement sur sa propre page de détail.
 
   // ── pillar3a ───────────────────────────────────────────────────────────
   // Bug historique (commit d776f95) : la Synthèse globale comparait les

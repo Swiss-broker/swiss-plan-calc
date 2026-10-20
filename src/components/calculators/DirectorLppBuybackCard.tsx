@@ -26,7 +26,11 @@ export function DirectorLppBuybackCard({
   clientGrossSalary,
 }: Props) {
   const inputs = best.inputs;
-  const initialGrossSalary = clientGrossSalary ?? best.company.grossSalary;
+  // best.company.grossSalary vient d'un solveur itératif (solveGrossSalaryFromBudget)
+  // et peut tomber sur un montant à centimes (ex. 53'160.80) : sans arrondi, ce
+  // chiffre s'affichait tel quel dans le champ "Salaire brut annuel", ce qu'aucun
+  // salaire n'est en pratique.
+  const initialGrossSalary = Math.round(clientGrossSalary ?? best.company.grossSalary);
   const [grossSalary, setGrossSalary] = useState<number>(initialGrossSalary);
   const salaryEdited = grossSalary !== initialGrossSalary;
   const insuredCap =
@@ -197,27 +201,27 @@ export function DirectorLppBuybackCard({
                   )}
                 </div>
                 <div className="mt-3 space-y-2 text-xs">
-                  <div className="flex justify-between">
+                  <div className="flex flex-wrap items-baseline justify-between gap-x-2 gap-y-0.5">
                     <span className="text-muted-foreground">Versement annuel</span>
                     <strong className="tabular-nums">{formatCHF(s.result.yearlyAmount)}</strong>
                   </div>
-                  <div className="flex justify-between">
+                  <div className="flex flex-wrap items-baseline justify-between gap-x-2 gap-y-0.5">
                     <span className="text-muted-foreground">Économie d'impôt totale</span>
                     <strong className="tabular-nums text-success-foreground">
                       {formatCHF(s.result.totalTaxSavings)}
                     </strong>
                   </div>
-                  <div className="flex justify-between">
+                  <div className="flex flex-wrap items-baseline justify-between gap-x-2 gap-y-0.5">
                     <span className="text-muted-foreground">Coût net (après impôt)</span>
                     <strong className="tabular-nums">
                       {formatCHF(s.result.totalBought - s.result.totalTaxSavings)}
                     </strong>
                   </div>
-                  <div className="flex justify-between border-t border-border pt-2">
+                  <div className="flex flex-wrap items-baseline justify-between gap-x-2 gap-y-0.5 border-t border-border pt-2">
                     <span className="text-muted-foreground">ROI fiscal moyen</span>
                     <strong className="tabular-nums text-primary">{s.result.averageReturn.toFixed(1)} %</strong>
                   </div>
-                  <div className="flex justify-between">
+                  <div className="flex flex-wrap items-baseline justify-between gap-x-2 gap-y-0.5">
                     <span className="text-muted-foreground">Marginal effectif (an 1)</span>
                     <span className="tabular-nums">{s.result.effectiveMarginalRate.toFixed(1)} %</span>
                   </div>
