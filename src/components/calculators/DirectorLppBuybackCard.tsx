@@ -1,5 +1,5 @@
 // Wave 3 · Module rachats LPP dirigeant
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { CalcCard, MoneyTile } from "@/components/calculators/CalcUI";
 import { NumField } from "@/components/ui/num-field";
 import { Label } from "@/components/ui/label";
@@ -10,12 +10,38 @@ import { LPP_2026, LPP_2026_SOURCE_NOTE } from "@/lib/lpp/parameters-2026";
 import type { CompensationResult } from "@/lib/director-compensation/types";
 import { Sparkles, PiggyBank, AlertTriangle } from "lucide-react";
 
+export interface LppBuybackHorizonSnapshot {
+  key: string;
+  label: string;
+  years: number;
+  yearlyAmount: number;
+  totalTaxSavings: number;
+  totalBought: number;
+  averageReturn: number;
+  effectiveMarginalRate: number;
+}
+
+/** Photo de l'état affiché par cette carte au moment de sauvegarder la
+ *  simulation — pour que le PDF du dossier reprenne exactement les mêmes
+ *  chiffres que ce que le courtier a sous les yeux, jamais un recalcul
+ *  indépendant (même principe que compareRows pour les autres calculateurs). */
+export interface LppBuybackSnapshot {
+  grossSalary: number;
+  insuredSalary: number;
+  maxBuyback: number;
+  actualBuyback: number;
+  retirementAge: number;
+  horizons: LppBuybackHorizonSnapshot[];
+  bestKey: string;
+}
+
 interface Props {
   best: CompensationResult;
   retirementAge?: number;
   initialBalance?: number;
   initialMaxBuyback?: number;
   clientGrossSalary?: number;
+  onSnapshot?: (snapshot: LppBuybackSnapshot) => void;
 }
 
 export function DirectorLppBuybackCard({
@@ -24,6 +50,7 @@ export function DirectorLppBuybackCard({
   initialBalance = 0,
   initialMaxBuyback,
   clientGrossSalary,
+  onSnapshot,
 }: Props) {
   const inputs = best.inputs;
   // best.company.grossSalary vient d'un solveur itératif (solveGrossSalaryFromBudget)
@@ -106,6 +133,31 @@ export function DirectorLppBuybackCard({
     () => sims.reduce((a, b) => (b.result.averageReturn > a.result.averageReturn ? b : a), sims[0]),
     [sims],
   );
+
+  // Reporte au parent exactement ce que cette carte affiche à l'instant T,
+  // pour que "Sauvegarder" capture les mêmes chiffres que ceux sous les yeux
+  // du courtier (y compris un salaire ou un montant à racheter modifiés
+  // manuellement), jamais un recalcul indépendant côté PDF.
+  useEffect(() => {
+    onSnapshot?.({
+      grossSalary,
+      insuredSalary,
+      maxBuyback,
+      actualBuyback,
+      retirementAge,
+      horizons: sims.map((s) => ({
+        key: s.key,
+        label: s.label,
+        years: s.years,
+        yearlyAmount: s.result.yearlyAmount,
+        totalTaxSavings: s.result.totalTaxSavings,
+        totalBought: s.result.totalBought,
+        averageReturn: s.result.averageReturn,
+        effectiveMarginalRate: s.result.effectiveMarginalRate,
+      })),
+      bestKey: best1.key,
+    });
+  }, [onSnapshot, grossSalary, insuredSalary, maxBuyback, actualBuyback, retirementAge, sims, best1.key]);
 
   const handleMaxChange = useCallback((v: string) => {
     const n = Number(v) || 0;

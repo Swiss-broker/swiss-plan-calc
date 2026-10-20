@@ -1104,6 +1104,69 @@ function drawBudgetOptimizationDetail(pdf: ReportPdf, entry: HistoryEntry) {
   );
 }
 
+// Reprend exactement le tableau de comparaison des stratégies (toutes les
+// colonnes de ComparisonTable à l'écran) et la carte "Rachats LPP
+// dirigeant" (1 an / 5 ans / jusqu'à la retraite), tels que sauvegardés
+// par SaveSimulationButton — jamais un recalcul indépendant côté PDF
+// (demandé par Sarah : "il faut que ça s'affiche [...] le même physique").
+function drawDirectorCompensationDetail(pdf: ReportPdf, entry: HistoryEntry) {
+  if (entry.kind !== "director_compensation") return;
+  const s = (entry.summary ?? {}) as Record<string, unknown>;
+
+  const strategies = Array.isArray(s.strategyTable)
+    ? (s.strategyTable as Array<Record<string, unknown>>)
+    : [];
+  if (strategies.length > 0) {
+    pdf.spacer(3);
+    pdf.section("Comparaison des stratégies");
+    pdf.table(
+      ["Stratégie", "Salaire brut", "Impôt société", "Dividendes", "Impôt revenu", "Réserves", "Net dirigeant"],
+      strategies.map((r) => {
+        const suffix = r.isCurrent ? " (actuelle)" : r.isBest ? " (recommandée)" : "";
+        return [
+          `${str(r.label) ?? "—"}${suffix}`,
+          formatCHF(num(r.grossSalary)),
+          formatCHF(num(r.corporateTax)),
+          formatCHF(num(r.dividendsPaid)),
+          formatCHF(num(r.incomeTax)),
+          formatCHF(num(r.retained)),
+          formatCHF(num(r.directorNet)),
+        ];
+      }),
+      { rowAccentColors: strategies.map((r) => (r.isBest ? COMPARE_GREEN : undefined)) },
+    );
+  }
+
+  const lpp = (s.lppBuyback ?? null) as Record<string, unknown> | null;
+  const horizons = lpp && Array.isArray(lpp.horizons) ? (lpp.horizons as Array<Record<string, unknown>>) : [];
+  if (lpp && horizons.length > 0) {
+    pdf.spacer(3);
+    pdf.section("Rachats LPP dirigeant · optimisation fiscale");
+    pdf.kvTable([
+      ["Salaire brut annuel", formatCHF(num(lpp.grossSalary))],
+      ["Salaire assuré LPP", formatCHF(num(lpp.insuredSalary))],
+      ["Capacité de rachat", formatCHF(num(lpp.maxBuyback))],
+      ["Montant à racheter", formatCHF(num(lpp.actualBuyback))],
+    ]);
+    pdf.spacer(1);
+    pdf.table(
+      ["Horizon", "Versement annuel", "Économie d'impôt totale", "Coût net (après impôt)", "ROI fiscal moyen", "Marginal effectif (an 1)"],
+      horizons.map((h) => {
+        const suffix = h.key === lpp.bestKey ? " (ROI max)" : "";
+        return [
+          `${str(h.label) ?? "—"}${suffix}`,
+          formatCHF(num(h.yearlyAmount)),
+          formatCHF(num(h.totalTaxSavings)),
+          formatCHF(num(h.totalBought) - num(h.totalTaxSavings)),
+          `${num(h.averageReturn).toFixed(1)} %`,
+          `${num(h.effectiveMarginalRate).toFixed(1)} %`,
+        ];
+      }),
+      { rowAccentColors: horizons.map((h) => (h.key === lpp.bestKey ? COMPARE_GREEN : undefined)) },
+    );
+  }
+}
+
 // ============================================================================
 // SIMULATION (1 page par simulation)
 // ============================================================================
@@ -1208,6 +1271,10 @@ function drawSimulationPage(pdf: ReportPdf, entry: HistoryEntry, includeCharts: 
 
   // Section 2ter · détail des optimisations (budget uniquement)
   drawBudgetOptimizationDetail(pdf, entry);
+
+  // Section 2quater · comparaison des stratégies + rachats LPP dirigeant
+  // (director_compensation uniquement)
+  drawDirectorCompensationDetail(pdf, entry);
 
   // Section 3 · graphique simplifié si pertinent — reprend les mêmes lignes
   // que le comparatif ci-dessus quand elles existent (aucune valeur

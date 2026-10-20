@@ -94,7 +94,7 @@ import type {
 import type { Client } from "@/lib/clients/types";
 import type { Company } from "@/lib/companies/types";
 import type { FilingStatus } from "@/lib/tax/ifd";
-import { DirectorLppBuybackCard } from "@/components/calculators/DirectorLppBuybackCard";
+import { DirectorLppBuybackCard, type LppBuybackSnapshot } from "@/components/calculators/DirectorLppBuybackCard";
 import { CrossCalcImpactBanner } from "@/components/calculators/CrossCalcImpactBanner";
 import { useLoadSavedSimulation } from "@/hooks/useLoadSavedSimulation";
 
@@ -277,6 +277,11 @@ function DirectorCompensationCalc() {
   );
 
   const availableProfit = Math.max(0, inputs.totalProfit - (inputs.reserveTarget ?? 0));
+
+  // Capturé par DirectorLppBuybackCard (voir onSnapshot) pour que le PDF du
+  // dossier reprenne exactement les mêmes chiffres que la carte "Rachats
+  // LPP dirigeant" au moment de sauvegarder, jamais un recalcul indépendant.
+  const [lppSnapshot, setLppSnapshot] = useState<LppBuybackSnapshot | null>(null);
 
   const [guideOpen, setGuideOpen] = useState(false);
   const guideSteps: GuideStep[] = [
@@ -558,6 +563,7 @@ function DirectorCompensationCalc() {
               ? Number(linkedClient.gross_annual_salary)
               : undefined
           }
+          onSnapshot={setLppSnapshot}
         />
 
         <LegalDisclaimer />
@@ -576,6 +582,22 @@ function DirectorCompensationCalc() {
               totalProfit: inputs.totalProfit,
               companyCanton: inputs.companyCanton,
               directorCanton: inputs.directorCanton,
+              // Table complète des stratégies comparées (ComparisonTable à
+              // l'écran) et photo de la carte "Rachats LPP dirigeant", pour
+              // que le PDF affiche les mêmes tableaux que ce que le courtier
+              // voit à l'écran au moment de sauvegarder (demandé par Sarah).
+              strategyTable: tableResults.map((r) => ({
+                label: r.strategy.label,
+                isBest: r.strategy.label === recommendation.best.strategy.label,
+                isCurrent: currentResult ? r.strategy.label === currentResult.strategy.label : false,
+                grossSalary: r.company.grossSalary,
+                corporateTax: r.company.corporateTax,
+                dividendsPaid: r.company.dividendsPaid,
+                incomeTax: r.director.totalIncomeTax,
+                retained: r.retainedInCompany,
+                directorNet: r.directorNet,
+              })),
+              lppBuyback: lppSnapshot,
             }}
             defaultTitle={`Dirigeant ${inputs.companyCanton} · profit ${inputs.totalProfit} CHF`}
           />
