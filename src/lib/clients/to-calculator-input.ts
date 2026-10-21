@@ -696,6 +696,7 @@ export function toTaxGlobalInput(b: ClientBundle) {
     vsIndexationPercent: getVsIndexation(b.client.canton, b.client.commune),
     countryOfResidence: country,
     permit,
+    knownTaxStatus: b.client.tax_status ?? undefined,
     civilStatus,
     spouseEmployed: spouseSalary > 0,
     children: children.length,

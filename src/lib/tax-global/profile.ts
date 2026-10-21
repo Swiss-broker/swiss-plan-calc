@@ -35,6 +35,56 @@ export function detectRegime(input: TaxGlobalInput): RegimeDetection {
   const canton = (input.canton || "").toUpperCase();
   const livesAbroad = country !== "" && country !== "CH";
 
+  // ─── Statut connu (fiche client, champ tax_status) : prioritaire sur la
+  // déduction par permis/pays/part du revenu ci-dessous. Cette déduction
+  // automatique ne peut pas savoir qu'un permis B est en réalité déjà en
+  // imposition ordinaire (ex. assujettissement déjà obtenu, conjoint
+  // suisse, dépassement de seuil cantonal...) — des cas réels où le
+  // courtier avait correctement enregistré "Résident" sur la fiche, mais
+  // où le calcul recalculait quand même "Imposé à la source" à partir du
+  // seul permis, mettant à zéro toute économie d'impôt 3a/rachat LPP (voir
+  // regime-aware-deduction.ts) alors que le client était bien en
+  // imposition ordinaire.
+  if (input.knownTaxStatus === "resident") {
+    return {
+      regime: "resident_ordinary",
+      regimeLabel: "Résident, taxation ordinaire",
+      reason: `Statut fiscal "Résident" enregistré sur la fiche client : déclaration ordinaire (revenu + fortune), quel que soit le permis.`,
+    };
+  }
+  if (input.knownTaxStatus === "source_taxed" || input.knownTaxStatus === "tou") {
+    const totalIncomeKnown =
+      input.grossSalary + input.bonus + input.spouseGrossSalary + input.otherIncome + input.rentalIncome;
+    const worldwideKnown = totalIncomeKnown + input.foreignIncome;
+    const swissShareKnown = worldwideKnown > 0 ? totalIncomeKnown / worldwideKnown : 1;
+    if (swissShareKnown >= 0.9) {
+      return {
+        regime: "tou",
+        regimeLabel: "Imposé à la source, éligible TOU (quasi-résident)",
+        reason: `Statut fiscal "Imposé à la source" enregistré sur la fiche client, avec ${(swissShareKnown * 100).toFixed(0)}% du revenu mondial en CH : TOU possible (rectification déductions).`,
+      };
+    }
+    return {
+      regime: "source_taxed",
+      regimeLabel: "Imposé à la source",
+      reason: `Statut fiscal "Imposé à la source" enregistré sur la fiche client : impôt à la source mensuel (barème ${canton || "n/a"}).`,
+    };
+  }
+  if (input.knownTaxStatus === "cross_border_fr_1983") {
+    return {
+      regime: "cross_border_fr_1983",
+      regimeLabel: `Frontalier accord franco-suisse 1983 (${canton || "canton à préciser"})`,
+      reason: `Statut fiscal "Frontalier accord 1983" enregistré sur la fiche client : imposition en France uniquement, attestation 2041-AS.`,
+    };
+  }
+  if (input.knownTaxStatus === "cross_border_ge") {
+    return {
+      regime: "cross_border_ge",
+      regimeLabel: "Frontalier Genève (IS genevoise + rétrocession)",
+      reason: `Statut fiscal "Frontalier Genève" enregistré sur la fiche client : IS genevoise (4.5% rétrocédés à la France) puis imposition en France.`,
+    };
+  }
+
   // ─── Résidence à l'étranger → frontalier (peu importe le permis saisi) ───
   if (livesAbroad) {
     if (canton === "GE") {

@@ -37,6 +37,14 @@ export interface TaxGlobalInput {
   vsIndexationPercent?: number;
   countryOfResidence: string; // "CH", "FR", ...
   permit: "swiss" | "C" | "B" | "L" | "G" | "Ci" | "F" | "other";
+  /** Statut fiscal explicitement enregistré sur la fiche client liée (champ
+   *  `tax_status`), quand connu — voir detectRegime() dans ./profile.ts :
+   *  priment sur la déduction automatique par permis/pays/part du revenu,
+   *  qui ne peut pas deviner les cas où le courtier sait que c'est faux
+   *  (ex. permis B déjà en imposition ordinaire, résidence confirmée). Reste
+   *  undefined en saisie manuelle sans fiche liée : la déduction automatique
+   *  s'applique alors comme avant. */
+  knownTaxStatus?: "resident" | "source_taxed" | "cross_border_fr_1983" | "cross_border_ge" | "tou";
   civilStatus: GlobalCivilStatus;
   spouseEmployed: boolean;
   children: number;
