@@ -4,6 +4,15 @@
 // converti et on envoie l'invitation d'onboarding. Endpoint public, jamais
 // de verify_jwt Supabase — l'authenticité vient uniquement de la
 // signature Stripe (voir verifyStripeSignature ci-dessous).
+//
+// Même création d'invitation (et même email) que admin-convert-lead, pour
+// un commercial qui marque une conversion obtenue hors paiement en ligne —
+// voir _shared/onboarding-invite.ts. Un lead "converti" sans jamais passer
+// par l'un de ces deux chemins ne reçoit ni invitation ni email, et reste
+// introuvable dans Courtiers (profiles) tant qu'il n'a pas terminé
+// l'onboarding : c'est ce que cette fonction partagée évite.
+import { createOnboardingInvite } from "../_shared/onboarding-invite.ts";
+
 export const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, stripe-signature",
@@ -54,39 +63,6 @@ async function verifyStripeSignature(
     .join("");
 
   return parts.signatures.includes(expectedSignature);
-}
-
-// Même génération de token que DocumentsTab.tsx (randomToken()) : 24
-// octets aléatoires cryptographiques, encodés en base36.
-function randomToken(): string {
-  const arr = new Uint8Array(24);
-  crypto.getRandomValues(arr);
-  return Array.from(arr, (b) => b.toString(36).padStart(2, "0")).join("").slice(0, 32);
-}
-
-async function sendBrevoEmail(
-  brevoKey: string | undefined,
-  to: string,
-  subject: string,
-  htmlContent: string,
-): Promise<void> {
-  if (!brevoKey) {
-    console.error("BREVO_API_KEY manquante, email d'invitation non envoyé");
-    return;
-  }
-  const res = await fetch("https://api.brevo.com/v3/smtp/email", {
-    method: "POST",
-    headers: { "api-key": brevoKey, "Content-Type": "application/json" },
-    body: JSON.stringify({
-      sender: { name: "SwissBroker Pro", email: "noreply@swissbrokerpro.ch" },
-      to: [{ email: to }],
-      subject,
-      htmlContent,
-    }),
-  });
-  if (!res.ok) {
-    console.error("Brevo a refusé l'envoi:", res.status, await res.text());
-  }
 }
 
 export type Env = {
@@ -154,74 +130,39 @@ export async function handleConversionRequest(req: Request, env: Env): Promise<R
       return jsonResponse({ received: true, ignored: true });
     }
 
+    const inviteResult = await createOnboardingInvite({
+      supabaseUrl,
+      supabaseKey,
+      siteUrl,
+      brevoKey,
+      demoRequestId,
+      email: lead.email,
+      name: lead.name,
+    });
+
     // Idempotence : Stripe peut redélivrer le même événement (retry sur
     // timeout, ou renvoi manuel depuis le dashboard). Si une invitation
     // existe déjà pour ce lead, on ne recrée rien et on ne renvoie pas
     // l'email — sinon le client recevrait plusieurs liens d'onboarding
-    // avec des tokens différents.
-    const existingInviteRes = await fetch(
-      `${supabaseUrl}/rest/v1/client_invites?demo_request_id=eq.${demoRequestId}&select=id&limit=1`,
-      { headers: svcHeaders },
-    );
-    const existingInvites = await existingInviteRes.json();
-    if (Array.isArray(existingInvites) && existingInvites.length > 0) {
+    // avec des tokens différents. Le statut n'a alors rien de nouveau à
+    // confirmer (déjà converti lors du premier passage).
+    if (inviteResult.status === "already_invited") {
       return jsonResponse({ received: true, alreadyProcessed: true });
     }
+    if (inviteResult.status === "error") {
+      // Le statut du lead n'est PAS marqué "converted" ici : un lead
+      // converti sans invitation ni compte créé est exactement le bug que
+      // cette fonction partagée doit empêcher (voir admin-convert-lead).
+      return jsonResponse({ error: inviteResult.error }, 500);
+    }
 
+    // Invitation créée avec succès : seulement maintenant le lead passe
+    // "converted", jamais avant d'être sûr que l'invitation existe bien.
     await fetch(`${supabaseUrl}/rest/v1/demo_requests?id=eq.${demoRequestId}`, {
       method: "PATCH",
       headers: { ...svcHeaders, Prefer: "return=minimal" },
       body: JSON.stringify({ status: "converted" }),
     });
-
-    // Un seul produit (cotisation annuelle) : plus de sélection de plan
-    // depuis les metadata Stripe, toujours "active".
-    const plan = "active";
-
-    const token = randomToken();
-    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
-
-    const inviteRes = await fetch(`${supabaseUrl}/rest/v1/client_invites`, {
-      method: "POST",
-      headers: { ...svcHeaders, Prefer: "return=representation" },
-      body: JSON.stringify({
-        demo_request_id: demoRequestId,
-        email: lead.email,
-        plan,
-        token,
-        expires_at: expiresAt,
-      }),
-    });
-    if (!inviteRes.ok) {
-      console.error("handle-conversion: échec insertion client_invites:", inviteRes.status, await inviteRes.text());
-      return jsonResponse({ error: "Échec création de l'invitation." }, 500);
-    }
-
-    // Email best-effort : le lead est déjà marqué converti et l'invitation
-    // déjà créée à ce stade, une panne Brevo ne doit pas faire échouer le
-    // webhook (Stripe le réinterpréterait comme un échec et réessaierait).
-    try {
-      const onboardingUrl = `${siteUrl}/onboarding/${token}`;
-      await sendBrevoEmail(
-        brevoKey,
-        lead.email,
-        "Bienvenue sur SwissBroker Pro — finalisez votre compte",
-        `
-        <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 24px;">
-          <h2 style="color: #0f766e;">Merci pour votre confiance !</h2>
-          <p>Bonjour ${lead.name ?? ""},</p>
-          <p>Votre cotisation annuelle SwissBroker Pro est confirmée. Il ne reste qu'une étape pour finaliser la création de votre compte :</p>
-          <p style="margin: 24px 0;">
-            <a href="${onboardingUrl}" style="background:#0f766e; color:#fff; padding:12px 20px; border-radius:8px; text-decoration:none; font-weight:bold;">Finaliser mon compte</a>
-          </p>
-          <p style="color:#666; font-size:13px;">Ce lien est valable 7 jours.</p>
-          <p style="color:#999; font-size:12px;">SwissBroker Pro</p>
-        </div>
-        `,
-      );
-    } catch (emailErr) {
-      console.error("handle-conversion: erreur envoi email d'invitation (lead déjà converti):", emailErr);
-    }
 
     return jsonResponse({ received: true, converted: true });
   } catch (err) {
