@@ -146,10 +146,17 @@ export interface AvsDisabilityBenefits {
   cappedFamily: boolean;
 }
 
-/** Convertit un degré d'invalidité en quotité de rente AI selon échelle légale. */
+/** Convertit un degré d'invalidité en quotité de rente AI selon échelle légale
+ *  (réforme AI 2022, Art. 28b LAI) : 0-39% = pas de rente, 40-49% = échelle
+ *  linéaire 25%→47.5% (pas disabilityPct/100 : à 40% la quotité correcte est
+ *  25%, pas 40%), 50-69% = quotité = degré d'invalidité (identité), 70%+ =
+ *  rente entière. Seul appelant actuel (buildDisability dans
+ *  pension-consolidation) utilise toujours 100% → la branche 40-49% était
+ *  jusqu'ici inatteignable en prod, mais faux dès qu'un taux réel variable
+ *  serait branché (ex. futur sélecteur de taux d'invalidité). */
 export function aiPensionFraction(disabilityPct: number): number {
   if (disabilityPct < 40) return 0;
-  if (disabilityPct < 50) return disabilityPct / 100; // rente par paliers 2022+
+  if (disabilityPct < 50) return (25 + (disabilityPct - 40) * 2.5) / 100;
   if (disabilityPct >= 70) return 1;
   return disabilityPct / 100;
 }

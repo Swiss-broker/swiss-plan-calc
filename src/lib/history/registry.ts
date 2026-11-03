@@ -214,13 +214,29 @@ export async function regeneratePdf(
         import("@/lib/pdf/reports"),
       ]);
       const f = inputs as Record<string, number | string>;
+      // Montant RÉELLEMENT racheté (actualBuyback, plafonné à la capacité,
+      // voir actualBuybackCapped dans lpp.tsx) — jamais buybackCapacity seul,
+      // qui n'est que le plafond légal maximal. Même règle que l'écran en
+      // direct et que synthesis-report.ts (commentaire explicite "jamais
+      // buybackCapacity"). Sans ce plafond, un client qui ne rachète qu'une
+      // partie de sa capacité voyait ce PDF régénéré (lien partagé) afficher
+      // un rachat et une économie d'impôt gonflés par rapport à ce qui avait
+      // été montré en direct et sauvegardé. Repli sur buybackCapacity
+      // uniquement pour une simulation sauvegardée avant l'introduction du
+      // champ actualBuyback (compat anciennes données).
+      const hasActualBuyback =
+        f.actualBuyback !== undefined && f.actualBuyback !== null && f.actualBuyback !== "";
+      const actualBuyback = hasActualBuyback
+        ? Math.min(num(f.actualBuyback), num(f.buybackCapacity))
+        : num(f.buybackCapacity);
       const projection = projectLPP({
         ...(f as object),
-        yearlyBuyback: Math.round(num(f.buybackCapacity) / Math.max(1, num(f.buybackYears))),
+        yearlyBuyback: actualBuyback / Math.max(1, num(f.buybackYears)),
         buybackYears: num(f.buybackYears),
       } as Parameters<typeof projectLPP>[0]);
       const buybackPlan = simulateBuybackPlan({
         buybackCapacity: num(f.buybackCapacity),
+        actualBuyback,
         years: Math.max(1, num(f.buybackYears)),
         taxInput: {
           canton: String(f.canton),

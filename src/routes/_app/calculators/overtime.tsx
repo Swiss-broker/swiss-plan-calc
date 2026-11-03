@@ -236,8 +236,14 @@ function OvertimeCalc() {
         </div>
 
         <CalcCard title="Données fiscales personnelles">
+          <p className="mb-3 text-xs text-muted-foreground">
+            Seul le « Taux marginal IR France estimé » ci-dessous entre dans le calcul de
+            l'économie fiscale. Les champs situation civile / enfants / conjoint ne sont que des
+            repères pour vous aider à estimer ce taux vous-même : les modifier ne change rien au
+            résultat affiché.
+          </p>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <Field label="Situation civile">
+            <Field label="Situation civile (info contextuelle)">
               <Select
                 value={form.civilStatus}
                 onValueChange={(v) => set("civilStatus", v as "single" | "married")}
@@ -250,11 +256,11 @@ function OvertimeCalc() {
               </Select>
             </Field>
             <NumField
-              label="Nombre d'enfants à charge"
+              label="Nombre d'enfants à charge (info contextuelle)"
               value={form.childrenCount}
               onChange={(v) => set("childrenCount", v)}
             />
-            <Field label="Conjoint salarié ?">
+            <Field label="Conjoint salarié ? (info contextuelle)">
               <div className="flex h-9 items-center gap-2">
                 <Switch
                   checked={!!form.spouseEmployed}
@@ -267,7 +273,7 @@ function OvertimeCalc() {
             </Field>
             {form.spouseEmployed && (
               <NumField
-                label="Salaire conjoint (CHF)"
+                label="Salaire conjoint (CHF) (info contextuelle)"
                 value={form.spouseAnnualSalaryCHF ?? 0}
                 onChange={(v) => set("spouseAnnualSalaryCHF", v)}
               />

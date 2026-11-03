@@ -57,9 +57,6 @@ export const IFD_MARRIED_2026: BracketStep[] = [
   { from: 941_300, base: 108_249.0, rate: 11.5 },
 ];
 
-/** Déduction sociale pour enfant · IFD 2026 */
-export const IFD_CHILD_DEDUCTION_2026 = 6_700;
-
 /**
  * Calcul de l'IFD à partir d'un revenu imposable.
  * Renvoie 0 pour les revenus négatifs ou inférieurs à la franchise.

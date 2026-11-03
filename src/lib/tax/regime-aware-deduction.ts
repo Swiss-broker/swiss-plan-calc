@@ -48,11 +48,13 @@ export interface RegimeAwareDeductionResult {
   regime: Regime;
   regimeLabel: string;
   /** "yes" = déduction automatiquement effective (résident ordinaire).
-   *  "conditional" = effective uniquement après démarche TOU (quasi-résident
-   *  éligible) — tant que la démarche n'est pas faite, la retenue à la source
-   *  s'applique sans aucune déduction.
-   *  "no" = aucune économie réelle possible (non quasi-résident, ou
-   *  frontalier accord 1983 : imposition exclusive en France). */
+   *  "conditional" = effective uniquement après démarche — TOU (quasi-résident
+   *  éligible) ou rectification IS auprès du canton (non éligible TOU) —
+   *  tant que la démarche n'est pas faite, la retenue à la source s'applique
+   *  sans aucune déduction.
+   *  "no" = aucune économie réelle possible (frontalier accord 1983 :
+   *  imposition exclusive en France, un versement suisse n'ouvre aucun
+   *  droit à déduction nulle part). */
   applicable: "yes" | "conditional" | "no";
   note: string | null;
 }
@@ -137,11 +139,17 @@ export function computeRegimeAwareDeduction(
     };
   }
 
+  // Non éligible TOU : NE PAS écraser `taxSavings` à 0 — `result` contient
+  // déjà le même chiffre "simulé" (MIN entre source et ordinaire avec
+  // déductions) que Fiscal Global pour ce même client/cette même déduction
+  // (voir engine.ts, règle d'affichage documentée : rectification IS
+  // possible même hors quasi-résidence). Avant ce correctif, ce module
+  // renvoyait 0 CHF ici alors que Fiscal Global affichait un montant non
+  // nul pour l'exact même profil — deux écrans contradictoires pour la
+  // même action du même client.
   return {
     ...result,
-    taxSavings: 0,
-    effectiveCost: deductionAmount,
-    applicable: "no",
-    note: `Client non quasi-résident (${touEligibility.swissShare}% du revenu mondial en CH, seuil 90%) : la retenue à la source ne tient pas compte des cotisations 3e pilier A ni des rachats LPP. Aucune économie réelle sans Taxation Ordinaire Ultérieure (TOU), inaccessible dans sa situation actuelle.`,
+    applicable: "conditional",
+    note: `Économie estimée via démarche de rectification IS auprès du canton — client non quasi-résident (${touEligibility.swissShare}% du revenu mondial en CH, seuil 90%), donc pas éligible à la TOU. Sans cette démarche, la retenue à la source brute s'applique sans aucune déduction.`,
   };
 }

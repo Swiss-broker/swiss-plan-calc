@@ -45,7 +45,7 @@ import {
 } from "@/lib/swiss/enums";
 import type { Child, Client } from "@/lib/clients/types";
 import { WikiHelpLink } from "@/components/wiki/WikiHelpLink";
-import { getWorkStatusRules } from "@/lib/clients/work-status-rules";
+import { getWorkStatusRules, effectivePillar3aCap } from "@/lib/clients/work-status-rules";
 import { suggestTaxStatus } from "@/lib/clients/suggest-tax-status";
 import { checkClientConsistency } from "@/lib/clients/consistency-check";
 import { formatCHF } from "@/lib/format";
@@ -1558,11 +1558,11 @@ function StepPatrimoine({
   const rules = getWorkStatusRules(workStatus);
   const shortLabel = t(`enum.work_status.${workStatus}`);
   const netSelfIncome = Number(form.gross_annual_salary) || 0;
-  const cap3a = rules.hasLPP
-    ? rules.pillar3aCap
-    : rules.isSelfEmployed
-      ? Math.min(rules.pillar3aCap, Math.round(netSelfIncome * 0.2))
-      : rules.pillar3aCap;
+  // effectivePillar3aCap, pas une 3e réimplémentation locale de la même
+  // règle (Art. 7 OPP3) : une copie ici avait déjà oublié le cas "non
+  // affilié LPP mais pas indépendant" (étudiant), même bug que
+  // work-status-rules.ts avant correctif.
+  const cap3a = effectivePillar3aCap(workStatus, netSelfIncome);
 
   return (
     <div className="space-y-6">

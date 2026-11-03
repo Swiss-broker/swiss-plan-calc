@@ -109,15 +109,19 @@ export function getWorkStatusRules(status: WorkStatus | null | undefined): WorkS
   }
 }
 
-/** Plafond 3a effectif tenant compte du revenu indépendant net. */
+/** Plafond 3a effectif tenant compte du revenu (indépendant ou non). */
 export function effectivePillar3aCap(
   status: WorkStatus | null | undefined,
-  netSelfEmploymentIncome?: number,
+  income?: number,
 ): number {
   const rules = getWorkStatusRules(status);
   if (rules.hasLPP) return rules.pillar3aCap;
-  if (!rules.isSelfEmployed) return rules.pillar3aCap;
-  // Indépendant pur : 20% du revenu net, plafonné à 36'288
-  const ratio = (netSelfEmploymentIncome ?? 0) * 0.2;
+  // Non affilié LPP (indépendant pur, étudiant sous le seuil d'entrée LPP,
+  // ou tout futur statut hasLPP:false) : Art. 7 OPP3, plafond = 20% du
+  // revenu net, max 36'288 — jamais le plafond "affilié LPP" (7'258).
+  // Avant ce correctif, seul isSelfEmployed basculait sur cette formule :
+  // un étudiant avec un job d'appoint (hasLPP: false, isSelfEmployed:
+  // false) retombait sur le plafond bas 7'258, trop élevé pour son revenu réel.
+  const ratio = (income ?? 0) * 0.2;
   return Math.min(PILLAR_3A_MAX_NO_LPP_2026, Math.round(ratio));
 }

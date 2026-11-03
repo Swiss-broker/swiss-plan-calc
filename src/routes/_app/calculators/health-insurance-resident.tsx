@@ -15,6 +15,8 @@ import {
 } from "@/lib/health-resident";
 import { formatCHF } from "@/lib/format";
 import { CrossCalcImpactBanner } from "@/components/calculators/CrossCalcImpactBanner";
+import { getCalculatorRelevance } from "@/lib/clients/calculator-relevance";
+import { AlertTriangle } from "lucide-react";
 import {
   GuideMode,
   GuideToggleButton,
@@ -39,6 +41,16 @@ export const Route = createFileRoute("/_app/calculators/health-insurance-residen
 function HealthInsuranceResidentCalc() {
   const { clientId, caseId, simId } = Route.useSearch();
   const { client, prefill } = usePrefillFromClient(clientId, "health-insurance-resident");
+
+  // Symétrique de l'avertissement déjà affiché côté "CMU vs LAMal" (frontalier
+  // ouvrant par erreur le calculateur résident) : un client frontalier
+  // (CMU/LAMal réel) ouvert ici n'avait jusqu'ici AUCUN avertissement, et
+  // pouvait sauvegarder une simulation "caisse maladie résident" standard en
+  // plus de la vraie simulation CMU vs LAMal du même dossier — deux
+  // simulations contradictoires sur la même notion de charge santé.
+  const relevance = client
+    ? getCalculatorRelevance(client, "/calculators/health-insurance-resident")
+    : null;
   const { inputs: savedInputs, isLoading: loadingSaved } = useLoadSavedSimulation(simId);
   const [form, setForm] = useState<HealthResidentInput>({
     currentBaseMonthlyCHF: 350,
@@ -114,6 +126,17 @@ function HealthInsuranceResidentCalc() {
       {client && (
         <div className="md:col-span-5">
           <ClientLinkBanner client={client} caseId={caseId} />
+        </div>
+      )}
+      {relevance && !relevance.relevant && (
+        <div className="md:col-span-5 flex items-start gap-2 rounded-lg border border-warning/40 bg-warning/5 p-3 text-sm text-warning">
+          <AlertTriangle className="mt-0.5 h-4 w-4 flex-shrink-0 text-warning" />
+          <span>
+            <strong>{relevance.reason}</strong>{" "}
+            Un frontalier a un vrai choix CMU/LAMal : utilisez plutôt le calculateur « CMU vs LAMal »
+            pour ce client. Ce que vous voyez ici reste une simulation exploratoire, pas la
+            situation réelle du client.
+          </span>
         </div>
       )}
       {simId && loadingSaved && (

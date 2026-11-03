@@ -1580,8 +1580,12 @@ function formatInputs(entry: HistoryEntry): Array<[string, string]> {
       pushStr(rows, "Canton de travail", i.workCanton ? cantonName(String(i.workCanton)) : undefined);
       pushIfChf(rows, "Salaire de base", i.baseAnnualSalaryCHF);
       pushIfChf(rows, "Heures sup brutes", i.overtimeAmountCHF);
-      pushStr(rows, "Situation civile", i.civilStatus === "married" ? "Marié·e / pacsé·e" : "Célibataire");
-      pushIf(rows, "Enfants à charge", i.childrenCount);
+      // Info contextuelle seulement : ni la situation civile ni les enfants
+      // n'entrent dans computeOvertime — seul le taux marginal IR FR estimé
+      // ci-dessous pilote le résultat (voir la note affichée sur l'écran
+      // calculateur).
+      pushStr(rows, "Situation civile (info contextuelle)", i.civilStatus === "married" ? "Marié·e / pacsé·e" : "Célibataire");
+      pushIf(rows, "Enfants à charge (info contextuelle)", i.childrenCount);
       pushIfPct(rows, "Taux marginal IR FR estimé", i.estimatedFrenchMarginalRate);
       break;
   }

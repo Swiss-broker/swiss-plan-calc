@@ -91,7 +91,7 @@ import type {
   DirectorInputs,
   LppPlanKind,
 } from "@/lib/director-compensation/types";
-import type { Client } from "@/lib/clients/types";
+import type { Client, ClientPension } from "@/lib/clients/types";
 import type { Company } from "@/lib/companies/types";
 import type { FilingStatus } from "@/lib/tax/ifd";
 import { DirectorLppBuybackCard, type LppBuybackSnapshot } from "@/components/calculators/DirectorLppBuybackCard";
@@ -131,14 +131,21 @@ function DirectorCompensationCalc() {
   const { clientId, caseId, companyId, simId } = Route.useSearch();
   const { inputs: savedInputs, isLoading: loadingSaved } = useLoadSavedSimulation(simId);
 
-  // Charge optionnellement le client + la société depuis l'URL.
+  // Charge optionnellement le client + sa prévoyance + la société depuis l'URL.
+  // lpp_current_balance vit dans client_pension, PAS dans clients — sans ce
+  // 2e select, le rachat LPP dirigeant proposé ignorait tout avoir LPP déjà
+  // accumulé (capacité de rachat systématiquement surestimée du montant
+  // plein de l'avoir existant).
   const linkQuery = useQuery({
     queryKey: ["director-comp-link", clientId, companyId],
     enabled: Boolean(clientId || companyId),
     queryFn: async () => {
-      const [c, co] = await Promise.all([
+      const [c, p, co] = await Promise.all([
         clientId
           ? supabase.from("clients").select("*").eq("id", clientId).single()
+          : Promise.resolve({ data: null, error: null }),
+        clientId
+          ? supabase.from("client_pension").select("*").eq("client_id", clientId).maybeSingle()
           : Promise.resolve({ data: null, error: null }),
         companyId
           ? supabase.from("companies").select("*").eq("id", companyId).single()
@@ -146,12 +153,14 @@ function DirectorCompensationCalc() {
       ]);
       return {
         client: (c.data as Client | null) ?? null,
+        pension: (p.data as ClientPension | null) ?? null,
         company: (co.data as Company | null) ?? null,
       };
     },
   });
 
   const linkedClient = linkQuery.data?.client ?? null;
+  const linkedPension = linkQuery.data?.pension ?? null;
   const linkedCompany = linkQuery.data?.company ?? null;
 
   const [inputs, setInputs] = useState<DirectorInputs>({
@@ -552,12 +561,7 @@ function DirectorCompensationCalc() {
         <DirectorLppBuybackCard
           best={recommendation.best}
           retirementAge={65}
-          initialBalance={
-            Number(
-              (linkedClient as unknown as { lpp_current_balance?: number } | null)
-                ?.lpp_current_balance ?? 0,
-            ) || 0
-          }
+          initialBalance={Number(linkedPension?.lpp_current_balance ?? 0) || 0}
           clientGrossSalary={
             linkedClient?.gross_annual_salary
               ? Number(linkedClient.gross_annual_salary)

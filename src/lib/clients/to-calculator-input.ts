@@ -401,7 +401,12 @@ export function toRetirementInput(b: ClientBundle) {
     b.client.civil_status === "married" ||
     b.client.civil_status === "registered_partnership";
   const age = ageFromDob(b.client.date_of_birth);
-  // Capital projeté à 65 ans depuis le dashboard, sinon avoir actuel
+  // Pré-remplissage initial = avoir LPP ACTUEL, pas projeté (malgré le nom
+  // du champ) : retirement.tsx corrige ce chiffre juste après l'hydratation
+  // via un effet séparé qui va chercher la vraie projection à 65 ans
+  // (useConsolidationReferences/lpp-projection.ts) — ce mapper ne fait que
+  // fournir une valeur de départ raisonnable avant que cette projection
+  // n'arrive.
   const projectedCapital = numOrUndef(b.pension?.lpp_current_balance);
   // Espérance de vie résiduelle après retraite : 85 - âge retraite (65) = 20 ans par défaut
   const yearsAlive = 20;
@@ -592,7 +597,18 @@ export function toBudgetInput(b: ClientBundle) {
   // conjoint deux fois.
   if (main !== undefined) {
     try {
-      const taxGlobalInput = { ...createDefaultInput(), ...toTaxGlobalInput(b) } as TaxGlobalInput;
+      // stripUndefined est indispensable ici : toTaxGlobalInput renvoie des
+      // champs explicitement `undefined` (ex. rentalIncome, bonus) dès qu'ils
+      // sont vides en fiche — sans ce nettoyage, le spread écrase les 0 par
+      // défaut de createDefaultInput() par `undefined`, et l'addition finale
+      // (grossSalary + bonus + ...) dans computeTaxGlobal devient NaN : le
+      // calcul réel échoue silencieusement (NaN > 0 est faux) et on retombe
+      // sur l'estimation forfaitaire ci-dessous pour la quasi-totalité des
+      // clients, malgré le commentaire ci-dessus promettant le "vrai" net.
+      const taxGlobalInput = {
+        ...createDefaultInput(),
+        ...stripUndefined(toTaxGlobalInput(b)),
+      } as TaxGlobalInput;
       const netAnnualCHF = computeTaxGlobal(taxGlobalInput).netAnnualCHF;
       if (netAnnualCHF > 0) {
         return {

@@ -6,6 +6,7 @@ import {
   computeIncomeTax,
   PILLAR_3A_MAX_2026_LPP,
   type IncomeTaxInput,
+  type WorkStatusForTax,
 } from "../tax/income";
 import { simulateBuybackPlan } from "../lpp";
 import { staggeredWithdrawal as stagged3a } from "../pillar3";
@@ -17,8 +18,9 @@ export type OptimizationCategory = "lpp" | "3a" | "canton" | "wealth" | "withdra
  * Statut fiscal du contribuable, détermine si les déductions
  * (rachat LPP, 3a, etc.) sont automatiquement appliquées ou non.
  *
- * - `resident` / `tou` : déductions OK (taxation ordinaire).
- * - `source_taxed` : déductions NON automatiques (rectification IS ou TOU requise).
+ * - `resident` : déductions OK (taxation ordinaire).
+ * - `source_taxed` / `tou` : déductions NON automatiques tant que la TOU
+ *   n'est pas demandée — la retenue à la source s'applique sans déduction.
  * - `cross_border_fr_1983` : imposé en France ; déductions suisses sans effet.
  * - `cross_border_ge` : IS au barème normal GE ; déductions limitées.
  */
@@ -29,13 +31,10 @@ export type TaxStatusContext =
   | "cross_border_ge"
   | "tou";
 
-export type WorkStatusContext =
-  | "employee"
-  | "self_employed"
-  | "mixed"
-  | "retired"
-  | "unemployed"
-  | "student";
+// Réutilise WorkStatusForTax (tax/income.ts) plutôt qu'une énumération locale :
+// une 2e définition désynchronisée a déjà oublié la valeur "director" ajoutée
+// là-bas — même famille de bug que le statut fiscal ci-dessus.
+export type WorkStatusContext = WorkStatusForTax;
 
 export interface Optimization {
   id: string;
@@ -120,18 +119,19 @@ function crossBorderWarning(): Optimization["warning"] {
   };
 }
 
-/** Le statut fiscal autorise-t-il les déductions de manière automatique ? */
-function deductionsAreAutomatic(s?: TaxStatusContext): boolean {
-  return s === undefined || s === "resident" || s === "tou";
-}
-
 export function runOptimizer(input: OptimizerInput): Optimization[] {
   const optimizations: Optimization[] = [];
   const baseline = computeIncomeTax(input.taxInput);
   const status = input.taxInput.status;
   const taxStatus = input.taxStatus;
 
-  const isSource = taxStatus === "source_taxed";
+  // "tou" (quasi-résident pas encore passé en Taxation Ordinaire Ultérieure)
+  // doit être traité comme "source_taxed" pour l'avertissement : la retenue
+  // à la source s'applique SANS déduction jusqu'au dépôt effectif de la
+  // demande TOU — voir regime-aware-deduction.ts et les notes de Fiscal
+  // Global. deductionsAreAutomatic() ci-dessus reconnaît déjà "tou" comme
+  // automatique à tort ; elle n'est volontairement plus utilisée ici.
+  const isSource = taxStatus === "source_taxed" || taxStatus === "tou";
   const isCrossBorder = taxStatus === "cross_border_fr_1983" || taxStatus === "cross_border_ge";
   const needsWarning = isSource || isCrossBorder;
 
@@ -272,10 +272,6 @@ export function runOptimizer(input: OptimizerInput): Optimization[] {
           : undefined,
     });
   }
-
-  // Marqueur cohérence : si déductions non automatiques, on peut éventuellement
-  // log côté dev. (Pas d'effet runtime ici.)
-  void deductionsAreAutomatic;
 
   return optimizations.sort((a, b) => b.estimatedSavings - a.estimatedSavings);
 }
