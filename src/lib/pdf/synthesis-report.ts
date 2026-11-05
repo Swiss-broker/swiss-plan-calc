@@ -15,7 +15,6 @@ import { LEGAL_FORM_LABELS, type Company } from "@/lib/companies/types";
 import { ageFromDob, parseChildren, type Client, type ClientPension, type ClientAssets } from "@/lib/clients/types";
 import {
   extractGain,
-  GAIN_HORIZON_YEARS,
   pickLatestNonDismissed,
   projectGainTotal,
   type ExtractedGain,
@@ -550,7 +549,7 @@ export function exportSynthesisReportPdf(args: SynthesisReportArgs): void {
   // ---------- AVANT/APRÈS ----------
   pdf.newPage();
   toc.push({ title: "Comparatif avant / après", page: pdf.doc.getCurrentPageInfo().pageNumber });
-  drawComparisonPage(pdf, orderedEntries, pension, assets, spreadPairs);
+  drawComparisonPage(pdf, client, orderedEntries, pension, assets, spreadPairs);
 
   // ---------- CONCLUSION ----------
   pdf.newPage();
@@ -777,13 +776,17 @@ function drawOverviewPage(
     tiles.push({ label: "Impôt total", value: num(incomeTax.summary?.totalTax), tone: "warning" });
   }
 
-  // Même horizon (10 ans) et même calcul que le bloc "Gain total identifié"
-  // de la page comparatif avant/après : ce chiffre est un teaser, il ne
-  // doit jamais diverger de celui détaillé plus loin dans le même dossier.
+  // Même horizon (années réelles jusqu'à la retraite du client) et même
+  // calcul que le bloc "Gain total identifié" de la page comparatif avant/
+  // après : ce chiffre est un teaser, il ne doit jamais diverger de celui
+  // détaillé plus loin dans le même dossier.
   const totals = computeTotals(entries);
-  const totalGain = projectGainTotal(totals.oneTime, totals.annual);
+  const overviewAge = ageFromDob(client.date_of_birth);
+  const overviewYearsToRetirement = overviewAge !== null ? Math.max(1, 65 - overviewAge) : 10;
+  const totalGain =
+    projectGainTotal(totals.oneTime, totals.annual, overviewYearsToRetirement) + totals.postRetirement;
   if (totalGain > 0) {
-    tiles.push({ label: "Gain identifié (sur 10 ans)", value: totalGain, tone: "accent" });
+    tiles.push({ label: "Gain identifié", value: totalGain, tone: "accent" });
   }
 
   if (tiles.length > 0) {
@@ -2183,6 +2186,7 @@ export function buildComment(entry: HistoryEntry): string | null {
 // ============================================================================
 function drawComparisonPage(
   pdf: ReportPdf,
+  client: Client,
   entries: HistoryEntry[],
   pension: ClientPension | null,
   _assets: ClientAssets | null,
@@ -2482,13 +2486,18 @@ function drawComparisonPage(
 
   // Bloc "Gain total identifié"
   const totals = computeTotals(entries);
+  // Années réelles jusqu'à la retraite du client (même calcul que les
+  // calculateurs LPP/3a/retraite) — 10 ans seulement en repli si l'âge du
+  // client est inconnu, jamais pour tout le monde par défaut.
+  const age = ageFromDob(client.date_of_birth);
+  const yearsToRetirement = age !== null ? Math.max(1, 65 - age) : 10;
   pdf.spacer(4);
-  drawGainHighlight(pdf, totals);
+  drawGainHighlight(pdf, totals, yearsToRetirement);
 
-  if (totals.oneTime > 0 || totals.annual > 0) {
+  if (totals.oneTime > 0 || totals.annual > 0 || totals.postRetirement > 0) {
     pdf.spacer(3);
     pdf.paragraph(
-      "Ce total combine les gains ponctuels (rachats, retraits optimisés) et les économies récurrentes projetées sur 10 ans, à situation constante. Il s'agit d'un ordre de grandeur destiné à éclairer nos échanges, pas d'un engagement contractuel : chaque optimisation nécessite une mise en oeuvre concrète et un suivi dans le temps.",
+      `Ce total combine les gains ponctuels (rachats, retraits optimisés), les économies récurrentes projetées sur vos ${yearsToRetirement} prochaine${yearsToRetirement > 1 ? "s" : ""} année${yearsToRetirement > 1 ? "s" : ""} d'activité, et le gain identifié après la retraite (stratégie rente vs capital, le cas échéant). Il s'agit d'un ordre de grandeur destiné à éclairer nos échanges, pas d'un engagement contractuel : chaque optimisation nécessite une mise en oeuvre concrète et un suivi dans le temps.`,
       { muted: true, italic: true },
     );
   }
@@ -2503,8 +2512,14 @@ export function formatDelta(v: number, format?: SavedCompareRow["format"]): stri
 }
 
 export interface Totals {
+  /** Gains ponctuels SAUF "Rente vs capital" (voir postRetirement). */
   oneTime: number;
   annual: number;
+  /** Gain "Rente vs capital" (déjà cumulé sur l'espérance de vie résiduelle
+   *  réglée dans ce calculateur) — compté à part, jamais mélangé aux gains
+   *  "pendant la vie active" (oneTime + annual × années jusqu'à la retraite) :
+   *  ce sont deux périodes distinctes de la vie du client. */
+  postRetirement: number;
   details: string[];
 }
 
@@ -2528,6 +2543,7 @@ function latestActivePerKind(entries: HistoryEntry[]): HistoryEntry[] {
 export function computeTotals(entries: HistoryEntry[]): Totals {
   let oneTime = 0;
   let annual = 0;
+  let postRetirement = 0;
   const details: string[] = [];
   for (const e of latestActivePerKind(entries)) {
     const g = extractGain(e);
@@ -2535,17 +2551,25 @@ export function computeTotals(entries: HistoryEntry[]): Totals {
       annual += g.amount;
       details.push(`${formatCHF(g.amount)}/an (${KIND_LABELS[e.kind]})`);
     } else if (g.type === "one_time") {
-      oneTime += g.amount;
+      if (e.kind === "retirement") {
+        postRetirement += g.amount;
+      } else {
+        oneTime += g.amount;
+      }
       details.push(`${formatCHF(g.amount)} (${KIND_LABELS[e.kind]})`);
     }
   }
-  return { oneTime, annual, details };
+  return { oneTime, annual, postRetirement, details };
 }
 
-function drawGainHighlight(pdf: ReportPdf, totals: Totals) {
-  const total = projectGainTotal(totals.oneTime, totals.annual);
+/** @param yearsToRetirement Années réelles jusqu'à la retraite du client
+ *  (ageFromDob), utilisées pour cumuler les gains annuels sur toute la vie
+ *  active restante — plus un horizon fixe de 10 ans pour tout le monde. */
+function drawGainHighlight(pdf: ReportPdf, totals: Totals, yearsToRetirement: number) {
+  const preRetirementTotal = projectGainTotal(totals.oneTime, totals.annual, yearsToRetirement);
+  const total = preRetirementTotal + totals.postRetirement;
   const { doc, margin, contentWidth } = pdf;
-  const h = 38;
+  const h = totals.postRetirement > 0 ? 46 : 38;
   pdf.ensureSpace(h + 4);
   const y = pdf.cursorY;
   doc.setFillColor(236, 253, 245);
@@ -2555,20 +2579,30 @@ function drawGainHighlight(pdf: ReportPdf, totals: Totals) {
   doc.setFont("helvetica", "bold");
   doc.setFontSize(11);
   doc.setTextColor(22, 101, 52);
-  doc.text("GAIN TOTAL IDENTIFIÉ (sur 10 ans)", margin + 6, y + 8);
+  doc.text("GAIN TOTAL IDENTIFIÉ", margin + 6, y + 8);
   doc.setFontSize(22);
   doc.setTextColor(22, 163, 74);
   doc.text(formatCHF(total), margin + contentWidth - 6, y + 18, { align: "right" });
   doc.setFont("helvetica", "normal");
   doc.setFontSize(9);
   doc.setTextColor(...pdf.ink);
-  const detail =
-    `Détail : ${formatCHF(totals.oneTime)} de gains ponctuels` +
-    (totals.annual > 0
-      ? ` + ${formatCHF(totals.annual)}/an récurrents (= ${formatCHF(totals.annual * GAIN_HORIZON_YEARS)} sur 10 ans)`
-      : "");
-  const lines = doc.splitTextToSize(detail, contentWidth - 12) as string[];
-  doc.text(lines, margin + 6, y + 28);
+  const detailLines = [
+    `Jusqu'à la retraite (dans ${yearsToRetirement} an${yearsToRetirement > 1 ? "s" : ""}) : ${formatCHF(totals.oneTime)} de gains ponctuels` +
+      (totals.annual > 0
+        ? ` + ${formatCHF(totals.annual)}/an récurrents = ${formatCHF(preRetirementTotal)}`
+        : ""),
+  ];
+  if (totals.postRetirement > 0) {
+    detailLines.push(
+      `Après la retraite (stratégie rente vs capital, sur l'espérance de vie résiduelle réglée dans ce calculateur) : ${formatCHF(totals.postRetirement)}`,
+    );
+  }
+  let textY = y + 28;
+  for (const raw of detailLines) {
+    const lines = doc.splitTextToSize(raw, contentWidth - 12) as string[];
+    doc.text(lines, margin + 6, textY);
+    textY += lines.length * 4;
+  }
   pdf.cursorY = y + h + 4;
 }
 

@@ -600,11 +600,16 @@ function LppCalc() {
             {regimeAwareBuyback.applicable !== "yes" && regimeAwareBuyback.note && (
               <div
                 className={`mb-3 rounded-md border p-3 text-xs ${
-                  regimeAwareBuyback.applicable === "conditional"
+                  regimeAwareBuyback.beneficial
                     ? "border-amber-500/40 bg-amber-500/5 text-amber-900 dark:text-amber-200"
                     : "border-destructive/40 bg-destructive/5 text-destructive"
                 }`}
               >
+                <p className="mb-1 text-sm font-semibold">
+                  {regimeAwareBuyback.beneficial
+                    ? "✓ Avantageux ici — démarche nécessaire pour l'obtenir"
+                    : "✗ Pas avantageux ici"}
+                </p>
                 <strong>{regimeAwareBuyback.regimeLabel}.</strong> {regimeAwareBuyback.note}
               </div>
             )}

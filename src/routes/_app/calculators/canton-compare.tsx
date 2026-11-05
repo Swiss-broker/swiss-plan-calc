@@ -29,7 +29,7 @@ import {
 } from "@/lib/swiss/cantons";
 import { capitalWithdrawalTax } from "@/lib/lpp";
 import { computeTaxGlobal } from "@/lib/tax-global/engine";
-import { createDefaultInput } from "@/lib/tax-global/profile";
+import { createDefaultInput, detectRegime } from "@/lib/tax-global/profile";
 import type { TaxGlobalInput, Regime } from "@/lib/tax-global/types";
 import { CalcCard } from "@/components/calculators/CalcUI";
 import { ClientWealthCheck } from "@/components/calculators/ClientPrefillBadge";
@@ -53,6 +53,15 @@ import { toTaxGlobalInput } from "@/lib/clients/to-calculator-input";
 const ZG_CODE = "ZG";
 const SZ_CODE = "SZ";
 const REFERENCE_CODES: ReadonlySet<string> = new Set([ZG_CODE, SZ_CODE]);
+
+// Cantons pour lesquels le moteur frontalier (cross-border.ts) sait vraiment
+// calculer un régime (GE : IS genevoise ; FR : IS Fribourg ; VD/VS/NE/JU :
+// accord franco-suisse 1983). Zoug, Schwyz ET Berne n'ont AUCUN mécanisme
+// frontalier modélisé dans l'outil (aucun accord France-Suisse propre à ces
+// cantons en v1) : computeCrossBorder() retombe alors sur son cas générique
+// "canton hors scope", qui renvoie 0 CHF d'impôt — un faux 0 qui avait l'air
+// d'un vrai résultat ("Zoug : 0 CHF") plutôt que d'une case non calculée.
+const CROSS_BORDER_MODELED_CANTONS: ReadonlySet<string> = new Set(["GE", "FR", "VD", "VS", "NE", "JU"]);
 
 import { zodValidator, fallback } from "@tanstack/zod-adapter";
 import { z } from "zod";
@@ -262,11 +271,29 @@ function CantonCompareCalc() {
         ? "single_with_children"
         : "single";
 
+  // Calculé une seule fois : le régime du client tel quel (son vrai canton),
+  // pour savoir s'il faut exclure Zoug/Schwyz/Berne de la comparaison en
+  // mode annuel (voir CROSS_BORDER_MODELED_CANTONS ci-dessus).
+  const baseRegime = useMemo(() => detectRegime(base).regime, [base]);
+  const isCrossBorderClient =
+    baseRegime === "cross_border_ge" ||
+    baseRegime === "cross_border_fr_1983" ||
+    baseRegime === "cross_border_other";
+  const excludedCantons = useMemo(() => {
+    if (!isCrossBorderClient) return [] as string[];
+    return comparable.filter((c) => !CROSS_BORDER_MODELED_CANTONS.has(c.code)).map((c) => c.name);
+  }, [isCrossBorderClient]);
+
   const data = useMemo<Row[]>(() => {
     const rows: Row[] = [];
     for (const c of comparable) {
       try {
         if (mode === "annual") {
+          // Frontalier : aucun mécanisme modélisé pour ce canton (ni GE, ni
+          // Fribourg, ni accord 1983) — jamais afficher un faux 0 CHF comme
+          // si c'était un vrai résultat, on exclut la ligne (voir
+          // excludedCantons, affiché au courtier comme une limite connue).
+          if (isCrossBorderClient && !CROSS_BORDER_MODELED_CANTONS.has(c.code)) continue;
           // ⚠️ Source de vérité = moteur Fiscal Global.
           // On ne change que le canton, le reste (régime, déductions,
           // bonus, 3a, fortune…) est identique au calculateur fiscal global.
@@ -319,6 +346,7 @@ function CantonCompareCalc() {
     base,
     comparable,
     mode,
+    isCrossBorderClient,
     projectedLPPCapital,
     lumpSumStatus,
     referenceCanton,
@@ -686,6 +714,18 @@ function CantonCompareCalc() {
             <strong>Frontalier Genève.</strong> Imposition à la source genevoise (IS)
             + résidu éventuel en France. Les autres cantons sont indiqués à titre comparatif
             (impôt français applicable au titre de l'accord 1983).
+          </p>
+        </div>
+      )}
+
+      {mode === "annual" && excludedCantons.length > 0 && (
+        <div className="flex items-start gap-3 rounded-lg border border-warning/40 bg-warning/5 p-3 text-sm">
+          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-warning" aria-hidden />
+          <p className="text-foreground/90">
+            <strong>{excludedCantons.join(", ")}</strong> : aucun mécanisme frontalier
+            (accord France-Suisse) n'existe pour {excludedCantons.length > 1 ? "ces cantons" : "ce canton"}{" "}
+            dans l'outil — {excludedCantons.length > 1 ? "exclus" : "exclu"} du comparatif plutôt que
+            d'afficher un montant à 0 CHF qui donnerait l'impression, à tort, qu'aucun impôt n'y serait dû.
           </p>
         </div>
       )}

@@ -33,11 +33,20 @@ export function SaveSimulationButton({
   inputs,
   summary,
   defaultTitle,
+  disabled,
+  disabledReason,
 }: {
   kind: SimulationKind;
   inputs: Record<string, unknown>;
   summary: Record<string, unknown>;
   defaultTitle?: string;
+  /** Empêche la sauvegarde tant qu'une donnée asynchrone (ex. taux marginal
+   *  repris du fiscal global) n'est pas encore arrivée — évite de figer une
+   *  valeur par défaut dans la simulation enregistrée par pure course de
+   *  vitesse entre le clic et la requête réseau. */
+  disabled?: boolean;
+  /** Message affiché au survol quand disabled est vrai. */
+  disabledReason?: string;
 }) {
   const { user } = useAuth();
   const t = useT();
@@ -131,7 +140,12 @@ export function SaveSimulationButton({
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline" className="shine gap-2">
+        <Button
+          variant="outline"
+          className="shine gap-2"
+          disabled={disabled}
+          title={disabled ? disabledReason : undefined}
+        >
           <Bookmark className="h-4 w-4" />
           {t("common.save")}
         </Button>

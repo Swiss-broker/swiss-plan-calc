@@ -4,7 +4,12 @@
 import { computeIncomeTax, type IncomeTaxInput } from "@/lib/tax/income";
 import { computeSourceTax, inferSourceScale, inferSourceRectification } from "@/lib/tax/source";
 import { computeCrossBorder } from "@/lib/tax/cross-border";
-import { checkQuasiResident, compareTOUvsSource } from "@/lib/tax/tou";
+import {
+  checkQuasiResident,
+  compareTOUvsSource,
+  type QuasiResidentResult,
+  type TOUComparisonResult,
+} from "@/lib/tax/tou";
 import { computeHealthFrance } from "@/lib/health-france";
 import { detectRegime, toTaxStatus, toFrenchStatus, isCoupleStatus } from "./profile";
 import type { TaxGlobalInput, TaxGlobalResult, Regime } from "./types";
@@ -417,8 +422,11 @@ export function computeTaxGlobal(g: TaxGlobalInput): TaxGlobalResult {
       lamalChildMonthlyCHF: g.lamalChildMonthlyCHF,
     });
 
-    // === Pour GE / cross_border_other : si déductions CH saisies, comparer
-    //     avec la TOU GE (taxation ordinaire CH avec déductions).
+    // === Pour GE / cross_border_other : comparer en permanence avec la TOU
+    //     GE (taxation ordinaire CH avec déductions), pas seulement quand des
+    //     déductions sont saisies — sans ça, le courtier ne voit JAMAIS le
+    //     chiffre "si vous demandiez la TOU" et ne peut pas vérifier que
+    //     l'app a bien pris en compte la possibilité d'une démarche.
     //     L'accord 1983 reste hors comparaison : imposition exclusive FR.
     const chDeductionsTotal =
       (g.pillar3aContributions || 0) +
@@ -428,10 +436,13 @@ export function computeTaxGlobal(g: TaxGlobalInput): TaxGlobalResult {
       (g.pillar3bContributions || 0);
     let displayedCrossBorder = crossBorder;
     const cbNotes = [...crossBorder.notes];
-    if (
-      (det.regime === "cross_border_ge" || det.regime === "cross_border_other") &&
-      chDeductionsTotal > 0
-    ) {
+    // touComparison : même objet, même formulation (recommendationText déjà
+    // rédigé pour les 3 cas : avantageux / pas avantageux / négligeable) que
+    // pour le régime source_taxed/tou plus haut — un seul endroit qui décide
+    // comment expliquer "TOU oui/non", jamais deux textes qui divergent.
+    let crossBorderTouComparison: TOUComparisonResult | undefined;
+    let crossBorderTouEligibility: QuasiResidentResult | undefined;
+    if (det.regime === "cross_border_ge" || det.regime === "cross_border_other") {
       const swissIncome =
         g.grossSalary +
         g.bonus +
@@ -439,30 +450,36 @@ export function computeTaxGlobal(g: TaxGlobalInput): TaxGlobalResult {
         g.otherIncome +
         g.rentalIncome;
       const worldwide = swissIncome + g.foreignIncome;
-      const eligibleTou = worldwide > 0 ? swissIncome / worldwide >= 0.9 : true;
-      const ordinaryCH = computeIncomeTax(toIncomeTaxInput(g));
-      // Comparer impôt CH ordinaire (avec déductions) à l'impôt CH source actuel.
-      if (ordinaryCH.totalTax < crossBorder.swissTax) {
-        const newSwiss = ordinaryCH.totalTax;
-        const newTotal = newSwiss + crossBorder.foreignTax;
+      crossBorderTouEligibility = checkQuasiResident({
+        worldwideIncome: worldwide,
+        swissIncome,
+        isEUEFTAResident: true,
+      });
+      crossBorderTouComparison = compareTOUvsSource({
+        sourceTaxAnnual: crossBorder.swissTax,
+        taxInput: toIncomeTaxInput(g),
+        eligible: crossBorderTouEligibility.eligibleForTOU,
+      });
+      const ordinaryCH = crossBorderTouComparison.ordinaryTax;
+      // Affichage du TOTAL retenu (totalTaxCHF) : toujours le MIN réel entre
+      // source et ordinaire — c'est ce que le client paierait concrètement
+      // en agissant au mieux, jamais un chiffre théorique. Le banc
+      // d'explication ci-dessus (crossBorderTouComparison) reste visible
+      // même quand ce n'est PAS avantageux, avec le pourquoi.
+      if (chDeductionsTotal > 0 && ordinaryCH < crossBorder.swissTax) {
+        const newTotal = ordinaryCH + crossBorder.foreignTax;
         displayedCrossBorder = {
           ...crossBorder,
-          swissTax: newSwiss,
-          swissRate: Math.round((newSwiss / (g.grossSalary + g.bonus)) * 1000) / 10,
+          swissTax: ordinaryCH,
+          swissRate: Math.round((ordinaryCH / (g.grossSalary + g.bonus)) * 1000) / 10,
           totalTax: newTotal,
           totalRate: Math.round((newTotal / (g.grossSalary + g.bonus)) * 1000) / 10,
           netAnnual: Math.round(g.grossSalary + g.bonus - newTotal),
-          marginalRate: ordinaryCH.marginalRate,
+          marginalRate: crossBorderTouComparison.marginalRate,
         };
-        cbNotes.push(
-          eligibleTou
-            ? `TOU GE applicable (${Math.round((swissIncome / Math.max(1, worldwide)) * 100)}% du revenu mondial en CH ≥ 90%) : déductions CH appliquées, économie suisse estimée ${Math.round(crossBorder.swissTax - newSwiss).toLocaleString("fr-CH")} CHF. Démarche : demander la TOU GE.`
-            : `Déductions CH non automatiques (quasi-résident non éligible : ${Math.round((swissIncome / Math.max(1, worldwide)) * 100)}% < 90%). Affichage simulé ici, nécessite une rectification IS auprès de l'AFC pour s'appliquer réellement.`,
-        );
-      } else {
-        cbNotes.push(
-          "Déductions CH saisies insuffisantes pour battre la retenue source GE, IS GE conservée.",
-        );
+      }
+      if (chDeductionsTotal > 0) {
+        cbNotes.push(crossBorderTouComparison.recommendationText);
       }
     }
     if (det.regime === "cross_border_fr_1983" && chDeductionsTotal > 0) {
@@ -494,6 +511,8 @@ export function computeTaxGlobal(g: TaxGlobalInput): TaxGlobalResult {
       regimeLabel: det.regimeLabel,
       crossBorder: displayedCrossBorder,
       health,
+      touEligibility: crossBorderTouEligibility,
+      touComparison: crossBorderTouComparison,
       totalTaxCHF: totalTax,
       socialChargesCHF: social,
       grossIncomeCHF: gross,

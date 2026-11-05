@@ -92,7 +92,7 @@ function RetirementCalc() {
   // taux sans attendre un rechargement complet de la page — demandé
   // explicitement, l'ancien pré-remplissage ne se faisait qu'une seule fois
   // par montage du composant.
-  const { data: snapshot } = useClientFiscalSnapshot(clientId, caseId);
+  const { data: snapshot, isLoading: snapshotLoading } = useClientFiscalSnapshot(clientId, caseId);
   const lastAutofilledRate = useRef<number | null>(null);
   useEffect(() => {
     if (simId) return; // brouillon chargé : ne pas écraser avec la fiche vivante
@@ -381,6 +381,13 @@ function RetirementCalc() {
             recommendation: compare.recommendation,
           }}
           defaultTitle={`Retraite ${form.canton} · capital ${form.capital}`}
+          // Empêche de sauvegarder avant que le taux marginal n'ait fini de
+          // se reprendre depuis le fiscal global : sans ça, un clic rapide
+          // juste après l'ouverture de la page figeait la valeur par défaut
+          // du formulaire (25%) au lieu du vrai taux du client, avec un
+          // écart durable par rapport au fiscal global une fois enregistré.
+          disabled={!simId && !!clientId && snapshotLoading}
+          disabledReason="Reprise du taux marginal depuis le fiscal global en cours, patientez un instant avant de sauvegarder."
         />
       </div>
     </div>

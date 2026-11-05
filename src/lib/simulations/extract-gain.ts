@@ -4,14 +4,23 @@ import type { HistoryEntry, SimulationKind } from "@/lib/history/types";
 
 export type GainKind = "one_time" | "annual" | "none";
 
-// Horizon de projection utilisé PARTOUT où un total "gain identifié" agrège
-// des gains ponctuels et des gains annuels (fiche client ET rapport PDF,
-// voir computeTotals dans lib/pdf/synthesis-report.ts) — une seule
-// constante pour que les deux ne puissent plus jamais diverger.
-export const GAIN_HORIZON_YEARS = 10;
+// Avant ce correctif : un horizon FIXE de 10 ans pour tout le monde, quel
+// que soit l'âge réel du client — un gain annuel identifié à 60 ans était
+// donc compté comme si le client travaillait encore 10 ans (souvent faux),
+// et un gain identifié à 30 ans ignorait les 25+ années restantes avant la
+// retraite (sous-estimation massive). Les appelants (fiche client ET PDF)
+// passent maintenant le nombre d'années RÉEL jusqu'à la retraite du client
+// (voir ageFromDob + Math.max(1, 65 - age), même calcul que les calculateurs
+// retraite/LPP/3a) ; 10 reste la valeur de repli uniquement quand l'âge du
+// client est inconnu, pour ne jamais planter sur un dossier incomplet.
+export const GAIN_HORIZON_YEARS_FALLBACK = 10;
 
-export function projectGainTotal(oneTime: number, annual: number): number {
-  return oneTime + annual * GAIN_HORIZON_YEARS;
+export function projectGainTotal(
+  oneTime: number,
+  annual: number,
+  yearsToRetirement: number = GAIN_HORIZON_YEARS_FALLBACK,
+): number {
+  return oneTime + annual * yearsToRetirement;
 }
 
 export interface ExtractedGain {
@@ -297,22 +306,51 @@ export function pickLatestNonDismissed(entries: HistoryEntry[], kind: Simulation
 /**
  * Agrège les gains actifs (non archivés) à partir d'une liste de simulations.
  * Pour chaque kind, on ne conserve que la simulation la plus récente.
+ *
+ * @param yearsToRetirement Nombre d'années réel jusqu'à la retraite du
+ *   client (ex. Math.max(1, 65 - age), voir ageFromDob) — utilisé pour
+ *   cumuler les gains annuels (3a, droit d'option santé, etc.) sur TOUTE la
+ *   vie active restante, pas sur un horizon fixe arbitraire.
  */
-export function aggregateGains(entries: HistoryEntry[]): {
+export function aggregateGains(
+  entries: HistoryEntry[],
+  yearsToRetirement: number = GAIN_HORIZON_YEARS_FALLBACK,
+): {
   items: GainItem[];
   totalOneTime: number;
   totalAnnual: number;
+  yearsToRetirement: number;
+  /** Gains cumulés PENDANT la vie active : tous les gains annuels × années
+   *  restantes jusqu'à la retraite, + tous les gains ponctuels SAUF celui du
+   *  calculateur "Rente vs capital" (voir postRetirementGain ci-dessous). */
+  preRetirementTotal: number;
+  /** Gain du calculateur "Rente vs capital" (différence rente/capital) —
+   *  déjà un cumul sur l'espérance de vie résiduelle réglée dans CE
+   *  calculateur (ex. 20 ans), jamais mélangé aux gains "pendant la vie
+   *  active" : ce sont deux périodes de la vie du client, pas la même chose. */
+  postRetirementGain: number;
+  /** Somme des deux ci-dessus, pour une vue d'ensemble globale. */
   totalProjected: number;
 } {
   const items = selectGains(entries, false);
   const totalOneTime = items.filter((i) => i.type === "one_time").reduce((s, i) => s + i.amount, 0);
   const totalAnnual = items.filter((i) => i.type === "annual").reduce((s, i) => s + i.amount, 0);
+  const postRetirementGain = items.find((i) => i.kind === "retirement")?.amount ?? 0;
+  const preRetirementOneTime = totalOneTime - postRetirementGain;
   // Même formule que "Gain total identifié" dans le PDF (computeTotals +
   // drawGainHighlight) : sans ça, la fiche client et le PDF affichaient deux
-  // totaux différents pour la même notion ("gain identifié"), l'un cumulant
-  // un an de gains annuels, l'autre dix.
-  const totalProjected = projectGainTotal(totalOneTime, totalAnnual);
-  return { items, totalOneTime, totalAnnual, totalProjected };
+  // totaux différents pour la même notion ("gain identifié").
+  const preRetirementTotal = projectGainTotal(preRetirementOneTime, totalAnnual, yearsToRetirement);
+  const totalProjected = preRetirementTotal + postRetirementGain;
+  return {
+    items,
+    totalOneTime,
+    totalAnnual,
+    yearsToRetirement,
+    preRetirementTotal,
+    postRetirementGain,
+    totalProjected,
+  };
 }
 
 /** Gains archivés (masqués de la synthèse), pour l'affichage "Restaurer". */

@@ -146,6 +146,7 @@ function CaseDetailPage() {
         <SessionSummaryTab
           clientId={clientId}
           clientName={`${client.first_name} ${client.last_name}`.trim()}
+          clientDateOfBirth={client.date_of_birth}
           caseId={caseId}
         />
       </div>

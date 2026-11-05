@@ -18,9 +18,8 @@
 // calcul qui diverge.
 
 import { computeIncomeTax, type IncomeTaxInput } from "./income";
-import { checkQuasiResident } from "./tou";
 import { computeTaxGlobal } from "@/lib/tax-global/engine";
-import { detectRegime, createDefaultInput, isCoupleStatus } from "@/lib/tax-global/profile";
+import { detectRegime, createDefaultInput } from "@/lib/tax-global/profile";
 import type { TaxGlobalInput, Regime } from "@/lib/tax-global/types";
 import {
   toTaxGlobalInput,
@@ -56,6 +55,9 @@ export interface RegimeAwareDeductionResult {
    *  imposition exclusive en France, un versement suisse n'ouvre aucun
    *  droit à déduction nulle part). */
   applicable: "yes" | "conditional" | "no";
+  /** true dès que taxSavings > 0 (la démarche vaut le coup) — sert à choisir
+   *  la couleur du bandeau côté UI (vert/rouge) sans dupliquer la logique. */
+  beneficial: boolean;
   note: string | null;
 }
 
@@ -78,6 +80,7 @@ export function computeRegimeAwareDeduction(
       regime: "resident_ordinary",
       regimeLabel: "Résident, taxation ordinaire",
       applicable: "yes",
+      beneficial: taxSavings > 0,
       note: null,
     };
   }
@@ -105,51 +108,43 @@ export function computeRegimeAwareDeduction(
   };
 
   if (det.regime === "resident_ordinary") {
-    return { ...result, applicable: "yes", note: null };
+    return { ...result, applicable: "yes", beneficial: taxSavings > 0, note: null };
   }
 
   if (det.regime === "cross_border_fr_1983") {
     return {
       ...result,
       applicable: "no",
+      beneficial: false,
       note: `Frontalier sous l'accord franco-suisse de 1983 (travail ${g.canton}) : ce client est imposé exclusivement en France. Un versement 3e pilier A ou un rachat LPP suisse n'ouvre aucun droit à déduction, ni côté suisse ni côté français, donc aucune économie réelle ici.`,
     };
   }
 
   // source_taxed / tou / cross_border_ge / cross_border_other : retenue à la
-  // source par défaut, jamais affectée par un 3a/rachat LPP. L'économie
-  // ci-dessus (computeTaxGlobal) ne devient non nulle que si la taxation
-  // ordinaire/TOU avec cette déduction devient plus avantageuse que la
-  // retenue — exactement la même règle d'affichage que Fiscal Global.
-  const couple = isCoupleStatus(g.civilStatus);
-  const swissIncome =
-    g.grossSalary + g.bonus + (couple ? g.spouseGrossSalary : 0) + g.otherIncome + g.rentalIncome;
-  const worldwide = swissIncome + g.foreignIncome;
-  const touEligibility = checkQuasiResident({
-    worldwideIncome: worldwide,
-    swissIncome,
-    isEUEFTAResident: true,
-  });
-
-  if (touEligibility.eligibleForTOU) {
+  // source par défaut, jamais affectée par un 3a/rachat LPP. `scenario`
+  // (computeTaxGlobal avec la déduction testée) expose déjà touComparison —
+  // même objet, même texte explicatif (recommendationText) que ce que
+  // Fiscal Global affiche pour le même client/la même déduction : un seul
+  // endroit qui rédige "pourquoi", jamais un second texte qui diverge.
+  const tou = scenario.touComparison;
+  if (!tou) {
+    // Ne devrait pas arriver (tous les régimes restants exposent
+    // touComparison) — repli sûr plutôt qu'un crash.
     return {
       ...result,
       applicable: "conditional",
-      note: `Économie estimée en cas de Taxation Ordinaire Ultérieure (TOU) : client quasi-résident éligible (${touEligibility.swissShare}% du revenu mondial en CH, seuil 90%). Elle ne devient réelle qu'après demande de TOU auprès du canton (délai : 31 mars ${g.taxYear + 1}). Tant que la TOU n'est pas demandée, la retenue à la source s'applique sans aucune déduction.`,
+      beneficial: taxSavings > 0,
+      note: null,
     };
   }
-
-  // Non éligible TOU : NE PAS écraser `taxSavings` à 0 — `result` contient
-  // déjà le même chiffre "simulé" (MIN entre source et ordinaire avec
-  // déductions) que Fiscal Global pour ce même client/cette même déduction
-  // (voir engine.ts, règle d'affichage documentée : rectification IS
-  // possible même hors quasi-résidence). Avant ce correctif, ce module
-  // renvoyait 0 CHF ici alors que Fiscal Global affichait un montant non
-  // nul pour l'exact même profil — deux écrans contradictoires pour la
-  // même action du même client.
+  const beneficial = taxSavings > 0;
+  const deadlineNote = tou.recommendation === "tou"
+    ? ` Démarche : demander la TOU auprès du canton avant le 31 mars ${g.taxYear + 1}.`
+    : "";
   return {
     ...result,
     applicable: "conditional",
-    note: `Économie estimée via démarche de rectification IS auprès du canton — client non quasi-résident (${touEligibility.swissShare}% du revenu mondial en CH, seuil 90%), donc pas éligible à la TOU. Sans cette démarche, la retenue à la source brute s'applique sans aucune déduction.`,
+    beneficial,
+    note: `${tou.recommendationText}${deadlineNote} Tant que la démarche n'est pas faite, la retenue à la source s'applique sans aucune déduction.`,
   };
 }

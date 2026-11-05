@@ -42,6 +42,7 @@ import {
   type SimulationKind,
 } from "@/lib/history/types";
 import { aggregateGains, listDismissedGains, type GainItem } from "@/lib/simulations/extract-gain";
+import { ageFromDob } from "@/lib/clients/types";
 import {
   RDV_MIN_CENTIMES,
   computeCommissionCentimes,
@@ -63,11 +64,16 @@ import { CaseRow } from "./ClientCasesTab";
 export function SessionSummaryTab({
   clientId,
   clientName,
+  clientDateOfBirth,
   caseId,
   historique,
 }: {
   clientId: string;
   clientName: string;
+  /** Pour cumuler les gains annuels identifiés sur les années RÉELLES
+   *  jusqu'à la retraite du client (voir aggregateGains), au lieu d'un
+   *  horizon fixe arbitraire identique pour tout le monde. */
+  clientDateOfBirth?: string | null;
   /** Dossier actif (?caseId=xxx) : quand présent, la liste des simulations
    *  est filtrée sur CE dossier uniquement (voir "Ouvrir" dans
    *  ClientCasesTab) — plus de confusion avec les simulations des autres
@@ -337,7 +343,9 @@ export function SessionSummaryTab({
 
   const assignToCase = useAssignSimulationToCase(clientId);
 
-  const agg = aggregateGains(entries);
+  const clientAge = ageFromDob(clientDateOfBirth);
+  const yearsToRetirement = clientAge !== null ? Math.max(1, 65 - clientAge) : 10;
+  const agg = aggregateGains(entries, yearsToRetirement);
   const dismissedGains = listDismissedGains(entries);
 
   return (
@@ -385,6 +393,20 @@ export function SessionSummaryTab({
                     <span className="font-semibold">
                       {formatCHF(agg.totalAnnual)} / {t("client.session.per_year")}
                     </span>
+                  </div>
+                )}
+                <div className="flex items-center justify-between border-t pt-2 text-sm">
+                  <span className="text-muted-foreground">
+                    {t("client.session.pre_retirement_gain", { years: agg.yearsToRetirement })}
+                  </span>
+                  <span className="font-semibold">{formatCHF(agg.preRetirementTotal)}</span>
+                </div>
+                {agg.postRetirementGain > 0 && (
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">
+                      {t("client.session.post_retirement_gain")}
+                    </span>
+                    <span className="font-semibold">{formatCHF(agg.postRetirementGain)}</span>
                   </div>
                 )}
                 <div className="flex items-center justify-between border-t pt-2 text-base">

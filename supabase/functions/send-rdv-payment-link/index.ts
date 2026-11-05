@@ -83,6 +83,11 @@ Deno.serve(async (req) => {
       maximumFractionDigits: 2,
     });
     const senderLabel = brokerName ? `${brokerName}` : "Votre courtier SwissBroker Pro";
+    // Prénom seul pour la formule d'appel ("Bonjour Prénom,"), jamais le nom
+    // complet : clientName reçu ici est "Prénom Nom" (voir SessionSummaryTab,
+    // `${client.first_name} ${client.last_name}`), donc "Bonjour Prénom Nom,"
+    // sonnait administratif au lieu d'une formule personnelle normale.
+    const clientFirstName = (clientName ?? "").trim().split(/\s+/)[0] ?? "";
 
     await sendBrevoEmail(
       clientEmail,
@@ -90,7 +95,7 @@ Deno.serve(async (req) => {
       `
       <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 24px;">
         <h2 style="color: #0f766e;">Consultation en prévoyance</h2>
-        <p>Bonjour ${clientName ?? ""},</p>
+        <p>Bonjour ${clientFirstName},</p>
         <p>${senderLabel} vous a envoyé un lien de paiement sécurisé pour votre consultation.</p>
         <table style="width:100%; border-collapse:collapse; margin: 16px 0;">
           <tr style="background:#f0fdf4;">
