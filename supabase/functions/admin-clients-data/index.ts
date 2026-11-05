@@ -86,7 +86,7 @@ export async function handleAdminClientsDataRequest(req: Request, env: Env): Pro
       // PostgREST est refaite ici en 2 requêtes (clients puis profiles par
       // broker_id), sans filtre archived, pour un comportement identique.
       const clientsRes = await fetch(
-        `${supabaseUrl}/rest/v1/clients?select=id,first_name,last_name,email,created_at,broker_id&order=created_at.desc`,
+        `${supabaseUrl}/rest/v1/clients?select=id,first_name,last_name,email,created_at,broker_id,is_demo&order=created_at.desc`,
         { headers: svcHeaders },
       );
       const clients = await clientsRes.json();
@@ -255,6 +255,63 @@ export async function handleAdminClientsDataRequest(req: Request, env: Env): Pro
       );
       const namedClients = await res.json();
       return jsonResponse({ clients: namedClients });
+    }
+
+    if (action === "set_demo") {
+      // Marque/démarque un client comme "démo" (présentation du logiciel à
+      // un courtier prospect, qui a utilisé sa propre situation comme
+      // exemple) — jamais un vrai client. N'affecte que ce flag, rien
+      // d'autre sur la fiche.
+      const clientId = body?.clientId;
+      if (!clientId || typeof clientId !== "string" || !UUID_RE.test(clientId)) {
+        throw new Error("clientId manquant ou invalide.");
+      }
+      const isDemo = Boolean(body?.isDemo);
+      const res = await fetch(`${supabaseUrl}/rest/v1/clients?id=eq.${clientId}`, {
+        method: "PATCH",
+        headers: { ...svcHeaders, Prefer: "return=minimal" },
+        body: JSON.stringify({ is_demo: isDemo }),
+      });
+      if (!res.ok) throw new Error("Échec de la mise à jour du statut démo.");
+      return jsonResponse({ ok: true });
+    }
+
+    if (action === "delete_demo") {
+      // Suppression définitive, réservée aux clients marqués is_demo=true —
+      // vérifié ici côté serveur, jamais sur la seule prétention du client,
+      // pour qu'un vrai client ne puisse jamais être supprimé par ce
+      // chemin. simulation_history.client_id n'a pas de contrainte de
+      // clé étrangère (pas de ON DELETE CASCADE) : sans ce nettoyage
+      // explicite, ses lignes resteraient orphelines après la suppression
+      // du client. Les autres tables liées (client_assets, client_pension,
+      // client_notes, client_cases, etc.) cascadent déjà au niveau base.
+      const clientId = body?.clientId;
+      if (!clientId || typeof clientId !== "string" || !UUID_RE.test(clientId)) {
+        throw new Error("clientId manquant ou invalide.");
+      }
+      const checkRes = await fetch(
+        `${supabaseUrl}/rest/v1/clients?id=eq.${clientId}&select=id,is_demo`,
+        { headers: svcHeaders },
+      );
+      const checkRows = await checkRes.json();
+      const client = Array.isArray(checkRows) ? checkRows[0] : undefined;
+      if (!client) throw new Error("Client introuvable.");
+      if (!client.is_demo) {
+        throw new Error("Seul un client marqué « démo » peut être supprimé depuis cet écran.");
+      }
+
+      await fetch(`${supabaseUrl}/rest/v1/simulation_history?client_id=eq.${clientId}`, {
+        method: "DELETE",
+        headers: { ...svcHeaders, Prefer: "return=minimal" },
+      });
+
+      const deleteRes = await fetch(`${supabaseUrl}/rest/v1/clients?id=eq.${clientId}`, {
+        method: "DELETE",
+        headers: { ...svcHeaders, Prefer: "return=minimal" },
+      });
+      if (!deleteRes.ok) throw new Error("Échec de la suppression du client.");
+
+      return jsonResponse({ ok: true });
     }
 
     throw new Error("Action inconnue.");

@@ -1,11 +1,14 @@
 // supabase/functions/admin-invitations-data/index.ts
-// Liste des invitations courtier déjà envoyées (offre générée via
-// generate-offer, quel que soit le chemin : "Inviter un courtier" ou une
-// fiche lead cal.com classique), avec le statut réel de chacune — pour
-// l'onglet "Invitations envoyées" du panel admin (swiss-broker-admin),
-// sous "Inviter un courtier". Réservé à is_staff() (admin OU commercial,
-// un commercial ne voit que ses propres leads assignés), même règle
-// d'autorité que generate-offer / lead-offer-history.
+// Statut d'inscription de TOUS les courtiers en cours de recrutement, quel
+// que soit le chemin d'arrivée : réservation démo (cal.com) ou invitation
+// manuelle ("Inviter un courtier"). Un seul courtier peut en effet venir
+// des deux (ex. démo cal.com, puis offre renvoyée manuellement) — cette
+// fonction ne distingue donc la source QUE pour l'affichage (colonne
+// "origine"), jamais pour exclure une ligne. Pour l'onglet "Statut
+// d'inscription" du panel admin (swiss-broker-admin), sous "Inviter un
+// courtier". Réservé à is_staff() (admin OU commercial, un commercial ne
+// voit que ses propres leads assignés), même règle d'autorité que
+// generate-offer / lead-offer-history.
 export const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
@@ -61,6 +64,25 @@ export async function handleAdminInvitationsDataRequest(req: Request, env: Env):
     }
     const callerRole = staffRows[0].role as string;
 
+    // Tous les leads courtier non archivés, quelle que soit leur origine
+    // (source='manual' = "Inviter un courtier", tout le reste = réservation
+    // cal.com classique) : la vue doit les montrer tous, pas seulement ceux
+    // qui ont déjà reçu une offre.
+    const leadsRes = await fetch(
+      `${supabaseUrl}/rest/v1/demo_requests?archived=eq.false` +
+        `&select=id,name,email,status,source,assigned_to,created_at&order=created_at.desc`,
+      { headers: svcHeaders },
+    );
+    const leads = await leadsRes.json();
+    if (!Array.isArray(leads)) return jsonResponse({ error: "Erreur lors de la lecture des leads." }, 500);
+
+    // Un commercial ne voit que ses propres leads assignés (même règle que
+    // generate-offer) ; un admin voit tout.
+    const visibleLeads = callerRole === "admin"
+      ? leads
+      : (leads as any[]).filter((l) => l.assigned_to === callerId);
+    if (visibleLeads.length === 0) return jsonResponse({ invitations: [] });
+
     // Une offre par lead peut être générée plusieurs fois (relances) : on ne
     // garde que la plus récente par target_id, via le tri + un Map (dernier
     // écrit l'emporte, donc on itère du plus ancien au plus récent).
@@ -80,21 +102,6 @@ export async function handleAdminInvitationsDataRequest(req: Request, env: Env):
         admin_id: a.admin_id,
       });
     }
-    const leadIds = [...latestOfferByLead.keys()];
-    if (leadIds.length === 0) return jsonResponse({ invitations: [] });
-
-    const leadsRes = await fetch(
-      `${supabaseUrl}/rest/v1/demo_requests?id=in.(${leadIds.join(",")})&select=id,name,email,status,assigned_to`,
-      { headers: svcHeaders },
-    );
-    const leads = await leadsRes.json();
-    if (!Array.isArray(leads)) return jsonResponse({ error: "Erreur lors de la lecture des leads." }, 500);
-
-    // Un commercial ne voit que ses propres leads assignés (même règle que
-    // generate-offer) ; un admin voit tout.
-    const visibleLeads = callerRole === "admin"
-      ? leads
-      : (leads as any[]).filter((l) => l.assigned_to === callerId);
 
     const emails = [...new Set((visibleLeads as any[]).map((l) => l.email).filter(Boolean))];
     const invitesRes = emails.length > 0
@@ -113,14 +120,17 @@ export async function handleAdminInvitationsDataRequest(req: Request, env: Env):
     const invitations = (visibleLeads as any[]).map((l) => {
       const offer = latestOfferByLead.get(l.id);
       const invite = inviteByEmail.get(l.email);
-      let stage: "envoye" | "paye" | "compte_cree" = "envoye";
+      let stage: "sans_offre" | "envoye" | "paye" | "compte_cree" = "sans_offre";
       if (invite?.used_at) stage = "compte_cree";
       else if (invite) stage = "paye";
+      else if (offer) stage = "envoye";
       return {
         demo_request_id: l.id,
         name: l.name,
         email: l.email,
         lead_status: l.status,
+        origin: l.source === "manual" ? "invitation" : "reservation",
+        created_at: l.created_at,
         sent_at: offer?.created_at ?? null,
         checkout_url: offer?.checkout_url ?? null,
         paid_at: invite?.created_at ?? null,
@@ -129,7 +139,13 @@ export async function handleAdminInvitationsDataRequest(req: Request, env: Env):
       };
     });
 
-    invitations.sort((a, b) => (b.sent_at ?? "").localeCompare(a.sent_at ?? ""));
+    // Plus récent en premier, selon le dernier évènement connu de chaque
+    // ligne (compte créé > payé > envoyé > créé) plutôt que toujours
+    // created_at — pour que le courtier qui vient de bouger remonte en haut.
+    invitations.sort((a, b) => {
+      const latest = (x: typeof a) => x.account_created_at ?? x.paid_at ?? x.sent_at ?? x.created_at;
+      return (latest(b) ?? "").localeCompare(latest(a) ?? "");
+    });
 
     return jsonResponse({ invitations });
   } catch (err) {
