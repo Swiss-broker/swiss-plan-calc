@@ -92,6 +92,32 @@ export async function handleAdminInvoicesDataRequest(req: Request, env: Env): Pr
       return jsonResponse({ totalCents: sumAmountChf(rows) });
     }
 
+    if (action === "list_by_broker") {
+      // BrokerDetail.tsx (onglet "Commissions") : historique complet des
+      // factures RDV de ce courtier, payées ou non, pour voir d'un coup
+      // d'œil combien il a généré pour SwissBroker Pro — pas seulement le
+      // mois en cours (sum_paid_by_broker, déjà utilisé pour l'objectif
+      // mensuel). Même recalcul de repli pour commission_centimes que
+      // list_all (factures d'avant la Phase 2).
+      const brokerId = body?.brokerId;
+      if (!brokerId || typeof brokerId !== "string" || !UUID_RE.test(brokerId)) {
+        throw new Error("brokerId manquant ou invalide.");
+      }
+      const res = await fetch(
+        `${supabaseUrl}/rest/v1/rdv_invoices?broker_id=eq.${brokerId}&is_demo=eq.false` +
+          `&select=id,created_at,amount_chf,status,client_id,commission_centimes&order=created_at.desc`,
+        { headers: svcHeaders },
+      );
+      const rows = await res.json();
+      const invoices = Array.isArray(rows)
+        ? rows.map((r: any) => ({
+            ...r,
+            commission_centimes: r.commission_centimes ?? computeCommissionCentimes(r.amount_chf || 0),
+          }))
+        : rows;
+      return jsonResponse({ invoices });
+    }
+
     if (action === "sum_paid_by_broker") {
       const brokerId = body?.brokerId;
       if (!brokerId || typeof brokerId !== "string" || !UUID_RE.test(brokerId)) {
