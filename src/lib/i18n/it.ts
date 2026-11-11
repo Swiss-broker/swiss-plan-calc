@@ -646,6 +646,7 @@ export const it: Record<string, string> = {
   "calc.lpp.recap_under": "{gross} − {coord} = {val} (sotto plafond {cap})",
   "calc.lpp.field.expected_return": "Rendimento lordo (%/anno)",
   "calc.lpp.field.fees": "Costi TER + amministrazione (%/anno)",
+  "calc.lpp.tip.fees": "Lasciare a 0 nel caso normale: la cassa accredita l'interesse (minimo legale 1,25 % nel 2026) per intero, senza dedurre spese. Compilare solo per un piano i cui costi d'investimento sono a carico dell'assicurato (ad es. piano 1e).",
   "calc.lpp.field.salary_growth": "Crescita salariale (%/anno)",
   "calc.lpp.field.conversion_rate": "Aliquota di conversione al pensionamento (%)",
   "calc.lpp.field.extra_credit": "Accrediti sovraobbligatori (%)",

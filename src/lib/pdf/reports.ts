@@ -259,9 +259,11 @@ export function exportLppPdf(args: {
   pdf.section("Synthèse de la projection");
   pdf.paragraph(
     `La projection LPP simule l'évolution de votre avoir de prévoyance jusqu'à l'âge de la retraite (${input.retirementAge} ans), ` +
-      `en intégrant les bonifications de vieillesse légales (7 % à 18 % du salaire coordonné selon l'âge), un rendement brut annuel ` +
-      `de ${input.expectedReturnRate.toFixed(2)} %, des frais de gestion de ${input.feeRate.toFixed(2)} % et les éventuels rachats injectés. ` +
-      `Le rendement net effectivement appliqué est donc de ${projection.netReturnRate.toFixed(2)} % par an.`,
+      `en intégrant les bonifications de vieillesse légales (7 % à 18 % du salaire coordonné selon l'âge), ` +
+      (input.feeRate > 0
+        ? `un rendement brut annuel de ${input.expectedReturnRate.toFixed(2)} %, des frais de gestion de ${input.feeRate.toFixed(2)} % et les éventuels rachats injectés. ` +
+          `Le rendement net effectivement appliqué est donc de ${projection.netReturnRate.toFixed(2)} % par an.`
+        : `un intérêt annuel de ${input.expectedReturnRate.toFixed(2)} % crédité en entier sur votre avoir (aucun frais n'en est déduit) et les éventuels rachats injectés.`),
   );
   pdf.spacer(2);
   pdf.projectionBanner(`PROJECTION À ${input.retirementAge} ANS`);

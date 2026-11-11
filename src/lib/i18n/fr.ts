@@ -670,6 +670,7 @@ export const fr: Record<string, string> = {
   "calc.lpp.recap_under": "{gross} − {coord} = {val} (sous plafond {cap})",
   "calc.lpp.field.expected_return": "Rendement brut (%/an)",
   "calc.lpp.field.fees": "Frais TER + admin (%/an)",
+  "calc.lpp.tip.fees": "À laisser à 0 dans le cas normal : la caisse crédite l'intérêt (minimum légal 1,25 % en 2026) en entier sur l'avoir, sans en déduire de frais. À renseigner uniquement pour un plan dont les frais de placement sont à la charge de l'assuré (plan 1e, par exemple).",
   "calc.lpp.field.salary_growth": "Croissance salariale (%/an)",
   "calc.lpp.field.conversion_rate": "Taux conversion à la retraite (%)",
   "calc.lpp.field.extra_credit": "Bonifications surobligatoires (%)",

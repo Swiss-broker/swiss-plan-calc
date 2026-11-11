@@ -649,6 +649,7 @@ export const de: Record<string, string> = {
   "calc.lpp.recap_under": "{gross} − {coord} = {val} (unter Plafond {cap})",
   "calc.lpp.field.expected_return": "Bruttorendite (%/Jahr)",
   "calc.lpp.field.fees": "TER + Administrationskosten (%/Jahr)",
+  "calc.lpp.tip.fees": "Im Normalfall bei 0 belassen: Die Pensionskasse schreibt den Zins (gesetzliches Minimum 1,25 % im Jahr 2026) vollständig gut, ohne Kostenabzug. Nur ausfüllen bei einem Plan, dessen Anlagekosten die versicherte Person trägt (z. B. 1e-Plan).",
   "calc.lpp.field.salary_growth": "Lohnwachstum (%/Jahr)",
   "calc.lpp.field.conversion_rate": "Umwandlungssatz bei Pensionierung (%)",
   "calc.lpp.field.extra_credit": "Überobligatorische Altersgutschriften (%)",

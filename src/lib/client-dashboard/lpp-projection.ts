@@ -31,7 +31,11 @@ export const RETIREMENT_AGE_DEFAULT = 65;
  *  Alignées sur les défauts du formulaire LPP pour cohérence au franc près. */
 export const DASHBOARD_LPP_DEFAULTS = {
   expectedReturnRate: 1.25, // %, taux minimum LPP 2026
-  feeRate: 0.6, // %, frais TER+admin moyens caisses LPP suisses
+  // Aucun frais déduit de l'intérêt : l'institution de prévoyance crédite le
+  // taux minimal LPP en entier sur l'avoir de vieillesse (les frais
+  // d'administration sont financés par les cotisations, pas par l'intérêt).
+  // Le champ reste modifiable pour un plan particulier.
+  feeRate: 0, // %
   salaryGrowthRate: 1, // %
   conversionRate: LPP_2026.conversionRate, // %, hypothèse prudente (taux légal minimal 2026 : 6.8 %)
 } as const;

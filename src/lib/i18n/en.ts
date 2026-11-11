@@ -647,6 +647,7 @@ export const en: Record<string, string> = {
   "calc.lpp.recap_under": "{gross} − {coord} = {val} (below ceiling {cap})",
   "calc.lpp.field.expected_return": "Gross return (%/yr)",
   "calc.lpp.field.fees": "TER + admin fees (%/yr)",
+  "calc.lpp.tip.fees": "Leave at 0 in the normal case: the pension fund credits the interest (legal minimum 1.25% in 2026) in full, with no fees deducted. Fill in only for a plan whose investment costs are borne by the insured person (a 1e plan, for example).",
   "calc.lpp.field.salary_growth": "Salary growth (%/yr)",
   "calc.lpp.field.conversion_rate": "Conversion rate at retirement (%)",
   "calc.lpp.field.extra_credit": "Extra-mandatory credits (%)",

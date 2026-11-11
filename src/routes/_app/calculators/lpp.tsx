@@ -83,7 +83,8 @@ function LppCalc() {
     grossSalary: 0,
     insuredSalary: computeLppInsuredSalary(120_000, LPP_2026.maxInsuredSalary),
     expectedReturnRate: 1.25,
-    feeRate: 0.6,
+    // Pas de frais déduits de l'intérêt crédité (voir DASHBOARD_LPP_DEFAULTS).
+    feeRate: 0,
     insuredSalaryCap: LPP_2026.maxInsuredSalary as number,
     salaryGrowthRate: 1,
     conversionRate: 6.0,
@@ -383,7 +384,7 @@ function LppCalc() {
               <div data-guide="lpp-expected-return">
                 <NumField label={t("calc.lpp.field.expected_return")} value={form.expectedReturnRate} onChange={(v) => set("expectedReturnRate", v)} step={0.1} wikiId="lpp-credits" wikiTip={t("calc.lpp.tip.return")} />
               </div>
-              <NumField label={t("calc.lpp.field.fees")} value={form.feeRate} onChange={(v) => set("feeRate", v)} step={0.05} />
+              <NumField label={t("calc.lpp.field.fees")} value={form.feeRate} onChange={(v) => set("feeRate", v)} step={0.05} wikiId="lpp-credits" wikiTip={t("calc.lpp.tip.fees")} />
               <NumField label={t("calc.lpp.field.salary_growth")} value={form.salaryGrowthRate} onChange={(v) => set("salaryGrowthRate", v)} step={0.1} />
               <div data-guide="lpp-conversion-rate">
                 <NumField label={t("calc.lpp.field.conversion_rate")} value={form.conversionRate} onChange={(v) => set("conversionRate", v)} step={0.05} wikiId="lpp-conversion" wikiTip={t("calc.lpp.tip.conversion")} />
