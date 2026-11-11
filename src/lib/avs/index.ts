@@ -1,8 +1,7 @@
-// Logique pure AVS/AI, calcul rente prévisionnelle.
-// Approximation par paliers OFAS (formule de rente "65"), v1 simplifiée.
+// Logique pure AVS/AI, calcul rente prévisionnelle (formule de rente
+// légale, art. 34 LAVS).
 //
 // Limites connues :
-// - Bonifications pour tâches éducatives / d'assistance NON modélisées.
 // - Splitting AVS pour couple : on calcule chaque rente individuellement
 //   puis on applique le plafonnement couple au prorata. La vraie formule
 //   officielle splitterait les revenus durant le mariage, approximation
@@ -37,33 +36,54 @@ export function getReferenceAge(birthYear: number, gender?: Gender | null): numb
 }
 
 /**
- * Rente théorique (avant réduction années manquantes) en fonction du
- * revenu annuel moyen revalorisé.
+ * Rente théorique complète (échelle 44, avant réduction pour années
+ * manquantes) en fonction du revenu annuel moyen déterminant — formule
+ * légale de l'art. 34 LAVS, celle dont découlent les tables de rentes
+ * OFAS (échelle 44) :
+ * - revenu ≤ 36 × rente mensuelle min : 74 % de la rente min + 13/600 du revenu ;
+ * - au-delà : 104 % de la rente min + 8/600 du revenu ;
+ * - plancher = rente min, plafond = 2 × rente min (atteint à 72 × rente min).
  *
- * Formule simplifiée à 2 segments inspirée de la formule de rente OFAS :
- * - Revenu ≤ minDeterminingIncome → rente min.
- * - Revenu ≥ maxDeterminingIncome → rente max.
- * - Entre min et hingeIncome (~60'480) : pente forte.
- * - Entre hinge et maxDetermining : pente douce.
- *
- * Retourne la rente annuelle complète (44 ans).
+ * Retourne la rente annuelle sur 12 mois (base de calcul des rentes pour
+ * enfants, de survivants et AI) — la 13e rente de vieillesse n'est PAS
+ * incluse ici, voir AvsPersonResult.thirteenthPension.
  */
 export function theoreticalAnnualPension(averageAnnualIncome: number): number {
   const income = Math.max(0, averageAnnualIncome);
-  const { minDeterminingIncome, maxDeterminingIncome, hingeIncome, minAnnualPension, maxAnnualPension } = AVS_2026;
+  const { hingeIncome, minMonthlyPension, maxMonthlyPension } = AVS_2026;
+  const monthly =
+    income <= hingeIncome
+      ? 0.74 * minMonthlyPension + (13 / 600) * income
+      : 1.04 * minMonthlyPension + (8 / 600) * income;
+  return Math.min(maxMonthlyPension, Math.max(minMonthlyPension, monthly)) * 12;
+}
 
-  if (income <= minDeterminingIncome) return minAnnualPension;
-  if (income >= maxDeterminingIncome) return maxAnnualPension;
+/**
+ * Supplément de carrière (art. 33 al. 3 LAVS, art. 54 RAVS) : quand le
+ * risque (invalidité, décès) survient avant 45 ans, le revenu moyen de
+ * l'activité lucrative est majoré d'un pourcentage dépendant de l'âge, pour
+ * ne pas pénaliser une carrière salariale encore en début de progression.
+ */
+export function careerSupplementPct(ageAtEvent: number): number {
+  if (ageAtEvent < 23) return 100;
+  if (ageAtEvent === 23) return 90;
+  if (ageAtEvent === 24) return 80;
+  if (ageAtEvent === 25) return 70;
+  if (ageAtEvent === 26) return 60;
+  if (ageAtEvent === 27) return 50;
+  if (ageAtEvent <= 29) return 40;
+  if (ageAtEvent <= 31) return 30;
+  if (ageAtEvent <= 34) return 20;
+  if (ageAtEvent <= 38) return 10;
+  if (ageAtEvent <= 44) return 5;
+  return 0;
+}
 
-  // Pente forte : 73% de la progression sur le 1er segment (min → hinge).
-  const hingePension = minAnnualPension + 0.73 * (maxAnnualPension - minAnnualPension);
-
-  if (income <= hingeIncome) {
-    const t = (income - minDeterminingIncome) / (hingeIncome - minDeterminingIncome);
-    return minAnnualPension + t * (hingePension - minAnnualPension);
-  }
-  const t = (income - hingeIncome) / (maxDeterminingIncome - hingeIncome);
-  return hingePension + t * (maxAnnualPension - hingePension);
+/** Année civile de départ à la retraite à l'âge de référence (AVS 21),
+ *  unique pour toute l'app : fiche client, prestations consolidées et
+ *  préremplissage du calculateur doivent tomber sur la même année. */
+export function getReferenceRetirementYear(birthYear: number, gender?: Gender | null): number {
+  return birthYear + Math.round(getReferenceAge(birthYear, gender));
 }
 
 export interface AvsPersonInput {
@@ -107,16 +127,38 @@ export interface AvsPersonResult {
   effectiveYears: number;
   missingYears: number;
   reductionRatio: number; // 0..1
+  /** Rente complète (échelle 44) sur 12 mois — base des rentes dérivées. */
   theoreticalAnnualPension: number;
+  /** Rente réduite pour années manquantes, sur 12 mois (hors 13e rente). */
   reducedAnnualPension: number;
   monthlyPension: number;
+  /** Total réellement versé par an : 12 mensualités + 13e rente pour une
+   *  rente de vieillesse ; 12 mensualités pour une rente AI. */
   annualPension: number;
+  /** Montant de la 13e rente de vieillesse (= une mensualité), 0 pour l'AI. */
+  thirteenthPension: number;
   /** Bonus annuel ajouté au revenu déterminant (CHF) */
   bonificationsBonus: number;
   /** Revenu déterminant final utilisé pour le calcul */
   determiningIncome: number;
   /** Année effective d'arrêt des cotisations (départ ou retraite) */
   contributionEndYear: number;
+}
+
+/** Total annuel d'une rente de VIEILLESSE à partir de sa base 12 mois :
+ *  12 mensualités + la 13e rente (un douzième de la rente annuelle). */
+function withThirteenth(reducedAnnual: number): {
+  monthlyPension: number;
+  thirteenthPension: number;
+  annualPension: number;
+} {
+  const extra = AVS_2026.oldAgePensionsPerYear - 12;
+  const thirteenth = (reducedAnnual / 12) * extra;
+  return {
+    monthlyPension: Math.round(reducedAnnual / 12),
+    thirteenthPension: Math.round(thirteenth),
+    annualPension: Math.round(reducedAnnual + thirteenth),
+  };
 }
 
 export interface AvsProjection {
@@ -165,8 +207,7 @@ function computePerson(input: AvsPersonInput): AvsPersonResult {
     reductionRatio,
     theoreticalAnnualPension: Math.round(theo),
     reducedAnnualPension: Math.round(reduced),
-    annualPension: Math.round(reduced),
-    monthlyPension: Math.round(reduced / 12),
+    ...withThirteenth(reduced),
     bonificationsBonus: Math.round(bonificationsBonus),
     determiningIncome: Math.round(determining),
     contributionEndYear: endYear,
@@ -184,40 +225,111 @@ export function projectAvsPension(input: AvsCoupleInput): AvsProjection {
   }
 
   const spouse = computePerson(input.spouse);
-  const sum = primary.annualPension + spouse.annualPension;
+  // Le plafond couple (art. 35 LAVS : 150 % de la rente max) porte sur les
+  // rentes mensuelles ; la 13e rente suit ensuite chaque rente plafonnée.
+  const sumBase = primary.reducedAnnualPension + spouse.reducedAnnualPension;
   const cap = AVS_2026.maxCoupleAnnualPension;
 
-  if (sum <= cap) {
+  if (sumBase <= cap) {
+    const combined = primary.annualPension + spouse.annualPension;
     return {
       primary,
       spouse,
-      combinedAnnualPension: sum,
-      combinedMonthlyPension: Math.round(sum / 12),
+      combinedAnnualPension: combined,
+      combinedMonthlyPension: primary.monthlyPension + spouse.monthlyPension,
       cappedCouple: false,
     };
   }
 
   // Plafonnement : réduction proportionnelle des deux rentes.
-  const ratio = cap / sum;
-  const primaryCapped: AvsPersonResult = {
-    ...primary,
-    annualPension: Math.round(primary.annualPension * ratio),
-    monthlyPension: Math.round((primary.annualPension * ratio) / 12),
-    reducedAnnualPension: Math.round(primary.annualPension * ratio),
+  const ratio = cap / sumBase;
+  const cappedPerson = (p: AvsPersonResult): AvsPersonResult => {
+    const base = p.reducedAnnualPension * ratio;
+    return { ...p, reducedAnnualPension: Math.round(base), ...withThirteenth(base) };
   };
-  const spouseCapped: AvsPersonResult = {
-    ...spouse,
-    annualPension: Math.round(spouse.annualPension * ratio),
-    monthlyPension: Math.round((spouse.annualPension * ratio) / 12),
-    reducedAnnualPension: Math.round(spouse.annualPension * ratio),
-  };
+  const primaryCapped = cappedPerson(primary);
+  const spouseCapped = cappedPerson(spouse);
 
   return {
     primary: primaryCapped,
     spouse: spouseCapped,
-    combinedAnnualPension: cap,
+    combinedAnnualPension: withThirteenth(cap).annualPension,
     combinedMonthlyPension: Math.round(cap / 12),
     cappedCouple: true,
+  };
+}
+
+export interface AiPensionInput {
+  birthYear: number;
+  gender?: Gender | null;
+  /** Année de début de cotisation en Suisse */
+  contributionStartYear: number;
+  /** Année de survenance de l'invalidité (ou du décès) */
+  eventYear: number;
+  /** Revenu annuel moyen de l'activité lucrative (CHF) */
+  averageAnnualIncome: number;
+  careerGapYears?: number;
+  educationalYears?: number;
+  educationalShare?: number;
+  assistanceYears?: number;
+  assistanceShare?: number;
+}
+
+export interface AiPersonResult extends AvsPersonResult {
+  /** Années que la classe d'âge de l'assuré devait cotiser jusqu'au risque. */
+  cohortYears: number;
+  /** Supplément de carrière appliqué au revenu (%, 0 dès 45 ans). */
+  careerSupplementPct: number;
+}
+
+/**
+ * Rente AI entière si l'invalidité survenait `eventYear` (art. 36 LAI,
+ * mêmes règles de calcul que l'AVS). À la différence de la rente de
+ * vieillesse, l'échelle ne compare PAS les années cotisées à 44 ans mais à
+ * celles de la classe d'âge : un assuré de 35 ans sans lacune depuis ses
+ * 21 ans touche une rente complète (échelle 44), pas 14/44 de rente. Seules
+ * de vraies lacunes (arrivée tardive en Suisse, années non cotisées)
+ * réduisent la rente. Pas de 13e rente pour l'AI.
+ */
+export function projectAiPension(input: AiPensionInput): AiPersonResult {
+  const { minAnnualPension, maxDeterminingIncome } = AVS_2026;
+  const cohortStartYear = input.birthYear + 21;
+  const cohortYears = Math.max(1, input.eventYear - cohortStartYear);
+  const rawYears = Math.max(0, input.eventYear - Math.max(input.contributionStartYear, cohortStartYear));
+  const gapYears = Math.max(0, Math.min(rawYears, input.careerGapYears ?? 0));
+  const contributedYears = Math.min(cohortYears, rawYears - gapYears);
+  const reductionRatio = contributedYears / cohortYears;
+
+  const supplementPct = careerSupplementPct(input.eventYear - input.birthYear);
+  const eduYears = Math.max(0, input.educationalYears ?? 0);
+  const eduShare = Math.max(0, Math.min(100, input.educationalShare ?? 100)) / 100;
+  const assistYears = Math.max(0, input.assistanceYears ?? 0);
+  const assistShare = Math.max(0, Math.min(100, input.assistanceShare ?? 100)) / 100;
+  const careerYears = Math.max(1, contributedYears);
+  const bonificationsBonus =
+    (3 * minAnnualPension * (eduYears * eduShare + assistYears * assistShare)) / careerYears;
+
+  const determining = Math.min(
+    maxDeterminingIncome,
+    Math.max(0, input.averageAnnualIncome) * (1 + supplementPct / 100) + bonificationsBonus,
+  );
+  const theo = theoreticalAnnualPension(determining);
+  const reduced = theo * reductionRatio;
+
+  return {
+    effectiveYears: contributedYears,
+    missingYears: cohortYears - contributedYears,
+    cohortYears,
+    reductionRatio,
+    careerSupplementPct: supplementPct,
+    theoreticalAnnualPension: Math.round(theo),
+    reducedAnnualPension: Math.round(reduced),
+    monthlyPension: Math.round(reduced / 12),
+    annualPension: Math.round(reduced),
+    thirteenthPension: 0,
+    bonificationsBonus: Math.round(bonificationsBonus),
+    determiningIncome: Math.round(determining),
+    contributionEndYear: input.eventYear,
   };
 }
 

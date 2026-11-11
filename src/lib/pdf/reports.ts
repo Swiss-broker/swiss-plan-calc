@@ -565,7 +565,7 @@ import type { CrossBorderInput, CrossBorderResult } from "@/lib/tax/cross-border
 import type { QuasiResidentResult, TOUComparisonResult } from "@/lib/tax/tou";
 import type { VestedProjectionResult } from "@/lib/lpp/vested";
 import type { InvestmentComparison } from "@/lib/investment-compare";
-import type { AvsProjection } from "@/lib/avs";
+import type { AvsProjection, AiPersonResult } from "@/lib/avs";
 import type { TaxGlobalInput, TaxGlobalResult } from "@/lib/tax-global/types";
 
 export function exportCrossBorderPdf(args: {
@@ -1372,7 +1372,7 @@ export function exportAvsAiPdf(args: {
     spouseAverageAnnualIncome?: number;
   };
   projection: AvsProjection;
-  aiProjection: AvsProjection;
+  aiProjection: { primary: AiPersonResult };
 }) {
   const { input, projection, aiProjection } = args;
   const pdf = new ReportPdf({
@@ -1385,8 +1385,8 @@ export function exportAvsAiPdf(args: {
   pdf.section("Synthèse");
   pdf.paragraph(
     `Cette estimation projette la rente AVS (vieillesse) sur la base de la carrière de cotisation renseignée, du revenu annuel moyen ` +
-      `déterminant et de l'année de retraite envisagée (${input.retirementYear}). Elle intègre le barème de rente OFAS et, le cas échéant, ` +
-      `le plafonnement applicable aux couples.`,
+      `déterminant et de l'année de retraite envisagée (${input.retirementYear}). Elle applique la formule de rente légale (art. 34 LAVS) et, le cas échéant, ` +
+      `le plafonnement applicable aux couples. Le montant annuel inclut la 13e rente de vieillesse, versée en décembre depuis 2026.`,
   );
   if (input.isCouple && projection.combinedAnnualPension !== undefined) {
     pdf.metricsGrid([
@@ -1413,8 +1413,9 @@ export function exportAvsAiPdf(args: {
     ["Début de cotisation", String(input.contributionStartYear)],
     ["Année de retraite envisagée", String(input.retirementYear)],
     ["Revenu annuel moyen déterminant", formatCHF(input.averageAnnualIncome)],
-    ["Rente théorique complète (44 ans)", formatCHF(projection.primary.theoreticalAnnualPension)],
+    ["Rente théorique complète (44 ans, 12 mois)", formatCHF(projection.primary.theoreticalAnnualPension)],
     ["Taux de rente appliqué", `${(projection.primary.reductionRatio * 100).toFixed(1)} %`],
+    ["dont 13e rente (décembre)", formatCHF(projection.primary.thirteenthPension)],
   ]);
 
   if (input.isCouple && projection.spouse) {
@@ -1430,19 +1431,20 @@ export function exportAvsAiPdf(args: {
   pdf.spacer(2);
   pdf.section("Assurance invalidité (AI)");
   pdf.paragraph(
-    "En cas d'invalidité reconnue avant l'âge de la retraite, la rente AI est calculée selon le même barème que la rente AVS vieillesse, " +
-      "sur la base de la carrière de cotisation accumulée jusqu'à la survenance de l'invalidité.",
+    "En cas d'invalidité totale aujourd'hui, la rente AI est calculée selon le même barème que la rente AVS. L'échelle de rente compare " +
+      "les années cotisées à celles de la classe d'âge : sans lacune de cotisation, la rente est complète quel que soit l'âge " +
+      "(supplément de carrière avant 45 ans). Pas de 13e rente pour l'AI.",
   );
   pdf.metricsGrid([
     { label: "Rente AI mensuelle", value: aiProjection.primary.monthlyPension, tone: "primary" },
     { label: "Rente AI annuelle", value: aiProjection.primary.annualPension, tone: "success" },
-    { label: "Rente théorique complète", value: aiProjection.primary.theoreticalAnnualPension },
+    { label: "Échelle (années cotisées / classe d'âge)", value: `${aiProjection.primary.effectiveYears} / ${aiProjection.primary.cohortYears}` },
   ]);
 
   pdf.section("Méthodologie & avertissements");
   pdf.paragraph(
-    "Cette estimation utilise une formule simplifiée du barème de rente OFAS et ne modélise pas certains éléments (splitting exact des " +
-      "revenus durant le mariage, bonifications complexes). Elle offre une marge de précision suffisante pour la planification, mais ne " +
+    "Cette estimation applique la formule de rente légale mais ne modélise pas certains éléments (splitting exact des " +
+      "revenus durant le mariage, revalorisation des revenus passés). Elle offre une marge de précision suffisante pour la planification, mais ne " +
       "remplace pas un extrait de compte individuel (CI) officiel, disponible gratuitement auprès de la caisse de compensation AVS.",
     { italic: true, muted: true },
   );

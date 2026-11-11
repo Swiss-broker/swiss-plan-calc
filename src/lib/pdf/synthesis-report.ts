@@ -1864,7 +1864,13 @@ function computeSimpleChartPair(
       if (num(s.theoreticalAnnualPension) && num(s.annualPension) && num(s.missingYears) > 0)
         pair = {
           left: { label: "Rente actuelle projetée", value: num(s.annualPension) },
-          right: { label: "Rente pleine (44 ans)", value: num(s.theoreticalAnnualPension) },
+          // Même base des deux côtés : une simulation enregistrée avec la
+          // 13e rente (thirteenthPension présent) compare à une rente
+          // pleine 13e rente incluse, pas à la base 12 mois.
+          right: {
+            label: "Rente pleine (44 ans)",
+            value: Math.round(num(s.theoreticalAnnualPension) * (has(s.thirteenthPension) ? 13 / 12 : 1)),
+          },
         };
       break;
     case "health_insurance_france":
@@ -2120,7 +2126,8 @@ export function buildComment(entry: HistoryEntry): string | null {
     case "avs_ai": {
       const monthly = num(s.monthlyPension);
       const annual = num(s.annualPension);
-      const theoretical = num(s.theoreticalAnnualPension);
+      const withThirteenth = has(s.thirteenthPension);
+      const theoretical = Math.round(num(s.theoreticalAnnualPension) * (withThirteenth ? 13 / 12 : 1));
       const missing = num(s.missingYears);
       const isCouple = Boolean(s.isCouple);
       const combined = num(s.combinedAnnualPension);
@@ -2130,7 +2137,10 @@ export function buildComment(entry: HistoryEntry): string | null {
           ? ` Il vous manque actuellement ${missing} année${missing > 1 ? "s" : ""} de cotisation pour atteindre la rente complète (${formatCHF(theoretical)} par an), chaque année manquante réduisant votre rente d'environ 1/44e.`
           : ` Votre carrière de cotisation est complète (échelle 44), votre rente correspond donc au maximum atteignable pour ce revenu déterminant.`;
       const coupleTxt = isCouple && combined > 0 ? ` En couple, votre rente combinée plafonnée s'élève à ${formatCHF(combined)} par an (plafond légal de 150 % de la rente maximale individuelle).` : "";
-      return `Votre rente AVS/AI projetée s'élève à ${formatCHF(monthly)} par mois, soit ${formatCHF(annual)} par an.${missingTxt}${coupleTxt} Cette estimation reste indicative : votre rente définitive sera arrêtée par votre caisse de compensation cantonale sur la base de votre Extrait de Compte Individuel (CI) officiel, à demander gratuitement avant tout engagement définitif sur cette base.`;
+      const annualTxt = withThirteenth
+        ? `${formatCHF(annual)} par an avec la 13e rente versée en décembre`
+        : `${formatCHF(annual)} par an`;
+      return `Votre rente AVS de vieillesse projetée s'élève à ${formatCHF(monthly)} par mois, soit ${annualTxt}.${missingTxt}${coupleTxt} Cette estimation reste indicative : votre rente définitive sera arrêtée par votre caisse de compensation cantonale sur la base de votre Extrait de Compte Individuel (CI) officiel, à demander gratuitement avant tout engagement définitif sur cette base.`;
     }
     case "tax_global": {
       const total = num(s.totalTaxCHF);

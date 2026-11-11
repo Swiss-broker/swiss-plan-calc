@@ -362,7 +362,7 @@ export async function regeneratePdf(
       return;
     }
     case "avs_ai": {
-      const [{ projectAvsPension }, { exportAvsAiPdf }] = await Promise.all([
+      const [{ projectAvsPension, projectAiPension }, { exportAvsAiPdf }] = await Promise.all([
         import("@/lib/avs"),
         import("@/lib/pdf/reports"),
       ]);
@@ -373,6 +373,7 @@ export async function regeneratePdf(
         contributionStartYear: num(f[`${prefix}ContributionStartYear`] ?? f.contributionStartYear),
         retirementYear: num(f[`${prefix}RetirementYear`] ?? f.retirementYear),
         averageAnnualIncome: num(f[`${prefix}AverageAnnualIncome`] ?? f.averageAnnualIncome),
+        careerGapYears: num(f[`${prefix}CareerGapYears`]),
       });
       const primary = {
         birthYear: num(f.birthYear),
@@ -381,6 +382,10 @@ export async function regeneratePdf(
         retirementYear: num(f.retirementYear),
         averageAnnualIncome: num(f.averageAnnualIncome),
         departureYear: num(f.departureYear) > 0 ? num(f.departureYear) : null,
+        // Sans ce champ, le PDF régénéré depuis l'historique ignorait les
+        // lacunes de cotisation saisies à l'écran et affichait une rente
+        // différente de celle du calculateur.
+        careerGapYears: num(f.careerGapYears),
         educationalYears: num(f.educationalYears),
         educationalShare: num(f.educationalShare),
         assistanceYears: num(f.assistanceYears),
@@ -393,10 +398,20 @@ export async function regeneratePdf(
         spouse: isCouple ? buildPerson("spouse") : undefined,
       });
       const currentYear = new Date().getFullYear();
-      const aiProjection = projectAvsPension({
-        status: "single",
-        primary: { ...primary, retirementYear: currentYear, departureYear: null },
-      });
+      const aiProjection = {
+        primary: projectAiPension({
+          birthYear: primary.birthYear,
+          gender: primary.gender,
+          contributionStartYear: primary.contributionStartYear,
+          eventYear: currentYear,
+          averageAnnualIncome: primary.averageAnnualIncome,
+          careerGapYears: primary.careerGapYears,
+          educationalYears: primary.educationalYears,
+          educationalShare: primary.educationalShare,
+          assistanceYears: primary.assistanceYears,
+          assistanceShare: primary.assistanceShare,
+        }),
+      };
       exportAvsAiPdf({
         header,
         input: {

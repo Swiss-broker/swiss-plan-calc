@@ -13,6 +13,8 @@ import { ageFromDob, parseChildren, dependentChildren } from "./types";
 import type { IncomeTaxInput } from "@/lib/tax/income";
 import type { TaxStatusContext, WorkStatusContext } from "@/lib/optimizer";
 import { getTotalGrossIncomeOrUndef, getTotalGrossIncome } from "./income";
+import { getAvsContributionStartYear } from "./avs-career";
+import { getReferenceRetirementYear } from "@/lib/avs";
 import { estimateRetroactiveLppBalance, deriveBuybackYears } from "@/lib/lpp";
 import { getWorkStatusRules } from "./work-status-rules";
 import { getCommunalMultiplier, getVsIndexation } from "@/lib/swiss/communal-multipliers";
@@ -436,23 +438,19 @@ export function toAvsAiInput(b: ClientBundle) {
   // AVS = revenu soumis à cotisations : salaire + bonus + autres revenus d'activité.
   const avgIncome = getTotalGrossIncome(b.client);
 
-  // Référence : âge 65 par défaut, ajusté côté composant via getReferenceAge.
+  // Même année de retraite et même début de cotisation que la fiche client
+  // et les prestations consolidées (sources uniques).
   const retirementYear =
-    birthYear !== undefined ? birthYear + (gender === "female" && birthYear <= 1963 ? 64 : 65) : undefined;
+    birthYear !== undefined ? getReferenceRetirementYear(birthYear, gender) : undefined;
   const spouseRetirementYear =
     spouseBirthYear !== undefined ? spouseBirthYear + 65 : undefined;
 
-  // Priorité : valeur explicite (avs_contribution_start_year) > "Début
-  // d'activité en Suisse" (champ désormais rempli par TOUS les clients,
-  // pas seulement les frontaliers — une personne peut arriver en Suisse
-  // sans travailler tout de suite) > année d'arrivée (si début d'activité
-  // non renseigné) > 21 ans révolus.
-  const explicitStart = numOrUndef(b.client.avs_contribution_start_year);
-  const arrivalStart =
-    numOrUndef(b.client.cross_border_start_year) ?? numOrUndef(b.client.arrival_year_ch);
-  const default18 = birthYear !== undefined ? birthYear + 21 : undefined;
   const contributionStartYear =
-    explicitStart ?? (arrivalStart !== undefined && default18 !== undefined ? Math.max(arrivalStart, default18) : (arrivalStart ?? default18));
+    birthYear !== undefined
+      ? getAvsContributionStartYear(b.client, birthYear)
+      : (numOrUndef(b.client.avs_contribution_start_year) ??
+        numOrUndef(b.client.cross_border_start_year) ??
+        numOrUndef(b.client.arrival_year_ch));
 
   return {
     birthYear,

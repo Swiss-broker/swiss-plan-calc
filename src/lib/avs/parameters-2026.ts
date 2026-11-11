@@ -18,12 +18,19 @@ export const AVS_2026 = {
   /** Plafond couple annuel (CHF/an) */
   maxCoupleAnnualPension: 45_360,
 
-  /** Revenu annuel moyen plancher (en deçà → rente min) */
+  /** Revenu annuel moyen plancher (en deçà → rente min) = 12 × rente min. */
   minDeterminingIncome: 15_120,
-  /** Revenu annuel moyen plafond (au-delà → rente max) */
-  maxDeterminingIncome: 88_200,
-  /** Revenu charnière formule de rente (point de cassure officiel ~ 4× min) */
-  hingeIncome: 60_480,
+  /** Revenu annuel moyen plafond (au-delà → rente max) = 72 × rente
+   *  mensuelle min (art. 34 LAVS). 88'200 était la valeur 2023-2024. */
+  maxDeterminingIncome: 90_720,
+  /** Revenu charnière de la formule de rente = 36 × rente mensuelle min
+   *  (art. 34 al. 2 LAVS). */
+  hingeIncome: 45_360,
+
+  /** Nombre de rentes de VIEILLESSE versées par an : 13 depuis décembre
+   *  2026 (13e rente AVS, votation du 3 mars 2024). Ne concerne ni les
+   *  rentes AI, ni les rentes de survivants, ni les rentes pour enfants. */
+  oldAgePensionsPerYear: 13,
 
   /** Durée de cotisation complète (ans) */
   fullContributionYears: 44,

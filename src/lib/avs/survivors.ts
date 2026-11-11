@@ -7,17 +7,20 @@
 // - Rente de veuf/veuve = 80% de la rente vieillesse théorique du défunt.
 // - Rente d'orphelin simple = 40%, double orphelin = 60% de la rente
 //   théorique du parent décédé.
-// - Plafond familial : la somme rente parent + rentes enfants ne peut
-//   dépasser 150% de la rente individuelle maximale (3'780 CHF/mois en 2026).
-// - Pour couple double rente vieillesse : plafond couple 150% rente max
-//   = 3'780 CHF/mois (déjà géré par projectAvsPension).
+// - Surassurance (art. 41 LAVS, art. 54bis RAVS) : les rentes pour enfants
+//   et d'orphelins sont réduites dans la mesure où, ajoutées à la rente du
+//   père ou de la mère, elles dépassent 90 % du revenu annuel moyen
+//   déterminant — sans jamais descendre sous un minimum garanti (150 % de
+//   la rente minimale, + une rente minimale par enfant dès le 4e). Seules
+//   les rentes d'enfants sont réduites, jamais celle du parent.
+// - Le plafond de 150 % de la rente maximale (3'780 CHF/mois) ne concerne
+//   QUE les deux rentes d'un couple marié (art. 35 LAVS, déjà géré par
+//   projectAvsPension) — ce n'est pas un plafond « familial ».
 //
 // Toutes les rentes sont retournées en CHF annuels (round) + mensuels.
 
 import { AVS_2026 } from "./parameters-2026";
 import { theoreticalAnnualPension } from ".";
-
-const FAMILY_CAP_RATIO = 1.5; // 150% rente max individuelle
 
 export interface RentItem {
   /** Libellé court pour l'UI : "Rente enfant", "Veuve", "Orphelin Léa" */
@@ -57,26 +60,39 @@ export function orphanPensionFromDeceased(
 }
 
 /**
- * Applique le plafond familial : la somme des rentes (parent + enfants) ne
- * peut dépasser 150% de la rente max individuelle. Réduction proportionnelle.
+ * Réduction pour surassurance (art. 41 LAVS) : réduit proportionnellement
+ * les rentes d'enfants/orphelins — et elles seules — quand leur somme avec
+ * la rente du parent dépasse la limite.
+ *
+ * @param parentAnnual rente du père/de la mère (ou de veuf/veuve), 12 mois
+ * @param children rentes pour enfants / d'orphelins
+ * @param determiningIncome revenu annuel moyen déterminant (RAM)
+ * @param scale quotité de rente (échelle partielle et/ou fraction AI), 0..1
  */
-export function applyFamilyCap(items: RentItem[]): {
-  items: RentItem[];
-  totalAnnual: number;
-  capped: boolean;
-} {
-  const sum = items.reduce((s, i) => s + i.annual, 0);
-  const cap = Math.round(AVS_2026.maxAnnualPension * FAMILY_CAP_RATIO);
-  if (sum <= cap || sum === 0) {
-    return { items, totalAnnual: sum, capped: false };
-  }
-  const ratio = cap / sum;
-  const capped = items.map((i) => ({
-    ...i,
-    annual: Math.round(i.annual * ratio),
-    monthly: Math.round((i.annual * ratio) / 12),
-  }));
-  return { items: capped, totalAnnual: cap, capped: true };
+export function applyOverinsuranceCap(
+  parentAnnual: number,
+  children: RentItem[],
+  determiningIncome: number,
+  scale = 1,
+): { children: RentItem[]; capped: boolean } {
+  const childrenSum = children.reduce((s, i) => s + i.annual, 0);
+  if (childrenSum === 0) return { children, capped: false };
+  const guaranteedMinimum =
+    1.5 * AVS_2026.minAnnualPension +
+    Math.max(0, children.length - 3) * AVS_2026.minAnnualPension;
+  const ram = Math.min(AVS_2026.maxDeterminingIncome, Math.max(0, determiningIncome));
+  const limit = Math.max(0.9 * ram, guaranteedMinimum) * Math.max(0, Math.min(1, scale));
+  if (parentAnnual + childrenSum <= limit) return { children, capped: false };
+  const available = Math.max(0, limit - parentAnnual);
+  const ratio = available / childrenSum;
+  return {
+    children: children.map((i) => ({
+      ...i,
+      annual: Math.round(i.annual * ratio),
+      monthly: Math.round((i.annual * ratio) / 12),
+    })),
+    capped: true,
+  };
 }
 
 export interface AvsRetirementBenefits {
@@ -90,46 +106,62 @@ export interface AvsRetirementBenefits {
 
 /**
  * Vieillesse : rente principale + rente enfants (40% par enfant <18 ou <25 si en
- * formation). Plafond familial appliqué.
+ * formation). Les montants `primaryReducedAnnual` / `spouseReducedAnnual`
+ * sont les totaux annuels réellement versés (13e rente incluse) ; les
+ * rentes pour enfants restent sur 12 mois (pas de 13e rente).
  */
 export function buildRetirementBenefits(opts: {
   primaryTheoreticalAnnual: number;
   primaryReducedAnnual: number;
+  /** Revenu annuel moyen déterminant du parent (surassurance art. 41 LAVS). */
+  determiningIncome: number;
+  /** Échelle de rente du parent (années cotisées / 44), 1 si carrière complète. */
+  primaryScale?: number;
   spouseLabel?: string;
   spouseReducedAnnual?: number;
   childrenCount: number;
   childLabels?: string[];
 }): AvsRetirementBenefits {
-  const items: RentItem[] = [
-    {
-      label: "Rente principale",
-      annual: opts.primaryReducedAnnual,
-      monthly: Math.round(opts.primaryReducedAnnual / 12),
-      ratio: 1,
-    },
-  ];
-  if (opts.spouseReducedAnnual !== undefined && opts.spouseReducedAnnual > 0) {
-    items.push({
-      label: opts.spouseLabel ?? "Conjoint",
-      annual: opts.spouseReducedAnnual,
-      monthly: Math.round(opts.spouseReducedAnnual / 12),
-      ratio: 1,
-    });
-  }
+  const primary: RentItem = {
+    label: "Rente principale",
+    annual: opts.primaryReducedAnnual,
+    monthly: Math.round(opts.primaryReducedAnnual / 12),
+    ratio: 1,
+  };
+  const spouse: RentItem | undefined =
+    opts.spouseReducedAnnual !== undefined && opts.spouseReducedAnnual > 0
+      ? {
+          label: opts.spouseLabel ?? "Conjoint",
+          annual: opts.spouseReducedAnnual,
+          monthly: Math.round(opts.spouseReducedAnnual / 12),
+          ratio: 1,
+        }
+      : undefined;
+  // Échelle de rente du parent (années manquantes) : la rente pour enfant
+  // suit la même échelle que la rente principale.
+  const scale = Math.max(0, Math.min(1, opts.primaryScale ?? 1));
+  const rawChildren: RentItem[] = [];
   for (let i = 0; i < opts.childrenCount; i++) {
-    const child = childPensionFromParent(opts.primaryTheoreticalAnnual);
-    items.push({
+    const child = childPensionFromParent(opts.primaryTheoreticalAnnual * scale);
+    rawChildren.push({
       label: opts.childLabels?.[i] ?? `Rente enfant ${i + 1}`,
       annual: child.annual,
       monthly: child.monthly,
       ratio: 0.4,
     });
   }
-  const { items: cappedItems, totalAnnual, capped } = applyFamilyCap(items);
+  const { children, capped } = applyOverinsuranceCap(
+    opts.primaryTheoreticalAnnual * scale,
+    rawChildren,
+    opts.determiningIncome,
+    scale,
+  );
+  const totalAnnual =
+    primary.annual + (spouse?.annual ?? 0) + children.reduce((s, c) => s + c.annual, 0);
   return {
-    primary: cappedItems[0],
-    spouse: opts.spouseReducedAnnual !== undefined ? cappedItems[1] : undefined,
-    children: cappedItems.slice(opts.spouseReducedAnnual !== undefined ? 2 : 1),
+    primary,
+    spouse,
+    children,
     totalAnnual,
     totalMonthly: Math.round(totalAnnual / 12),
     cappedFamily: capped,
@@ -166,35 +198,48 @@ export function aiPensionFraction(disabilityPct: number): number {
  */
 export function buildDisabilityBenefits(opts: {
   primaryTheoreticalAnnual: number;
-  primaryFullReducedAnnual: number; // rente vieillesse réduite si la carrière s'arrêtait aujourd'hui
+  /** Rente AI entière de l'assuré (échelle de sa classe d'âge appliquée). */
+  primaryFullReducedAnnual: number;
+  /** Revenu annuel moyen déterminant (surassurance art. 41 LAVS). */
+  determiningIncome: number;
   disabilityPct: number; // 0..100
   childrenCount: number;
   childLabels?: string[];
 }): AvsDisabilityBenefits {
   const fraction = aiPensionFraction(opts.disabilityPct);
   const primaryAnnual = Math.round(opts.primaryFullReducedAnnual * fraction);
-  const items: RentItem[] = [
-    {
-      label: `Rente AI ${Math.round(fraction * 100)}%`,
-      annual: primaryAnnual,
-      monthly: Math.round(primaryAnnual / 12),
-      ratio: fraction,
-    },
-  ];
+  const primary: RentItem = {
+    label: `Rente AI ${Math.round(fraction * 100)}%`,
+    annual: primaryAnnual,
+    monthly: Math.round(primaryAnnual / 12),
+    ratio: fraction,
+  };
+  const rawChildren: RentItem[] = [];
   for (let i = 0; i < opts.childrenCount; i++) {
-    const child = childPensionFromParent(opts.primaryTheoreticalAnnual);
+    // 40 % de la rente AI effectivement versée au parent (même échelle).
+    const child = childPensionFromParent(opts.primaryFullReducedAnnual);
     const annual = Math.round(child.annual * fraction);
-    items.push({
+    rawChildren.push({
       label: opts.childLabels?.[i] ?? `Rente enfant AI ${i + 1}`,
       annual,
       monthly: Math.round(annual / 12),
       ratio: 0.4 * fraction,
     });
   }
-  const { items: cappedItems, totalAnnual, capped } = applyFamilyCap(items);
+  const scale =
+    opts.primaryTheoreticalAnnual > 0
+      ? Math.min(1, opts.primaryFullReducedAnnual / opts.primaryTheoreticalAnnual) * fraction
+      : fraction;
+  const { children, capped } = applyOverinsuranceCap(
+    primaryAnnual,
+    rawChildren,
+    opts.determiningIncome,
+    scale,
+  );
+  const totalAnnual = primary.annual + children.reduce((s, c) => s + c.annual, 0);
   return {
-    primary: cappedItems[0],
-    children: cappedItems.slice(1),
+    primary,
+    children,
     disabilityRate: Math.round(fraction * 100),
     totalAnnual,
     totalMonthly: Math.round(totalAnnual / 12),
@@ -212,41 +257,42 @@ export interface AvsSurvivorBenefits {
 
 /**
  * Décès : rente veuf/veuve 80% + rentes orphelins 40%/60%.
- * Plafond familial 150% rente max.
+ * Réduction des rentes d'orphelins pour surassurance (art. 41 LAVS).
  */
 export function buildSurvivorBenefits(opts: {
   deceasedTheoreticalAnnual: number;
+  /** Revenu annuel moyen déterminant du défunt (surassurance art. 41 LAVS). */
+  determiningIncome: number;
   hasSurvivingSpouse: boolean;
   childrenCount: number;
   childLabels?: string[];
   /** Si true, les enfants sont déjà orphelins de l'autre parent. */
   childrenAreDoubleOrphans?: boolean;
 }): AvsSurvivorBenefits {
-  const items: RentItem[] = [];
+  let widow: RentItem | undefined;
   if (opts.hasSurvivingSpouse) {
     const w = widowPensionFromDeceased(opts.deceasedTheoreticalAnnual);
-    items.push({
-      label: "Rente veuf/veuve",
-      annual: w.annual,
-      monthly: w.monthly,
-      ratio: 0.8,
-    });
+    widow = { label: "Rente veuf/veuve", annual: w.annual, monthly: w.monthly, ratio: 0.8 };
   }
+  const rawOrphans: RentItem[] = [];
   for (let i = 0; i < opts.childrenCount; i++) {
     const o = orphanPensionFromDeceased(
       opts.deceasedTheoreticalAnnual,
       opts.childrenAreDoubleOrphans,
     );
-    items.push({
+    rawOrphans.push({
       label: opts.childLabels?.[i] ?? `Rente orphelin ${i + 1}`,
       annual: o.annual,
       monthly: o.monthly,
       ratio: opts.childrenAreDoubleOrphans ? 0.6 : 0.4,
     });
   }
-  const { items: cappedItems, totalAnnual, capped } = applyFamilyCap(items);
-  const widow = opts.hasSurvivingSpouse ? cappedItems[0] : undefined;
-  const orphans = cappedItems.slice(opts.hasSurvivingSpouse ? 1 : 0);
+  const { children: orphans, capped } = applyOverinsuranceCap(
+    widow?.annual ?? 0,
+    rawOrphans,
+    opts.determiningIncome,
+  );
+  const totalAnnual = (widow?.annual ?? 0) + orphans.reduce((s, c) => s + c.annual, 0);
   return {
     widow,
     orphans,

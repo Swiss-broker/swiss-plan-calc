@@ -17,6 +17,7 @@ import {
   AVS_2026,
   getReferenceAge,
   projectAvsPension,
+  projectAiPension,
   type Gender,
 } from "@/lib/avs";
 import { GENDER_LABELS } from "@/lib/swiss/enums";
@@ -40,7 +41,7 @@ import { Button } from "@/components/ui/button";
 import { useT } from "@/contexts/LanguageContext";
 import { parseChildren, ageFromDob } from "@/lib/clients/types";
 import { buildSurvivorBenefits } from "@/lib/avs/survivors";
-import { formatCHF } from "@/lib/format";
+import { formatCHF, formatNumber } from "@/lib/format";
 import { CrossCalcImpactBanner } from "@/components/calculators/CrossCalcImpactBanner";
 
 const searchSchema = z.object({
@@ -196,24 +197,22 @@ function AvsAiCalc() {
     setAiAssistYears(form.assistanceYears);
   }, [form.assistanceYears]);
 
+  // Rente AI : échelle de la classe d'âge (art. 36 LAI), pas « années / 44 ».
   const aiProjection = useMemo(
-    () =>
-      projectAvsPension({
-        status: "single",
-        primary: {
-          birthYear: form.birthYear,
-          gender: form.gender,
-          contributionStartYear: form.contributionStartYear,
-          retirementYear: currentYear,
-          averageAnnualIncome: form.averageAnnualIncome,
-          departureYear: null,
-          careerGapYears: form.careerGapYears,
-          educationalYears: aiEduYears,
-          educationalShare: form.educationalShare,
-          assistanceYears: aiAssistYears,
-          assistanceShare: form.assistanceShare,
-        },
+    () => ({
+      primary: projectAiPension({
+        birthYear: form.birthYear,
+        gender: form.gender,
+        contributionStartYear: form.contributionStartYear,
+        eventYear: currentYear,
+        averageAnnualIncome: form.averageAnnualIncome,
+        careerGapYears: form.careerGapYears,
+        educationalYears: aiEduYears,
+        educationalShare: form.educationalShare,
+        assistanceYears: aiAssistYears,
+        assistanceShare: form.assistanceShare,
       }),
+    }),
     [form, aiEduYears, aiAssistYears, currentYear],
   );
 
@@ -475,6 +474,19 @@ function AvsAiCalc() {
                 <MoneyTile label={t("calc.avs.pension_year")} value={projection.primary.annualPension} tone="success" />
               </Row>
             )}
+            <p className="mt-3 text-[11px] text-muted-foreground">
+              {t("calc.avs.thirteenth_note", {
+                amount: formatNumber(
+                  projection.primary.thirteenthPension +
+                    (form.isCouple ? (projection.spouse?.thirteenthPension ?? 0) : 0),
+                ),
+                monthly: formatNumber(
+                  form.isCouple && projection.combinedMonthlyPension !== undefined
+                    ? projection.combinedMonthlyPension
+                    : projection.primary.monthlyPension,
+                ),
+              })}
+            </p>
             {projection.cappedCouple ? (
               <p className="mt-3 rounded-md bg-warning/10 p-2 text-xs text-amber-700 dark:text-amber-300">
                 {t("calc.avs.capped_warning", { ceiling: AVS_2026.maxCoupleMonthlyPension })}
@@ -518,7 +530,7 @@ function AvsAiCalc() {
             <Row>
               <StatTile
                 label={t("calc.ai.scale")}
-                value={`${aiProjection.primary.effectiveYears} / ${AVS_2026.fullContributionYears}`}
+                value={`${aiProjection.primary.effectiveYears} / ${aiProjection.primary.cohortYears}`}
                 hint={t("calc.ai.scale_hint")}
               />
               <MoneyTile
@@ -562,9 +574,15 @@ function AvsAiCalc() {
           </CalcCard>
 
           <SurvivorCard
-            theoreticalAnnual={projection.primary.theoreticalAnnualPension}
+            theoreticalAnnual={aiProjection.primary.annualPension}
+            determiningIncome={aiProjection.primary.determiningIncome}
             hasSurvivingSpouse={form.isCouple}
-            childrenCount={parseChildren(bundle?.client?.children).length}
+            childrenCount={
+              parseChildren(bundle?.client?.children).filter((c) => {
+                const a = ageFromDob(c.date_of_birth);
+                return a === null || a < 25;
+              }).length
+            }
           />
 
 
@@ -608,6 +626,8 @@ function AvsAiCalc() {
             monthlyPension: projection.primary.monthlyPension,
             annualPension: projection.primary.annualPension,
             theoreticalAnnualPension: projection.primary.theoreticalAnnualPension,
+            thirteenthPension: projection.primary.thirteenthPension,
+            determiningIncome: projection.primary.determiningIncome,
             effectiveYears: projection.primary.effectiveYears,
             missingYears: projection.primary.missingYears,
             isCouple: form.isCouple,
@@ -653,10 +673,12 @@ function NumField({
 
 function SurvivorCard({
   theoreticalAnnual,
+  determiningIncome,
   hasSurvivingSpouse,
   childrenCount,
 }: {
   theoreticalAnnual: number;
+  determiningIncome: number;
   hasSurvivingSpouse: boolean;
   childrenCount: number;
 }) {
@@ -664,10 +686,11 @@ function SurvivorCard({
     () =>
       buildSurvivorBenefits({
         deceasedTheoreticalAnnual: theoreticalAnnual,
+        determiningIncome,
         hasSurvivingSpouse,
         childrenCount,
       }),
-    [theoreticalAnnual, hasSurvivingSpouse, childrenCount],
+    [theoreticalAnnual, determiningIncome, hasSurvivingSpouse, childrenCount],
   );
 
   if (!hasSurvivingSpouse && childrenCount === 0) {
@@ -677,7 +700,7 @@ function SurvivorCard({
         description="Indiquez un conjoint ou des enfants pour estimer les rentes de survivants."
       >
         <p className="text-xs text-muted-foreground">
-          Rente théorique vieillesse du défunt : {formatCHF(theoreticalAnnual)} / an.
+          Rente de base du défunt (décès aujourd'hui) : {formatCHF(theoreticalAnnual)} / an.
         </p>
       </CalcCard>
     );
@@ -686,7 +709,7 @@ function SurvivorCard({
   return (
     <CalcCard
       title="Décès, Rentes de survivants AVS"
-      description="Veuf/veuve 80% · Orphelin 40% (60% si double). Plafond familial 150%."
+      description="Si le décès survenait aujourd'hui. Veuf/veuve 80 % · Orphelin 40 % (60 % si double). Sans enfant : veuve dès 45 ans et 5 ans de mariage ; pas de rente de veuf. Pas de 13e rente."
     >
       <Row>
         <MoneyTile
@@ -717,7 +740,8 @@ function SurvivorCard({
       </div>
       {survivors.cappedFamily && (
         <p className="mt-2 rounded-md bg-warning/10 p-2 text-[11px] text-amber-700 dark:text-amber-300">
-          Plafond familial 150 % appliqué (réduction proportionnelle).
+          Rentes d'orphelins réduites pour surassurance : ajoutées à la rente de veuf/veuve, elles ne
+          peuvent dépasser 90 % du revenu annuel moyen déterminant (art. 41 LAVS).
         </p>
       )}
     </CalcCard>

@@ -39,6 +39,7 @@ import {
 import { runOptimizer, type Optimization } from "@/lib/optimizer";
 import { projectAvsPension, getReferenceAge, type Gender } from "@/lib/avs";
 import { getTotalGrossIncome } from "@/lib/clients/income";
+import { getAvsContributionStartYear } from "@/lib/clients/avs-career";
 import { computeTaxGlobal } from "@/lib/tax-global/engine";
 import { createDefaultInput } from "@/lib/tax-global/profile";
 import type { TaxGlobalInput } from "@/lib/tax-global/types";
@@ -373,8 +374,9 @@ function buildAvs(b: ClientBundle): DashboardAvs | null {
   const avgIncome = getTotalGrossIncome(b.client);
   if (avgIncome <= 0) return null;
 
-  // Début de cotisation : par défaut, à 21 ans (ou première année si déjà passé).
-  const contributionStartYear = birthYear + 21;
+  // Début de cotisation : même source que le calculateur AVS/AI et les
+  // prestations consolidées (arrivée tardive en Suisse prise en compte).
+  const contributionStartYear = getAvsContributionStartYear(b.client, birthYear);
 
   const isCouple =
     b.client.civil_status === "married" ||

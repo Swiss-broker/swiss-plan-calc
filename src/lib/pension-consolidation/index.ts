@@ -31,10 +31,13 @@ import { getTotalGrossIncome } from "@/lib/clients/income";
 import {
   AVS_2026,
   getReferenceAge,
+  getReferenceRetirementYear,
+  projectAiPension,
   projectAvsPension,
-  theoreticalAnnualPension,
   type Gender,
 } from "@/lib/avs";
+import { getAvsContributionStartYear } from "@/lib/clients/avs-career";
+import { PILLAR_3A_MAX_LPP_2026 } from "@/lib/pillar3";
 import {
   buildRetirementBenefits,
   buildDisabilityBenefits,
@@ -104,7 +107,7 @@ export function pickConsolidationReferences(
 // Plafond légal de cotisation 3a pour un salarié affilié LPP (2026).
 // Partagé entre buildOptimizedBundle et getOptimizationAssumptions
 // pour ne jamais avoir deux valeurs qui divergent.
-const PILLAR_3A_MAX_LPP = 7_258;
+const PILLAR_3A_MAX_LPP = PILLAR_3A_MAX_LPP_2026;
 
 // ────────────────────────────────────────────────────────────
 // Helpers internes
@@ -134,12 +137,6 @@ function taxStatusFromClient(b: ClientBundle): "single" | "married" | "single_wi
   return parseChildren(b.client.children).length > 0 ? "single_with_children" : "single";
 }
 
-function childLabelsFromBundle(b: ClientBundle): string[] {
-  return parseChildren(b.client.children).map(
-    (c, i) => c.first_name?.trim() || `Enfant ${i + 1}`,
-  );
-}
-
 /** Enfants encore éligibles à une rente d'enfant AVS/LPP à la date de
  *  retraite PROJETÉE du client (art. 22ter LAVS : droit jusqu'à 25 ans
  *  révolus si encore en formation, 18 ans sinon — 25 ans retenu ici comme
@@ -156,6 +153,22 @@ function childrenEligibleAtRetirement(b: ClientBundle, retirementYear: number): 
     if (!birthYear) return true; // date de naissance inconnue : ne pas exclure à tort
     return retirementYear - birthYear <= 25;
   });
+}
+
+/** Enfants ouvrant droit à une rente (enfant d'invalide, orphelin) si le
+ *  risque survenait AUJOURD'HUI : jusqu'à 18 ans, ou 25 ans s'ils sont en
+ *  formation (art. 25 LAVS). Le statut « en formation » n'est pas connu :
+ *  25 ans est retenu comme limite haute, comme pour la retraite — un
+ *  enfant adulte de 30 ans, lui, n'ouvre plus aucun droit. */
+function childrenEligibleToday(b: ClientBundle): Child[] {
+  return parseChildren(b.client.children).filter((c) => {
+    const a = ageFromDob(c.date_of_birth);
+    return a === null || a < 25;
+  });
+}
+
+function childLabel(c: Child, i: number): string {
+  return c.first_name?.trim() || `Enfant ${i + 1}`;
 }
 
 interface CertificatePensions {
@@ -214,12 +227,26 @@ function pillar3aRefBalance(ref: HistoryEntry | null | undefined): number | null
 
 function avsRefFigures(
   ref: HistoryEntry | null | undefined,
-): { theoreticalAnnualPension: number; annualPension: number } | null {
+): {
+  theoreticalAnnualPension: number;
+  annualPension: number;
+  scale: number | null;
+  determiningIncome: number | null;
+} | null {
   const s = ref?.summary as Record<string, unknown> | undefined;
   const annualPension = Number(s?.annualPension ?? 0);
   if (annualPension <= 0) return null;
   const theoreticalAnnualPension = Number(s?.theoreticalAnnualPension ?? annualPension);
-  return { theoreticalAnnualPension, annualPension };
+  const effectiveYears = Number(s?.effectiveYears ?? NaN);
+  const determiningIncome = Number(s?.determiningIncome ?? NaN);
+  return {
+    theoreticalAnnualPension,
+    annualPension,
+    scale: Number.isFinite(effectiveYears)
+      ? Math.min(1, effectiveYears / AVS_2026.fullContributionYears)
+      : null,
+    determiningIncome: Number.isFinite(determiningIncome) && determiningIncome > 0 ? determiningIncome : null,
+  };
 }
 
 /** Facteur d'évolution "optimisé / actuel" du moteur de projection live,
@@ -243,9 +270,8 @@ function buildRetirement(
   const birthYear = getBirthYear(b.client.date_of_birth);
   if (!birthYear) return null;
   const gender = (b.client.gender as Gender | null) ?? null;
-  const referenceAge = getReferenceAge(birthYear, gender);
-  const retirementYear = birthYear + Math.round(referenceAge);
-  const contributionStartYear = birthYear + 21;
+  const retirementYear = getReferenceRetirementYear(birthYear, gender);
+  const contributionStartYear = getAvsContributionStartYear(b.client, birthYear);
 
   // Revenu total (salaire + bonus + autres revenus), même source que le
   // reste de l'app (src/lib/clients/income.ts) : une formule locale
@@ -307,6 +333,8 @@ function buildRetirement(
   const benefits: AvsRetirementBenefits = buildRetirementBenefits({
     primaryTheoreticalAnnual,
     primaryReducedAnnual,
+    determiningIncome: avsRef?.determiningIncome ?? avs.primary.determiningIncome,
+    primaryScale: avsRef ? (avsRef.scale ?? 1) : avs.primary.reductionRatio,
     spouseLabel: "Conjoint (AVS)",
     spouseReducedAnnual: avs.spouse?.annualPension,
     childrenCount,
@@ -416,7 +444,13 @@ function buildRetirement(
   }
 
   if (avs.cappedCouple) notes.push("Rente couple plafonnée à 150 % du maximum individuel.");
-  if (benefits.cappedFamily) notes.push("Rentes familiales plafonnées (150 %).");
+  if (benefits.cappedFamily)
+    notes.push(
+      "Rentes pour enfants réduites pour surassurance : ajoutées à votre rente, elles ne peuvent dépasser 90 % du revenu annuel moyen déterminant (art. 41 LAVS).",
+    );
+  notes.push(
+    "Rentes AVS de vieillesse : 13e rente incluse (versée chaque année en décembre depuis 2026) — le montant mensuel affiché est la moyenne sur 12 mois.",
+  );
 
   // Scénario optimisé (si demandé) : on garde le chiffre actuel réel comme
   // ancrage et on lui applique le facteur d'évolution du moteur de
@@ -491,29 +525,28 @@ function buildDisability(
   const avgIncome = getTotalGrossIncome(b.client);
   if (avgIncome <= 0) return null;
 
-  // Rente AI (1er pilier) : aucun calculateur dédié ne produit ce chiffre
-  // (le calculateur "Rente AVS/AI" ne couvre que la vieillesse) — reste
-  // calculée ici, comme si la carrière s'arrêtait aujourd'hui.
+  // Rente AI (1er pilier) : échelle de rente de la classe d'âge (art. 36
+  // LAI) — un assuré sans lacune de cotisation touche une rente complète
+  // quel que soit son âge, jamais « années cotisées / 44 ».
   const currentYear = new Date().getFullYear();
-  const contributionStartYear = birthYear + 21;
-  const aiBaseline = projectAvsPension({
-    status: "single",
-    primary: {
-      birthYear,
-      gender: (b.client.gender as Gender | null) ?? null,
-      contributionStartYear,
-      retirementYear: currentYear,
-      averageAnnualIncome: avgIncome,
-    },
+  const aiBaseline = projectAiPension({
+    birthYear,
+    gender: (b.client.gender as Gender | null) ?? null,
+    contributionStartYear: getAvsContributionStartYear(b.client, birthYear),
+    eventYear: currentYear,
+    averageAnnualIncome: avgIncome,
   });
 
-  const childrenCount = parseChildren(b.client.children).length;
+  const eligibleChildren = childrenEligibleToday(b);
+  const childrenCount = eligibleChildren.length;
+  const childNames = eligibleChildren.map(childLabel);
   const benefits: AvsDisabilityBenefits = buildDisabilityBenefits({
-    primaryTheoreticalAnnual: aiBaseline.primary.theoreticalAnnualPension,
-    primaryFullReducedAnnual: aiBaseline.primary.annualPension,
+    primaryTheoreticalAnnual: aiBaseline.theoreticalAnnualPension,
+    primaryFullReducedAnnual: aiBaseline.annualPension,
+    determiningIncome: aiBaseline.determiningIncome,
     disabilityPct,
     childrenCount,
-    childLabels: childLabelsFromBundle(b).map((n) => `Rente enfant AI · ${n}`),
+    childLabels: childNames.map((n) => `Rente enfant AI · ${n}`),
   });
 
   const pillar1Items: ConsolidatedItem[] = [
@@ -562,7 +595,7 @@ function buildDisability(
       certificateSourcedIndices.add(pillar2Items.length);
       pillar2Items.push(
         toItem(
-          `Rente enfant LPP (certificat) · ${childLabelsFromBundle(b)[i] ?? `Enfant ${i + 1}`}`,
+          `Rente enfant LPP (certificat) · ${childNames[i] ?? `Enfant ${i + 1}`}`,
           cert.child,
           "LPP",
         ),
@@ -573,7 +606,7 @@ function buildDisability(
       const childAnn = Math.round(proratized * 0.2);
       pillar2Items.push(
         toItem(
-          `Rente enfant LPP · ${childLabelsFromBundle(b)[i] ?? `Enfant ${i + 1}`}`,
+          `Rente enfant LPP · ${childNames[i] ?? `Enfant ${i + 1}`}`,
           childAnn,
           "LPP",
         ),
@@ -607,7 +640,14 @@ function buildDisability(
   const p1Total = benefits.totalAnnual;
   const p2Total = pillar2Items.reduce((s, i) => s + i.annual, 0);
   const combined = p1Total + p2Total;
-  if (benefits.cappedFamily) notes.push("Rentes AI plafonnées à 150 % du maximum.");
+  if (benefits.cappedFamily)
+    notes.push(
+      "Rentes pour enfants AI réduites pour surassurance : ajoutées à la rente du parent, elles ne peuvent dépasser 90 % du revenu annuel moyen déterminant (art. 41 LAVS).",
+    );
+  if (aiBaseline.missingYears > 0)
+    notes.push(
+      `Rente AI partielle : ${aiBaseline.effectiveYears} année(s) cotisée(s) sur les ${aiBaseline.cohortYears} de la classe d'âge (lacunes de cotisation en Suisse).`,
+    );
   notes.push(
     "Estimation : la rente AI réelle dépend de l'évaluation OAI (degré, gain assuré).",
   );
@@ -641,14 +681,54 @@ function buildDeath(
   const isCouple =
     b.client.civil_status === "married" ||
     b.client.civil_status === "registered_partnership";
-  const childrenCount = parseChildren(b.client.children).length;
-  const deceasedTheoretical = theoreticalAnnualPension(avgIncome);
+  const eligibleChildren = childrenEligibleToday(b);
+  const childrenCount = eligibleChildren.length;
+  const childNames = eligibleChildren.map(childLabel);
+  const hasAnyChild = parseChildren(b.client.children).length > 0;
+  const notes: string[] = [];
+
+  // Rente de base du défunt : mêmes règles que l'AI (échelle de la classe
+  // d'âge + supplément de carrière avant 45 ans, art. 33 LAVS).
+  const birthYear = getBirthYear(b.client.date_of_birth);
+  const deceased = projectAiPension({
+    birthYear: birthYear ?? new Date().getFullYear() - 45,
+    gender: (b.client.gender as Gender | null) ?? null,
+    contributionStartYear: birthYear
+      ? getAvsContributionStartYear(b.client, birthYear)
+      : new Date().getFullYear() - 45 + 21,
+    eventYear: new Date().getFullYear(),
+    averageAnnualIncome: avgIncome,
+  });
+  const deceasedTheoretical = deceased.annualPension;
+
+  // Ouverture du droit à la rente de veuve/veuf AVS (art. 23-24 LAVS) :
+  // - avec enfant(s), quel que soit leur âge : veuve ET veuf y ont droit ;
+  // - sans enfant : la veuve seulement, si elle a 45 ans révolus et a été
+  //   mariée 5 ans au moins ; le veuf sans enfant n'a aucun droit.
+  // La durée du mariage n'est pas connue de la fiche : supposée ≥ 5 ans.
+  const spouseAge = ageFromDob(b.client.spouse_date_of_birth);
+  const survivorIsWoman = b.client.gender !== "female";
+  const meetsAgeCondition = spouseAge === null || spouseAge >= 45;
+  const avsWidowEligible =
+    isCouple && (hasAnyChild || (survivorIsWoman && meetsAgeCondition));
+  // LPP (art. 19 LPP), identique pour veuve et veuf : enfant à charge, OU
+  // 45 ans révolus et 5 ans de mariage ; à défaut, allocation unique égale
+  // à trois rentes annuelles.
+  const lppWidowEligible = isCouple && (childrenCount > 0 || meetsAgeCondition);
+  if (isCouple && !avsWidowEligible) {
+    notes.push(
+      survivorIsWoman
+        ? "Pas de rente de veuve AVS : sans enfant, le droit n'existe qu'à partir de 45 ans révolus et 5 ans de mariage (art. 24 LAVS)."
+        : "Pas de rente de veuf AVS : sans enfant, le veuf n'a pas droit à une rente de survivant (art. 24 LAVS).",
+    );
+  }
 
   const benefits: AvsSurvivorBenefits = buildSurvivorBenefits({
     deceasedTheoreticalAnnual: deceasedTheoretical,
-    hasSurvivingSpouse: isCouple,
+    determiningIncome: deceased.determiningIncome,
+    hasSurvivingSpouse: avsWidowEligible,
     childrenCount,
-    childLabels: childLabelsFromBundle(b).map((n) => `Orphelin · ${n}`),
+    childLabels: childNames.map((n) => `Orphelin · ${n}`),
   });
 
   const pillar1Items: ConsolidatedItem[] = [];
@@ -658,8 +738,7 @@ function buildDeath(
 
   // Pilier 2 LPP : conjoint survivant = 60% rente AI, orphelin = 20%.
   // Certificat > simulation sauvegardée > estimation live.
-  const notes: string[] = [];
-  const pillar2Items: ConsolidatedItem[] = [];
+    const pillar2Items: ConsolidatedItem[] = [];
   const cert = certificatePensionsFromRef(refs?.lpp);
   const lppRef = lppRefFigures(refs?.lpp);
   // fullAiPension sert de base à la rente d'orphelin (20 %) quand aucun
@@ -685,10 +764,10 @@ function buildDeath(
   // (l'une du certificat, l'autre estimée), ce qu'un simple booléen global
   // ne peut pas représenter correctement.
   const certificateSourcedIndices = new Set<number>();
-  if (isCouple && cert?.widow) {
+  if (lppWidowEligible && cert?.widow) {
     certificateSourcedIndices.add(pillar2Items.length);
     pillar2Items.push(toItem("Rente survivant LPP (certificat)", cert.widow, "LPP"));
-  } else if (isCouple && fullAiPension > 0) {
+  } else if (lppWidowEligible && fullAiPension > 0) {
     pillar2Items.push(
       toItem("Rente survivant LPP (60 % AI)", Math.round(fullAiPension * 0.6), "LPP"),
     );
@@ -713,7 +792,7 @@ function buildDeath(
       if (cert?.orphan) certificateSourcedIndices.add(pillar2Items.length);
       pillar2Items.push(
         toItem(
-          `Rente orphelin LPP · ${childLabelsFromBundle(b)[i] ?? `Enfant ${i + 1}`}`,
+          `Rente orphelin LPP · ${childNames[i] ?? `Enfant ${i + 1}`}`,
           orphanAnnual,
           "LPP",
         ),
@@ -754,10 +833,18 @@ function buildDeath(
   const p1Total = benefits.totalAnnual;
   const p2Total = pillar2Items.reduce((s, i) => s + i.annual, 0);
   const combined = p1Total + p2Total;
-  if (benefits.cappedFamily) notes.push("Rentes survivants AVS plafonnées (150 %).");
-  notes.push(
-    "Les conditions d'âge / d'enfants à charge influent sur l'ouverture du droit (veuf/veuve).",
-  );
+  if (benefits.cappedFamily)
+    notes.push(
+      "Rentes d'orphelins AVS réduites pour surassurance : ajoutées à la rente de veuf/veuve, elles ne peuvent dépasser 90 % du revenu annuel moyen déterminant (art. 41 LAVS).",
+    );
+  if (isCouple && !lppWidowEligible)
+    notes.push(
+      "Pas de rente de conjoint survivant LPP : sans enfant à charge et avant 45 ans, la caisse verse une allocation unique égale à trois rentes annuelles (art. 19 LPP).",
+    );
+  if (isCouple && (avsWidowEligible || lppWidowEligible))
+    notes.push(
+      "Droit du conjoint survivant : durée de mariage supposée d'au moins 5 ans (non connue de la fiche).",
+    );
 
   return {
     event: "death",
