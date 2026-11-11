@@ -1422,7 +1422,7 @@ function TaxGlobalCalc() {
                   hint={`${result.crossBorder.swissRate}%`}
                   tip={
                     result.regime === "cross_border_fr_1983"
-                      ? "Retenue suisse forfaitaire de 4.5 % du brut (accord 1983), intégralement rétrocédée à la France."
+                      ? "Accord de 1983 : aucun impôt suisse n'est retenu sur le salaire (attestation de résidence fiscale française remise à l'employeur). Les 4,5 % sont versés par la France au canton, pas par le frontalier."
                       : "Impôt à la source genevois (barème A/B + réduction enfants), OU impôt ordinaire CH avec déductions si TOU GE activée et plus avantageux."
                   }
                 />
@@ -1432,7 +1432,7 @@ function TaxGlobalCalc() {
                   hint={`${result.crossBorder.foreignRate}%`}
                   tip={
                     result.regime === "cross_border_fr_1983"
-                      ? "Impôt FR au barème progressif sur (brut × 0.9 − déductions FR-éligibles), avec quotient familial. Crédit d'impôt évite la double imposition."
+                      ? "Impôt français estimé au barème 2026 : salaire net de cotisations sociales suisses, déduction forfaitaire de 10 %, quotient familial plafonné, crédit garde d'enfants et réduction pour dons."
                       : "GE : impôt FR ramené à 0 (taux effectif côté FR, imposition principale en CH). Hors GE / accord 1983 : varie selon le pays."
                   }
                 />

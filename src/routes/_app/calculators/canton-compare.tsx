@@ -697,7 +697,7 @@ function CantonCompareCalc() {
                 ? `, d'où ${formatCHF(accord1983Sample.total)} (${accord1983Sample.effective}%) identique sur ces ${accord1983Rows.length} cantons.`
                 : "."}
               {hasGeFrontalier && (
-                <> Seul <strong>Genève</strong> prélève à la source en Suisse (IS + 4,5% rétrocédés à la France).</>
+                <> Seul <strong>Genève</strong> prélève l'impôt à la source en Suisse sur le salaire du frontalier.</>
               )}
             </p>
             <p className="text-xs text-muted-foreground">

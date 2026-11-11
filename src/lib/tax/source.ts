@@ -162,7 +162,8 @@ export interface SourceTaxOptions {
   children?: number;
   /** Confession affecte certains cantons (GE notamment) */
   church?: boolean;
-  /** Frontalier France bénéficiant de l'accord 4.5 % */
+  /** Frontalier France sous l'accord de 1983 (VD, VS, NE, JU…) : salaire
+   *  imposé en France uniquement, aucune retenue suisse. */
   isCrossBorderFR?: boolean;
   /** true pour le scénario "après rectification" : pour GE, utilise le vrai
    *  sous-indice par enfant (H1, H2…) au lieu du sous-indice "0" toujours
@@ -179,7 +180,7 @@ export interface SourceTaxResult {
    *  revenu actuel (dérivée numérique, voir calcul ci-dessous) — distinct
    *  du taux moyen `rate` dès qu'on est dans un palier croissant du barème
    *  (cas normal), jamais identique sauf palier plat (taux à 0 ou plafond
-   *  du barème) ou frontalier France (retenue fixe 4.5 %). */
+   *  du barème) ou frontalier France sous l'accord de 1983 (aucune retenue). */
   marginalRate: number;
   /** Impôt mensuel CHF */
   monthlyTax: number;
@@ -342,10 +343,16 @@ function computeSourceTaxCore(opts: SourceTaxOptions): Omit<SourceTaxResult, "ma
 
   let crossBorderNote: string | undefined;
 
-  if (opts.isCrossBorderFR) {
-    rate = 4.5;
+  if (opts.isCrossBorderFR && opts.canton !== "GE" && opts.canton !== "FR") {
+    // Accord franco-suisse du 11.04.1983 : le salaire n'est imposable que
+    // dans l'État de résidence. Aucun impôt à la source n'est retenu sur le
+    // salaire (sur remise de l'attestation de résidence fiscale française) ;
+    // les 4,5 % sont une compensation versée par la France au canton, pas un
+    // impôt du salarié. Genève (accord de 1973) et Fribourg (hors accord)
+    // imposent au contraire le salaire à la source au barème ordinaire.
+    rate = 0;
     crossBorderNote =
-      "Frontalier France : retenue limitée à 4.5 % du brut, imposition principale en France.";
+      "Frontalier France (accord de 1983) : aucune retenue suisse sur le salaire, imposition en France uniquement (attestation de résidence fiscale 2041-AS à remettre chaque année à l'employeur).";
   }
 
   // Le taux est appliqué sur le revenu PROPRE du contribuable (pas le combiné)
@@ -368,7 +375,7 @@ function computeSourceTaxCore(opts: SourceTaxOptions): Omit<SourceTaxResult, "ma
     monthlyTax: Math.round(monthlyTax * 100) / 100,
     annualTax: Math.round(monthlyTax * 12 * 100) / 100,
     combinedMonthly: Math.round(determinationBase),
-    scaleUsed: opts.isCrossBorderFR ? "FR-frontalier" : scaleSuffix,
+    scaleUsed: crossBorderNote ? "FR-frontalier" : scaleSuffix,
     crossBorderNote,
   };
 }

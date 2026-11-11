@@ -183,7 +183,7 @@ const FR: WikiArticle[] = [
         <li><strong>TOU (Taxation Ordinaire Ultérieure)</strong> : possibilité de demander la taxation ordinaire si ≥ 90 % du revenu mondial est suisse.</li>
         <li>Permet de déduire 3a, rachats LPP, intérêts hypothécaires, frais professionnels réels.</li>
         <li>Demande à déposer avant le 31 mars de l'année suivante. Engagement irrévocable les années suivantes.</li>
-        <li><strong>Frontaliers VD/GE</strong> : retenue 4.5 % rétrocédée à la France. Imposition principale en France.</li>
+        <li><strong>Frontaliers France</strong> : VD, VS, NE, JU (accord de 1983) = salaire imposé en France uniquement, aucune retenue suisse sur présentation de l'attestation de résidence fiscale ; Genève = impôt à la source genevois, crédit d'impôt équivalent en France.</li>
       </ul>
     ),
   },
@@ -470,7 +470,7 @@ const DE: WikiArticle[] = [
         <li><strong>NOV (Nachträgliche ordentliche Veranlagung)</strong>: Möglichkeit, die ordentliche Veranlagung zu beantragen, wenn ≥ 90 % des Welteinkommens schweizerisch ist.</li>
         <li>Erlaubt den Abzug von Säule 3a, BVG-Einkäufen, Hypothekarzinsen, effektiven Berufsauslagen.</li>
         <li>Antrag bis 31. März des Folgejahres einzureichen. Unwiderrufliche Bindung für die Folgejahre.</li>
-        <li><strong>Grenzgänger VD/GE</strong>: Quellensteuer 4.5 % an Frankreich rückerstattet. Hauptbesteuerung in Frankreich.</li>
+        <li><strong>Grenzgänger Frankreich</strong>: VD, VS, NE, JU (Abkommen von 1983) = Lohn nur in Frankreich besteuert, kein Schweizer Quellensteuerabzug bei Vorlage der französischen Ansässigkeitsbescheinigung; Genf = Genfer Quellensteuer, entsprechende Steuergutschrift in Frankreich.</li>
       </ul>
     ),
   },
@@ -756,7 +756,7 @@ const EN: WikiArticle[] = [
         <li><strong>Subsequent ordinary assessment (TOU)</strong>: option to request ordinary assessment if ≥ 90% of worldwide income is Swiss.</li>
         <li>Allows deduction of Pillar 3a, BVG buy-backs, mortgage interest, actual professional expenses.</li>
         <li>Request to be filed by 31 March of the following year. Irrevocable commitment for the following years.</li>
-        <li><strong>Cross-border workers VD/GE</strong>: 4.5% withholding rebated to France. Main taxation in France.</li>
+        <li><strong>Cross-border workers from France</strong>: VD, VS, NE, JU (1983 agreement) = salary taxed in France only, no Swiss withholding once the French tax-residence certificate is provided; Geneva = Geneva withholding tax, matching tax credit in France.</li>
       </ul>
     ),
   },
@@ -1089,7 +1089,7 @@ const IT: WikiArticle[] = [
         <li><strong>TOU (Tassazione ordinaria ulteriore)</strong>: possibilità di chiedere la tassazione ordinaria se ≥ 90 % del reddito mondiale è svizzero.</li>
         <li>Permette di dedurre 3a, riscatti LPP, interessi ipotecari, spese professionali effettive.</li>
         <li>Domanda da depositare entro il 31 marzo dell'anno successivo. Impegno irrevocabile per gli anni seguenti.</li>
-        <li><strong>Frontalieri VD/GE</strong>: ritenuta del 4,5 % retrocessa alla Francia. Tassazione principale in Francia.</li>
+        <li><strong>Frontalieri dalla Francia</strong>: VD, VS, NE, JU (accordo del 1983) = salario tassato solo in Francia, nessuna ritenuta svizzera presentando l'attestato di residenza fiscale francese; Ginevra = imposta alla fonte ginevrina, credito d'imposta equivalente in Francia.</li>
       </ul>
     ),
   },

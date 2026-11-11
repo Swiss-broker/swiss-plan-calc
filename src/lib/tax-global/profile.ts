@@ -60,8 +60,8 @@ export function detectRegime(input: TaxGlobalInput): RegimeDetection {
     if (swissShareKnown >= 0.9) {
       return {
         regime: "tou",
-        regimeLabel: "Imposé à la source, éligible TOU (quasi-résident)",
-        reason: `Statut fiscal "Imposé à la source" enregistré sur la fiche client, avec ${(swissShareKnown * 100).toFixed(0)}% du revenu mondial en CH : TOU possible (rectification déductions).`,
+        regimeLabel: "Imposé à la source, taxation ordinaire ultérieure (TOU) possible",
+        reason: `Statut fiscal "Imposé à la source" enregistré sur la fiche client, avec ${(swissShareKnown * 100).toFixed(0)}% du revenu mondial en CH : TOU possible sur demande avant le 31 mars de l'année suivante (obligatoire dès 120 000 CHF de salaire brut).`,
       };
     }
     return {
@@ -80,8 +80,8 @@ export function detectRegime(input: TaxGlobalInput): RegimeDetection {
   if (input.knownTaxStatus === "cross_border_ge") {
     return {
       regime: "cross_border_ge",
-      regimeLabel: "Frontalier Genève (IS genevoise + rétrocession)",
-      reason: `Statut fiscal "Frontalier Genève" enregistré sur la fiche client : IS genevoise (4.5% rétrocédés à la France) puis imposition en France.`,
+      regimeLabel: "Frontalier Genève (impôt à la source genevois)",
+      reason: `Statut fiscal "Frontalier Genève" enregistré sur la fiche client : salaire imposé à la source à Genève, crédit d'impôt équivalent en France.`,
     };
   }
 
@@ -90,8 +90,8 @@ export function detectRegime(input: TaxGlobalInput): RegimeDetection {
     if (canton === "GE") {
       return {
         regime: "cross_border_ge",
-        regimeLabel: "Frontalier Genève (IS genevoise + rétrocession)",
-        reason: `Résidence ${country} + travail à GE : IS genevoise (4.5% rétrocédés à la France) puis imposition en France`,
+        regimeLabel: "Frontalier Genève (impôt à la source genevois)",
+        reason: `Résidence ${country} + travail à GE : salaire imposé à la source à Genève, crédit d'impôt équivalent en France`,
       };
     }
     if (isFrAccordCanton(canton)) {
@@ -133,8 +133,8 @@ export function detectRegime(input: TaxGlobalInput): RegimeDetection {
   if (swissShare >= 0.9) {
     return {
       regime: "tou",
-      regimeLabel: "Imposé à la source, éligible TOU (quasi-résident)",
-      reason: `Permis ${permit} résident CH avec ${(swissShare * 100).toFixed(0)}% du revenu mondial en CH : TOU possible (rectification déductions)`,
+      regimeLabel: "Imposé à la source, taxation ordinaire ultérieure (TOU) possible",
+      reason: `Permis ${permit} résident CH avec ${(swissShare * 100).toFixed(0)}% du revenu mondial en CH : TOU possible sur demande avant le 31 mars de l'année suivante (obligatoire dès 120 000 CHF de salaire brut)`,
     };
   }
   return {

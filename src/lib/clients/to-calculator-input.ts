@@ -225,12 +225,9 @@ export function toSourceTaxInput(b: ClientBundle) {
     spouseMonthlyGross:
       spouseSalary > 0 ? Math.round(spouseSalary / 12) : undefined,
     church: b.client.confession && b.client.confession !== "none" ? true : undefined,
-    isCrossBorderFR:
-      b.client.tax_status === "cross_border_fr_1983" ||
-      (b.client.tax_status === "cross_border_ge" &&
-        b.client.country_of_residence === "FR")
-        ? true
-        : undefined,
+    // Accord de 1983 uniquement (aucune retenue suisse). Un frontalier
+    // genevois reste imposé à la source au barème genevois ordinaire.
+    isCrossBorderFR: b.client.tax_status === "cross_border_fr_1983" ? true : undefined,
   };
 }
 
@@ -528,6 +525,7 @@ export function toHealthInsuranceFranceInput(b: ClientBundle) {
   const age = ageFromDob(b.client.date_of_birth);
   return {
     swissGrossSalaryCHF: main,
+    age: age ?? undefined,
     civilStatus: isCouple ? ("married" as const) : ("single" as const),
     childrenCount,
     yearsToRetirement: age !== null ? Math.max(1, 65 - age) : undefined,

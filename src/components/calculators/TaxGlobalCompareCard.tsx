@@ -224,15 +224,20 @@ export function TaxGlobalCompareCard({ form, result, baseline }: Props) {
   // la déduction s'applique réellement, au même titre que source_taxed.
   // Avant ce correctif, le régime "tou" ne déclenchait aucun des deux
   // bandeaux (ni "démarche requise", ni la raison "pas avantageux").
-  const needsTou =
-    result.regime === "source_taxed" ||
-    result.regime === "tou" ||
-    result.regime === "cross_border_ge" ||
-    result.regime === "cross_border_other";
   // touComparison est maintenant exposé pour ces 4 régimes (voir engine.ts) :
   // delta = impôt ordinaire − impôt source. delta >= 0 ⇒ la démarche TOU/
   // rectification ne ferait jamais gagner d'argent ici, quel que soit le
   // régime exact (frontalier GE ou source_taxed/tou "classique").
+  // TOU obligatoire (résident, salaire brut ≥ 120'000 CHF) : la taxation
+  // ordinaire s'applique d'office, il n'y a ni démarche à faire ni
+  // "pas avantageux" à signaler.
+  const touMandatory = !!result.touComparison?.mandatory;
+  const needsTou =
+    !touMandatory &&
+    (result.regime === "source_taxed" ||
+      result.regime === "tou" ||
+      result.regime === "cross_border_ge" ||
+      result.regime === "cross_border_other");
   const touUseless = needsTou && !!result.touComparison && result.touComparison.delta >= 0;
 
   return (
@@ -331,9 +336,10 @@ export function TaxGlobalCompareCard({ form, result, baseline }: Props) {
         <div className="mb-3 rounded-md border border-amber-500/40 bg-amber-500/5 p-3 text-xs text-amber-800 dark:text-amber-300">
           <p className="mb-1 text-sm font-semibold">✓ Démarche requise pour obtenir cette économie</p>
           {result.touComparison?.recommendationText ?? "Pour matérialiser l'économie, il"}{" "}
-          faut demander la TOU (quasi-résident, 90 % des revenus en CH) ou une
-          rectification IS auprès de l'AFC avant le 31 mars de l'année
-          suivante. Sans démarche, la retenue à la source brute s'applique.
+          faut demander la TOU (résident imposé à la source : sans condition ;
+          frontalier : quasi-résident, 90 % des revenus en CH) ou une
+          rectification IS auprès de l'administration cantonale avant le
+          31 mars de l'année suivante. Sans démarche, la retenue à la source brute s'applique.
         </div>
       )}
       {noEffect && hasChanges && (
@@ -405,11 +411,12 @@ export function TaxGlobalCompareCard({ form, result, baseline }: Props) {
                 <li>
                   • <strong className="text-foreground">Régime à la source sans TOU</strong> :
                   la retenue brute s'applique. Les déductions n'ont d'effet
-                  qu'après dépôt d'une demande TOU (quasi-résident) ou d'une
-                  rectification IS auprès de l'AFC.
+                  qu'après dépôt d'une demande TOU ou d'une rectification IS
+                  auprès de l'administration cantonale.
                 </li>
               )}
               {result.regime === "source_taxed" &&
+                !touMandatory &&
                 result.touComparison &&
                 result.touComparison.ordinaryTax >=
                   (result.source?.annualTax ?? 0) && (

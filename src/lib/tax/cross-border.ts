@@ -1,17 +1,23 @@
 // Module frontaliers · régime France-Suisse (Suisse romande v1).
-// Sources : Convention fiscale FR-CH 1966, Accord 1983 (4.5%).
+// Sources : Convention fiscale FR-CH 1966, Accord du 11.04.1983.
 //
 // === SCOPE V1, Suisse romande ===
 //
 // Régimes couverts :
-//   - "fr_accord_45" : VD, VS, NE, JU (accord franco-suisse 1983, 4.5 %)
-//   - "fr_geneva"    : GE (IS genevoise classique + rétrocession 3.5 %)
+//   - "fr_accord_45" : VD, VS, NE, JU (accord de 1983 : imposition du
+//                      salaire en France uniquement ; la compensation de
+//                      4,5 % est versée d'État à État, jamais retenue sur
+//                      le salaire)
+//   - "fr_geneva"    : GE (IS genevoise ; reversement de 3,5 % de la masse
+//                      salariale aux départements français, accord de 1973)
 //   - "fr_fribourg"  : FR (IS cantonale Fribourg, hors accord 1983)
 //
 // CALIBRATION genevaSourceTax 04/06/2026 :
 // Taux effectifs officiels tar26GE 2026 (Swissdec ELM 5.0).
 // Source : État de Genève, barèmes perception IS 2026.
 // Interpolation linéaire entre points de référence officiels.
+
+import { estimateSocialContributions } from "./income";
 
 export type CrossBorderRegime =
   | "fr_accord_45"
@@ -23,10 +29,21 @@ export interface CrossBorderInput {
   grossAnnualSalary: number;
   status: "single" | "married";
   children?: number;
+  /** Nombre d'enfants de moins de 6 ans (crédit d'impôt français pour frais
+   *  de garde hors du domicile). Non renseigné = tous les enfants à charge. */
+  childrenUnder6?: number;
   spouseEmployed?: boolean;
   spouseGrossSalary?: number;
+  /** Cours fiscal : 1 EUR = X CHF (même convention que AFC_ANNUAL_RATES). */
   eurChfRate?: number;
-  mortgageInterestCHF?: number;
+  /** Âge, plan LPP et salaire assuré : servent uniquement à estimer les
+   *  cotisations sociales suisses (AVS/AI/APG, AC, AANP, LPP), déductibles
+   *  du salaire imposable en France — mêmes règles que l'impôt ordinaire
+   *  (estimateSocialContributions), pour que le net social d'un même client
+   *  soit identique d'un calculateur à l'autre. */
+  age?: number;
+  lppPlan?: "mandatory" | "cadres" | "1e";
+  lppInsuredSalary?: number;
   childCareCostsCHF?: number;
   donationsCHF?: number;
 }
@@ -54,48 +71,192 @@ export interface CrossBorderResult {
 
 export const FR_ACCORD_CANTONS = ["JU", "NE", "VD", "VS"] as const;
 export function isFrAccordCanton(canton: string): boolean {
-return (FR_ACCORD_CANTONS as readonly string[]).includes(canton);}
+  return (FR_ACCORD_CANTONS as readonly string[]).includes(canton);
+}
 
-function frenchIncomeTax(taxableEur: number, status: "single" | "married", children: number): number {
-  let parts = status === "married" ? 2 : 1;
-  parts += children >= 3 ? 1 + (children - 1) : children * 0.5;
-  const perPart = taxableEur / parts;
-  const brackets = [
-    { upTo: 11_497, rate: 0 },
-    { upTo: 29_315, rate: 0.11 },
-    { upTo: 83_823, rate: 0.30 },
-    { upTo: 180_294, rate: 0.41 },
+// =====================================================================
+// Impôt sur le revenu français — barème 2026 (revenus 2025), loi de
+// finances pour 2026 du 19.02.2026 (revalorisation de 0,9 %).
+// =====================================================================
+export const FR_IR_2026 = {
+  brackets: [
+    { upTo: 11_600, rate: 0 },
+    { upTo: 29_579, rate: 0.11 },
+    { upTo: 84_577, rate: 0.3 },
+    { upTo: 181_917, rate: 0.41 },
     { upTo: Infinity, rate: 0.45 },
-  ];
+  ],
+  /** Déduction forfaitaire de 10 % pour frais professionnels, par salarié. */
+  abatementRate: 0.1,
+  abatementMin: 509,
+  abatementMax: 14_556,
+  /** Avantage maximal par demi-part supplémentaire (plafonnement du quotient familial). */
+  quotientCapPerHalfPart: 1_807,
+  /** Décote : plafond − 45,25 % de l'impôt brut. */
+  decoteSingle: 897,
+  decoteCouple: 1_483,
+  decoteRate: 0.4525,
+  /** Crédit d'impôt garde d'enfants de moins de 6 ans hors du domicile. */
+  childcareCreditRate: 0.5,
+  childcareCapPerChild: 3_500,
+  /** Réduction d'impôt pour dons (66 %, dans la limite de 20 % du revenu imposable). */
+  donationReductionRate: 0.66,
+  donationIncomeCap: 0.2,
+} as const;
+
+/** Nombre de parts pour charges de famille : ½ part pour chacun des deux
+ *  premiers enfants, 1 part entière à partir du troisième. */
+export function frenchChildParts(children: number): number {
+  const n = Math.max(0, Math.floor(children));
+  return n <= 2 ? n * 0.5 : n - 1;
+}
+
+function frenchBracketTax(perPart: number): number {
   let tax = 0;
   let prev = 0;
-  for (const b of brackets) {
+  for (const b of FR_IR_2026.brackets) {
     if (perPart > b.upTo) {
       tax += (b.upTo - prev) * b.rate;
       prev = b.upTo;
     } else {
-      tax += (perPart - prev) * b.rate;
+      tax += Math.max(0, perPart - prev) * b.rate;
       break;
     }
   }
-  return Math.max(0, tax * parts);
+  return tax;
 }
 
-function frenchMarginalRate(taxableEur: number, status: "single" | "married", children: number): number {
-  let parts = status === "married" ? 2 : 1;
-  parts += children >= 3 ? 1 + (children - 1) : children * 0.5;
-  const perPart = taxableEur / parts;
-  const brackets = [
-    { upTo: 11_497, rate: 0 },
-    { upTo: 29_315, rate: 11 },
-    { upTo: 83_823, rate: 30 },
-    { upTo: 180_294, rate: 41 },
-    { upTo: Infinity, rate: 45 },
-  ];
-  for (const b of brackets) {
-    if (perPart <= b.upTo) return b.rate;
-  }
-  return 45;
+/** Impôt brut français sur un revenu net imposable (EUR), avec quotient
+ *  familial plafonné et décote. Exportée pour les tests. */
+export function frenchIncomeTax(
+  taxableEur: number,
+  status: "single" | "married",
+  children: number,
+): number {
+  const taxable = Math.max(0, taxableEur);
+  const baseParts = status === "married" ? 2 : 1;
+  const childParts = frenchChildParts(children);
+  const taxFor = (parts: number) => frenchBracketTax(taxable / parts) * parts;
+  const withoutChildren = taxFor(baseParts);
+  const withChildren = taxFor(baseParts + childParts);
+  // Plafonnement du quotient familial : les parts des enfants ne peuvent pas
+  // réduire l'impôt de plus de 1'807 € par demi-part.
+  const capped = Math.max(
+    withChildren,
+    withoutChildren - childParts * 2 * FR_IR_2026.quotientCapPerHalfPart,
+  );
+  const decoteCap = status === "married" ? FR_IR_2026.decoteCouple : FR_IR_2026.decoteSingle;
+  const decote = Math.max(0, decoteCap - FR_IR_2026.decoteRate * capped);
+  return Math.max(0, capped - decote);
+}
+
+/** Déduction forfaitaire de 10 % (bornée) sur un salaire net de cotisations. */
+function afterFrenchAbatement(netSalaryEur: number): number {
+  if (netSalaryEur <= 0) return 0;
+  const abatement = Math.min(
+    FR_IR_2026.abatementMax,
+    Math.max(FR_IR_2026.abatementMin, netSalaryEur * FR_IR_2026.abatementRate),
+  );
+  return Math.max(0, netSalaryEur - abatement);
+}
+
+export interface FrenchTaxableSalary {
+  /** Cotisations sociales suisses estimées (AVS/AI/APG, AC, AANP, LPP), CHF. */
+  socialCHF: number;
+  /** Salaire net de cotisations, converti en euros. */
+  netEur: number;
+  /** Déduction forfaitaire de 10 % (bornée), en euros. */
+  abatementEur: number;
+  /** Salaire net imposable en France, en euros. */
+  taxableEur: number;
+}
+
+/** Salaire suisse tel qu'il entre dans le revenu imposable français : net des
+ *  cotisations sociales suisses, converti en euros, après déduction
+ *  forfaitaire de 10 %. Source unique pour l'impôt français du frontalier ET
+ *  pour le revenu fiscal de référence servant d'assiette à la CMU. */
+export function frenchTaxableSalary(opts: {
+  grossCHF: number;
+  /** 1 EUR = X CHF */
+  eurChfRate: number;
+  age?: number;
+  lppPlan?: "mandatory" | "cadres" | "1e";
+  lppInsuredSalary?: number;
+}): FrenchTaxableSalary {
+  const gross = Math.max(0, opts.grossCHF);
+  const social = estimateSocialContributions(
+    gross,
+    opts.age ?? 40,
+    opts.lppPlan ?? "mandatory",
+    opts.lppInsuredSalary,
+  );
+  const socialCHF = social.avs + social.ac + social.anp + social.lpp;
+  const netEur = Math.max(0, gross - socialCHF) / opts.eurChfRate;
+  const taxableEur = afterFrenchAbatement(netEur);
+  return { socialCHF, netEur, abatementEur: netEur - taxableEur, taxableEur };
+}
+
+interface FrenchSide {
+  /** Impôt français du foyer, en CHF. */
+  taxCHF: number;
+  /** Cotisations sociales suisses déduites du salaire (CHF). */
+  socialCHF: number;
+  /** Crédit garde d'enfants + réduction dons effectivement imputés (CHF). */
+  reliefCHF: number;
+}
+
+/** Impôt français du foyer pour un salaire suisse donné (résident fiscal
+ *  français, déclaration 2042 + 2047). */
+function frenchSide(input: CrossBorderInput, grossCHF: number): FrenchSide {
+  const eurChf = input.eurChfRate && input.eurChfRate > 0 ? input.eurChfRate : 0.95;
+  const toEur = (chf: number) => chf / eurChf;
+  const toChf = (eur: number) => eur * eurChf;
+  const children = input.children ?? 0;
+
+  const own = frenchTaxableSalary({
+    grossCHF,
+    eurChfRate: eurChf,
+    age: input.age,
+    lppPlan: input.lppPlan,
+    lppInsuredSalary: input.lppInsuredSalary,
+  });
+  const socialCHF = own.socialCHF;
+  const ownTaxable = own.taxableEur;
+  // Conjoint : lieu de travail inconnu (France ou Suisse), salaire repris
+  // tel que saisi, sans déduction de cotisations suisses.
+  const spouseTaxable =
+    input.status === "married" ? afterFrenchAbatement(toEur(input.spouseGrossSalary ?? 0)) : 0;
+  const taxableEur = ownTaxable + spouseTaxable;
+
+  const grossTaxEur = frenchIncomeTax(taxableEur, input.status, children);
+  const donationsEur = Math.min(
+    toEur(input.donationsCHF ?? 0),
+    taxableEur * FR_IR_2026.donationIncomeCap,
+  );
+  const eligibleChildren = Math.min(children, input.childrenUnder6 ?? children);
+  const childcareEur = Math.min(
+    toEur(input.childCareCostsCHF ?? 0),
+    eligibleChildren * FR_IR_2026.childcareCapPerChild,
+  );
+  const reliefEur = Math.min(
+    grossTaxEur,
+    donationsEur * FR_IR_2026.donationReductionRate +
+      childcareEur * FR_IR_2026.childcareCreditRate,
+  );
+  return {
+    taxCHF: toChf(grossTaxEur - reliefEur),
+    socialCHF,
+    reliefCHF: toChf(reliefEur),
+  };
+}
+
+/** Taux marginal (%) par dérivée numérique : impôt supplémentaire pour
+ *  1'200 CHF de salaire annuel en plus (100 CHF/mois, même pas que
+ *  computeSourceTax). */
+const MARGINAL_STEP_CHF = 1_200;
+function numericMarginalRate(taxAt: (gross: number) => number, gross: number): number {
+  const delta = taxAt(gross + MARGINAL_STEP_CHF) - taxAt(gross);
+  return Math.max(0, Math.round((delta / MARGINAL_STEP_CHF) * 1000) / 10);
 }
 
 // =====================================================================
@@ -167,9 +328,6 @@ export const GE_IS_RATES_2026: Record<string, [number, number][]> = {
     [300_000, 20.15],
   ],
 };
-// src/lib/tax/cross-border.ts
-// Remplacer l'ancien bloc FR_IS_RATES_2026 + friburgSourceTax
-
 const FR_IS_RATES_2026: Record<string, [number, number][]> = {
   // Source : calculette officielle fr.ch — relevés officiels 04/06/2026
   A0: [
@@ -327,125 +485,108 @@ function genevaSourceTax(
 }
 
 export function computeCrossBorder(input: CrossBorderInput): CrossBorderResult {
-  const eur = input.eurChfRate ?? 0.95;
   const children = input.children ?? 0;
-  const grossEur = input.grossAnnualSalary * eur;
-  const spouseEur = (input.spouseGrossSalary ?? 0) * eur;
-  const baseAfterAbatement = (grossEur + spouseEur) * 0.9;
-  const frEligibleChf =
-    (input.mortgageInterestCHF ?? 0) +
-    (input.childCareCostsCHF ?? 0) +
-    (input.donationsCHF ?? 0);
-  const frEligibleEur = frEligibleChf * eur;
-  const taxableFR = Math.max(0, baseAfterAbatement - frEligibleEur);
-  const marginal = frenchMarginalRate(taxableFR, input.status, children);
-  const hasFrDeductions = frEligibleChf > 0;
+  const gross = Math.max(0, input.grossAnnualSalary);
+  const pct = (n: number, base: number) => (base > 0 ? Math.round((n / base) * 1000) / 10 : 0);
+  const fr = frenchSide(input, gross);
+  const frenchTaxAt = (g: number) => frenchSide(input, g).taxCHF;
+  const hasFrRelief = fr.reliefCHF > 0;
 
   if (isFrAccordCanton(input.workCanton)) {
-    const swissTax = input.grossAnnualSalary * 0.045;
-    const frTax = frenchIncomeTax(taxableFR, input.status, children);
-    const frTaxChf = frTax / eur;
-    const total = swissTax + frTaxChf;
+    // Accord du 11 avril 1983 : le salaire n'est imposable QUE dans l'État de
+    // résidence. Aucun impôt n'est retenu sur le salaire en Suisse (sur
+    // remise de l'attestation de résidence fiscale à l'employeur) ; les
+    // 4,5 % sont une compensation versée d'État à État, pas un impôt du
+    // salarié.
+    // Taux rapportés au revenu du foyer : l'impôt français porte sur les
+    // deux salaires du couple (imposition commune).
+    const householdGross =
+      gross + (input.status === "married" ? Math.max(0, input.spouseGrossSalary ?? 0) : 0);
+    const total = fr.taxCHF;
     const notes = [
-      "Retenue suisse : 4.5 % du brut, intégralement rétrocédée à la France.",
-      "Imposition principale en France au barème progressif après abattement 10 %.",
-      "Le crédit d'impôt français évite la double imposition (méthode du taux effectif).",
+      "Accord franco-suisse de 1983 : salaire imposé uniquement en France. Aucun impôt à la source n'est retenu en Suisse, à condition de remettre chaque année à l'employeur l'attestation de résidence fiscale française (formulaire 2041-AS).",
+      "Les 4,5 % de l'accord sont une compensation versée par la France au canton sur la masse salariale : ils ne sont pas prélevés sur le salaire du frontalier.",
+      `Impôt français estimé au barème 2026 : salaire converti en euros, net des cotisations sociales suisses (AVS/AI/APG, AC, AANP, LPP ≈ ${Math.round(fr.socialCHF).toLocaleString("fr-CH")} CHF), déduction forfaitaire de 10 %, quotient familial plafonné.`,
+      hasFrRelief
+        ? `Avantages fiscaux français pris en compte : ${Math.round(fr.reliefCHF).toLocaleString("fr-CH")} CHF (crédit d'impôt garde d'enfants de moins de 6 ans, réduction pour dons).`
+        : "3e pilier A, rachat LPP facultatif, intérêts hypothécaires : pas de déduction côté français. Seuls les frais de garde (enfants de moins de 6 ans) et les dons ouvrent un avantage fiscal en France.",
     ];
-    if (hasFrDeductions) {
-      notes.push(
-        `Déductions FR-éligibles appliquées : ${Math.round(frEligibleChf).toLocaleString("fr-CH")} CHF (intérêts d'emprunt résidence principale FR, frais de garde, dons). 3e pilier A et rachat LPP suisses ignorés (non déductibles côté FR sous accord 1983).`,
-      );
-    } else {
-      notes.push(
-        "3a, rachat LPP, primes LAMal CH : NON déductibles côté FR. Seuls intérêts d'emprunt résidence FR, frais de garde et dons réduisent l'assiette française.",
-      );
-    }
     return {
       regime: "fr_accord_45",
-      regimeLabel: `Accord franco-suisse 4.5 % (${input.workCanton})`,
-      swissTax: Math.round(swissTax),
-      swissRate: 4.5,
-      foreignTax: Math.round(frTaxChf),
-      foreignRate: Math.round((frTaxChf / input.grossAnnualSalary) * 1000) / 10,
+      regimeLabel: `Accord franco-suisse de 1983, imposition en France (${input.workCanton})`,
+      swissTax: 0,
+      swissRate: 0,
+      foreignTax: Math.round(fr.taxCHF),
+      foreignRate: pct(fr.taxCHF, householdGross),
       totalTax: Math.round(total),
-      totalRate: Math.round((total / input.grossAnnualSalary) * 1000) / 10,
-      netAnnual: Math.round(input.grossAnnualSalary - total),
-      marginalRate: marginal,
+      totalRate: pct(total, householdGross),
+      netAnnual: Math.round(householdGross - total),
+      marginalRate: numericMarginalRate(frenchTaxAt, gross),
       notes,
     };
   }
 
+  const rectificationNote =
+    children > 0
+      ? [
+          `Barème appliqué par défaut sans tenir compte ${children > 1 ? "des enfants" : "de l'enfant"} à charge (comme pour l'impôt à la source classique) : une démarche de rectification auprès de l'employeur/canton l'année suivante peut réduire l'impôt.`,
+        ]
+      : [];
+
   if (input.workCanton === "FR") {
     const spouseEmployed = input.spouseEmployed ?? false;
-    const swissTax = friburgSourceTax(
-      input.grossAnnualSalary,
-      input.status,
-      children,
-      spouseEmployed,
-    );
+    const taxAt = (g: number) => friburgSourceTax(g, input.status, children, spouseEmployed);
+    const swissTax = taxAt(gross);
     return {
       regime: "fr_fribourg",
       regimeLabel: "Fribourg, impôt à la source (barème cantonal FR)",
       swissTax: Math.round(swissTax),
-      swissRate: Math.round((swissTax / input.grossAnnualSalary) * 1000) / 10,
+      swissRate: pct(swissTax, gross),
       foreignTax: 0,
       foreignRate: 0,
       totalTax: Math.round(swissTax),
-      totalRate: Math.round((swissTax / input.grossAnnualSalary) * 1000) / 10,
-      netAnnual: Math.round(input.grossAnnualSalary - swissTax),
-      marginalRate: marginal,
+      totalRate: pct(swissTax, gross),
+      netAnnual: Math.round(gross - swissTax),
+      marginalRate: numericMarginalRate(taxAt, gross),
       notes: [
         "Fribourg n'est pas couvert par l'accord franco-suisse de 1983.",
-        "L'impôt est prélevé à la source par l'employeur selon le barème cantonal FR.",
+        "L'impôt est prélevé à la source par l'employeur selon le barème cantonal FR ; la France accorde un crédit d'impôt équivalent à l'impôt français sur ce salaire.",
         "Possibilité de demander la TOU si quasi-résident (≥90% des revenus en CH).",
-        ...(children > 0
-          ? [
-              `Barème appliqué par défaut sans tenir compte ${children > 1 ? "des enfants" : "de l'enfant"} à charge (comme pour l'impôt à la source classique) : une démarche de rectification auprès de l'employeur/canton l'année suivante peut réduire l'impôt.`,
-            ]
-          : []),
+        ...rectificationNote,
       ],
     };
   }
   if (input.workCanton === "GE") {
     const spouseEmployed = input.spouseEmployed ?? false;
-    const swissTax = genevaSourceTax(
-      input.grossAnnualSalary,
-      input.status,
-      children,
-      spouseEmployed,
-    );
-    const frTaxChf = 0;
-    const total = swissTax + frTaxChf;
-    const altSwiss = input.grossAnnualSalary * 0.045;
-    const altFR = frenchIncomeTax(taxableFR, input.status, children) / eur;
-    const altTotal = altSwiss + altFR;
+    const taxAt = (g: number) => genevaSourceTax(g, input.status, children, spouseEmployed);
+    const swissTax = taxAt(gross);
+    const total = swissTax;
+    // Repère : ce que le même salaire coûterait s'il était imposé en France
+    // (régime de l'accord de 1983).
+    const altTotal = fr.taxCHF;
     return {
       regime: "fr_geneva",
-      regimeLabel: "Genève, IS genevoise + rétrocession à la France",
+      regimeLabel: "Genève, impôt à la source genevois",
       swissTax: Math.round(swissTax),
-      swissRate: Math.round((swissTax / input.grossAnnualSalary) * 1000) / 10,
-      foreignTax: Math.round(frTaxChf),
+      swissRate: pct(swissTax, gross),
+      foreignTax: 0,
       foreignRate: 0,
       totalTax: Math.round(total),
-      totalRate: Math.round((total / input.grossAnnualSalary) * 1000) / 10,
-      netAnnual: Math.round(input.grossAnnualSalary - total),
-      marginalRate: marginal,
+      totalRate: pct(total, gross),
+      netAnnual: Math.round(gross - total),
+      marginalRate: numericMarginalRate(taxAt, gross),
       notes: [
-        "Genève applique sa propre imposition à la source (pas l'accord 4.5 %).",
-        "GE rétrocède 3.5 % du brut au département français de résidence.",
-        "Imposition principale en CH ; la France n'impose que via taux effectif (crédit d'impôt = impôt FR).",
-        "Vérifier l'éligibilité TOU si déductions élevées (intérêts d'emprunt résidence principale, 3a).",
-        ...(children > 0
-          ? [
-              `Barème appliqué par défaut sans tenir compte ${children > 1 ? "des enfants" : "de l'enfant"} à charge (comme pour l'impôt à la source classique) : une démarche de rectification auprès de l'employeur/canton l'année suivante peut réduire l'impôt.`,
-            ]
-          : []),
+        "Genève impose le salaire à la source (accord de 1973, pas l'accord de 1983).",
+        "Genève reverse 3,5 % de la masse salariale brute aux départements français de résidence : ce reversement ne change rien à l'impôt du frontalier.",
+        "En France, le salaire genevois est déclaré mais ouvre droit à un crédit d'impôt égal à l'impôt français correspondant : pas de double imposition. Les autres revenus du foyer restent imposés en France au taux effectif.",
+        "Vérifier l'éligibilité TOU (quasi-résident) si déductions élevées : 3e pilier A, rachat LPP, intérêts hypothécaires.",
+        ...rectificationNote,
       ],
       alternative: {
         regime: "fr_accord_45",
-        label: "Si accord 4.5 % s'appliquait",
+        label: "Si le salaire était imposé en France (accord 1983)",
         totalTax: Math.round(altTotal),
-        netAnnual: Math.round(input.grossAnnualSalary - altTotal),
+        netAnnual: Math.round(gross - altTotal),
         delta: Math.round(altTotal - total),
       },
     };

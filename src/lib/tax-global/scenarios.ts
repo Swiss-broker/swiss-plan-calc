@@ -106,12 +106,13 @@ export function buildScenarios(input: TaxGlobalInput): Scenario[] {
   // ─── TOU explicite si éligibilité quasi-résident ───
   if (
     regime === "source_taxed" &&
-    baselineResult.touEligibility?.eligibleForTOU
+    baselineResult.touEligibility?.eligibleForTOU &&
+    !baselineResult.touComparison?.mandatory
   ) {
     const ord = baselineResult.touComparison?.ordinaryTax ?? baseTotal;
     out.push({
       id: "tou",
-      label: "Demande TOU (quasi-résident)",
+      label: "Demande TOU",
       description: "Taxation ordinaire ultérieure avec déductions effectives",
       result: { ...baselineResult, totalTaxCHF: ord },
       deltaVsBaseline: ord - baseTotal,

@@ -1,9 +1,15 @@
+import { frenchTaxableSalary } from "@/lib/tax/cross-border";
+
 // CMU, Cotisation maladie pour frontaliers français travaillant en Suisse
 // ayant exercé le droit d'option vers la Sécurité sociale française.
 // La cotisation est gérée et collectée par le CNTFS via l'URSSAF.
 // CMU et CNTFS désignent donc le MÊME régime (CNTFS = organisme collecteur).
 //
 // Formule : (RFR N-2 − abattement année courante) × 8%
+// RFR (revenu fiscal de référence) d'un salarié frontalier = salaire net de
+// cotisations sociales suisses, après déduction forfaitaire de 10 % — PAS le
+// salaire brut. Estimé avec la même fonction que l'impôt français du
+// calculateur Fiscal global (frenchTaxableSalary).
 // Abattement = barème officiel français révisé chaque année. Forfaitaire,
 // INDIVIDUEL (déclaration individuelle, pas familiale, pas multiplié par
 // les parts fiscales).
@@ -38,6 +44,9 @@ export interface HealthFranceInput {
   lamalChildMonthlyCHF?: number;
   /** Années restantes avant la retraite, pour chiffrer l'économie cumulée */
   yearsToRetirement?: number;
+  /** Âge du frontalier : sert uniquement à estimer sa cotisation LPP,
+   *  déduite du salaire pour obtenir le revenu fiscal de référence. */
+  age?: number;
   /** Régime réellement choisi par le client aujourd'hui (droit d'option
    *  franco-suisse), s'il est connu. undefined = non renseigné : on ne doit
    *  alors jamais prétendre connaître sa situation actuelle. */
@@ -105,12 +114,16 @@ export function getCmuAbatement(year: number): number {
 
 export function computeHealthFrance(input: HealthFranceInput): HealthFranceResult {
   const rate = input.chfToEurRate > 0 ? input.chfToEurRate : 1.05;
-  const eurFromChf = (chf: number) => chf * rate;
   const chfFromEur = (eur: number) => eur / rate;
 
-  // RFR estimé à partir du salaire suisse brut N-2 (déclaration individuelle)
-  const swissEUR = eurFromChf(input.swissGrossSalaryCHF);
-  const rfrEUR = Math.round(swissEUR);
+  // RFR estimé à partir du salaire suisse brut N-2 : net de cotisations
+  // sociales suisses, converti en euros, moins la déduction forfaitaire de 10 %.
+  const taxable = frenchTaxableSalary({
+    grossCHF: input.swissGrossSalaryCHF,
+    eurChfRate: 1 / rate,
+    age: typeof input.age === "number" ? input.age : undefined,
+  });
+  const rfrEUR = Math.round(taxable.taxableEur);
 
   // Abattement forfaitaire annuel selon barème officiel français
   const abatementEUR = getCmuAbatement(input.taxYear);
@@ -179,7 +192,10 @@ export function computeHealthFrance(input: HealthFranceInput): HealthFranceResul
   const cmuBreakdown: BreakdownLine[] = [
     { label: "Salaire suisse brut N-2", value: fmtCHF(input.swissGrossSalaryCHF) },
     { label: "Taux de change CHF → EUR", value: String(rate) },
-    { label: "RFR (Revenu Fiscal de Référence)", value: `${fmtCHF(input.swissGrossSalaryCHF)} × ${rate} = ${fmtEUR(rfrEUR)}` },
+    { label: "Cotisations sociales suisses déduites (AVS/AI/APG, AC, AANP, LPP, estimation)", value: `− ${fmtCHF(taxable.socialCHF)}` },
+    { label: "Salaire net en euros", value: `${fmtCHF(input.swissGrossSalaryCHF - taxable.socialCHF)} × ${rate} = ${fmtEUR(taxable.netEur)}` },
+    { label: "Déduction forfaitaire de 10 %", value: `− ${fmtEUR(taxable.abatementEur)}` },
+    { label: "RFR (Revenu Fiscal de Référence, estimation)", value: fmtEUR(rfrEUR) },
     { label: `Abattement officiel ${input.taxYear}`, value: fmtEUR(abatementEUR) },
     { label: "Assiette de cotisation", value: `${fmtEUR(rfrEUR)} − ${fmtEUR(abatementEUR)} = ${fmtEUR(cmuBaseEUR)}` },
     { label: "Taux CMU", value: fmtPct(CMU_TAUX_COTISATION) },
@@ -203,6 +219,7 @@ export function computeHealthFrance(input: HealthFranceInput): HealthFranceResul
   ];
 
   const notes = [
+    "Le revenu fiscal de référence est estimé à partir du salaire brut (net de cotisations sociales suisses, moins 10 %). Le chiffre exact figure sur l'avis d'imposition français N-2 : s'il comprend d'autres revenus du foyer, la cotisation réelle sera plus élevée.",
     "CMU et CNTFS désignent le même régime : la cotisation est calculée par l'URSSAF (CNTFS) pour les frontaliers ayant exercé le droit d'option vers la Sécurité sociale française.",
     `L'abattement CMU est forfaitaire et révisé chaque année par l'administration française (barème ${input.taxYear} : ${fmtEUR(abatementEUR)}). La cotisation est calculée sur les revenus N-2 (pour 2026 = revenus 2024).`,
     "La déclaration CMU est INDIVIDUELLE, la situation civile et les enfants n'impactent ni l'abattement ni l'assiette CMU.",

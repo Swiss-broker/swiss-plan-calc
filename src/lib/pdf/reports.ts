@@ -194,20 +194,21 @@ export function exportSourceTaxPdf(args: {
     ["Salaire brut annualisé (×13)", formatCHF(input.monthlyGross * 13)],
     ["Enfants à charge", String(input.children)],
     ["Contribution ecclésiastique", input.church ? "Oui" : "Non"],
-    ["Frontalier France (accord 4,5 %)", input.isCrossBorderFR ? "Oui" : "Non"],
+    ["Frontalier France (accord de 1983)", input.isCrossBorderFR ? "Oui" : "Non"],
   ]);
 
   if (input.isCrossBorderFR) {
     pdf.section("Statut frontalier France");
     pdf.callout(
-      "En tant que frontalier France résidant à moins de 30 km de la frontière et rentrant chaque jour à votre domicile, " +
-        "vous bénéficiez de l'accord franco-suisse de 1983 : la Suisse perçoit une retenue limitée à 4,5 % du brut, " +
-        "puis rétrocède une compensation à la France. Vous êtes ensuite imposé en France selon le barème français de l'impôt sur le revenu.",
+      "En tant que frontalier résidant en France et rentrant en principe chaque jour à votre domicile, " +
+        "vous relevez de l'accord franco-suisse de 1983 : votre salaire est imposé en France uniquement. Aucun impôt à la source n'est retenu en Suisse, " +
+        "à condition de remettre chaque année à votre employeur l'attestation de résidence fiscale française (formulaire 2041-AS). " +
+        "Les 4,5 % prévus par l'accord sont une compensation versée par la France au canton, ils ne sont pas prélevés sur votre salaire.",
       "info",
     );
     pdf.paragraph(
-      "Cette simulation reflète la retenue suisse uniquement. Pour estimer votre imposition française complémentaire, " +
-        "il faut intégrer le revenu suisse dans la déclaration française et appliquer le barème progressif français en tenant compte du quotient familial.",
+      "La retenue suisse est donc nulle. Votre impôt est calculé en France : le salaire suisse est déclaré en euros, net de cotisations sociales, " +
+        "puis soumis au barème progressif français avec quotient familial (voir le calculateur Fiscal global pour l'estimation).",
     );
   }
 
@@ -584,8 +585,8 @@ export function exportCrossBorderPdf(args: {
   pdf.section("Synthèse");
   pdf.paragraph(
     `Cette simulation détermine automatiquement le régime fiscal frontalier applicable selon le canton de travail (${cantonName(input.workCanton)}) ` +
-      `et estime la charge fiscale combinée Suisse + pays de résidence. Trois régimes sont supportés : l'accord franco-suisse de 1983 (retenue 4,5 % ` +
-      `dans 8 cantons), le régime spécial genevois (IS genevoise + rétrocession 3,5 % à la France), et l'accord italo-suisse 2023 pour le Tessin.`,
+      `et estime la charge fiscale combinée Suisse + pays de résidence. Régimes couverts : l'accord franco-suisse de 1983 (salaire imposé en France ` +
+      `uniquement, sans retenue suisse), le régime genevois (impôt à la source à Genève, crédit d'impôt en France) et Fribourg (impôt à la source cantonal).`,
   );
   pdf.metricsGrid([
     { label: "Net annuel", value: result.netAnnual, tone: "success" },

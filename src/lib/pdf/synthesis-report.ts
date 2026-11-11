@@ -2151,7 +2151,11 @@ export function buildComment(entry: HistoryEntry): string | null {
       const foreignShare = num(s.foreignShareCHF);
       if (!has(s.totalTaxCHF)) return null;
       const regimeTxt = regimeLabel ? ` selon le régime fiscal détecté pour votre situation : ${regimeLabel}` : "";
-      const foreignTxt = foreignShare > 0 ? ` Une part de ${formatCHF(foreignShare)} relève d'un revenu de source étrangère, prise en compte uniquement pour déterminer votre taux d'imposition applicable (méthode d'exemption avec réserve de progressivité), sans être elle-même imposée en Suisse.` : "";
+      const foreignTxt = foreignShare <= 0
+        ? ""
+        : foreignShare >= total
+          ? ` Cet impôt est dû dans votre pays de résidence (estimation au barème en vigueur) : aucun impôt n'est retenu en Suisse sur votre salaire.`
+          : ` Sur ce total, ${formatCHF(foreignShare)} correspondent à l'impôt dû dans votre pays de résidence (estimation au barème en vigueur), le solde étant prélevé en Suisse.`;
       // Traçabilité : si ce calcul a repris un montant (rachat LPP, cotisation
       // 3a) d'une simulation plus récente sur un autre calculateur plutôt que
       // du profil de base du client, le dire explicitement ici — sans ça, un

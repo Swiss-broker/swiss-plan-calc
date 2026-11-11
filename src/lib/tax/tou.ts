@@ -67,9 +67,18 @@ export interface TOUComparisonInput {
   sourceTaxAnnual: number;
   /** Paramètres pour calcul fiscal ordinaire */
   taxInput: IncomeTaxInput;
-  /** Quasi-résident éligible */
+  /** TOU possible (résident imposé à la source, ou non-résident quasi-résident) */
   eligible: boolean;
+  /** TOU obligatoire (résident dont le salaire brut atteint 120'000 CHF,
+   *  art. 89 LIFD) : la taxation ordinaire s'applique d'office, qu'elle
+   *  soit plus ou moins élevée que la retenue. */
+  mandatory?: boolean;
 }
+
+/** Seuil de salaire brut annuel dès lequel un résident imposé à la source
+ *  est obligatoirement taxé de manière ordinaire ultérieure (art. 89 LIFD,
+ *  art. 9 OIS). */
+export const TOU_MANDATORY_GROSS_THRESHOLD = 120_000;
 
 export interface TOUComparisonResult {
   sourceTax: number;
@@ -81,6 +90,8 @@ export interface TOUComparisonResult {
   effectiveRateIS: number;
   effectiveRateTOU: number;
   potentialDeductionsImpact: string;
+  /** true si la taxation ordinaire ultérieure s'applique d'office. */
+  mandatory: boolean;
 }
 
 /** Compare l'impôt à la source vs TOU (taxation ordinaire post déductions effectives) */
@@ -94,7 +105,13 @@ export function compareTOUvsSource(input: TOUComparisonInput): TOUComparisonResu
 
   let recommendation: "tou" | "source" | "neutral";
   let recommendationText: string;
-  if (!input.eligible) {
+  if (input.mandatory) {
+    recommendation = "tou";
+    recommendationText =
+      delta < 0
+        ? `Taxation ordinaire ultérieure obligatoire (salaire brut dès ${TOU_MANDATORY_GROSS_THRESHOLD.toLocaleString("fr-CH")} CHF) : l'impôt ordinaire est inférieur de CHF ${Math.abs(delta).toLocaleString("fr-CH")} à la retenue à la source, la différence est remboursée.`
+        : `Taxation ordinaire ultérieure obligatoire (salaire brut dès ${TOU_MANDATORY_GROSS_THRESHOLD.toLocaleString("fr-CH")} CHF) : l'impôt ordinaire dépasse la retenue à la source de CHF ${delta.toLocaleString("fr-CH")}, un complément sera facturé.`;
+  } else if (!input.eligible) {
     recommendation = "source";
     recommendationText =
       "Non éligible TOU : conserver l'impôt à la source (situation par défaut).";
@@ -129,5 +146,6 @@ export function compareTOUvsSource(input: TOUComparisonInput): TOUComparisonResu
     effectiveRateIS: eRateIS,
     effectiveRateTOU: eRateTOU,
     potentialDeductionsImpact,
+    mandatory: !!input.mandatory,
   };
 }

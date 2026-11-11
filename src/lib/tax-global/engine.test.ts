@@ -80,3 +80,52 @@ describe("computeTaxGlobal — touComparison pour les régimes frontaliers", () 
     expect(result.totalTaxCHF).toBeLessThan(result.touComparison!.sourceTax);
   });
 });
+
+describe("computeTaxGlobal — résident imposé à la source", () => {
+  const resident: TaxGlobalInput = {
+    ...crossBorderGeInput,
+    knownTaxStatus: "source_taxed",
+    countryOfResidence: "CH",
+    permit: "B",
+    bonus: 0,
+    lppBuyback: 0,
+    pillar3aContributions: 0,
+    pillar3bContributions: 0,
+    childCareCosts: 0,
+    medicalExpenses: 0,
+    healthInsurancePremiums: 0,
+    lppInsuredSalary: undefined,
+  };
+
+  it("sous 120'000 CHF : TOU possible sur demande, le moins cher des deux est retenu", () => {
+    const r = computeTaxGlobal({ ...resident, grossSalary: 90_000 });
+    expect(r.touEligibility!.eligibleForTOU).toBe(true);
+    expect(r.touComparison!.mandatory).toBe(false);
+    expect(r.totalTaxCHF).toBe(Math.min(r.source!.annualTax, r.touComparison!.ordinaryTax));
+  });
+
+  it("dès 120'000 CHF de salaire brut : taxation ordinaire ultérieure obligatoire, même si elle coûte plus que la retenue", () => {
+    const r = computeTaxGlobal({ ...resident, grossSalary: 150_000 });
+    expect(r.touComparison!.mandatory).toBe(true);
+    expect(r.totalTaxCHF).toBe(r.touComparison!.ordinaryTax);
+    expect(r.marginalRate).toBe(r.touComparison!.marginalRate);
+    expect(r.notes.some((n) => n.includes("obligatoire"))).toBe(true);
+  });
+
+  it("frontalier accord 1983 : aucun impôt suisse, revenu de référence du foyer", () => {
+    const r = computeTaxGlobal({
+      ...resident,
+      knownTaxStatus: "cross_border_fr_1983",
+      countryOfResidence: "FR",
+      permit: "G",
+      canton: "VD",
+      civilStatus: "married",
+      spouseEmployed: true,
+      spouseGrossSalary: 40_000,
+      grossSalary: 90_000,
+    });
+    expect(r.swissShareCHF).toBe(0);
+    expect(r.foreignShareCHF).toBe(r.totalTaxCHF);
+    expect(r.grossIncomeCHF).toBe(130_000);
+  });
+});

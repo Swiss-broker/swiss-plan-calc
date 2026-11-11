@@ -7,6 +7,7 @@ import { computeCrossBorder } from "@/lib/tax/cross-border";
 import {
   checkQuasiResident,
   compareTOUvsSource,
+  TOU_MANDATORY_GROSS_THRESHOLD,
   type QuasiResidentResult,
   type TOUComparisonResult,
 } from "@/lib/tax/tou";
@@ -59,8 +60,19 @@ export function computeGrossForRegime(g: TaxGlobalInput, regime: Regime): number
         g.rentalIncome +
         familyAllowances
       );
-    case "cross_border_ge":
     case "cross_border_fr_1983":
+      // Imposition commune du foyer en France : l'impôt affiché porte sur
+      // les deux salaires du couple, le revenu de référence aussi (même
+      // logique que le résident ordinaire).
+      return (
+        g.grossSalary +
+        g.bonus +
+        (couple ? g.spouseGrossSalary : 0) +
+        g.otherIncome +
+        g.rentalIncome +
+        familyAllowances
+      );
+    case "cross_border_ge":
     case "cross_border_other":
       return g.grossSalary + g.bonus + g.otherIncome + g.rentalIncome + familyAllowances;
     default:
@@ -296,16 +308,35 @@ export function computeTaxGlobal(g: TaxGlobalInput): TaxGlobalResult {
     const swissIncome =
       g.grossSalary + g.bonus + (couple ? g.spouseGrossSalary : 0) + g.otherIncome + g.rentalIncome;
     const worldwide = swissIncome + g.foreignIncome;
-    const touEligibility = checkQuasiResident({
+    const quasiResident = checkQuasiResident({
       worldwideIncome: worldwide,
       swissIncome,
       isEUEFTAResident: true,
     });
+    // Résident en Suisse imposé à la source : la TOU sur demande est ouverte
+    // sans condition de part de revenu suisse (art. 89a LIFD) — le seuil de
+    // 90 % (quasi-résident, art. 99a LIFD) ne concerne que les non-résidents.
+    // Elle devient obligatoire dès 120'000 CHF de salaire brut (art. 89 LIFD).
+    const residentCH = (g.countryOfResidence || "CH").toUpperCase() === "CH";
+    const touMandatory =
+      residentCH &&
+      (g.grossSalary + g.bonus >= TOU_MANDATORY_GROSS_THRESHOLD ||
+        (couple && g.spouseEmployed && g.spouseGrossSalary >= TOU_MANDATORY_GROSS_THRESHOLD));
+    const touEligibility: QuasiResidentResult = residentCH
+      ? {
+          ...quasiResident,
+          eligibleForTOU: true,
+          recommendation: touMandatory
+            ? "Taxation ordinaire ultérieure obligatoire : salaire brut d'au moins 120 000 CHF (art. 89 LIFD)."
+            : "Résident imposé à la source : la TOU peut être demandée jusqu'au 31 mars de l'année suivante, sans condition de part de revenu suisse. Le choix vaut ensuite pour toutes les années suivantes.",
+        }
+      : quasiResident;
 
     const touComparison = compareTOUvsSource({
       sourceTaxAnnual: source.annualTax,
       taxInput: toIncomeTaxInput(g),
       eligible: touEligibility.eligibleForTOU,
+      mandatory: touMandatory,
     });
 
     // Total des déductions saisies par l'utilisateur (utilisé pour décider
@@ -325,9 +356,13 @@ export function computeTaxGlobal(g: TaxGlobalInput): TaxGlobalResult {
     // déductions, peu importe l'éligibilité TOU. Le courtier veut voir
     // l'effet d'une déduction simulée même hors quasi-résident, la note
     // précise la démarche requise (TOU si éligible, rectification IS sinon).
-    const useOrdinary = touComparison.ordinaryTax < source.annualTax;
+    const useOrdinary = touMandatory || touComparison.ordinaryTax < source.annualTax;
     const total = useOrdinary ? touComparison.ordinaryTax : source.annualTax;
-    if (useOrdinary && deductionsTotal > 0) {
+    if (touMandatory) {
+      notes.push(
+        `Salaire brut d'au moins ${TOU_MANDATORY_GROSS_THRESHOLD.toLocaleString("fr-CH")} CHF : taxation ordinaire ultérieure obligatoire (art. 89 LIFD). L'impôt à la source reste prélevé sur le salaire (${source.annualTax.toLocaleString("fr-CH")} CHF/an) puis imputé sur l'impôt ordinaire ; toutes les déductions (3e pilier A, rachat LPP, intérêts) s'appliquent sans démarche particulière.`,
+      );
+    } else if (useOrdinary && deductionsTotal > 0) {
       if (touEligibility.eligibleForTOU) {
         notes.push(
           `Affichage basé sur la TOU (taxation ordinaire avec déductions) car plus avantageuse. Démarche : déposer la demande TOU avant le 31 mars ${g.taxYear + 1}.`,
@@ -369,10 +404,16 @@ export function computeTaxGlobal(g: TaxGlobalInput): TaxGlobalResult {
         assumptions: [
           `Barème IS appliqué : ${scale} (statut ${statusForScale}, conjoint actif: ${couple && g.spouseEmployed ? "oui" : "non"})`,
           "Impôt à la source mensuel × 12 (hors gratifications irrégulières)",
-          touEligibility.eligibleForTOU
-            ? `Quasi-résident : ${baseTrace.detection.swissShareOfWorldwide}% du revenu mondial en CH → TOU possible`
-            : `Quasi-résident non éligible (seuil 90% du revenu mondial en CH), déductions appliquées sur rectification IS uniquement`,
-          useOrdinary
+          touMandatory
+            ? "Taxation ordinaire ultérieure obligatoire (salaire brut ≥ 120 000 CHF)"
+            : touEligibility.eligibleForTOU
+              ? residentCH
+                ? "Résident imposé à la source : TOU possible sur demande (avant le 31 mars de l'année suivante)"
+                : `Quasi-résident : ${baseTrace.detection.swissShareOfWorldwide}% du revenu mondial en CH → TOU possible`
+              : `Quasi-résident non éligible (seuil 90% du revenu mondial en CH), déductions appliquées sur rectification IS uniquement`,
+          touMandatory
+            ? "Affichage : impôt ordinaire (taxation ordinaire ultérieure obligatoire)"
+            : useOrdinary
             ? "Affichage : impôt ordinaire avec déductions (plus avantageux)"
             : "Affichage : impôt à la source (moins coûteux que l'ordinaire ici)",
           deductionsTotal > 0
@@ -404,9 +445,15 @@ export function computeTaxGlobal(g: TaxGlobalInput): TaxGlobalResult {
       spouseEmployed: couple && g.spouseEmployed,
       spouseGrossSalary: couple ? g.spouseGrossSalary : 0,
       eurChfRate: g.eurChfRate,
-      // Déductions FR-éligibles uniquement (intérêts résidence FR, garde, dons).
-      // Le 3e pilier A et le rachat LPP suisses ne sont pas déductibles côté FR.
-      mortgageInterestCHF: g.mortgageInterest,
+      age: g.age,
+      lppPlan: g.lppPlan,
+      lppInsuredSalary: g.lppInsuredSalary,
+      childrenUnder6: g.childrenAges?.some((a) => a != null)
+        ? g.childrenAges.filter((a) => a != null && a < 6).length
+        : undefined,
+      // Avantages fiscaux français uniquement (crédit garde d'enfants,
+      // réduction pour dons). 3e pilier A, rachat LPP et intérêts
+      // hypothécaires n'ouvrent aucune déduction côté français.
       childCareCostsCHF: g.childCareCosts,
       donationsCHF: g.donations,
     });
@@ -414,6 +461,7 @@ export function computeTaxGlobal(g: TaxGlobalInput): TaxGlobalResult {
     // Couche santé : CMU vs LAMal, SÉPARÉE de l'impôt
     const health = computeHealthFrance({
       swissGrossSalaryCHF: g.grossSalary + g.bonus,
+      age: g.age,
       civilStatus: couple ? "married" : "single",
       childrenCount: g.children,
       chfToEurRate: g.chfToEurRate,
@@ -428,12 +476,25 @@ export function computeTaxGlobal(g: TaxGlobalInput): TaxGlobalResult {
     //     chiffre "si vous demandiez la TOU" et ne peut pas vérifier que
     //     l'app a bien pris en compte la possibilité d'une démarche.
     //     L'accord 1983 reste hors comparaison : imposition exclusive FR.
-    const chDeductionsTotal =
+    const chOnlyDeductions =
       (g.pillar3aContributions || 0) +
       (g.lppBuyback || 0) +
       (g.realEstateMaintenance || 0) +
       (g.healthInsurancePremiums || 0) +
       (g.pillar3bContributions || 0);
+    // Genève / Fribourg (taxation ordinaire possible via TOU) : toutes les
+    // déductions de la déclaration ordinaire comptent, y compris les
+    // intérêts hypothécaires de la résidence en France, premier levier TOU
+    // d'un frontalier propriétaire. Accord 1983 : seules les déductions
+    // purement suisses sont signalées comme sans effet.
+    const chDeductionsTotal =
+      det.regime === "cross_border_fr_1983"
+        ? chOnlyDeductions
+        : chOnlyDeductions +
+          (g.mortgageInterest || 0) +
+          (g.childCareCosts || 0) +
+          (g.donations || 0) +
+          (g.medicalExpenses || 0);
     let displayedCrossBorder = crossBorder;
     const cbNotes = [...crossBorder.notes];
     // touComparison : même objet, même formulation (recommendationText déjà
@@ -484,7 +545,7 @@ export function computeTaxGlobal(g: TaxGlobalInput): TaxGlobalResult {
     }
     if (det.regime === "cross_border_fr_1983" && chDeductionsTotal > 0) {
       cbNotes.push(
-        `Accord 1983 : imposition exclusive en France. Les déductions CH (3a, rachat LPP, primes LAMal, entretien immobilier CH) NE SONT PAS déductibles, saisie ignorée (${Math.round(chDeductionsTotal).toLocaleString("fr-CH")} CHF). Seuls intérêts d'emprunt résidence FR, garde d'enfants et dons réduisent l'assiette française.`,
+        `Accord 1983 : imposition exclusive en France. Les déductions CH (3a, rachat LPP, primes LAMal, entretien immobilier CH) NE SONT PAS déductibles, saisie ignorée (${Math.round(chDeductionsTotal).toLocaleString("fr-CH")} CHF). Seuls les frais de garde (enfants de moins de 6 ans) et les dons ouvrent un avantage fiscal en France.`,
       );
     }
 
@@ -493,7 +554,7 @@ export function computeTaxGlobal(g: TaxGlobalInput): TaxGlobalResult {
     const social = health.recommendedAnnualCHF;
     if (det.regime === "cross_border_ge") {
       cbNotes.push(
-        "Part étrangère : estimation du résidu d'impôt français après crédit (à valider avec la déclaration FR effective).",
+        "Part étrangère à 0 : le crédit d'impôt français neutralise l'impôt sur le salaire genevois. Si le foyer a d'autres revenus imposables en France (conjoint, loyers), ils y restent imposés au taux effectif (à valider avec la déclaration française).",
       );
     }
     if (
@@ -528,7 +589,7 @@ export function computeTaxGlobal(g: TaxGlobalInput): TaxGlobalResult {
         ...baseTrace,
         assumptions: [
           det.regime === "cross_border_fr_1983"
-            ? "Accord franco-suisse 1983 : imposition exclusive en France (canton retient 4.5% rétrocédés)"
+            ? "Accord franco-suisse 1983 : imposition du salaire en France uniquement, aucune retenue suisse sur le salaire (compensation de 4,5 % versée par la France au canton)"
             : det.regime === "cross_border_ge"
               ? "IS genevoise prélevée à la source + crédit d'impôt côté France"
               : "IS canton de travail + imposition pays de résidence (modèle générique)",
@@ -539,8 +600,8 @@ export function computeTaxGlobal(g: TaxGlobalInput): TaxGlobalResult {
             : "Aucune déduction CH saisie",
         ],
         limits: [
-          "Part étrangère = estimation du résidu d'impôt après crédit (≠ déclaration FR effective)",
-          "Pas de prise en compte du quotient familial FR ni des charges de famille étendues",
+          "Impôt français = estimation au barème 2026 (quotient familial plafonné, décote) ≠ avis d'imposition effectif",
+          "Cotisations maladie (CMU ou LAMal frontalier), demi-part de parent isolé et autres revenus français non pris en compte",
           "Pas de calcul de la CSG/CRDS si affiliation FR partielle (statut mixte)",
           "Taux de change figé : volatilité EUR/CHF non simulée",
           det.regime === "cross_border_fr_1983"

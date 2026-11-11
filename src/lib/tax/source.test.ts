@@ -109,14 +109,27 @@ describe("computeSourceTax — taux marginal distinct du taux moyen (régression
     expect(r.marginalRate).toBeGreaterThanOrEqual(0);
   });
 
-  it("frontalier France (retenue fixe 4.5 %) : marginal = moyen, cas légitime de taux plat", () => {
+  it("frontalier France sous l'accord de 1983 : aucune retenue suisse sur le salaire", () => {
     const r = computeSourceTax({
+      monthlyGross: 5_000,
+      canton: "VD",
+      scale: "A",
+      isCrossBorderFR: true,
+    });
+    expect(r.rate).toBe(0);
+    expect(r.annualTax).toBe(0);
+    expect(r.marginalRate).toBe(0);
+  });
+
+  it("frontalier France travaillant à Genève : barème genevois ordinaire, pas d'exonération", () => {
+    const frontalier = computeSourceTax({
       monthlyGross: 5_000,
       canton: "GE",
       scale: "A",
       isCrossBorderFR: true,
     });
-    expect(r.rate).toBe(4.5);
-    expect(r.marginalRate).toBeCloseTo(4.5, 1);
+    const resident = computeSourceTax({ monthlyGross: 5_000, canton: "GE", scale: "A" });
+    expect(frontalier.rate).toBe(resident.rate);
+    expect(frontalier.rate).toBeGreaterThan(0);
   });
 });

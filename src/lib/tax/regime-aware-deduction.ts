@@ -137,6 +137,16 @@ export function computeRegimeAwareDeduction(
       note: null,
     };
   }
+  if (tou.mandatory) {
+    // Taxation ordinaire ultérieure obligatoire (salaire brut ≥ 120'000 CHF) :
+    // la déduction s'applique d'office dans la déclaration, sans démarche.
+    return {
+      ...result,
+      applicable: "yes",
+      beneficial: taxSavings > 0,
+      note: "Imposé à la source avec un salaire brut d'au moins 120 000 CHF : taxation ordinaire ultérieure obligatoire. La déduction s'applique d'office dans la déclaration d'impôt, sans démarche particulière.",
+    };
+  }
   const beneficial = taxSavings > 0;
   const deadlineNote = tou.recommendation === "tou"
     ? ` Démarche : demander la TOU auprès du canton avant le 31 mars ${g.taxYear + 1}.`
