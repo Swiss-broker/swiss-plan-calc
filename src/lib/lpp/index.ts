@@ -2,13 +2,17 @@
 // Bases : LPP / OPP2 valables 2026.
 
 import { computeIncomeTax, type IncomeTaxInput } from "../tax/income";
+import { computeIFD } from "../tax/ifd";
+import { LPP_2026 } from "./parameters-2026";
 
-// Constantes 2026
-export const LPP_COORDINATION_DEDUCTION_2026 = 26_460;
-export const LPP_MAX_INSURED_SALARY_2026 = 90_720; // 7.5x rente AVS max
-export const LPP_MIN_ANNUAL_SALARY_2026 = 22_680;
-export const LPP_CONVERSION_RATE_2026 = 6.0; // taux retenu (taux légal minimal = 6.8%)
-export const LPP_INTEREST_MIN_2026 = 1.25; // taux minimal LPP 2026
+// Constantes 2026 — dérivées de LPP_2026 (parameters-2026.ts), seule source
+// de vérité : deux listes de constantes recopiées à la main finissent
+// toujours par diverger à la prochaine indexation.
+export const LPP_COORDINATION_DEDUCTION_2026: number = LPP_2026.coordinationDeduction;
+export const LPP_MAX_INSURED_SALARY_2026: number = LPP_2026.maxInsuredSalary; // 7.5x rente AVS max
+export const LPP_MIN_ANNUAL_SALARY_2026: number = LPP_2026.minAnnualSalary;
+export const LPP_CONVERSION_RATE_2026: number = LPP_2026.conversionRate; // taux retenu (taux légal minimal = 6.8%)
+export const LPP_INTEREST_MIN_2026: number = LPP_2026.minInterestRate; // taux minimal LPP 2026
 
 /** Plancher légal du salaire coordonné LPP 2026 (art. 8 al. 2 LPP), garanti
  *  pour tout salarié soumis à la LPP (donc dès qu'il dépasse le seuil
@@ -335,24 +339,44 @@ export interface AnnuityVsLumpSumInput {
 
 export interface AnnuityVsLumpSumResult {
   totalRente: number;
+  /** Total des retraits possibles sur la période si le capital net est
+   *  placé et consommé progressivement jusqu'à épuisement. */
   totalCapital: number;
   /** Solde total perçu sur la période */
   netAnnuity: number;
   netLumpSum: number;
+  /** Retrait annuel constant finançable par le capital net sur la période. */
+  annualDrawdown: number;
   /** Recommandation textuelle */
   recommendation: "annuity" | "lump_sum" | "mixed";
 }
 
+/**
+ * Les deux scénarios sont comparés sur la même base : ce que le retraité
+ * peut réellement dépenser pendant `yearsAlive` années.
+ * - Rente : rentes annuelles nettes d'impôt, versées chaque année.
+ * - Capital : capital net d'impôt, placé au rendement indiqué et consommé
+ *   par retraits annuels égaux jusqu'à épuisement (annuité certaine).
+ * Comparer la somme des rentes dépensées à un capital qui fructifierait
+ * 20 ans sans jamais être touché avantagerait artificiellement le capital.
+ */
 export function annuityVsLumpSum(input: AnnuityVsLumpSumInput): AnnuityVsLumpSumResult {
   const cr = (input.conversionRate ?? LPP_CONVERSION_RATE_2026) / 100;
+  const years = Math.max(0, input.yearsAlive);
   const annualPension = input.capital * cr;
-  const totalRente = annualPension * input.yearsAlive;
+  const totalRente = annualPension * years;
   const totalRenteAfterTax = totalRente * (1 - input.rentMarginalRate / 100);
 
   const r = (input.selfReturnRate ?? 1.25) / 100;
-  const netCapital = input.capital - input.lumpSumTax;
-  // Annuité fictive si capital placé : rendement annuel + ponction progressive
-  const totalCapital = netCapital * Math.pow(1 + r, input.yearsAlive);
+  const netCapital = Math.max(0, input.capital - input.lumpSumTax);
+  // Retrait annuel constant (fin d'année) épuisant le capital en `years` ans.
+  const annualDrawdown =
+    years <= 0
+      ? 0
+      : Math.abs(r) < 1e-9
+        ? netCapital / years
+        : (netCapital * r) / (1 - Math.pow(1 + r, -years));
+  const totalCapital = years <= 0 ? netCapital : annualDrawdown * years;
 
   let recommendation: "annuity" | "lump_sum" | "mixed";
   const diff = totalCapital - totalRenteAfterTax;
@@ -365,15 +389,56 @@ export function annuityVsLumpSum(input: AnnuityVsLumpSumInput): AnnuityVsLumpSum
     totalCapital: Math.round(totalCapital),
     netAnnuity: Math.round(totalRenteAfterTax),
     netLumpSum: Math.round(totalCapital),
+    annualDrawdown: Math.round(annualDrawdown),
     recommendation,
   };
 }
 
-/** Impôt unique sur prestation en capital (1/5 du barème, séparé du revenu).
+/**
+ * Taux moyen cantonal + communal de l'impôt sur les prestations en capital
+ * de la prévoyance (2e pilier, libre passage, 3a), par canton. Estimation
+ * à taux constant, calibrée sur les calculateurs officiels pour les cantons
+ * romands, ZG et SZ ; ordre de grandeur pour les autres cantons. Table
+ * UNIQUE pour toute l'app : « Rente vs capital », « Libre passage »,
+ * 3e pilier, comparateur cantonal et prestations consolidées doivent
+ * afficher le même impôt pour un même capital dans un même canton.
+ */
+export const CANTON_LUMP_SUM_RATE: Record<string, number> = {
+  GE: 0.062,
+  VD: 0.058,
+  FR: 0.054,
+  NE: 0.06,
+  JU: 0.055,
+  VS: 0.05,
+  ZG: 0.025,
+  SZ: 0.03,
+  OW: 0.032,
+  NW: 0.033,
+  AI: 0.033,
+  UR: 0.035,
+  AR: 0.038,
+  LU: 0.038,
+  GL: 0.042,
+  TG: 0.044,
+  SH: 0.045,
+  SG: 0.045,
+  GR: 0.047,
+  AG: 0.048,
+  SO: 0.05,
+  ZH: 0.05,
+  TI: 0.052,
+  BE: 0.053,
+  BL: 0.056,
+  BS: 0.058,
+};
+const DEFAULT_LUMP_SUM_RATE = 0.045;
+
+/** Impôt unique sur prestation en capital, imposée séparément du revenu.
  *
- * IFD : 1/5 du barème ordinaire.
- * Cantonal : approximation pondérée par le multiplicateur cantonal du
- * canton (couvre l'écart relatif entre cantons romands et ZG).
+ * IFD (art. 38 LIFD) : un cinquième du barème ordinaire, appliqué au
+ * capital lui-même — aucune déduction (ni cotisations sociales, ni frais
+ * professionnels, ni déductions sociales), contrairement à un salaire.
+ * Cantonal + communal : taux moyen par canton (CANTON_LUMP_SUM_RATE).
  */
 export function capitalWithdrawalTax(opts: {
   capital: number;
@@ -381,26 +446,8 @@ export function capitalWithdrawalTax(opts: {
   status: "single" | "married" | "single_with_children";
 }): { ifd: number; cantonal: number; total: number } {
   if (opts.capital <= 0) return { ifd: 0, cantonal: 0, total: 0 };
-  // IFD : 1/5 du barème ordinaire
-  const ifdFull = computeIncomeTax({
-    canton: opts.canton,
-    status: opts.status,
-    grossSalary: opts.capital,
-  }).ifd;
-  const ifdReduced = ifdFull / 5;
-  // Cantonal : approximation calibrée par canton (taux moyen prestation
-  // capital, observé 2025/2026 sur calculateurs officiels romands + ZG).
-  const CANTON_LUMP_SUM_RATE: Record<string, number> = {
-    GE: 0.062,
-    VD: 0.058,
-    FR: 0.054,
-    NE: 0.06,
-    JU: 0.055,
-    VS: 0.05,
-    ZG: 0.025,
-    SZ: 0.03,
-  };
-  const cantonalRate = CANTON_LUMP_SUM_RATE[opts.canton] ?? 0.045;
+  const ifdReduced = computeIFD(opts.capital, opts.status) / 5;
+  const cantonalRate = CANTON_LUMP_SUM_RATE[opts.canton] ?? DEFAULT_LUMP_SUM_RATE;
   const cantonalApprox = opts.capital * cantonalRate;
   return {
     ifd: Math.round(ifdReduced),

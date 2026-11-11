@@ -33,7 +33,7 @@ export const DASHBOARD_LPP_DEFAULTS = {
   expectedReturnRate: 1.25, // %, taux minimum LPP 2026
   feeRate: 0.6, // %, frais TER+admin moyens caisses LPP suisses
   salaryGrowthRate: 1, // %
-  conversionRate: 6.0, // %, taux minimum légal LPP 2026 (prudent)
+  conversionRate: LPP_2026.conversionRate, // %, hypothèse prudente (taux légal minimal 2026 : 6.8 %)
 } as const;
 
 /** Hypothèses de projection 3a "fiche client". */

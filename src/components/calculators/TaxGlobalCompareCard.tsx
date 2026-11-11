@@ -19,6 +19,7 @@ import {
 } from "@/components/calculators/SplitCompareLayout";
 
 import { formatCHF } from "@/lib/format";
+import { PILLAR_3A_MAX_2026_LPP } from "@/lib/tax/income";
 import { computeTaxGlobal } from "@/lib/tax-global/engine";
 import {
   computeFieldSensitivities,
@@ -478,8 +479,8 @@ interface ExplainCtx {
   touUseless: boolean;
 }
 
-/** Plafond légal 2026 utilisé dans la note (aligné sur PILLAR_3A_MAX_2026_LPP). */
-const PILLAR_3A_CAP_LPP = 7_258;
+/** Plafond légal 2026 utilisé dans la note. */
+const PILLAR_3A_CAP_LPP = PILLAR_3A_MAX_2026_LPP;
 
 function explainFieldNoImpact(d: FieldDiff, ctx: ExplainCtx): string {
   const { form, regime, noEffect, needsTou, touUseless } = ctx;

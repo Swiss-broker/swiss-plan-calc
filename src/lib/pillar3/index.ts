@@ -1,9 +1,16 @@
 // Pilier 3a · calculs cotisations max, économies fiscales, projections, retraits étalés.
-import { computeIncomeTax, type IncomeTaxInput } from "../tax/income";
+import {
+  computeIncomeTax,
+  PILLAR_3A_MAX_2026_LPP,
+  PILLAR_3A_MAX_2026_NO_LPP,
+  type IncomeTaxInput,
+} from "../tax/income";
 import { capitalWithdrawalTax } from "../lpp";
 
-export const PILLAR_3A_MAX_LPP_2026 = 7_258;
-export const PILLAR_3A_MAX_NO_LPP_2026 = 36_288;
+// Plafonds 3a : une seule définition (tax/income.ts, utilisée par le moteur
+// fiscal), ré-exportée ici sous les noms historiques de ce module.
+export const PILLAR_3A_MAX_LPP_2026 = PILLAR_3A_MAX_2026_LPP;
+export const PILLAR_3A_MAX_NO_LPP_2026 = PILLAR_3A_MAX_2026_NO_LPP;
 export const PILLAR_3A_NO_LPP_RATE = 0.2; // 20% du revenu, plafonné
 
 export interface Pillar3aMaxInput {

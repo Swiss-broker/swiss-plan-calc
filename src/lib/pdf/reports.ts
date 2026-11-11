@@ -4,6 +4,7 @@ import { ReportPdf, makeFilename, type PdfHeaderInfo } from "./builder";
 import { formatCHF, formatPct } from "@/lib/format";
 import { t, tCanton } from "@/lib/i18n";
 import type { IncomeTaxBreakdown, IncomeTaxInput } from "@/lib/tax/income";
+import { PILLAR_3A_MAX_2026_LPP } from "@/lib/tax/income";
 import type { LPPProjectionResult, LPPBuybackPlanResult, AnnuityVsLumpSumResult } from "@/lib/lpp";
 import type { Pillar3aProjectionResult, StaggeredWithdrawalResult } from "@/lib/pillar3";
 import type { SourceTaxResult } from "@/lib/tax/source";
@@ -113,7 +114,7 @@ export function exportIncomeTaxPdf(args: {
   pdf.projectionBanner("PROJECTION & OPTIMISATIONS");
   pdf.section("Pistes d'optimisation");
   const tips: string[] = [];
-  const max3a = 7258;
+  const max3a = PILLAR_3A_MAX_2026_LPP;
   if ((input.pillar3aContributions ?? 0) < max3a) {
     const gap = max3a - (input.pillar3aContributions ?? 0);
     tips.push(

@@ -1,6 +1,8 @@
 // Module libre passage · stratégies de placement et projection nette
 // Sources : OLP (Ordonnance sur le libre passage), pratique OFAS 2026.
 
+import { capitalWithdrawalTax } from "./index";
+
 export type VestedStrategy = "current" | "security" | "balanced" | "dynamic";
 
 /** Taux de la Fondation supplétive LPP (Suppletive) : hypothèse de rendement
@@ -77,6 +79,8 @@ export interface VestedProjectionInput {
   yearlyContribution?: number;
   /** Canton de retrait (impact fiscal sortie) */
   withdrawalCanton?: string;
+  /** Barème de l'impôt de sortie (défaut : personne seule). */
+  taxStatus?: "single" | "married" | "single_with_children";
 }
 
 export interface VestedProjectionResult {
@@ -94,50 +98,6 @@ export interface VestedProjectionResult {
   totalGains: number;
   netReturn: number; // rendement net annualisé après frais
   estimatedExitTax?: number; // impôt sur prestation en capital estimé
-}
-
-function approxCapitalTax(canton: string, capital: number): number {
-  // Estimation simplifiée impôt sur prestation en capital LPP/LP (IFD + ICC barème séparé)
-  // Calibrée sur les valeurs publiées AFC + administrations cantonales 2026.
-  // Coefficient cantonal moyen sur l'impôt sur prestation en capital
-  const cantonCoef: Record<string, number> = {
-    ZG: 0.045,
-    SZ: 0.05,
-    OW: 0.052,
-    NW: 0.055,
-    AI: 0.055,
-    AR: 0.062,
-    LU: 0.063,
-    UR: 0.058,
-    GL: 0.07,
-    TG: 0.072,
-    SH: 0.075,
-    SG: 0.075,
-    GR: 0.078,
-    AG: 0.08,
-    SO: 0.082,
-    FR: 0.085,
-    VS: 0.082,
-    BE: 0.088,
-    JU: 0.09,
-    NE: 0.095,
-    BS: 0.095,
-    BL: 0.092,
-    TI: 0.085,
-    VD: 0.098,
-    GE: 0.105,
-    ZH: 0.082,
-  };
-  const coef = canton ? (cantonCoef[canton] ?? 0.085) : 0.085;
-  // IFD séparé (1/5 du barème normal) ~ progressif jusqu'à 2.3 %
-  let ifdRate = 0;
-  if (capital <= 30_000) ifdRate = 0.005;
-  else if (capital <= 100_000) ifdRate = 0.01;
-  else if (capital <= 250_000) ifdRate = 0.014;
-  else if (capital <= 500_000) ifdRate = 0.018;
-  else if (capital <= 1_000_000) ifdRate = 0.021;
-  else ifdRate = 0.023;
-  return Math.round(capital * (coef + ifdRate));
 }
 
 export function projectVestedBenefits(input: VestedProjectionInput): VestedProjectionResult {
@@ -168,8 +128,15 @@ export function projectVestedBenefits(input: VestedProjectionInput): VestedProje
 
   const finalBalance = Math.round(balance);
   const totalContributions = input.initialBalance + yearly * input.yearsToRetirement;
+  // Même moteur que « Rente vs capital », le 3e pilier et les prestations
+  // consolidées : une formule propre à ce calculateur affichait un impôt de
+  // sortie presque deux fois plus élevé pour le même capital.
   const exitTax = input.withdrawalCanton
-    ? approxCapitalTax(input.withdrawalCanton, finalBalance)
+    ? capitalWithdrawalTax({
+        capital: finalBalance,
+        canton: input.withdrawalCanton,
+        status: input.taxStatus ?? "single",
+      }).total
     : undefined;
 
   return {
@@ -190,6 +157,7 @@ export function compareVestedStrategies(
   initialBalance: number,
   yearsToRetirement: number,
   withdrawalCanton?: string,
+  taxStatus?: VestedProjectionInput["taxStatus"],
 ): VestedProjectionResult[] {
   return VESTED_STRATEGIES.map((s) =>
     projectVestedBenefits({
@@ -197,6 +165,7 @@ export function compareVestedStrategies(
       yearsToRetirement,
       strategy: s.id,
       withdrawalCanton,
+      taxStatus,
     }),
   );
 }
