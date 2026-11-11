@@ -255,12 +255,11 @@ export function computeTaxGlobal(g: TaxGlobalInput): TaxGlobalResult {
   // ─────────────────────── SOURCE / QUASI-RÉSIDENT ───────────────────────
   if (det.regime === "source_taxed" || det.regime === "tou") {
     const couple = isCoupleStatus(g.civilStatus);
-    // Barème IS déterminé par l'employeur SANS tenir compte des enfants :
-    // c'est le barème par défaut appliqué en cours d'année (A0/B0/C0),
-    // jamais H automatiquement même si le client a des enfants. La prise
-    // en compte des enfants ne se fait qu'après une démarche de
-    // rectification (DRIS) l'année suivante (directives officielles
-    // AFC/ge.ch), jamais automatiquement dans le barème par défaut.
+    // Barème appliqué par l'employeur : A (non marié), B (marié, un
+    // revenu) ou C (marié, deux revenus) — jamais H d'office. Les enfants
+    // entrent d'office dans les barèmes B et C (B1, C2…, voir
+    // computeSourceTax) ; une personne non mariée reste en A0 et n'obtient
+    // le barème H que par rectification (voir plus bas).
     const statusForScale = toTaxStatus(g.civilStatus, 0);
     const scale = inferSourceScale(statusForScale, couple && g.spouseEmployed);
     const source = computeSourceTax({
@@ -292,7 +291,6 @@ export function computeTaxGlobal(g: TaxGlobalInput): TaxGlobalResult {
           scale: rectification.rectifiedScale,
           children: g.children,
           church: g.confession !== "none",
-          useRectifiedScale: true,
         })
       : null;
     const sourceRectification = {
@@ -402,7 +400,7 @@ export function computeTaxGlobal(g: TaxGlobalInput): TaxGlobalResult {
       trace: {
         ...baseTrace,
         assumptions: [
-          `Barème IS appliqué : ${scale} (statut ${statusForScale}, conjoint actif: ${couple && g.spouseEmployed ? "oui" : "non"})`,
+          `Barème IS appliqué : ${source.scaleUsed} (conjoint actif : ${couple && g.spouseEmployed ? "oui" : "non"})${scale === "C" ? ", taux lu sur le salaire propre (le barème C intègre déjà un revenu théorique du conjoint)" : ""}`,
           "Impôt à la source mensuel × 12 (hors gratifications irrégulières)",
           touMandatory
             ? "Taxation ordinaire ultérieure obligatoire (salaire brut ≥ 120 000 CHF)"

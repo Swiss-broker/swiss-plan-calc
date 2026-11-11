@@ -5,6 +5,8 @@ import {
   recommendBestStrategy,
 } from "./index";
 import type { DirectorInputs } from "./types";
+import { computeIncomeTax } from "@/lib/tax/income";
+import { computeDirectorIncomeTax } from "./index";
 
 const baseGE: DirectorInputs = {
   totalProfit: 200_000,
@@ -98,5 +100,58 @@ describe("computeStrategy", () => {
     expect(best.directorNet).toBeGreaterThanOrEqual(
       Math.max(...all.map((r) => r.directorNet)) - 0.01,
     );
+  });
+});
+
+describe("impôt du dirigeant — même moteur que Fiscal global", () => {
+  it("100 % salaire : même impôt que l'impôt sur le revenu ordinaire pour ce salaire", () => {
+    const r = computeStrategy(baseGE, {
+      salaryPct: 100, dividendPct: 0, retainedPct: 0, label: "100% sal",
+    });
+    const ordinary = computeIncomeTax({
+      canton: "GE",
+      status: "single",
+      confession: "none",
+      children: 0,
+      age: 35,
+      lppPlan: "mandatory",
+      workStatus: "director",
+      grossSalary: r.director.grossSalary,
+    });
+    expect(r.director.totalIncomeTax).toBeCloseTo(ordinary.totalIncomeTax, 0);
+  });
+
+  it("les déductions standard s'appliquent : revenu imposable inférieur au salaire net de cotisations", () => {
+    const r = computeStrategy(baseGE, {
+      salaryPct: 100, dividendPct: 0, retainedPct: 0, label: "100% sal",
+    });
+    expect(r.director.taxableIncomeIFD).toBeLessThan(r.director.netSalary);
+  });
+
+  it("les enfants réduisent l'impôt du dirigeant", () => {
+    const strategy = { salaryPct: 70, dividendPct: 30, retainedPct: 0, label: "70/30" };
+    const without = computeStrategy({ ...baseGE, status: "married", children: 0 }, strategy);
+    const withKids = computeStrategy({ ...baseGE, status: "married", children: 2 }, strategy);
+    expect(withKids.director.totalIncomeTax).toBeLessThan(without.director.totalIncomeTax);
+  });
+
+  it("dividendes : imposition partielle (70 %) pour une participation qualifiée, 100 % sinon", () => {
+    const qualified = computeDirectorIncomeTax(baseGE, 100_000, 50_000);
+    const notQualified = computeDirectorIncomeTax({ ...baseGE, qualifiedHolding: false }, 100_000, 50_000);
+    expect(notQualified.taxableIncomeIFD - qualified.taxableIncomeIFD).toBeCloseTo(15_000, -1);
+    expect(notQualified.total).toBeGreaterThan(qualified.total);
+  });
+
+  it("Neuchâtel : part imposable cantonale (60 %) inférieure à la part fédérale (70 %)", () => {
+    const ne = computeDirectorIncomeTax(
+      { ...baseGE, companyCanton: "NE", directorCanton: "NE" },
+      100_000,
+      50_000,
+    );
+    expect(ne.taxableIncomeIFD - ne.taxableIncomeICC).toBeGreaterThan(4_000);
+  });
+
+  it("aucun revenu : aucun impôt (pas même la taxe personnelle)", () => {
+    expect(computeDirectorIncomeTax(baseGE, 0, 0).total).toBe(0);
   });
 });

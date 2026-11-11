@@ -1,8 +1,7 @@
 // Comparateur dividende / salaire / bénéfices, fonctions de calcul pures.
 // Phase 4.1.
 
-import { computeIFD } from "@/lib/tax/ifd";
-import { computeCantonalCommunal } from "@/lib/tax/cantons";
+import { computeIncomeTax, type IncomeTaxInput } from "@/lib/tax/income";
 import { formatCHF } from "@/lib/format";
 import {
   SOCIAL_RATES_2026 as SR,
@@ -95,6 +94,82 @@ export function dividendTaxableFractions(
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+//  Impôt sur le revenu du dirigeant
+// ─────────────────────────────────────────────────────────────────────────────
+
+export interface DirectorIncomeTax {
+  taxableIncomeIFD: number;
+  taxableIncomeICC: number;
+  ifd: number;
+  cantonal: number;
+  communal: number;
+  church: number;
+  total: number;
+}
+
+/**
+ * Impôt sur le revenu du dirigeant (salaire + dividendes), calculé par le
+ * MÊME moteur que Fiscal global (computeIncomeTax) : mêmes cotisations
+ * sociales déduites, mêmes forfaits (frais professionnels, primes
+ * d'assurance), mêmes déductions pour enfants et couple. Avant, ce
+ * comparateur taxait le salaire net sans aucune de ces déductions : pour la
+ * même personne, il affichait un impôt plus élevé que Fiscal global.
+ *
+ * Les dividendes entrent comme autre revenu, pour leur seule part imposable
+ * (imposition partielle). Cette part pouvant différer entre la
+ * Confédération et le canton (ex. NE 60 %), l'IFD et l'impôt
+ * cantonal/communal sont tirés de deux calculs distincts.
+ */
+export function computeDirectorIncomeTax(
+  inputs: DirectorInputs,
+  grossSalary: number,
+  dividendsPaid: number,
+): DirectorIncomeTax {
+  if (grossSalary <= 0 && dividendsPaid <= 0) {
+    return {
+      taxableIncomeIFD: 0,
+      taxableIncomeICC: 0,
+      ifd: 0,
+      cantonal: 0,
+      communal: 0,
+      church: 0,
+      total: 0,
+    };
+  }
+  const fractions = dividendTaxableFractions(inputs.directorCanton, inputs.qualifiedHolding);
+  const base: IncomeTaxInput = {
+    canton: inputs.directorCanton,
+    communalMultiplier: inputs.directorCommunalMultiplier,
+    vsIndexationPercent: inputs.directorVsIndexationPercent,
+    status: inputs.status,
+    confession: inputs.confession,
+    children: inputs.children ?? 0,
+    age: inputs.age,
+    // Même salaire coordonné LPP que les charges sociales affichées ici.
+    lppPlan: inputs.lppPlan === "executive_1e" ? "cadres" : "mandatory",
+    lppInsuredSalary: coordinatedSalary(grossSalary, inputs.lppPlan) || undefined,
+    workStatus: "director",
+    grossSalary,
+  };
+  const federal = computeIncomeTax({ ...base, otherIncome: dividendsPaid * fractions.federal });
+  const cantonalRun =
+    fractions.cantonal === fractions.federal
+      ? federal
+      : computeIncomeTax({ ...base, otherIncome: dividendsPaid * fractions.cantonal });
+  // Impôt personnel (taxe fixe, GE) : rattaché à la part cantonale.
+  const cantonal = cantonalRun.cantonal + cantonalRun.personalTax;
+  return {
+    taxableIncomeIFD: federal.taxableIncomeIFD,
+    taxableIncomeICC: cantonalRun.taxableIncomeCC,
+    ifd: federal.ifd,
+    cantonal,
+    communal: cantonalRun.communal,
+    church: cantonalRun.church,
+    total: federal.ifd + cantonal + cantonalRun.communal + cantonalRun.church,
+  };
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 //  Calcul d'une stratégie complète
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -181,26 +256,10 @@ export function computeStrategy(
   const netSalary = grossSalary - employeeCharges.total;
 
   const fractions = dividendTaxableFractions(inputs.directorCanton, inputs.qualifiedHolding);
-  // Cotisations sociales = déduction du revenu imposable (AVS+AC+LAA+LPP salarié)
-  const socialDeductible = employeeCharges.total;
-
-  // Base imposable = salaire NET de cotisations + dividende imposable partiel
-  const taxableSalaryBase = Math.max(0, grossSalary - socialDeductible);
-  const taxableIncomeIFD = taxableSalaryBase + dividendsPaid * fractions.federal;
-  const taxableIncomeICC = taxableSalaryBase + dividendsPaid * fractions.cantonal;
-
-  const ifd = computeIFD(taxableIncomeIFD, inputs.status);
-  const cc = computeCantonalCommunal({
-    canton: inputs.directorCanton,
-    taxableIncome: taxableIncomeICC,
-    status: inputs.status,
-    children: inputs.children ?? 0,
-    confession: inputs.confession,
-    communalMultiplier: inputs.directorCommunalMultiplier,
-    vsIndexationPercent: inputs.directorVsIndexationPercent,
-  });
-
-  const totalIncomeTax = ifd + cc.cantonal + cc.communal + cc.church;
+  const tax = computeDirectorIncomeTax(inputs, grossSalary, dividendsPaid);
+  const { taxableIncomeIFD, taxableIncomeICC, ifd } = tax;
+  const cc = { cantonal: tax.cantonal, communal: tax.communal, church: tax.church };
+  const totalIncomeTax = tax.total;
   const netCash = netSalary + dividendsPaid - totalIncomeTax;
 
   const director: DirectorSideResult = {
@@ -295,20 +354,10 @@ export function computeStrategyFromAbsolute(
   const employeeCharges = computeEmployeeCharges(grossSalary, inputs);
   const netSalary = grossSalary - employeeCharges.total;
   const fractions = dividendTaxableFractions(inputs.directorCanton, inputs.qualifiedHolding);
-  const taxableSalaryBase = Math.max(0, grossSalary - employeeCharges.total);
-  const taxableIncomeIFD = taxableSalaryBase + dividendsPaid * fractions.federal;
-  const taxableIncomeICC = taxableSalaryBase + dividendsPaid * fractions.cantonal;
-  const ifd = computeIFD(taxableIncomeIFD, inputs.status);
-  const cc = computeCantonalCommunal({
-    canton: inputs.directorCanton,
-    taxableIncome: taxableIncomeICC,
-    status: inputs.status,
-    children: inputs.children ?? 0,
-    confession: inputs.confession,
-    communalMultiplier: inputs.directorCommunalMultiplier,
-    vsIndexationPercent: inputs.directorVsIndexationPercent,
-  });
-  const totalIncomeTax = ifd + cc.cantonal + cc.communal + cc.church;
+  const tax = computeDirectorIncomeTax(inputs, grossSalary, dividendsPaid);
+  const { taxableIncomeIFD, taxableIncomeICC, ifd } = tax;
+  const cc = { cantonal: tax.cantonal, communal: tax.communal, church: tax.church };
+  const totalIncomeTax = tax.total;
   const netCash = netSalary + dividendsPaid - totalIncomeTax;
   const totalTaxAndCharges =
     employerCharges.total + corporateTax + employeeCharges.total + totalIncomeTax;

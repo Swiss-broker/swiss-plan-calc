@@ -1,19 +1,22 @@
 // Impôt à la source 2026 · barèmes A/B/C/H + L (quasi-résident).
 // Calibrage 2026 sur barèmes officiels romands.
 //
-// === V2, règle clé pour le barème C (couple double revenu) ===
+// === Barème C (couple à deux revenus) ===
 //
-// Pour le barème C, la retenue sur le salaire d'un contribuable est calculée
-// au TAUX correspondant au REVENU MENSUEL COMBINÉ du ménage (revenu propre
-// + revenu du conjoint), puis ce taux est appliqué au salaire propre.
-// Faute de cette règle, un couple à 100k+80k à GE ressortait artificiellement
-// à ~5 % au lieu de 12-15 %.
+// Le taux du barème C se lit sur le salaire PROPRE du contribuable. Le
+// revenu du conjoint n'est pas ajouté : le barème officiel C intègre déjà
+// un revenu théorique du conjoint (circulaire AFC n° 45). L'ajouter une
+// seconde fois surestimait la retenue.
 //
-// Réductions pour enfants : appliquées en points selon la grille officielle
-// (C0 = 0 enfant, C1, C2, C3+) avec un comportement progressif/dégressif.
+// === Enfants ===
+//
+// Barèmes B, C et H : le sous-indice suit le nombre d'enfants à charge
+// (B1, C2, H1…), appliqué d'office par l'employeur d'après la déclaration
+// du salarié. Barème A : toujours A0 — une personne non mariée avec enfants
+// reste en A0 tant qu'elle n'a pas obtenu le barème H par rectification.
 
 import type { FilingStatus } from "./ifd";
-import { interpolateGERate } from "./cross-border";
+import { geSourceRate } from "./cross-border";
 
 export type SourceScale = "A" | "B" | "C" | "H";
 
@@ -23,9 +26,9 @@ export type SourceScale = "A" | "B" | "C" | "H";
 // [revenu_brut_mensuel_CHF, taux_%] — interpolation linéaire, même
 // mécanique que GE_IS_RATES_2026 (cross-border.ts), mais directement sur
 // le revenu MENSUEL (le barème jurassien est publié mois par mois, pas
-// annualisé). Limité à B0-B2/C0-C2 comme GE — au-delà de 2 enfants, la
-// réduction générique childReduction() prend le relais (voir
-// computeSourceTax). N'existe que pour B (marié monoactif) et C (marié
+// annualisé). Limité à B0-B2/C0-C2 comme GE — au-delà de 2 enfants, chaque
+// enfant supplémentaire retire le même écart que le deuxième (voir
+// juSourceRate). N'existe que pour B (marié monoactif) et C (marié
 // biactif) : le Jura ne nous a pas fourni de barème A (célibataire) ni H
 // (monoparental) — ceux-ci restent sur l'approximation générique.
 // =====================================================================
@@ -149,10 +152,20 @@ function interpolateJURate(monthlyGross: number, scaleKey: string): number {
   return pts[pts.length - 1][1];
 }
 
+/** Taux IS Jura 2026 (%) pour un barème B ou C et un nombre d'enfants. */
+function juSourceRate(monthlyGross: number, letter: "B" | "C", children: number): number {
+  const n = Math.max(0, Math.floor(children));
+  if (n <= 2) return interpolateJURate(monthlyGross, `${letter}${n}`);
+  const two = interpolateJURate(monthlyGross, `${letter}2`);
+  const step = Math.max(0, interpolateJURate(monthlyGross, `${letter}1`) - two);
+  return Math.max(0, two - (n - 2) * step);
+}
+
 export interface SourceTaxOptions {
   /** Salaire brut mensuel CHF du contribuable (incl. 13e au prorata) */
   monthlyGross: number;
-  /** Salaire brut mensuel CHF du conjoint, utilisé uniquement pour le barème C */
+  /** Salaire brut mensuel CHF du conjoint. Informatif : il détermine le choix
+   *  du barème (C plutôt que B) mais n'entre pas dans le calcul du taux. */
   spouseMonthlyGross?: number;
   /** Code canton (ex "GE") */
   canton: string;
@@ -165,11 +178,8 @@ export interface SourceTaxOptions {
   /** Frontalier France sous l'accord de 1983 (VD, VS, NE, JU…) : salaire
    *  imposé en France uniquement, aucune retenue suisse. */
   isCrossBorderFR?: boolean;
-  /** true pour le scénario "après rectification" : pour GE, utilise le vrai
-   *  sous-indice par enfant (H1, H2…) au lieu du sous-indice "0" toujours
-   *  appliqué par défaut par l'employeur (voir inferSourceRectification).
-   *  Sans effet pour les cantons hors GE : le sous-indice par enfant y est
-   *  déjà dérivé de `children` ailleurs dans cette fonction. */
+  /** Sans effet : conservé pour relire les simulations enregistrées avant
+   *  la prise en compte d'office des enfants dans les barèmes B, C et H. */
   useRectifiedScale?: boolean;
 }
 
@@ -186,7 +196,8 @@ export interface SourceTaxResult {
   monthlyTax: number;
   /** Impôt annuel CHF (12 × monthlyTax) */
   annualTax: number;
-  /** Revenu mensuel combiné utilisé pour déterminer le taux (barème C) */
+  /** Revenu mensuel sur lequel le taux est lu : le salaire propre, pour tous
+   *  les barèmes (nom historique conservé). */
   combinedMonthly: number;
   /** Code de barème effectif appliqué (ex "C2", "B1", "A0") */
   scaleUsed: string;
@@ -235,16 +246,9 @@ function baseRateGE(monthlyGross: number, scale: SourceScale): number {
     return Math.min(32, 25 + (g - 25_000) * 0.00025);
   }
 
-  // Barème C · marié biactif, `g` est ici le REVENU MENSUEL COMBINÉ
-  if (scale === "C") {
-    if (g < 4_500) return 1.5;
-    if (g < 7_000) return 3 + ((g - 4_500) / 2_500) * 4; // 3 → 7
-    if (g < 10_000) return 7 + ((g - 7_000) / 3_000) * 5; // 7 → 12
-    if (g < 15_000) return 12 + ((g - 10_000) / 5_000) * 5; // 12 → 17
-    if (g < 20_000) return 17 + ((g - 15_000) / 5_000) * 4; // 17 → 21
-    if (g < 30_000) return 21 + ((g - 20_000) / 10_000) * 5; // 21 → 26
-    return Math.min(34, 26 + (g - 30_000) * 0.0002);
-  }
+  // Barème C : pas de courbe approchée ici. Les cantons sans table propre
+  // reprennent la table officielle genevoise C (sur le salaire propre),
+  // ajustée du coefficient cantonal — voir computeSourceTaxCore.
 
   // Barème H · famille monoparentale
   if (scale === "H") {
@@ -265,79 +269,41 @@ function baseRateGE(monthlyGross: number, scale: SourceScale): number {
 function childReduction(scale: SourceScale, children: number, baseRate: number): number {
   const n = Math.max(0, Math.min(5, children));
   if (n === 0) return 0;
-  // Barème A (célibataire) : AUCUNE réduction automatique pour enfant(s) à
-  // charge, contrairement à B/C/H. C'est le seul barème sans sous-indice
-  // piloté par le nombre d'enfants — son sous-indice (A1, A2…) dépend d'une
-  // pension alimentaire versée atteignant des seuils précis (12'000 CHF/an
-  // → A1, 24'000 → A2, etc.), pas du nombre d'enfants à charge du
-  // contribuable lui-même. Un célibataire avec 1 enfant à charge reste sur
-  // A0 jusqu'à une démarche de rectification qui le fait basculer sur le
-  // barème H (monoparental), jamais automatiquement vers "A1" (confirmé par
-  // Sarah, recoupé avec les directives AFC/GE — même principe déjà appliqué
-  // à GE ci-dessus via scaleKey = `${opts.scale}0` systématique). Le seuil
-  // de pension alimentaire n'est pas encore modélisé ici (pas de champ
-  // "pension alimentaire versée" dans SourceTaxOptions) : pas de réduction
-  // du tout plutôt qu'une approximation non vérifiée.
-  if (scale === "A") return 0;
+  // Barème A : jamais de réduction pour enfant (voir en-tête du fichier).
   if (scale === "B") return n * Math.min(2.0, baseRate * 0.12);
-  if (scale === "C") return n * Math.min(2.2, baseRate * 0.13);
   if (scale === "H") return n * Math.min(2.5, baseRate * 0.15);
   return 0;
 }
 
 function computeSourceTaxCore(opts: SourceTaxOptions): Omit<SourceTaxResult, "marginalRate"> {
   const monthly = Math.max(0, opts.monthlyGross || 0);
-  const spouse = Math.max(0, opts.spouseMonthlyGross || 0);
-  const isC = opts.scale === "C";
-  // Pour le barème C : taux déterminé sur le revenu COMBINÉ du ménage
-  const determinationBase = isC ? monthly + spouse : monthly;
+  // Le taux se lit toujours sur le salaire propre, y compris en barème C
+  // (voir en-tête du fichier).
+  const determinationBase = monthly;
+  // Enfants : d'office pour B, C et H ; jamais pour A.
+  const children = opts.scale === "A" ? 0 : Math.max(0, Math.floor(opts.children ?? 0));
 
   const churchAddition = opts.church ? 0.6 : 0;
   let rate: number;
 
   if (opts.canton === "GE") {
-    // Genève : utilise les vraies tables officielles tar26GE (mêmes tables
-    // que le module frontalier cross-border.ts) au lieu d'une courbe
-    // approximative.
-    // Barème "0 enfant" (A0/B0/C0/H0) par défaut : c'est le barème appliqué
-    // par défaut par l'employeur. La prise en compte des enfants ne se fait
-    // qu'après une démarche de rectification (DRIS) l'année suivante, avant
-    // le 31 mars, jamais automatiquement (directives officielles AFC/ge.ch).
-    // opts.useRectifiedScale (scénario "après rectification" explicite,
-    // voir inferSourceRectification) utilise le vrai sous-indice par
-    // enfant — plafonné à 2, les tables officielles GE_IS_RATES_2026
-    // (cross-border.ts) ne couvrant que 0/1/2 enfants pour GE.
-    const scaleKey = opts.useRectifiedScale
-      ? `${opts.scale}${Math.min(opts.children ?? 0, 2)}`
-      : `${opts.scale}0`;
-    const determinationAnnual = determinationBase * 12;
-    const baseRate = interpolateGERate(determinationAnnual, scaleKey);
-    rate = Math.max(0, baseRate + churchAddition);
+    // Genève : tables officielles tar26GE (mêmes tables que le module
+    // frontalier cross-border.ts).
+    rate = Math.max(0, geSourceRate(monthly * 12, opts.scale, children) + churchAddition);
   } else if (opts.canton === "JU" && (opts.scale === "B" || opts.scale === "C")) {
-    // Jura, barèmes B et C : vraies tables officielles jura.ch 2026
-    // (JU_IS_RATES_2026, directement sur le revenu mensuel, pas annualisé)
-    // au lieu de l'approximation générique courbe GE × coefficient 0.95.
-    // Barèmes A et H : pas de table officielle fournie pour le Jura, reste
-    // sur l'approximation générique (voir branche else ci-dessous).
-    // Même règle "0 enfant par défaut" que GE ci-dessus (voir commentaire) :
-    // sous-indice par enfant UNIQUEMENT pour le scénario explicite "après
-    // rectification" (régression repérée via le même bug sur cross-border.ts :
-    // les tests officiels de ce fichier utilisaient déjà opts.children sans
-    // passer useRectifiedScale, ce qui appliquait l'enfant par défaut).
-    const n = opts.useRectifiedScale ? Math.min(opts.children ?? 0, 2) : 0;
-    const scaleKey = `${opts.scale}${n}`;
-    const baseRate = interpolateJURate(determinationBase, scaleKey);
-    rate = Math.max(0, baseRate + churchAddition);
-  } else {
-    const baseRateAtGE = baseRateGE(determinationBase, opts.scale);
+    // Jura, barèmes B et C : tables officielles jura.ch 2026, directement
+    // sur le revenu mensuel. Barèmes A et H : pas de table officielle,
+    // approximation générique ci-dessous.
+    rate = Math.max(0, juSourceRate(monthly, opts.scale, children) + churchAddition);
+  } else if (opts.scale === "C") {
+    // Autres cantons, barème C : table officielle genevoise C ajustée du
+    // coefficient cantonal (pas de table propre disponible).
     const cantonCoef = CANTON_SOURCE_COEF[opts.canton] ?? 0.95;
-    // Même règle "0 enfant par défaut" (voir commentaires ci-dessus) : la
-    // réduction par enfant de l'approximation générique (VD/VS/FR/NE, et
-    // JU pour les barèmes A/H) ne s'applique qu'au scénario "après
-    // rectification", jamais par défaut.
-    const reduction = opts.useRectifiedScale
-      ? childReduction(opts.scale, opts.children ?? 0, baseRateAtGE)
-      : 0;
+    rate = Math.max(0, geSourceRate(monthly * 12, "C", children) * cantonCoef + churchAddition);
+  } else {
+    const baseRateAtGE = baseRateGE(monthly, opts.scale);
+    const cantonCoef = CANTON_SOURCE_COEF[opts.canton] ?? 0.95;
+    const reduction = childReduction(opts.scale, children, baseRateAtGE);
     rate = Math.max(0, baseRateAtGE * cantonCoef - reduction + churchAddition);
   }
 
@@ -358,17 +324,7 @@ function computeSourceTaxCore(opts: SourceTaxOptions): Omit<SourceTaxResult, "ma
   // Le taux est appliqué sur le revenu PROPRE du contribuable (pas le combiné)
   const monthlyTax = (monthly * rate) / 100;
 
-  // A0 systématique, jamais piloté par le nombre d'enfants (voir
-  // childReduction() ci-dessus). Les autres barèmes affichent le vrai
-  // sous-indice par enfant UNIQUEMENT pour le scénario explicite "après
-  // rectification" (opts.useRectifiedScale) — sinon "X0", cohérent avec le
-  // taux réellement appliqué par défaut (voir scaleKey ci-dessus pour GE).
-  const scaleSuffix =
-    opts.scale === "A"
-      ? "A0"
-      : opts.useRectifiedScale
-        ? `${opts.scale}${Math.min(opts.children ?? 0, 5)}`
-        : `${opts.scale}0`;
+  const scaleSuffix = `${opts.scale}${Math.min(children, 5)}`;
 
   return {
     rate: Math.round(rate * 100) / 100,
@@ -428,24 +384,14 @@ export interface SourceRectificationResult {
 }
 
 /**
- * Barème après démarche de rectification IS, pour la seule situation
- * aujourd'hui documentée avec certitude : un célibataire avec au moins un
- * enfant à charge. Le barème par défaut appliqué par l'employeur est
- * toujours A (jamais H automatiquement, voir inferSourceScale), même si le
- * contribuable a des enfants — la prise en compte de l'enfant ne se fait
- * qu'après une démarche de rectification, qui fait alors basculer sur le
- * barème H (famille monoparentale), avec le sous-indice correspondant au
- * nombre d'enfants (H1, H2…).
+ * Barème après demande de rectification, pour une personne non mariée avec
+ * au moins un enfant à charge : l'employeur applique A0 par défaut (voir
+ * inferSourceScale) ; la rectification fait passer au barème H (famille
+ * monoparentale) avec le sous-indice du nombre d'enfants (H1, H2…).
  *
- * Volontairement limité à ce seul cas : contrairement à A, les barèmes B/C
- * (couples) intègrent déjà les enfants dans leur sous-indice ailleurs dans
- * ce fichier (voir scaleKey dans computeSourceTax) sans qu'un mécanisme de
- * rectification équivalent n'ait été vérifié ici — ne pas l'étendre sans
- * un cas de référence confirmé. Le sous-indice A1/A2… pour pension
- * alimentaire versée (12'000 CHF/an → A1, 24'000 → A2…) n'est pas non plus
- * modélisé ici, faute de champ "pension alimentaire versée" dans le moteur
- * source (voir childReduction ci-dessus) — pas de bascule devinée plutôt
- * qu'une approximation non vérifiée.
+ * Les couples (B, C) n'ont rien à rectifier : leurs enfants sont déjà dans
+ * le barème appliqué par l'employeur. Le sous-indice A1/A2… lié à une
+ * pension alimentaire versée n'est pas modélisé.
  */
 export function inferSourceRectification(
   status: FilingStatus,
@@ -461,7 +407,7 @@ export function inferSourceRectification(
       defaultScale,
       rectifiedScale: "H",
       rectificationApplicable: true,
-      reason: `${children} enfant${children > 1 ? "s" : ""} à charge dans le ménage : le barème par défaut (A, sans enfant) ne reflète pas la situation réelle. Après dépôt d'une demande de rectification auprès de l'AFC/du canton, le barème H (famille monoparentale) s'applique.`,
+      reason: `${children} enfant${children > 1 ? "s" : ""} à charge dans le ménage : le barème par défaut (A0, sans enfant) ne reflète pas la situation réelle. Sur demande de rectification auprès de l'administration cantonale (avant le 31 mars de l'année suivante), le barème H (famille monoparentale) s'applique, à condition de vivre seul avec ${children > 1 ? "les enfants" : "l'enfant"} et d'en assurer l'essentiel de l'entretien.`,
     };
   }
   return {

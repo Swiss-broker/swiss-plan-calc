@@ -1320,7 +1320,7 @@ function TaxGlobalCalc() {
                 <MoneyTile
                   label={t("calc.global.tile.source")}
                   value={result.source.annualTax}
-                  tip="Retenue à la source annuelle = (salaire mensuel × taux IS du barème) × 12. Barème déterminé par statut civil, conjoint actif et confession."
+                  tip="Retenue à la source annuelle = (salaire mensuel × taux IS du barème) × 12. Barème déterminé par l'état civil, l'activité du conjoint, les enfants à charge (couples) et la confession. En barème C, le taux se lit sur le salaire propre : le barème intègre déjà un revenu théorique du conjoint."
                 />
                 <PctTile
                   label="Taux IS"
@@ -1368,7 +1368,7 @@ function TaxGlobalCalc() {
                     <Badge variant="outline">
                       Barème appliqué par l'employeur : {result.sourceRectification.defaultScale}0
                     </Badge>
-                    <HelpDot tip="Le barème retenu à la source par l'employeur ne tient JAMAIS compte automatiquement des enfants à charge : il reste au barème de base (sans enfant) jusqu'au dépôt d'une démarche de rectification auprès de l'AFC/du canton. C'est cette démarche qui fait passer au barème réellement attribué à la situation du client." />
+                    <HelpDot tip="Une personne non mariée reste au barème A0 même avec des enfants à charge : le barème H (famille monoparentale) ne s'obtient que sur demande de rectification auprès de l'administration cantonale, avant le 31 mars de l'année suivante. Pour un couple marié, rien à demander : les enfants sont déjà dans le barème B ou C appliqué par l'employeur." />
                   </div>
                   <p className="text-xs text-muted-foreground">
                     {result.sourceRectification.reason}
@@ -1390,7 +1390,7 @@ function TaxGlobalCalc() {
                         label="Avant rectification"
                         value={result.sourceRectification.defaultAnnualTax}
                         hint={`Barème ${result.sourceRectification.defaultScale}0`}
-                        tip="Retenue à la source annuelle actuellement appliquée par l'employeur, sans tenir compte de la situation familiale réelle du client."
+                        tip="Retenue à la source annuelle actuellement appliquée par l'employeur au barème A0, sans les enfants à charge."
                       />
                       <MoneyTile
                         label="Après rectification"

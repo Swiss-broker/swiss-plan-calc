@@ -66,16 +66,31 @@ export function mapStatus(
     return "married";
   }
   // Résident ordinaire (suisse ou permis C) : la situation familiale réelle
-  // s'applique directement, pas de démarche à faire. Tout autre statut
-  // fiscal (source, frontalier, TOU) = retenue à la source par l'employeur :
-  // le barème par défaut ne tient JAMAIS compte des enfants avant une
-  // démarche de rectification — voir inferSourceRectification dans
-  // @/lib/tax/source. Sans ce garde-fou, un client célibataire imposé à la
-  // source avec 1 enfant se verrait reclassé "famille monoparentale" dans
-  // tous les calculateurs alors qu'aucune démarche n'a été faite.
+  // s'applique directement, pas de démarche à faire. Personne NON MARIÉE en
+  // retenue à la source (source, frontalier, TOU) : l'employeur applique le
+  // barème A0 même avec des enfants, le barème H (famille monoparentale) ne
+  // s'obtient que sur demande de rectification — voir
+  // inferSourceRectification dans @/lib/tax/source. Sans ce garde-fou, un
+  // client célibataire imposé à la source avec 1 enfant se verrait reclassé
+  // "famille monoparentale" dans tous les calculateurs alors qu'aucune
+  // démarche n'a été faite. (Couples : rien à rectifier, leurs enfants sont
+  // déjà dans le barème B/C — voir childrenAppliedByDefault.)
   const treatAsOrdinary = opts.assumeOrdinary || c.tax_status === "resident";
   if (hasChildren && treatAsOrdinary) return "single_with_children";
   return "single";
+}
+
+/**
+ * Enfants à charge pris en compte SANS démarche du client :
+ *  - résident en taxation ordinaire : toujours ;
+ *  - couple marié / partenariat enregistré imposé à la source : toujours
+ *    (barèmes B1, C2… appliqués d'office par l'employeur) ;
+ *  - personne non mariée imposée à la source : jamais (barème A0 tant que le
+ *    barème H n'a pas été obtenu par rectification).
+ */
+export function childrenAppliedByDefault(c: Client) {
+  const couple = c.civil_status === "married" || c.civil_status === "registered_partnership";
+  return c.tax_status === "resident" || couple ? dependentChildren(c.children) : [];
 }
 
 export function mapConfession(c: Client): IncomeTaxInput["confession"] {
@@ -156,13 +171,10 @@ export function toIncomeTaxInput(b: ClientBundle) {
   // Seuls les enfants "à charge" (case "Au foyer" de la fiche) comptent pour
   // le statut et les déductions — un enfant déclaré mais pas à charge (garde
   // partagée, majeur indépendant...) ne doit rien changer au calcul fiscal.
-  // Ce calculateur applique l'imposition ORDINAIRE : pour un client en
-  // retenue à la source (pas "resident"), rien n'est acquis avant une
-  // démarche de rectification — les enfants ne doivent donc pas s'appliquer
-  // automatiquement ici (voir mapStatus). Résident ordinaire (suisse/permis
-  // C) : la situation réelle s'applique directement.
-  const isOrdinaryResident = b.client.tax_status === "resident";
-  const children = isOrdinaryResident ? dependentChildren(b.client.children) : [];
+  // Une personne non mariée en retenue à la source reste au barème A0 tant
+  // qu'elle n'a pas fait rectifier son barème : ses enfants ne s'appliquent
+  // pas d'office (voir childrenAppliedByDefault).
+  const children = childrenAppliedByDefault(b.client);
   return {
     canton: b.client.canton ?? undefined,
     // Multiplicateur communal réel si la commune du client est connue et
@@ -240,11 +252,10 @@ export function toCrossBorderInput(b: ClientBundle) {
     workCanton: b.client.canton ?? undefined,
     grossAnnualSalary: getTotalGrossIncomeOrUndef(b.client),
     status: (married ? "married" : "single") as "single" | "married",
-    // Frontalier = retenue à la source par l'employeur, même principe que
-    // le barème A0 : les enfants ne font jamais basculer automatiquement
-    // sur un barème monoparental sans démarche de rectification — voir
-    // mapStatus et toSourceTaxInput.
-    children: 0,
+    // Enfants à charge réels : le moteur frontalier les applique d'office
+    // aux couples (B1, C2…) et les ignore pour le barème A0 d'une personne
+    // non mariée ; côté français ils comptent dans le quotient familial.
+    children: dependentChildren(b.client.children).length,
     spouseGrossSalary: numOrUndef(b.client.spouse_gross_annual_salary),
   };
 }
@@ -292,11 +303,10 @@ export function toLppInput(b: ClientBundle) {
       }
     | null;
 
-  // Estimation d'économie d'impôt en imposition ORDINAIRE : pour un client
-  // en retenue à la source, rien n'est acquis avant rectification — voir
-  // mapStatus et le bandeau "Estimation en imposition ordinaire" affiché
-  // sur cette page pour un client non résident.
-  const lppKids = b.client.tax_status === "resident" ? dependentChildren(b.client.children) : [];
+  // Estimation d'économie d'impôt en imposition ORDINAIRE — enfants selon
+  // childrenAppliedByDefault (voir aussi le bandeau "Estimation en
+  // imposition ordinaire" affiché sur cette page pour un client non résident).
+  const lppKids = childrenAppliedByDefault(b.client);
   return {
     canton: b.client.canton ?? undefined,
     status: mapStatus(b.client, lppKids.length > 0),
@@ -376,11 +386,9 @@ export function toPillar3aInput(b: ClientBundle) {
 export function toCantonCompareInput(b: ClientBundle) {
   // Le formulaire n'a qu'un seul champ "Salaire brut" : on agrège
   // salaire + bonus + autres revenus pour refléter la base imposable totale.
-  // Comparateur en imposition ORDINAIRE : pour un client en retenue à la
-  // source, pas de démarche faite donc pas d'enfant pris en compte — voir
-  // mapStatus.
-  const compareKids =
-    b.client.tax_status === "resident" ? dependentChildren(b.client.children) : [];
+  // Comparateur en imposition ORDINAIRE — enfants selon
+  // childrenAppliedByDefault.
+  const compareKids = childrenAppliedByDefault(b.client);
   return {
     referenceCanton: b.client.canton ?? undefined,
     status: mapStatus(b.client, compareKids.length > 0),

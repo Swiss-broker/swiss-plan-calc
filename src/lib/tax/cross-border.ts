@@ -292,10 +292,14 @@ export const GE_IS_RATES_2026: Record<string, [number, number][]> = {
     [96_000, 4.87], [120_000, 7.83], [150_000, 11.09], [200_000, 15.06],
     [300_000, 20.44],
   ],
+  // B2 : ESTIMATION, à remplacer par la lecture du barème officiel. Les
+  // valeurs relevées à l'origine (0,39 % à 120'000, 1,51 % à 200'000)
+  // n'étaient manifestement pas celles du barème B2. Reconstituées ici à
+  // partir de B1 moins l'écart B0 → B1 au même revenu (même logique que les
+  // écarts C0 → C1 → C2 et H1 → H2 du barème officiel).
   B2: [
-    [29_400, 0], [60_000, 0], [72_000, 0], [84_000, 0],
-    [100_000, 0.21], [120_000, 0.39], [150_000, 0.80], [200_000, 1.51],
-    [300_000, 3.73],
+    [29_400, 0], [84_000, 0], [96_000, 0.3], [120_000, 4.6],
+    [150_000, 8.1], [200_000, 12.5], [300_000, 18.0],
   ],
   C0: [
     [29_400, 0], [48_000, 0.83], [60_000, 4.56], [72_000, 7.20],
@@ -406,37 +410,22 @@ function interpolateFRRate(annualGross: number, scaleKey: string): number {
   return pts[pts.length - 1][1];
 }
 
-function friburgSourceTax(
-  grossAnnual: number,
-  status: "single" | "married",
+/**
+ * Taux d'un barème avec enfants quand la table ne va pas assez loin : au-delà
+ * du dernier sous-indice disponible, chaque enfant supplémentaire retire le
+ * même écart que le dernier enfant couvert par la table.
+ */
+function rateWithChildren(
+  lookup: (scaleKey: string) => number,
+  letter: string,
   children: number,
-  spouseEmployed: boolean = false,
-  // Barème appliqué par l'employeur SANS tenir compte des enfants par
-  // défaut (A0/B0/C0 systématique) — même règle que inferSourceScale /
-  // computeSourceTax (source.ts) : la prise en compte des enfants ne se
-  // fait qu'après une démarche de rectification l'année suivante, jamais
-  // automatiquement (confirmé par Sarah). true = scénario "après
-  // rectification" explicite, pas encore câblé dans l'UI frontalier.
-  useRectifiedScale: boolean = false,
+  maxIndexed: number,
 ): number {
-  const n = useRectifiedScale ? Math.min(children, 3) : 0;
-  let scaleKey: string;
-
-  if (status === "single") {
-    // Célibataire sans enfant → A0, avec enfants (après rectification) → H
-    scaleKey = n > 0 ? `H${n}` : "A0";
-  } else {
-    if (spouseEmployed) {
-      scaleKey = n > 0 ? `C${n}` : "C0";
-    } else {
-      scaleKey = n > 0 ? `B${n}` : "B0";
-    }
-  }
-
-  if (!FR_IS_RATES_2026[scaleKey]) scaleKey = "A0";
-
-  const rate = interpolateFRRate(grossAnnual, scaleKey);
-  return Math.round((grossAnnual * rate) / 100);
+  const n = Math.max(0, Math.floor(children));
+  if (n <= maxIndexed) return lookup(`${letter}${n}`);
+  const last = lookup(`${letter}${maxIndexed}`);
+  const step = Math.max(0, lookup(`${letter}${maxIndexed - 1}`) - last);
+  return Math.max(0, last - (n - maxIndexed) * step);
 }
 
 export function interpolateGERate(annualGross: number, scaleKey: string): number {
@@ -453,34 +442,53 @@ export function interpolateGERate(annualGross: number, scaleKey: string): number
   return pts[pts.length - 1][1];
 }
 
+/** Taux IS Genève 2026 (%) pour un barème (lettre A/B/C/H) et un nombre
+ *  d'enfants. Tables officielles jusqu'à 2 enfants, prolongées au-delà. */
+export function geSourceRate(annualGross: number, letter: string, children: number): number {
+  return rateWithChildren((k) => interpolateGERate(annualGross, k), letter, children, 2);
+}
+
+/** Taux IS Fribourg 2026 (%) pour un barème et un nombre d'enfants (tables
+ *  jusqu'à 3 enfants). */
+export function frSourceRate(annualGross: number, letter: string, children: number): number {
+  return rateWithChildren((k) => interpolateFRRate(annualGross, k), letter, children, 3);
+}
+
+/**
+ * Barème retenu par l'employeur pour un frontalier, d'après sa déclaration :
+ *  - marié : B (un seul revenu) ou C (deux revenus), avec le nombre
+ *    d'enfants à charge (B1, C2…), appliqué d'office ;
+ *  - non marié : A0, même avec des enfants — le barème H (famille
+ *    monoparentale) ne s'obtient que sur demande de rectification.
+ */
+function crossBorderScale(
+  status: "single" | "married",
+  children: number,
+  spouseEmployed: boolean,
+): { letter: string; children: number } {
+  if (status === "single") return { letter: "A", children: 0 };
+  return { letter: spouseEmployed ? "C" : "B", children };
+}
+
+function friburgSourceTax(
+  grossAnnual: number,
+  status: "single" | "married",
+  children: number,
+  spouseEmployed: boolean = false,
+): number {
+  const scale = crossBorderScale(status, children, spouseEmployed);
+  const rate = frSourceRate(grossAnnual, scale.letter, scale.children);
+  return Math.round((grossAnnual * rate) / 100);
+}
+
 function genevaSourceTax(
   grossAnnual: number,
   status: "single" | "married",
   children: number,
   spouseEmployed: boolean = false,
-  // Même règle que friburgSourceTax ci-dessus et que inferSourceScale /
-  // computeSourceTax (source.ts) : barème par défaut A0/B0/C0 systématique,
-  // jamais piloté par le nombre d'enfants sans démarche de rectification
-  // (confirmé par Sarah — repéré en test : célibataire 1 enfant 60'000 CHF
-  // à Genève donnait 25 CHF d'impôt au lieu du barème A0 ~3'300 CHF).
-  useRectifiedScale: boolean = false,
 ): number {
-  const n = useRectifiedScale ? Math.min(children, 2) : 0;
-
-  let scaleKey: string;
-  if (status === "single") {
-    scaleKey = n > 0 ? `A${n}` : "A0";
-  } else {
-    if (spouseEmployed) {
-      scaleKey = n > 0 ? `C${n}` : "C0";
-    } else {
-      scaleKey = n > 0 ? `B${n}` : "B0";
-    }
-  }
-
-  if (!GE_IS_RATES_2026[scaleKey]) scaleKey = "A0";
-
-  const rate = interpolateGERate(grossAnnual, scaleKey);
+  const scale = crossBorderScale(status, children, spouseEmployed);
+  const rate = geSourceRate(grossAnnual, scale.letter, scale.children);
   return Math.round((grossAnnual * rate) / 100);
 }
 
@@ -526,10 +534,12 @@ export function computeCrossBorder(input: CrossBorderInput): CrossBorderResult {
     };
   }
 
+  // Marié : les enfants sont déjà dans le barème (B1, C2…). Non marié avec
+  // enfants : barème A0 par défaut, le barème H se demande par rectification.
   const rectificationNote =
-    children > 0
+    children > 0 && input.status === "single"
       ? [
-          `Barème appliqué par défaut sans tenir compte ${children > 1 ? "des enfants" : "de l'enfant"} à charge (comme pour l'impôt à la source classique) : une démarche de rectification auprès de l'employeur/canton l'année suivante peut réduire l'impôt.`,
+          `Barème A0 appliqué par défaut, sans ${children > 1 ? "les enfants" : "l'enfant"} à charge : le barème H (famille monoparentale) s'obtient sur demande de rectification auprès de l'administration cantonale, avant le 31 mars de l'année suivante.`,
         ]
       : [];
 

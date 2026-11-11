@@ -60,3 +60,26 @@ describe("computeCrossBorder Fribourg — même règle de barème par défaut", 
     expect(withChildren.swissTax).toBe(withoutChildren.swissTax);
   });
 });
+
+describe("computeCrossBorder — couples : enfants dans le barème B/C d'office", () => {
+  it("marié, un revenu, 2 enfants à Genève : barème B2, inférieur à B0, sans note de rectification", () => {
+    const base = { workCanton: "GE", grossAnnualSalary: 120_000, status: "married" as const };
+    const b0 = computeCrossBorder({ ...base, children: 0 });
+    const b2 = computeCrossBorder({ ...base, children: 2 });
+    expect(b2.swissTax).toBeLessThan(b0.swissTax);
+    expect(b2.swissTax).toBeGreaterThan(0);
+    expect(b2.notes.some((n) => n.includes("rectification"))).toBe(false);
+  });
+
+  it("marié, deux revenus, 1 enfant à Fribourg : barème C1, inférieur à C0", () => {
+    const base = {
+      workCanton: "FR",
+      grossAnnualSalary: 100_000,
+      status: "married" as const,
+      spouseEmployed: true,
+    };
+    const c0 = computeCrossBorder({ ...base, children: 0 });
+    const c1 = computeCrossBorder({ ...base, children: 1 });
+    expect(c1.swissTax).toBeLessThan(c0.swissTax);
+  });
+});
