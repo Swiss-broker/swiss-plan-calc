@@ -38,7 +38,7 @@ export function computeEmployerCharges(
   const avs = grossSalary * SR.avsEmployer;
   const ac = Math.min(grossSalary, SR.acCeiling) * SR.acEmployer;
   const familyAllowance = grossSalary * FAMILY_ALLOWANCE_RATE[inputs.companyCanton];
-  const laaProfessional = grossSalary * SR.laaProfessionalDefault;
+  const laaProfessional = Math.min(grossSalary, SR.laaCeiling) * SR.laaProfessionalDefault;
 
   // LPP : (bonification âge + risque/admin) × salaire coordonné × part employeur
   const coord = coordinatedSalary(grossSalary, inputs.lppPlan);
@@ -65,7 +65,7 @@ export function computeEmployeeCharges(
   }
   const avs = grossSalary * SR.avsEmployee;
   const ac = Math.min(grossSalary, SR.acCeiling) * SR.acEmployee;
-  const laaNonProfessional = grossSalary * SR.laaNonProfessionalDefault;
+  const laaNonProfessional = Math.min(grossSalary, SR.laaCeiling) * SR.laaNonProfessionalDefault;
   const coord = coordinatedSalary(grossSalary, inputs.lppPlan);
   const lppRateTotal = ageCreditRate(inputs.age) + LPP_PARAMS_2026.riskAndAdmin;
   const lpp = coord * lppRateTotal * (1 - LPP_PARAMS_2026.employerShare);

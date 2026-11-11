@@ -13,6 +13,15 @@
 
 import type { SelectableCantonCode } from "@/lib/swiss/cantons";
 import type { LppPlanKind } from "./types";
+import { computeLppInsuredSalary, lppCreditRate } from "@/lib/lpp";
+import { LPP_2026 } from "@/lib/lpp/parameters-2026";
+import {
+  AVS_AI_APG_RATE,
+  AC_RATE,
+  AC_CEILING_2026,
+  ANP_RATE,
+  ANP_CEILING_2026,
+} from "@/lib/tax/income";
 
 /**
  * Cotisations sociales 2026, stables depuis 2024.
@@ -20,19 +29,23 @@ import type { LppPlanKind } from "./types";
  */
 export const SOCIAL_RATES_2026 = {
   /** AVS/AI/APG part employeur (% salaire brut, sans plafond) */
-  avsEmployer: 0.053,
-  /** AVS/AI/APG part employé */
-  avsEmployee: 0.053,
+  avsEmployer: AVS_AI_APG_RATE,
+  /** AVS/AI/APG part employé — même constante que l'impôt sur le revenu */
+  avsEmployee: AVS_AI_APG_RATE,
   /** Assurance chômage employeur (jusqu'au plafond) */
-  acEmployer: 0.011,
+  acEmployer: AC_RATE,
   /** Assurance chômage employé */
-  acEmployee: 0.011,
-  /** Plafond AC 2026 (CHF), aligné LPP max insured salary */
-  acCeiling: 148_200,
+  acEmployee: AC_RATE,
+  /** Plafond AC 2026 (CHF) = gain assuré maximal LAA */
+  acCeiling: AC_CEILING_2026,
   /** LAA professionnel, défaut courant tertiaire (employeur, à charge entreprise) */
   laaProfessionalDefault: 0.01,
-  /** LAA non professionnel, défaut (employé) */
-  laaNonProfessionalDefault: 0.014,
+  /** LAA non professionnel (employé) — même taux que l'impôt sur le revenu
+   *  (ANP_RATE), pour qu'un même salaire brut donne le même salaire net
+   *  dans tous les calculateurs. */
+  laaNonProfessionalDefault: ANP_RATE,
+  /** Gain assuré maximal LAA : les primes accidents ne sont dues que jusque-là. */
+  laaCeiling: ANP_CEILING_2026,
 } as const;
 
 /**
@@ -93,9 +106,9 @@ export const DIVIDEND_TAXABLE = {
  * Référence officielle déjà dans src/lib/lpp/parameters-2026.ts.
  */
 export const LPP_PARAMS_2026 = {
-  coordinationDeduction: 26_460,
+  coordinationDeduction: LPP_2026.coordinationDeduction,
   /** Plafond salaire assuré régime obligatoire */
-  maxInsuredMandatory: 90_720,
+  maxInsuredMandatory: LPP_2026.maxInsuredSalary,
   /** Plafond salaire assuré plan cadres / 1e (référence) */
   maxInsuredExecutive: 132_300,
   /** Bonifications de vieillesse (% du salaire coordonné) */
@@ -113,10 +126,8 @@ export const LPP_PARAMS_2026 = {
 
 /** Renvoie le taux de bonification LPP applicable selon l'âge */
 export function ageCreditRate(age: number): number {
-  for (const ac of LPP_PARAMS_2026.ageCredits) {
-    if (age >= ac.from && age <= ac.to) return ac.rate;
-  }
-  return 0; // < 25 ou > 65
+  // Barème légal partagé (src/lib/lpp) : 0 avant 25 ans et après 65 ans.
+  return lppCreditRate(age);
 }
 
 /** Plafond salaire assuré selon plan */
@@ -130,6 +141,7 @@ export function lppMaxInsured(plan: LppPlanKind): number {
  * Salaire coordonné (= salaire assuré LPP) selon plan.
  */
 export function coordinatedSalary(grossSalary: number, plan: LppPlanKind): number {
-  const max = lppMaxInsured(plan);
-  return Math.max(0, Math.min(grossSalary, max) - LPP_PARAMS_2026.coordinationDeduction);
+  // Même fonction que LPP / impôt sur le revenu : seuil d'entrée LPP
+  // (aucune cotisation en dessous) et salaire coordonné minimal légal.
+  return computeLppInsuredSalary(grossSalary, lppMaxInsured(plan));
 }

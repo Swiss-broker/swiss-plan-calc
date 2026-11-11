@@ -68,3 +68,60 @@ describe("aggregateGains — gains pendant la vie active vs après la retraite",
     expect(agg.totalOneTime).toBe(140_000);
   });
 });
+
+describe("aggregateGains — scénarios de Fiscal global", () => {
+  it("un rachat LPP simulé dans Fiscal global est une économie ponctuelle, pas annuelle", () => {
+    const entries = [
+      entry({
+        kind: "tax_global",
+        summary: { bestScenarioSavings: 6_000, bestScenarioLabel: "+Rachat LPP 20'000 CHF" },
+      }),
+    ];
+    const r = aggregateGains(entries, 25);
+    expect(r.totalAnnual).toBe(0);
+    expect(r.totalOneTime).toBe(6_000);
+    expect(r.preRetirementTotal).toBe(6_000);
+  });
+
+  it("un don ou un changement de permis ne sont pas comptés comme un gain", () => {
+    const don = aggregateGains(
+      [entry({ kind: "tax_global", summary: { bestScenarioSavings: 1_500, bestScenarioId: "donation_5k" } })],
+      10,
+    );
+    const permit = aggregateGains(
+      [entry({ kind: "tax_global", summary: { bestScenarioSavings: 900, bestScenarioLabel: "Passage permis C" } })],
+      10,
+    );
+    expect(don.items).toEqual([]);
+    expect(permit.items).toEqual([]);
+  });
+
+  it("3a au plafond chiffré à la fois par Fiscal global et par le calculateur 3a : compté une seule fois", () => {
+    const entries = [
+      entry({ kind: "pillar3a", summary: { taxSavings: 2_000 }, inputs: { contribution: 7_258 } }),
+      entry({
+        kind: "tax_global",
+        summary: { bestScenarioSavings: 2_100, bestScenarioId: "pillar3a_max", bestScenarioLabel: "+3a max (7'258 CHF)" },
+      }),
+    ];
+    const r = aggregateGains(entries, 10);
+    expect(r.items.map((i) => i.kind)).toEqual(["pillar3a"]);
+    expect(r.totalAnnual).toBe(2_000);
+  });
+
+  it("sans calculateur 3a dédié, le scénario 3a de Fiscal global reste compté (annuel)", () => {
+    const r = aggregateGains(
+      [entry({ kind: "tax_global", summary: { bestScenarioSavings: 2_100, bestScenarioId: "pillar3a_max" } })],
+      10,
+    );
+    expect(r.totalAnnual).toBe(2_100);
+  });
+
+  it("l'écart entre régimes frontaliers n'est pas un gain réalisable", () => {
+    const r = aggregateGains(
+      [entry({ kind: "cross_border", summary: { alternativeDelta: 4_000 } })],
+      10,
+    );
+    expect(r.items).toEqual([]);
+  });
+});

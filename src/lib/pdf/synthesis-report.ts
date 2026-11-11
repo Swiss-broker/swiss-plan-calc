@@ -15,6 +15,7 @@ import { LEGAL_FORM_LABELS, type Company } from "@/lib/companies/types";
 import { ageFromDob, parseChildren, type Client, type ClientPension, type ClientAssets } from "@/lib/clients/types";
 import {
   extractGain,
+  isRedundantGain,
   pickLatestNonDismissed,
   projectGainTotal,
   type ExtractedGain,
@@ -2559,8 +2560,12 @@ export function computeTotals(entries: HistoryEntry[]): Totals {
   let annual = 0;
   let postRetirement = 0;
   const details: string[] = [];
-  for (const e of latestActivePerKind(entries)) {
+  const active = latestActivePerKind(entries);
+  for (const e of active) {
     const g = extractGain(e);
+    // Même levier déjà chiffré par son calculateur dédié (3a, rachat LPP) :
+    // ne pas le compter une seconde fois via Fiscal global.
+    if (isRedundantGain(e, g, active)) continue;
     if (g.type === "annual") {
       annual += g.amount;
       details.push(`${formatCHF(g.amount)}/an (${KIND_LABELS[e.kind]})`);
@@ -2666,9 +2671,10 @@ function drawConclusionPage(pdf: ReportPdf, entries: HistoryEntry[]) {
   // catégorie relancée plusieurs fois dans ce dossier ne doit pas générer
   // plusieurs lignes de recommandation ni gonfler le total ci-dessous
   // (cahier des charges point 13).
-  const gains = latestActivePerKind(entries)
+  const activeForGains = latestActivePerKind(entries);
+  const gains = activeForGains
     .map((e) => ({ entry: e, gain: extractGain(e) }))
-    .filter((x) => x.gain.type !== "none")
+    .filter((x) => x.gain.type !== "none" && !isRedundantGain(x.entry, x.gain, activeForGains))
     .sort((a, b) => b.gain.amount - a.gain.amount);
 
   if (entries.length === 0) {

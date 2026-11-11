@@ -1535,6 +1535,7 @@ function TaxGlobalCalc() {
             socialChargesCHF: result.socialChargesCHF,
             bestScenarioSavings: bestScenario ? Math.round(-bestScenario.deltaVsBaseline) : 0,
             bestScenarioLabel: bestScenario ? bestScenario.label : undefined,
+            bestScenarioId: bestScenario ? bestScenario.id : undefined,
             // Snapshot complet de la base "avant" (bouton "Définir comme
             // base"), pour pouvoir restaurer fidèlement le comparatif
             // Avant/Après à la réouverture de cette simulation — sans ça, la

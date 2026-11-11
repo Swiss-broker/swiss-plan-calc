@@ -90,8 +90,8 @@ function sourceTaxedWarning(
       severity: "warning",
       title: "Client imposé à la source, déduction non automatique",
       body: `La déduction fiscale annoncée n'est applicable que si :
-• le client est quasi-résident (≥ 90 % revenus en CH) ET demande la TOU (Taxation Ordinaire Ultérieure) ;
-• OU le client demande une rectification IS auprès de l'administration cantonale ;
+• le client demande la TOU (Taxation Ordinaire Ultérieure) avant le 31 mars de l'année suivante — possible sans condition pour un résident, réservée aux quasi-résidents (≥ 90 % des revenus en CH) pour un frontalier ;
+• OU son salaire brut atteint 120 000 CHF (TOU obligatoire, la déduction s'applique alors d'office) ;
 • OU le client passe en taxation ordinaire (permis C / Suisse).
 ${common}`,
     };
@@ -100,7 +100,7 @@ ${common}`,
     return {
       severity: "warning",
       title: "Client imposé à la source, déduction 3a non automatique",
-      body: `Le versement 3a est autorisé pour un imposé à la source, mais sa déduction fiscale exige : TOU (quasi-résident ≥ 90 %), rectification IS, ou passage en taxation ordinaire.
+      body: `Le versement 3a est autorisé pour un imposé à la source, mais sa déduction fiscale exige une TOU (sur demande avant le 31 mars de l'année suivante, ou obligatoire dès 120 000 CHF de salaire brut) ou le passage en taxation ordinaire.
 ${common}`,
     };
   }
@@ -114,8 +114,8 @@ ${common}`,
 function crossBorderWarning(): Optimization["warning"] {
   return {
     severity: "warning",
-    title: "Frontalier, règles conventionnelles spécifiques",
-    body: "La déductibilité dépend du régime fiscal applicable (accord 1983 pour les frontaliers français, IS au barème normal pour Genève). Valider l'éligibilité au cas par cas selon le pays d'imposition principal.",
+    title: "Frontalier Genève, déduction non automatique",
+    body: "L'impôt à la source genevois ne tient compte d'aucune déduction. L'économie annoncée suppose une demande de TOU, réservée aux quasi-résidents (≥ 90 % des revenus du foyer en Suisse), à déposer avant le 31 mars de l'année suivante.",
   };
 }
 
@@ -132,28 +132,39 @@ export function runOptimizer(input: OptimizerInput): Optimization[] {
   // Global. deductionsAreAutomatic() ci-dessus reconnaît déjà "tou" comme
   // automatique à tort ; elle n'est volontairement plus utilisée ici.
   const isSource = taxStatus === "source_taxed" || taxStatus === "tou";
-  const isCrossBorder = taxStatus === "cross_border_fr_1983" || taxStatus === "cross_border_ge";
+  const isCrossBorder = taxStatus === "cross_border_ge";
   const needsWarning = isSource || isCrossBorder;
+  // Frontalier sous l'accord de 1983 : imposé en France uniquement. Un rachat
+  // LPP, un versement 3a ou un changement de canton de travail n'y changent
+  // rien (même règle que regime-aware-deduction.ts) : aucune économie
+  // suisse n'est suggérée.
+  const swissDeductionsUseless = taxStatus === "cross_border_fr_1983";
+  // Proche de la retraite : le rachat ne peut plus être étalé sur 3 ans.
+  const yearsToRetirement = input.age != null ? 65 - input.age : null;
+  const preRetirement = yearsToRetirement !== null && yearsToRetirement >= 1 && yearsToRetirement <= 5;
+  const buybackYears =
+    yearsToRetirement !== null && yearsToRetirement >= 1 ? Math.min(3, yearsToRetirement) : 3;
 
   // 1) RACHAT LPP · si capacité disponible
-  if ((input.lppBuybackCapacity ?? 0) > 5_000) {
+  if (!swissDeductionsUseless && (input.lppBuybackCapacity ?? 0) > 5_000) {
     const capacity = input.lppBuybackCapacity!;
     const plan = simulateBuybackPlan({
       buybackCapacity: capacity,
-      years: 3,
+      years: buybackYears,
       taxInput: input.taxInput,
     });
+    const yearsLabel = buybackYears > 1 ? `${buybackYears} ans` : "1 an";
     if (plan.totalTaxSavings > 1_000) {
       optimizations.push({
         id: "lpp-buyback",
         category: "lpp",
-        title: "Rachat LPP étalé sur 3 ans",
-        description: `Vous disposez d'une capacité de rachat de CHF ${capacity.toLocaleString("fr-CH")}. En étalant sur 3 ans, vous économisez environ CHF ${plan.totalTaxSavings.toLocaleString("fr-CH")} d'impôts (sur 3 ans). Attention : aucun retrait LPP possible dans les 3 ans suivant un rachat.`,
+        title: buybackYears > 1 ? `Rachat LPP étalé sur ${yearsLabel}` : "Rachat LPP avant la retraite",
+        description: `Vous disposez d'une capacité de rachat de CHF ${capacity.toLocaleString("fr-CH")}. En ${buybackYears > 1 ? `étalant sur ${yearsLabel}` : "le versant cette année"}, vous économisez environ CHF ${plan.totalTaxSavings.toLocaleString("fr-CH")} d'impôts${buybackYears > 1 ? ` (sur ${yearsLabel})` : ""}. Attention : aucun retrait LPP en capital possible dans les 3 ans suivant un rachat${preRetirement ? " — à moins de 3 ans de la retraite, la prestation correspondante devra être prise en rente" : ""}.`,
         estimatedSavings: plan.totalTaxSavings,
         priority: plan.totalTaxSavings > 10_000 ? "high" : "medium",
         details: {
           versementAnnuel: plan.yearlyAmount,
-          economieAnnuelleMoyenne: Math.round(plan.totalTaxSavings / 3),
+          economieAnnuelleMoyenne: Math.round(plan.totalTaxSavings / buybackYears),
           tauxMarginal: `${baseline.marginalRate.toFixed(1)} %`,
           dureeBlocage: "3 ans après dernier versement",
         },
@@ -170,7 +181,7 @@ export function runOptimizer(input: OptimizerInput): Optimization[] {
   const max3a = PILLAR_3A_MAX_2026_LPP;
   const current3a = input.pillar3aCurrent ?? input.taxInput.pillar3aContributions ?? 0;
   const gap3a = Math.max(0, max3a - current3a);
-  if (gap3a > 500 && input.hasLPP !== false) {
+  if (!swissDeductionsUseless && gap3a > 500 && input.hasLPP !== false) {
     const scenario = computeIncomeTax({
       ...input.taxInput,
       pillar3aContributions: max3a,
@@ -227,7 +238,7 @@ export function runOptimizer(input: OptimizerInput): Optimization[] {
   }
 
   // 4) COMPARATIF CANTONAL · si revenu élevé
-  if (baseline.taxableIncomeCC > 100_000) {
+  if (!swissDeductionsUseless && baseline.taxableIncomeCC > 100_000) {
     const otherCantons = ["ZG"];
     let bestSavings = 0;
     let bestCanton = "";
@@ -254,23 +265,6 @@ export function runOptimizer(input: OptimizerInput): Optimization[] {
         },
       });
     }
-  }
-
-  // 5) RACHAT LPP AVANT RETRAITE (3 dernières années)
-  if (input.age && input.age >= 60 && input.age <= 64 && (input.lppBuybackCapacity ?? 0) > 0) {
-    optimizations.push({
-      id: "lpp-pre-retirement",
-      category: "lpp",
-      title: "Fenêtre rachat LPP pré-retraite",
-      description: `À ${input.age} ans, dernière fenêtre pour effectuer des rachats LPP. Le délai de blocage de 3 ans concerne uniquement le retrait en capital · la rente reste possible. Capacité disponible : CHF ${input.lppBuybackCapacity!.toLocaleString("fr-CH")}.`,
-      estimatedSavings: Math.round((input.lppBuybackCapacity ?? 0) * (baseline.marginalRate / 100)),
-      priority: "high",
-      warning: isSource
-        ? sourceTaxedWarning("lpp_buyback")
-        : isCrossBorder
-          ? crossBorderWarning()
-          : undefined,
-    });
   }
 
   return optimizations.sort((a, b) => b.estimatedSavings - a.estimatedSavings);

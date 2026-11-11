@@ -28,6 +28,25 @@ export interface ExtractedGain {
   amount: number;
   label: string;
   details?: string;
+  /** Fiscal global uniquement : scénario simulé à l'origine du gain
+   *  (pillar3a_max, lpp_buyback_trial, tou…), pour ne pas compter deux fois
+   *  un levier déjà chiffré par son calculateur dédié. */
+  scenarioId?: string;
+}
+
+/** Scénario Fiscal global à l'origine du gain : identifiant sauvegardé, ou
+ *  déduit du libellé pour les simulations enregistrées avant son ajout. */
+function taxGlobalScenarioId(summary: Record<string, unknown>): string | undefined {
+  const id = s(summary.bestScenarioId);
+  if (id) return id;
+  const label = s(summary.bestScenarioLabel) ?? "";
+  if (label.startsWith("+3a max")) return "pillar3a_max";
+  if (label.startsWith("+Rachat LPP")) return "lpp_buyback_trial";
+  if (label.startsWith("+Don")) return "donation_5k";
+  if (label.startsWith("Passage permis C")) return "permit_c";
+  if (label.startsWith("Demande TOU")) return "tou";
+  if (label.startsWith("Bascule")) return "health_switch";
+  return undefined;
 }
 
 function num(v: unknown): number {
@@ -142,16 +161,11 @@ export function extractGain(entry: HistoryEntry): ExtractedGain {
         details: "Gain projeté à la retraite, hors fiscalité au retrait",
       };
     }
-    case "cross_border": {
-      const altDelta = num(summary.alternativeDelta);
-      if (altDelta <= 0) return none();
-      return {
-        type: "annual",
-        amount: Math.round(altDelta),
-        label: "Optimisation régime frontalier",
-        details: s(summary.regimeLabel) ?? "Économie annuelle si bascule de régime",
-      };
-    }
+    case "cross_border":
+      // Le régime frontalier découle du canton de travail (accord de 1983,
+      // Genève, Fribourg) : le client ne peut pas en changer. L'écart avec
+      // un autre régime est un repère, pas un gain à réaliser.
+      return none();
     case "tou": {
       const eligible = bool(summary.eligibleForTOU);
       const share = num(summary.swissShare);
@@ -162,7 +176,7 @@ export function extractGain(entry: HistoryEntry): ExtractedGain {
         type: "one_time",
         amount: Math.round(amount),
         label: "Bascule TOU (Taxation Ordinaire Ultérieure)",
-        details: "Économie annuelle si éligibilité quasi-résident confirmée",
+        details: "Économie d'impôt pour l'année simulée, si la demande est déposée avant le 31 mars de l'année suivante",
       };
     }
     case "director_compensation": {
@@ -220,11 +234,30 @@ export function extractGain(entry: HistoryEntry): ExtractedGain {
       const amount = num(summary.bestScenarioSavings);
       if (amount <= 0) return none();
       const label = s(summary.bestScenarioLabel) ?? "Optimisation fiscale globale";
+      const scenarioId = taxGlobalScenarioId(summary);
+      // Un don (on dépense plus qu'on n'économise), un changement de permis
+      // ou la bascule CMU/LAMal (chiffrée par son propre calculateur) ne
+      // sont pas des économies d'impôt à additionner.
+      if (scenarioId === "donation_5k" || scenarioId === "permit_c" || scenarioId === "health_switch") {
+        return none();
+      }
+      if (scenarioId === "lpp_buyback_trial") {
+        // Un rachat LPP se déduit l'année du versement : économie ponctuelle,
+        // pas un gain qui se répète chaque année jusqu'à la retraite.
+        return {
+          type: "one_time",
+          amount: Math.round(amount),
+          label,
+          details: "Économie fiscale l'année du rachat (scénario simulé)",
+          scenarioId,
+        };
+      }
       return {
         type: "annual",
         amount: Math.round(amount),
         label,
         details: "Économie fiscale annuelle (meilleur scénario simulé)",
+        scenarioId,
       };
     }
     default:
@@ -241,6 +274,30 @@ function formatInt(n: number): string {
 }
 
 export type GainItem = ExtractedGain & { entryId: string; kind: SimulationKind; createdAt: string };
+
+/** Calculateur dédié qui chiffre déjà le même levier qu'un scénario de
+ *  Fiscal global. */
+const DEDICATED_KIND_BY_SCENARIO: Record<string, SimulationKind> = {
+  pillar3a_max: "pillar3a",
+  lpp_buyback_trial: "lpp",
+};
+
+/**
+ * true si le gain de cette simulation Fiscal global porte sur un levier
+ * (3e pilier A, rachat LPP) déjà chiffré par son calculateur dédié parmi
+ * `peers` (les simulations retenues pour le même total) : l'additionner
+ * compterait deux fois la même économie d'impôt.
+ */
+export function isRedundantGain(
+  entry: HistoryEntry,
+  gain: ExtractedGain,
+  peers: HistoryEntry[],
+): boolean {
+  if (entry.kind !== "tax_global" || !gain.scenarioId) return false;
+  const dedicated = DEDICATED_KIND_BY_SCENARIO[gain.scenarioId];
+  if (!dedicated) return false;
+  return peers.some((p) => p.kind === dedicated && extractGain(p).type !== "none");
+}
 
 /**
  * Pour chaque kind présent, la simulation la plus récente (toutes dates
@@ -267,10 +324,13 @@ function latestPerKind(entries: HistoryEntry[]): Map<SimulationKind, HistoryEntr
  */
 function selectGains(entries: HistoryEntry[], wantDismissed: boolean): GainItem[] {
   const items: GainItem[] = [];
-  for (const e of latestPerKind(entries).values()) {
-    if (Boolean(e.gain_dismissed) !== wantDismissed) continue;
+  const candidates = [...latestPerKind(entries).values()].filter(
+    (e) => Boolean(e.gain_dismissed) === wantDismissed,
+  );
+  for (const e of candidates) {
     const g = extractGain(e);
     if (g.type === "none") continue;
+    if (isRedundantGain(e, g, candidates)) continue;
     items.push({ ...g, entryId: e.id, kind: e.kind, createdAt: e.created_at });
   }
   return items;
