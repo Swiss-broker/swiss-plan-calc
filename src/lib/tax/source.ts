@@ -289,10 +289,9 @@ function computeSourceTaxCore(opts: SourceTaxOptions): Omit<SourceTaxResult, "ma
 
   const official = officialSourceRate(opts.canton, monthly * 12, opts.scale, children);
   if (official !== null) {
-    // Genève, Vaud : barème officiel 2026 complet (source-tables.ts), le même
-    // que pour les frontaliers. Pas de supplément ecclésiastique : ces deux
-    // barèmes sont uniques, quelle que soit la confession (contribution
-    // volontaire à Genève, pas d'impôt ecclésiastique dans le canton de Vaud).
+    // Genève, Vaud, Fribourg : barème officiel 2026 (source-tables.ts), le
+    // même que pour les frontaliers. Pas de supplément ecclésiastique : ces
+    // barèmes sont publiés en une seule version, quelle que soit la confession.
     rate = Math.max(0, official);
   } else if (opts.canton === "JU" && (opts.scale === "B" || opts.scale === "C")) {
     // Jura, barèmes B et C : tables officielles jura.ch 2026, directement

@@ -5,6 +5,7 @@
 
 import { GE_IS_RATES_2026 } from "./ge-source-2026";
 import { VD_IS_RATES_2026 } from "./vd-source-2026";
+import { FR_IS_RATES_2026 } from "./fr-source-2026";
 
 interface OfficialSourceTable {
   rates: Record<string, [number, number][]>;
@@ -15,6 +16,7 @@ interface OfficialSourceTable {
 export const OFFICIAL_SOURCE_TABLES: Record<string, OfficialSourceTable> = {
   GE: { rates: GE_IS_RATES_2026, maxChildren: 5 },
   VD: { rates: VD_IS_RATES_2026, maxChildren: 6 },
+  FR: { rates: FR_IS_RATES_2026, maxChildren: 9 },
 };
 
 /** Taux (%) lu sur une table [revenu annuel, taux], interpolation linéaire. */

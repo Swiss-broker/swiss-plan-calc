@@ -266,102 +266,6 @@ function numericMarginalRate(taxAt: (gross: number) => number, gross: number): n
 // 2026 impôt à la source » de l'État de Genève.
 export { GE_IS_RATES_2026 };
 
-const FR_IS_RATES_2026: Record<string, [number, number][]> = {
-  // Source : calculette officielle fr.ch — relevés officiels 04/06/2026
-  A0: [
-    [29_400, 0], [50_000, 8.65], [100_000, 14.97],
-    [150_000, 18.90], [200_000, 22.83], [300_000, 27.05],
-  ],
-  // B1 interpolé entre A0 et B2
-  B1: [
-    [29_400, 0], [50_000, 2.50], [100_000, 7.80],
-    [150_000, 12.00], [200_000, 16.00], [300_000, 21.90],
-  ],
-  B0: [
-    [29_400, 0], [50_000, 4.38], [100_000, 9.97],
-    [150_000, 13.67], [200_000, 17.49], [300_000, 23.09],
-  ],
-  B2: [
-    [29_400, 0], [50_000, 0.37], [100_000, 5.59],
-    [150_000, 10.37], [200_000, 14.19], [300_000, 20.74],
-  ],
-  B3: [
-    [29_400, 0], [50_000, 0], [100_000, 3.70],
-    [150_000, 8.53], [200_000, 12.58], [300_000, 19.49],
-  ],
-  C0: [
-    [29_400, 0], [50_000, 8.42], [100_000, 13.71],
-    [150_000, 17.29], [200_000, 20.67], [300_000, 25.24],
-  ],
-  // C1 interpolé entre C0 et C2
-  C1: [
-    [29_400, 0], [50_000, 5.80], [100_000, 11.30],
-    [150_000, 15.20], [200_000, 19.00], [300_000, 24.00],
-  ],
-  // C2 interpolé entre C1 et C3
-  C2: [
-    [29_400, 0], [50_000, 4.00], [100_000, 10.10],
-    [150_000, 14.30], [200_000, 18.20], [300_000, 23.40],
-  ],
-  C3: [
-    [29_400, 0], [50_000, 2.25], [100_000, 8.95],
-    [150_000, 13.50], [200_000, 17.51], [300_000, 22.89],
-  ],
-  G0: [
-    [29_400, 0], [50_000, 11.18], [100_000, 17.46],
-    [150_000, 21.67], [200_000, 25.59], [300_000, 29.37],
-  ],
-  // H0 interpolé entre G0 et H1
-  H0: [
-    [29_400, 0], [50_000, 6.50], [100_000, 12.90],
-    [150_000, 17.00], [200_000, 20.90], [300_000, 26.00],
-  ],
-  H1: [
-    [29_400, 0], [50_000, 1.83], [100_000, 8.37],
-    [150_000, 12.58], [200_000, 16.72], [300_000, 22.55],
-  ],
-  H2: [
-    [29_400, 0], [50_000, 0.43], [100_000, 5.98],
-    [150_000, 10.95], [200_000, 15.04], [300_000, 21.38],
-  ],
-  H3: [
-    [29_400, 0], [50_000, 0], [100_000, 4.05],
-    [150_000, 9.13], [200_000, 13.37], [300_000, 20.12],
-  ],
-};
-
-function interpolateFRRate(annualGross: number, scaleKey: string): number {
-  const pts = FR_IS_RATES_2026[scaleKey] ?? FR_IS_RATES_2026["A0"];
-  if (annualGross <= pts[0][0]) return 0;
-  if (annualGross >= pts[pts.length - 1][0]) return pts[pts.length - 1][1];
-  for (let i = 1; i < pts.length; i++) {
-    const [x0, y0] = pts[i - 1];
-    const [x1, y1] = pts[i];
-    if (annualGross <= x1) {
-      return y0 + ((annualGross - x0) / (x1 - x0)) * (y1 - y0);
-    }
-  }
-  return pts[pts.length - 1][1];
-}
-
-/**
- * Taux d'un barème avec enfants quand la table ne va pas assez loin : au-delà
- * du dernier sous-indice disponible, chaque enfant supplémentaire retire le
- * même écart que le dernier enfant couvert par la table.
- */
-function rateWithChildren(
-  lookup: (scaleKey: string) => number,
-  letter: string,
-  children: number,
-  maxIndexed: number,
-): number {
-  const n = Math.max(0, Math.floor(children));
-  if (n <= maxIndexed) return lookup(`${letter}${n}`);
-  const last = lookup(`${letter}${maxIndexed}`);
-  const step = Math.max(0, lookup(`${letter}${maxIndexed - 1}`) - last);
-  return Math.max(0, last - (n - maxIndexed) * step);
-}
-
 export function interpolateGERate(annualGross: number, scaleKey: string): number {
   return interpolateRate(GE_IS_RATES_2026[scaleKey] ?? GE_IS_RATES_2026["A0"], annualGross);
 }
@@ -372,10 +276,10 @@ export function geSourceRate(annualGross: number, letter: string, children: numb
   return officialSourceRate("GE", annualGross, letter, children) ?? 0;
 }
 
-/** Taux IS Fribourg 2026 (%) pour un barème et un nombre d'enfants (tables
- *  jusqu'à 3 enfants). */
+/** Taux IS Fribourg 2026 (%) pour un barème et un nombre d'enfants — barème
+ *  officiel, voir source-tables.ts. */
 export function frSourceRate(annualGross: number, letter: string, children: number): number {
-  return rateWithChildren((k) => interpolateFRRate(annualGross, k), letter, children, 3);
+  return officialSourceRate("FR", annualGross, letter, children) ?? 0;
 }
 
 /**
