@@ -19,6 +19,7 @@
 
 import { estimateSocialContributions } from "./income";
 import { GE_IS_RATES_2026 } from "./ge-source-2026";
+import { interpolateRate, officialSourceRate } from "./source-tables";
 
 export type CrossBorderRegime =
   | "fr_accord_45"
@@ -362,26 +363,13 @@ function rateWithChildren(
 }
 
 export function interpolateGERate(annualGross: number, scaleKey: string): number {
-  const pts = GE_IS_RATES_2026[scaleKey] ?? GE_IS_RATES_2026["A0"];
-  if (annualGross <= pts[0][0]) return 0;
-  if (annualGross >= pts[pts.length - 1][0]) return pts[pts.length - 1][1];
-  for (let i = 1; i < pts.length; i++) {
-    const [x0, y0] = pts[i - 1];
-    const [x1, y1] = pts[i];
-    if (annualGross <= x1) {
-      return y0 + ((annualGross - x0) / (x1 - x0)) * (y1 - y0);
-    }
-  }
-  return pts[pts.length - 1][1];
+  return interpolateRate(GE_IS_RATES_2026[scaleKey] ?? GE_IS_RATES_2026["A0"], annualGross);
 }
 
 /** Taux IS Genève 2026 (%) pour un barème (lettre A/B/C/H) et un nombre
- *  d'enfants. Barème officiel jusqu'à 5 enfants. A : toujours A0. H sans
- *  enfant n'existe pas (retombe sur A0). */
+ *  d'enfants — barème officiel, voir source-tables.ts. */
 export function geSourceRate(annualGross: number, letter: string, children: number): number {
-  const n = Math.max(0, Math.min(5, Math.floor(children)));
-  if (letter === "A" || (letter === "H" && n === 0)) return interpolateGERate(annualGross, "A0");
-  return interpolateGERate(annualGross, `${letter}${n}`);
+  return officialSourceRate("GE", annualGross, letter, children) ?? 0;
 }
 
 /** Taux IS Fribourg 2026 (%) pour un barème et un nombre d'enfants (tables

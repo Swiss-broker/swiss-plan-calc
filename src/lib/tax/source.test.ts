@@ -84,7 +84,7 @@ describe("computeSourceTax — enfants à charge", () => {
   });
 
   it("barème H (après rectification) : inférieur au barème A0 pour le même salaire", () => {
-    for (const canton of ["GE", "VD"]) {
+    for (const canton of ["GE", "VD", "NE"]) {
       const a0 = computeSourceTax({ monthlyGross: 7_000, canton, scale: "A", children: 1 });
       const h1 = computeSourceTax({ monthlyGross: 7_000, canton, scale: "H", children: 1 });
       expect(h1.rate).toBeLessThan(a0.rate);
@@ -106,9 +106,9 @@ describe("computeSourceTax — enfants à charge", () => {
   });
 
   it("barème C, cantons sans table propre : même logique que Genève, sur le salaire propre", () => {
-    const vd = computeSourceTax({ monthlyGross: 9_000, spouseMonthlyGross: 9_000, canton: "VD", scale: "C" });
+    const ne = computeSourceTax({ monthlyGross: 9_000, spouseMonthlyGross: 9_000, canton: "NE", scale: "C" });
     const ge = computeSourceTax({ monthlyGross: 9_000, canton: "GE", scale: "C" });
-    expect(vd.rate).toBeCloseTo(ge.rate * 0.94, 1);
+    expect(ne.rate).toBeCloseTo(ge.rate * 0.98, 1);
   });
 });
 

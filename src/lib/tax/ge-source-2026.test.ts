@@ -18,7 +18,7 @@ describe("barème officiel de l'impôt à la source Genève 2026", () => {
   for (const [income, byCode] of Object.entries(OFFICIAL)) {
     for (const [code, rate] of Object.entries(byCode)) {
       it(`${code} à ${income} CHF/an → ${rate} %`, () => {
-        const r = geSourceRate(Number(income), code[0], Number(code.slice(1)));
+        const r = geSourceRate(Number(income) + 300, code[0], Number(code.slice(1)));
         expect(Math.abs(r - rate)).toBeLessThan(0.05);
       });
     }

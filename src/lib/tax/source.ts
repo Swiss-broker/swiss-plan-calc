@@ -17,6 +17,7 @@
 
 import type { FilingStatus } from "./ifd";
 import { geSourceRate } from "./cross-border";
+import { officialSourceRate } from "./source-tables";
 
 export type SourceScale = "A" | "B" | "C" | "H";
 
@@ -286,10 +287,13 @@ function computeSourceTaxCore(opts: SourceTaxOptions): Omit<SourceTaxResult, "ma
   const churchAddition = opts.church ? 0.6 : 0;
   let rate: number;
 
-  if (opts.canton === "GE") {
-    // Genève : tables officielles tar26GE (mêmes tables que le module
-    // frontalier cross-border.ts).
-    rate = Math.max(0, geSourceRate(monthly * 12, opts.scale, children) + churchAddition);
+  const official = officialSourceRate(opts.canton, monthly * 12, opts.scale, children);
+  if (official !== null) {
+    // Genève, Vaud : barème officiel 2026 complet (source-tables.ts), le même
+    // que pour les frontaliers. Pas de supplément ecclésiastique : ces deux
+    // barèmes sont uniques, quelle que soit la confession (contribution
+    // volontaire à Genève, pas d'impôt ecclésiastique dans le canton de Vaud).
+    rate = Math.max(0, official);
   } else if (opts.canton === "JU" && (opts.scale === "B" || opts.scale === "C")) {
     // Jura, barèmes B et C : tables officielles jura.ch 2026, directement
     // sur le revenu mensuel. Barèmes A et H : pas de table officielle,
