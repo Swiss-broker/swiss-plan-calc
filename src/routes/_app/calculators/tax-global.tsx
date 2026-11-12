@@ -1271,7 +1271,7 @@ function TaxGlobalCalc() {
                 <MoneyTile
                   label={t("calc.global.tile.federal")}
                   value={result.income.ifd}
-                  tip="Impôt fédéral direct (LIFD art. 36). Barème progressif fédéral appliqué au revenu imposable IFD, après déduction enfants (6 700 CHF / enfant) et rabais 259 CHF / enfant."
+                  tip="Impôt fédéral direct (LIFD art. 36). Barème progressif fédéral appliqué au revenu imposable IFD, après déduction enfants (6 800 CHF / enfant) et rabais 263 CHF / enfant."
                 />
                 <MoneyTile
                   label={t("calc.global.tile.cantonal")}

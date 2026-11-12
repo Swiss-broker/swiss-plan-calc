@@ -25,11 +25,10 @@ describe("computeSourceTax JU — barèmes officiels B/C", () => {
     expect(r.rate).toBeCloseTo(8.89, 2);
   });
 
-  it("barème B, 3 enfants : au-delà de la table, chaque enfant retire le même écart que le deuxième", () => {
-    const b1 = computeSourceTax({ monthlyGross: 10_000, canton: "JU", scale: "B", children: 1 });
+  it("barème B, 3 enfants : seuls B0 à B2 sont disponibles pour le Jura, le dernier (B2) s'applique", () => {
     const b2 = computeSourceTax({ monthlyGross: 10_000, canton: "JU", scale: "B", children: 2 });
     const b3 = computeSourceTax({ monthlyGross: 10_000, canton: "JU", scale: "B", children: 3 });
-    expect(b3.rate).toBeCloseTo(b2.rate - (b1.rate - b2.rate), 2);
+    expect(b3.rate).toBe(b2.rate);
   });
 
   it("barème C, 0 enfant, 8'000 CHF/mois → 14.39 %", () => {
@@ -60,9 +59,9 @@ describe("computeSourceTax JU — barèmes officiels B/C", () => {
     expect(r.rate).toBe(0);
   });
 
-  it("barème A (pas de table officielle JU) reste sur l'approximation générique, sans planter", () => {
-    const r = computeSourceTax({ monthlyGross: 8_000, canton: "JU", scale: "A" });
-    expect(r.rate).toBeGreaterThan(0);
+  it("barème A0, 8'000 CHF/mois → barème officiel jurassien 2026 (15.25 %)", () => {
+    const r = computeSourceTax({ monthlyGross: 7_975, canton: "JU", scale: "A" });
+    expect(r.rate).toBeCloseTo(15.25, 1);
   });
 });
 

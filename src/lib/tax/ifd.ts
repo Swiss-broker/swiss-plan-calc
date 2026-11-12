@@ -20,24 +20,28 @@ export interface BracketStep {
 
 /**
  * Barème IFD personne seule (art. 36 al. 1 LIFD), valable 2026.
- * Compensation de la progression à froid appliquée.
+ * Source : AFC, formulaire 58c-2026 (« Tableau servant à calculer l'impôt
+ * fédéral direct des personnes physiques », état 01.2026). Chaque palier
+ * reprend le revenu et l'impôt imprimés dans le tableau au point où le taux
+ * change.
  */
 export const IFD_SINGLE_2026: BracketStep[] = [
   { from: 0, base: 0, rate: 0 },
   { from: 15_200, base: 0, rate: 0.77 },
-  { from: 33_200, base: 138.65, rate: 0.88 },
-  { from: 43_500, base: 229.05, rate: 2.64 },
-  { from: 58_000, base: 612.85, rate: 2.97 },
-  { from: 76_100, base: 1_151.05, rate: 5.94 },
-  { from: 81_900, base: 1_495.55, rate: 6.6 },
-  { from: 108_800, base: 3_271.95, rate: 8.8 },
-  { from: 141_500, base: 6_149.55, rate: 11.0 },
-  { from: 184_900, base: 10_923.55, rate: 13.2 },
-  { from: 793_300, base: 91_232.65, rate: 11.5 },
+  { from: 33_200, base: 138.6, rate: 0.88 },
+  { from: 43_500, base: 229.2, rate: 2.64 },
+  { from: 58_000, base: 612.0, rate: 2.97 },
+  { from: 76_200, base: 1_152.5, rate: 5.94 },
+  { from: 82_100, base: 1_502.95, rate: 6.6 },
+  { from: 108_900, base: 3_271.75, rate: 8.8 },
+  { from: 141_500, base: 6_140.55, rate: 11.0 },
+  { from: 185_100, base: 10_936.55, rate: 13.2 },
+  { from: 793_900, base: 91_298.5, rate: 11.5 },
 ];
 
 /**
  * Barème IFD personne mariée / famille monoparentale (art. 36 al. 2 LIFD), 2026.
+ * Vérifié ligne à ligne contre le formulaire AFC 58c-2026.
  */
 export const IFD_MARRIED_2026: BracketStep[] = [
   { from: 0, base: 0, rate: 0 },

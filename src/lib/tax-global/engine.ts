@@ -240,7 +240,7 @@ export function computeTaxGlobal(g: TaxGlobalInput): TaxGlobalResult {
           "Plafond AC 2026 : 148 200 CHF (au-delà : cotisation solidarité 0.5%)",
           "Bonifications LPP selon âge × salaire coordonné (part salarié = 50%)",
           `Multiplicateur communal : chef-lieu de ${g.canton} (commune non résolue)`,
-          "Déduction enfant IFD : 6 700 CHF/enfant + rabais d'impôt 259 CHF/enfant",
+          "Déduction enfant IFD : 6 800 CHF/enfant + rabais d'impôt 263 CHF/enfant",
         ],
         limits: [
           "Revenu étranger non inclus dans la progressivité (à reporter manuellement)",

@@ -40,6 +40,12 @@
 // converge maintenant à ~0.5% du calculateur officiel (10'401.54 CHF vs
 // 10'453 CHF ESTV), contre ~1.3% avant ce correctif.
 //
+// Re-régénérées le 12.11.2026 pour les cas « célibataire » : barème IFD
+// personne seule aligné sur le formulaire officiel AFC 58c-2026 (paliers
+// 76'200 / 82'100 / 108'900 / 185'100 / 793'900 au lieu de valeurs
+// approchées) — écart de 1 à 9 CHF d'impôt fédéral par cas. Le barème marié
+// était déjà exact. Voir src/lib/tax/ifd-2026.test.ts.
+//
 // Re-régénérées le 09.10.2026 pour les 4 cas VS : le moteur sautait
 // entièrement l'indexation cantonale (Art. 32 LF), lisant le taux moyen
 // directement sur le revenu réel au lieu du revenu dé-indexé — alors que
@@ -84,9 +90,9 @@ const REFERENCE_CASES: ReferenceCase[] = [
     desc: "GE \u2014 C\u00e9libataire, sans enfant, 80'000 CHF",
     overrides: { canton: "GE", civilStatus: "single", children: 0, grossSalary: 80000 },
     expected: {
-      totalTaxCHF: 10401.54,
+      totalTaxCHF: 10400.69,
       effectiveRate: 13,
-      ifd: 907.65,
+      ifd: 906.8,
       cantonal: 7011.19,
       communal: 2457.7,
       wealthTax: 0,
@@ -141,9 +147,9 @@ const REFERENCE_CASES: ReferenceCase[] = [
       netWealth: 300000,
     },
     expected: {
-      totalTaxCHF: 30981.52,
-      effectiveRate: 20.7,
-      ifd: 5209.15,
+      totalTaxCHF: 30972.52,
+      effectiveRate: 20.6,
+      ifd: 5200.15,
       cantonal: 18814,
       communal: 6595.05,
       wealthTax: 338.32,
@@ -154,9 +160,9 @@ const REFERENCE_CASES: ReferenceCase[] = [
     desc: "VD \u2014 C\u00e9libataire, sans enfant, 80'000 CHF",
     overrides: { canton: "VD", civilStatus: "single", children: 0, grossSalary: 80000 },
     expected: {
-      totalTaxCHF: 11855.74,
+      totalTaxCHF: 11854.89,
       effectiveRate: 14.8,
-      ifd: 907.65,
+      ifd: 906.8,
       cantonal: 7141.11,
       communal: 3806.98,
       wealthTax: 0,
@@ -211,9 +217,9 @@ const REFERENCE_CASES: ReferenceCase[] = [
       netWealth: 300000,
     },
     expected: {
-      totalTaxCHF: 33415.02,
+      totalTaxCHF: 33406.02,
       effectiveRate: 22.3,
-      ifd: 5209.15,
+      ifd: 5200.15,
       cantonal: 17880.94,
       communal: 9532.45,
       wealthTax: 792.48,
@@ -234,9 +240,9 @@ const REFERENCE_CASES: ReferenceCase[] = [
       // chef-lieu) ; avec Sion explicitement s\u00e9lectionn\u00e9e (vsIndexationPercent
       // 176%, d\u00e9sormais dans COMMUNAL_MULTIPLIERS.VS), le total converge \u00e0
       // 9'321.59 CHF, \u00e0 moins de 2% du cas r\u00e9el AFC.
-      totalTaxCHF: 10942.65,
+      totalTaxCHF: 10941.8,
       effectiveRate: 13.7,
-      ifd: 907.65,
+      ifd: 906.8,
       cantonal: 4128.21,
       communal: 5882.79,
       wealthTax: 0,
@@ -304,9 +310,9 @@ const REFERENCE_CASES: ReferenceCase[] = [
       vsIndexationPercent: 176,
     },
     expected: {
-      totalTaxCHF: 9321.59,
+      totalTaxCHF: 9320.74,
       effectiveRate: 11.7,
-      ifd: 907.65,
+      ifd: 906.8,
       cantonal: 4128.21,
       communal: 4261.73,
       wealthTax: 0,
@@ -326,9 +332,9 @@ const REFERENCE_CASES: ReferenceCase[] = [
       // Régénéré le 05.10.2026 : correction du barème de fortune VS
       // (taux stockés en % au lieu de ‰, voir cantons.ts VS_WEALTH_SCALE).
       // Re-régénéré le 09.10.2026, voir VS_single_80k ci-dessus.
-      totalTaxCHF: 32829.69,
+      totalTaxCHF: 32820.69,
       effectiveRate: 21.9,
-      ifd: 5209.15,
+      ifd: 5200.15,
       cantonal: 13358.37,
       communal: 13213.37,
       wealthTax: 1024.8,
@@ -339,9 +345,9 @@ const REFERENCE_CASES: ReferenceCase[] = [
     desc: "FR \u2014 C\u00e9libataire, sans enfant, 80'000 CHF",
     overrides: { canton: "FR", civilStatus: "single", children: 0, grossSalary: 80000 },
     expected: {
-      totalTaxCHF: 11449.12,
+      totalTaxCHF: 11448.27,
       effectiveRate: 14.3,
-      ifd: 907.65,
+      ifd: 906.8,
       cantonal: 5749.89,
       communal: 4791.58,
       wealthTax: 0,
@@ -396,9 +402,9 @@ const REFERENCE_CASES: ReferenceCase[] = [
       netWealth: 300000,
     },
     expected: {
-      totalTaxCHF: 32234.19,
+      totalTaxCHF: 32225.19,
       effectiveRate: 21.5,
-      ifd: 5209.15,
+      ifd: 5200.15,
       cantonal: 14375.2,
       communal: 11979.34,
       wealthTax: 670.5,
@@ -409,9 +415,9 @@ const REFERENCE_CASES: ReferenceCase[] = [
     desc: "NE \u2014 C\u00e9libataire, sans enfant, 80'000 CHF",
     overrides: { canton: "NE", civilStatus: "single", children: 0, grossSalary: 80000 },
     expected: {
-      totalTaxCHF: 12361.55,
+      totalTaxCHF: 12360.7,
       effectiveRate: 15.5,
-      ifd: 907.65,
+      ifd: 906.8,
       cantonal: 7514.73,
       communal: 3939.17,
       wealthTax: 0,
@@ -466,9 +472,9 @@ const REFERENCE_CASES: ReferenceCase[] = [
       netWealth: 300000,
     },
     expected: {
-      totalTaxCHF: 35231.91,
+      totalTaxCHF: 35222.91,
       effectiveRate: 23.5,
-      ifd: 5209.15,
+      ifd: 5200.15,
       cantonal: 18643.47,
       communal: 9772.79,
       wealthTax: 1606.5,
@@ -479,9 +485,9 @@ const REFERENCE_CASES: ReferenceCase[] = [
     desc: "JU \u2014 C\u00e9libataire, sans enfant, 80'000 CHF",
     overrides: { canton: "JU", civilStatus: "single", children: 0, grossSalary: 80000 },
     expected: {
-      totalTaxCHF: 11211.3,
+      totalTaxCHF: 11210.45,
       effectiveRate: 14,
-      ifd: 907.65,
+      ifd: 906.8,
       cantonal: 6182.19,
       communal: 4121.46,
       wealthTax: 0,
@@ -536,9 +542,9 @@ const REFERENCE_CASES: ReferenceCase[] = [
       netWealth: 300000,
     },
     expected: {
-      totalTaxCHF: 39608.82,
+      totalTaxCHF: 39599.82,
       effectiveRate: 26.4,
-      ifd: 5209.15,
+      ifd: 5200.15,
       cantonal: 15634.49,
       communal: 10422.99,
       wealthTax: 8342.19,

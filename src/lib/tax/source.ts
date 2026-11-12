@@ -21,147 +21,6 @@ import { officialSourceRate } from "./source-tables";
 
 export type SourceScale = "A" | "B" | "C" | "H";
 
-// =====================================================================
-// Barèmes IS Jura 2026 — officiels (jura.ch, Service des contributions,
-// "Barème B" / "Barème C", édition 2026)
-// [revenu_brut_mensuel_CHF, taux_%] — interpolation linéaire, même
-// mécanique que GE_IS_RATES_2026 (cross-border.ts), mais directement sur
-// le revenu MENSUEL (le barème jurassien est publié mois par mois, pas
-// annualisé). Limité à B0-B2/C0-C2 comme GE — au-delà de 2 enfants, chaque
-// enfant supplémentaire retire le même écart que le deuxième (voir
-// juSourceRate). N'existe que pour B (marié monoactif) et C (marié
-// biactif) : le Jura ne nous a pas fourni de barème A (célibataire) ni H
-// (monoparental) — ceux-ci restent sur l'approximation générique.
-// =====================================================================
-const JU_IS_RATES_2026: Record<string, [number, number][]> = {
-  B0: [
-    [1_000, 0],
-    [2_000, 0],
-    [3_000, 1.51],
-    [4_000, 3.75],
-    [5_000, 5.85],
-    [6_000, 7.34],
-    [7_000, 8.89],
-    [8_000, 10.2],
-    [10_000, 12.12],
-    [12_000, 14.07],
-    [15_000, 16.72],
-    [18_000, 19.2],
-    [20_000, 20.55],
-    [25_000, 23.62],
-    [30_000, 25.8],
-  ],
-  B1: [
-    [1_000, 0],
-    [2_000, 0],
-    [3_000, 0.22],
-    [4_000, 1.85],
-    [5_000, 3.82],
-    [6_000, 5.42],
-    [7_000, 6.81],
-    [8_000, 8.21],
-    [10_000, 10.48],
-    [12_000, 12.5],
-    [15_000, 15.33],
-    [18_000, 17.88],
-    [20_000, 19.36],
-    [25_000, 22.56],
-    [30_000, 24.92],
-  ],
-  B2: [
-    [1_000, 0],
-    [2_000, 0],
-    [3_000, 0],
-    [4_000, 0.45],
-    [5_000, 2.06],
-    [6_000, 3.89],
-    [7_000, 5.23],
-    [8_000, 6.61],
-    [10_000, 8.89],
-    [12_000, 10.92],
-    [15_000, 13.96],
-    [18_000, 16.56],
-    [20_000, 18.17],
-    [25_000, 21.51],
-    [30_000, 24.04],
-  ],
-  C0: [
-    [1_000, 0],
-    [2_000, 2.28],
-    [3_000, 5.81],
-    [4_000, 8.68],
-    [5_000, 10.71],
-    [6_000, 12.44],
-    [7_000, 13.42],
-    [8_000, 14.39],
-    [10_000, 16.06],
-    [12_000, 17.57],
-    [15_000, 19.9],
-    [18_000, 22.05],
-    [20_000, 23.26],
-    [25_000, 25.57],
-    [30_000, 27.2],
-  ],
-  C1: [
-    [1_000, 0],
-    [2_000, 0.75],
-    [3_000, 4.27],
-    [4_000, 7.01],
-    [5_000, 9.14],
-    [6_000, 10.92],
-    [7_000, 12.06],
-    [8_000, 13.13],
-    [10_000, 14.96],
-    [12_000, 16.55],
-    [15_000, 18.98],
-    [18_000, 21.17],
-    [20_000, 22.48],
-    [25_000, 24.95],
-    [30_000, 26.69],
-  ],
-  C2: [
-    [1_000, 0],
-    [2_000, 0.04],
-    [3_000, 2.77],
-    [4_000, 5.55],
-    [5_000, 7.83],
-    [6_000, 9.45],
-    [7_000, 10.71],
-    [8_000, 11.89],
-    [10_000, 13.9],
-    [12_000, 15.55],
-    [15_000, 18.04],
-    [18_000, 20.28],
-    [20_000, 21.69],
-    [25_000, 24.33],
-    [30_000, 26.18],
-  ],
-};
-
-function interpolateJURate(monthlyGross: number, scaleKey: string): number {
-  const pts = JU_IS_RATES_2026[scaleKey];
-  if (!pts) return 0;
-  if (monthlyGross <= pts[0][0]) return 0;
-  if (monthlyGross >= pts[pts.length - 1][0]) return pts[pts.length - 1][1];
-  for (let i = 1; i < pts.length; i++) {
-    const [x0, y0] = pts[i - 1];
-    const [x1, y1] = pts[i];
-    if (monthlyGross <= x1) {
-      return y0 + ((monthlyGross - x0) / (x1 - x0)) * (y1 - y0);
-    }
-  }
-  return pts[pts.length - 1][1];
-}
-
-/** Taux IS Jura 2026 (%) pour un barème B ou C et un nombre d'enfants. */
-function juSourceRate(monthlyGross: number, letter: "B" | "C", children: number): number {
-  const n = Math.max(0, Math.floor(children));
-  if (n <= 2) return interpolateJURate(monthlyGross, `${letter}${n}`);
-  const two = interpolateJURate(monthlyGross, `${letter}2`);
-  const step = Math.max(0, interpolateJURate(monthlyGross, `${letter}1`) - two);
-  return Math.max(0, two - (n - 2) * step);
-}
-
 export interface SourceTaxOptions {
   /** Salaire brut mensuel CHF du contribuable (incl. 13e au prorata) */
   monthlyGross: number;
@@ -289,15 +148,10 @@ function computeSourceTaxCore(opts: SourceTaxOptions): Omit<SourceTaxResult, "ma
 
   const official = officialSourceRate(opts.canton, monthly * 12, opts.scale, children);
   if (official !== null) {
-    // Genève, Vaud, Fribourg : barème officiel 2026 (source-tables.ts), le
-    // même que pour les frontaliers. Pas de supplément ecclésiastique : ces
+    // Barème officiel du canton (source-tables.ts : Genève, Vaud, Fribourg,
+    // Jura, Valais A/B), le même que pour les frontaliers. Pas de supplément ecclésiastique : ces
     // barèmes sont publiés en une seule version, quelle que soit la confession.
     rate = Math.max(0, official);
-  } else if (opts.canton === "JU" && (opts.scale === "B" || opts.scale === "C")) {
-    // Jura, barèmes B et C : tables officielles jura.ch 2026, directement
-    // sur le revenu mensuel. Barèmes A et H : pas de table officielle,
-    // approximation générique ci-dessous.
-    rate = Math.max(0, juSourceRate(monthly, opts.scale, children) + churchAddition);
   } else if (opts.scale === "C") {
     // Autres cantons, barème C : table officielle genevoise C ajustée du
     // coefficient cantonal (pas de table propre disponible).
@@ -349,12 +203,12 @@ export function computeSourceTax(opts: SourceTaxOptions): SourceTaxResult {
   // Taux marginal = pente réelle de la courbe de barème (impôt mensuel en
   // fonction du revenu mensuel) au niveau de revenu actuel, PAS le taux
   // moyen `rate` : le barème source est une courbe par paliers (voir
-  // baseRateGE/interpolateGERate/interpolateJURate), donc gagner 1 CHF de
+  // baseRateGE, barèmes officiels), donc gagner 1 CHF de
   // plus coûte en général PLUS que le taux moyen actuel tant qu'on est dans
   // un palier croissant — exactement comme un barème progressif classique.
   // Calculée par dérivée numérique (bump de MARGINAL_RATE_DELTA_CHF CHF/mois)
   // plutôt qu'analytiquement : le barème combine plusieurs sources (courbes
-  // interpolées, tables officielles GE/JU, coefficient cantonal), pas une
+  // interpolées, barèmes officiels, coefficient cantonal), pas une
   // seule formule dont on pourrait dériver le taux directement.
   const bumped = computeSourceTaxCore({
     ...opts,

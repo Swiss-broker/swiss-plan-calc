@@ -6,6 +6,8 @@
 import { GE_IS_RATES_2026 } from "./ge-source-2026";
 import { VD_IS_RATES_2026 } from "./vd-source-2026";
 import { FR_IS_RATES_2026 } from "./fr-source-2026";
+import { JU_IS_RATES_2026 } from "./ju-source-2026";
+import { VS_IS_RATES_2025 } from "./vs-source-2025";
 
 interface OfficialSourceTable {
   rates: Record<string, [number, number][]>;
@@ -17,6 +19,10 @@ export const OFFICIAL_SOURCE_TABLES: Record<string, OfficialSourceTable> = {
   GE: { rates: GE_IS_RATES_2026, maxChildren: 5 },
   VD: { rates: VD_IS_RATES_2026, maxChildren: 6 },
   FR: { rates: FR_IS_RATES_2026, maxChildren: 9 },
+  // Jura : A0 et H1-H8 complets ; B et C seulement jusqu'à 2 enfants.
+  JU: { rates: JU_IS_RATES_2026, maxChildren: 8 },
+  // Valais : barèmes A et B seulement (édition 2025) ; C et H non fournis.
+  VS: { rates: VS_IS_RATES_2025, maxChildren: 6 },
 };
 
 /** Taux (%) lu sur une table [revenu annuel, taux], interpolation linéaire. */
@@ -37,7 +43,8 @@ export function interpolateRate(points: [number, number][], annualGross: number)
  * d'enfants. `null` si le canton n'a pas de barème officiel intégré.
  *  - A : toujours A0 ;
  *  - H sans enfant : n'existe pas, retombe sur A0 ;
- *  - au-delà du nombre d'enfants prévu : dernier sous-indice du barème.
+ *  - au-delà du nombre d'enfants prévu : dernier sous-indice du barème ;
+ *  - barème (lettre) absent pour ce canton : `null`.
  */
 export function officialSourceRate(
   canton: string,
@@ -48,7 +55,14 @@ export function officialSourceRate(
   const table = OFFICIAL_SOURCE_TABLES[canton];
   if (!table) return null;
   const n = Math.max(0, Math.min(table.maxChildren, Math.floor(children)));
-  const key = letter === "A" || (letter === "H" && n === 0) ? "A0" : `${letter}${n}`;
-  const points = table.rates[key];
-  return points ? interpolateRate(points, annualGross) : null;
+  if (letter === "A" || (letter === "H" && n === 0)) {
+    return interpolateRate(table.rates.A0, annualGross);
+  }
+  // Barème absent pour ce canton (ex. Valais C et H) : pas de taux officiel.
+  // Sous-indice absent (ex. Jura B3) : dernier sous-indice disponible.
+  for (let k = n; k >= 0; k--) {
+    const points = table.rates[`${letter}${k}`];
+    if (points) return interpolateRate(points, annualGross);
+  }
+  return null;
 }
