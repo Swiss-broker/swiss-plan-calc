@@ -1555,6 +1555,15 @@ function formatInputs(entry: HistoryEntry): Array<[string, string]> {
     case "health_insurance_france":
       pushIfChf(rows, "Salaire suisse brut", i.swissGrossSalaryCHF);
       pushStr(rows, "Situation civile", i.civilStatus === "married" ? "Marié·e / pacsé·e" : "Célibataire");
+      if (i.civilStatus === "married") {
+        pushStr(
+          rows,
+          "Conjoint·e",
+          i.spouseInsuredWithFrontalier === true
+            ? "Sans activité : assuré·e avec le frontalier"
+            : "Travaille : a sa propre couverture",
+        );
+      }
       pushIf(rows, "Enfants à charge", i.childrenCount);
       if (num(i.chfToEurRate)) rows.push(["Taux CHF→EUR", String(i.chfToEurRate)]);
       pushIf(rows, "Années jusqu'à la retraite", i.yearsToRetirement);

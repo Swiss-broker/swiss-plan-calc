@@ -461,6 +461,7 @@ export function computeTaxGlobal(g: TaxGlobalInput): TaxGlobalResult {
       swissGrossSalaryCHF: g.grossSalary + g.bonus,
       age: g.age,
       civilStatus: couple ? "married" : "single",
+      spouseInsuredWithFrontalier: couple && !g.spouseEmployed,
       childrenCount: g.children,
       chfToEurRate: g.chfToEurRate,
       taxYear: g.taxYear,

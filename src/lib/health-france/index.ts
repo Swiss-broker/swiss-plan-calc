@@ -13,7 +13,10 @@ import { frenchTaxableSalary } from "@/lib/tax/cross-border";
 // Abattement = barème officiel français révisé chaque année. Forfaitaire,
 // INDIVIDUEL (déclaration individuelle, pas familiale, pas multiplié par
 // les parts fiscales).
-// LAMal frontalier = forfaitaire selon composition familiale, tarifs
+// LAMal frontalier = une prime PAR PERSONNE assurée : le frontalier, ses
+// enfants, et son conjoint s'il n'exerce pas d'activité (le droit d'option
+// vaut pour toute la famille sans activité propre). À la CMU, ces mêmes
+// personnes sont couvertes sans cotisation supplémentaire. Tarifs
 // indicatifs modifiables par l'utilisateur (varient selon caisse, franchise,
 // canton de domicile en France).
 
@@ -36,6 +39,11 @@ export interface HealthFranceInput {
   swissGrossSalaryCHF: number;
   civilStatus: "single" | "married";
   childrenCount: number;
+  /** Conjoint sans activité professionnelle : pas de couverture propre, il
+   *  suit le régime du frontalier. En LAMal il paie donc sa propre prime
+   *  adulte ; à la CMU il est couvert sans cotisation supplémentaire. Sans
+   *  effet si le client n'est pas marié. */
+  spouseInsuredWithFrontalier?: boolean;
   chfToEurRate: number;
   taxYear: number;
   /** Tarif LAMal adulte (CHF/mois), modifiable */
@@ -67,6 +75,8 @@ export interface HealthFranceResult {
   cmuAnnualCHF: number;
   lamalAdultMonthlyCHF: number;
   lamalChildMonthlyCHF: number;
+  /** Nombre d'adultes assurés en LAMal (1, ou 2 avec un conjoint sans activité). */
+  lamalInsuredAdults: number;
   lamalAdultAnnualCHF: number;
   lamalChildrenAnnualCHF: number;
   lamalAnnualCHF: number;
@@ -141,7 +151,9 @@ export function computeHealthFrance(input: HealthFranceInput): HealthFranceResul
       ? input.lamalChildMonthlyCHF
       : LAMAL_TARIFS_DEFAULT.enfantParMois;
   const childrenCount = Math.max(0, Math.floor(input.childrenCount ?? 0));
-  const lamalAdultAnnualCHF = Math.round(adultMonthly * 12);
+  const insuredAdults =
+    input.civilStatus === "married" && input.spouseInsuredWithFrontalier === true ? 2 : 1;
+  const lamalAdultAnnualCHF = Math.round(adultMonthly * 12 * insuredAdults);
   const lamalChildrenAnnualCHF = Math.round(childMonthly * 12 * childrenCount);
   const lamalAnnualCHF = lamalAdultAnnualCHF + lamalChildrenAnnualCHF;
 
@@ -205,7 +217,13 @@ export function computeHealthFrance(input: HealthFranceInput): HealthFranceResul
 
   const lamalBreakdown: BreakdownLine[] = [
     { label: "Tarif adulte (CHF/mois)", value: `${adultMonthly.toLocaleString("fr-CH")} CHF` },
-    { label: "Prime adulte annuelle", value: `${adultMonthly} × 12 = ${fmtCHF(lamalAdultAnnualCHF)}` },
+    {
+      label: insuredAdults > 1 ? "Primes adultes annuelles (frontalier + conjoint sans activité)" : "Prime adulte annuelle",
+      value:
+        insuredAdults > 1
+          ? `${insuredAdults} × ${adultMonthly} × 12 = ${fmtCHF(lamalAdultAnnualCHF)}`
+          : `${adultMonthly} × 12 = ${fmtCHF(lamalAdultAnnualCHF)}`,
+    },
     { label: "Tarif enfant (CHF/mois)", value: `${childMonthly.toLocaleString("fr-CH")} CHF` },
     {
       label: "Prime enfants annuelle",
@@ -223,6 +241,9 @@ export function computeHealthFrance(input: HealthFranceInput): HealthFranceResul
     "CMU et CNTFS désignent le même régime : la cotisation est calculée par l'URSSAF (CNTFS) pour les frontaliers ayant exercé le droit d'option vers la Sécurité sociale française.",
     `L'abattement CMU est forfaitaire et révisé chaque année par l'administration française (barème ${input.taxYear} : ${fmtEUR(abatementEUR)}). La cotisation est calculée sur les revenus N-2 (pour 2026 = revenus 2024).`,
     "La déclaration CMU est INDIVIDUELLE, la situation civile et les enfants n'impactent ni l'abattement ni l'assiette CMU.",
+    insuredAdults > 1
+      ? "Conjoint sans activité : il suit le régime du frontalier. En LAMal, il paie sa propre prime adulte (comptée ci-dessus) ; à la CMU, il est couvert sans cotisation supplémentaire, comme les enfants."
+      : "Un conjoint sans activité professionnelle suit le régime du frontalier : en LAMal il paie sa propre prime, à la CMU il est couvert sans cotisation supplémentaire. Un conjoint qui travaille a sa propre couverture et n'entre pas dans ce comparatif.",
     "La prime LAMal frontalier est forfaitaire et varie selon la caisse maladie, la franchise et le canton de domicile en France. Les tarifs affichés sont indicatifs.",
     "Le droit d'option CMU vs LAMal doit être exercé dans les 3 mois suivant le début de l'activité frontalière. Ce choix est irrévocable.",
   ];
@@ -235,6 +256,7 @@ export function computeHealthFrance(input: HealthFranceInput): HealthFranceResul
     cmuAnnualCHF,
     lamalAdultMonthlyCHF: adultMonthly,
     lamalChildMonthlyCHF: childMonthly,
+    lamalInsuredAdults: insuredAdults,
     lamalAdultAnnualCHF,
     lamalChildrenAnnualCHF,
     lamalAnnualCHF,

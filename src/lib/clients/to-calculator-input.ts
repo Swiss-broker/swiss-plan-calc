@@ -535,6 +535,11 @@ export function toHealthInsuranceFranceInput(b: ClientBundle) {
     swissGrossSalaryCHF: main,
     age: age ?? undefined,
     civilStatus: isCouple ? ("married" as const) : ("single" as const),
+    // Conjoint sans salaire sur la fiche = ménage à un seul revenu (même
+    // lecture que le barème B / spouseEmployed du Fiscal global) : il doit
+    // être assuré avec le frontalier.
+    spouseInsuredWithFrontalier:
+      isCouple && !(Number(b.client.spouse_gross_annual_salary ?? 0) > 0),
     childrenCount,
     yearsToRetirement: age !== null ? Math.max(1, 65 - age) : undefined,
     currentRegime:

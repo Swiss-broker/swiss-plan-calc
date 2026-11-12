@@ -33,3 +33,38 @@ describe("computeHealthFrance — assiette CMU", () => {
     expect(viaHealth).toBe(Math.round(viaTax));
   });
 });
+
+describe("computeHealthFrance — personnes assurées en LAMal", () => {
+  const base = {
+    swissGrossSalaryCHF: 95_000,
+    childrenCount: 2,
+    chfToEurRate: 1.05,
+    taxYear: 2026,
+    lamalAdultMonthlyCHF: 200,
+    lamalChildMonthlyCHF: 50,
+  };
+
+  it("célibataire ou conjoint qui travaille : une seule prime adulte", () => {
+    const single = computeHealthFrance({ ...base, civilStatus: "single" });
+    const spouseWorks = computeHealthFrance({ ...base, civilStatus: "married" });
+    expect(single.lamalAnnualCHF).toBe(200 * 12 + 2 * 50 * 12);
+    expect(spouseWorks.lamalAnnualCHF).toBe(single.lamalAnnualCHF);
+  });
+
+  it("conjoint sans activité : deux primes adultes en LAMal, cotisation CMU inchangée", () => {
+    const spouseWorks = computeHealthFrance({ ...base, civilStatus: "married" });
+    const spouseAtHome = computeHealthFrance({
+      ...base,
+      civilStatus: "married",
+      spouseInsuredWithFrontalier: true,
+    });
+    expect(spouseAtHome.lamalInsuredAdults).toBe(2);
+    expect(spouseAtHome.lamalAnnualCHF).toBe(2 * 200 * 12 + 2 * 50 * 12);
+    expect(spouseAtHome.cmuAnnualCHF).toBe(spouseWorks.cmuAnnualCHF);
+  });
+
+  it("l'option est sans effet pour un client non marié", () => {
+    const r = computeHealthFrance({ ...base, civilStatus: "single", spouseInsuredWithFrontalier: true });
+    expect(r.lamalInsuredAdults).toBe(1);
+  });
+});

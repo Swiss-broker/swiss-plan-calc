@@ -279,9 +279,9 @@ function Pillar3aCalc() {
     [optimizedProjection.finalBalance, form.withdrawalAccounts, form.canton, form.status],
   );
   // Économie réellement imputable au fractionnement seul (même capital
-  // projeté des deux côtés) — peut être modeste : la part cantonale de
-  // capitalWithdrawalTax est un taux fixe par canton, non progressif, donc
-  // seule la petite part IFD (1/5 du barème) bénéficie du fractionnement.
+  // projeté des deux côtés) : l'IFD et l'impôt cantonal/communal sont tous
+  // deux progressifs (voir cantonalCapitalTax), plusieurs petits retraits
+  // coûtent donc moins qu'un seul gros.
   const fractioningSavings =
     taxStaggeredProjected.totalTaxSingle - taxStaggeredProjected.totalTaxSeparated;
 

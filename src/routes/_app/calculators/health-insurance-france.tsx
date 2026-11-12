@@ -187,7 +187,7 @@ function HealthInsuranceFranceCalc() {
                 onChange={(v) => set("swissGrossSalaryCHF", v)}
                 tip="Salaire de l'année N-2 (pour 2026 = vos revenus 2024). Base de calcul de la cotisation CMU, pas le salaire actuel."
               />
-              <Field label="Situation civile (info contextuelle)">
+              <Field label="Situation civile">
                 <Select
                   value={form.civilStatus}
                   onValueChange={(v) => set("civilStatus", v as "single" | "married")}
@@ -199,6 +199,20 @@ function HealthInsuranceFranceCalc() {
                   </SelectContent>
                 </Select>
               </Field>
+              {form.civilStatus === "married" && (
+                <Field label="Conjoint·e">
+                  <Select
+                    value={form.spouseInsuredWithFrontalier ? "with" : "own"}
+                    onValueChange={(v) => set("spouseInsuredWithFrontalier", v === "with")}
+                  >
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="own">Travaille : a sa propre couverture</SelectItem>
+                      <SelectItem value="with">Sans activité : assuré·e avec le frontalier</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </Field>
+              )}
               <NumField
                 label="Enfants à charge (impacte LAMal)"
                 value={form.childrenCount}

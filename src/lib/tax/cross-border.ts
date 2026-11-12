@@ -292,14 +292,16 @@ export const GE_IS_RATES_2026: Record<string, [number, number][]> = {
     [96_000, 4.87], [120_000, 7.83], [150_000, 11.09], [200_000, 15.06],
     [300_000, 20.44],
   ],
-  // B2 : ESTIMATION, à remplacer par la lecture du barème officiel. Les
-  // valeurs relevées à l'origine (0,39 % à 120'000, 1,51 % à 200'000)
-  // n'étaient manifestement pas celles du barème B2. Reconstituées ici à
-  // partir de B1 moins l'écart B0 → B1 au même revenu (même logique que les
-  // écarts C0 → C1 → C2 et H1 → H2 du barème officiel).
+  // B2 : RECONSTITUÉ, à remplacer par la lecture du barème officiel dès
+  // qu'elle est disponible. Les valeurs relevées à l'origine (0,39 % à
+  // 120'000, 1,51 % à 200'000) n'étaient manifestement pas celles du barème
+  // B2. Valeur = taux officiel B1 moins l'effet du 2e enfant calculé par le
+  // moteur d'impôt ordinaire genevois (couple, un revenu). Ce moteur
+  // reproduit les barèmes officiels B0 et B1 à 0,3 point près entre
+  // 120'000 et 200'000 CHF, ce qui valide la méthode.
   B2: [
-    [29_400, 0], [84_000, 0], [96_000, 0.3], [120_000, 4.6],
-    [150_000, 8.1], [200_000, 12.5], [300_000, 18.0],
+    [29_400, 0], [84_000, 0], [96_000, 1.84], [120_000, 4.86],
+    [150_000, 8.32], [200_000, 12.69], [300_000, 18.79],
   ],
   C0: [
     [29_400, 0], [48_000, 0.83], [60_000, 4.56], [72_000, 7.20],

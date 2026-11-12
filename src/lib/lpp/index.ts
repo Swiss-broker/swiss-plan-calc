@@ -3,6 +3,7 @@
 
 import { computeIncomeTax, type IncomeTaxInput } from "../tax/income";
 import { computeIFD } from "../tax/ifd";
+import { computeCantonalCommunal } from "../tax/cantons";
 import { LPP_2026 } from "./parameters-2026";
 
 // Constantes 2026 — dérivées de LPP_2026 (parameters-2026.ts), seule source
@@ -394,23 +395,107 @@ export function annuityVsLumpSum(input: AnnuityVsLumpSumInput): AnnuityVsLumpSum
   };
 }
 
+// ─────────────────────────────────────────────────────────────────────────
+// Impôt sur les prestations en capital de la prévoyance (2e pilier, libre
+// passage, 3a) — part cantonale + communale, chef-lieu du canton.
+//
+// Calcul UNIQUE pour toute l'app : « Rente vs capital », « Libre passage »,
+// 3e pilier, comparateur cantonal et prestations consolidées affichent le
+// même impôt pour un même capital dans un même canton.
+//
+// L'impôt est PROGRESSIF (comme la loi) : deux retraits de 100'000 CHF sur
+// deux années coûtent moins qu'un retrait unique de 200'000 CHF — c'est ce
+// qui chiffre l'intérêt d'échelonner les retraits 3a / libre passage.
+// ─────────────────────────────────────────────────────────────────────────
+
 /**
- * Taux moyen cantonal + communal de l'impôt sur les prestations en capital
- * de la prévoyance (2e pilier, libre passage, 3a), par canton. Estimation
- * à taux constant, calibrée sur les calculateurs officiels pour les cantons
- * romands, ZG et SZ ; ordre de grandeur pour les autres cantons. Table
- * UNIQUE pour toute l'app : « Rente vs capital », « Libre passage »,
- * 3e pilier, comparateur cantonal et prestations consolidées doivent
- * afficher le même impôt pour un même capital dans un même canton.
+ * Cantons qui imposent le capital à une FRACTION du barème ordinaire de
+ * l'impôt sur le revenu, appliquée au capital seul (sans déduction) :
+ *  - GE : un cinquième (art. 45 LIPP) ;
+ *  - VD : un cinquième (art. 49 LI) ;
+ *  - NE : un quart, taux minimal de 2,5 % pour le canton et autant pour la
+ *    commune (art. 42 LCdir) ;
+ *  - ZG : un tiers environ (fraction calée sur les montants publiés).
+ * Recoupé avec les montants publiés 2025-2026 : NE 100'000 CHF et VD
+ * 100'000 CHF au franc près, GE 500'000 CHF à 0,4 % près.
+ */
+const CAPITAL_TAX_SCALE_FRACTION: Record<string, { divisor: number; minRate?: number }> = {
+  GE: { divisor: 5 },
+  VD: { divisor: 5 },
+  NE: { divisor: 4, minRate: 0.05 },
+  ZG: { divisor: 3 },
+};
+
+type CapitalTaxPoints = Array<[capital: number, tax: number]>;
+
+/**
+ * Cantons à BARÈME SPÉCIAL (FR, JU) : impôt cantonal + communal relevé sur
+ * les comparatifs publiés 2025-2026 (chef-lieu, sans confession), IFD
+ * déduit ; interpolation linéaire entre les points, prolongée au-delà du
+ * dernier point avec la pente du dernier segment.
+ */
+const CAPITAL_TAX_POINTS: Record<string, { single: CapitalTaxPoints; family?: CapitalTaxPoints }> = {
+  FR: {
+    single: [
+      [100_000, 2_722],
+      [250_000, 13_580],
+      [500_000, 36_080],
+      [1_000_000, 80_999],
+    ],
+    family: [
+      [100_000, 2_360],
+      [250_000, 12_686],
+      [500_000, 35_186],
+      [1_000_000, 80_100],
+    ],
+  },
+  JU: {
+    single: [
+      [100_000, 5_636],
+      [250_000, 17_493],
+      [500_000, 37_680],
+      [1_000_000, 78_056],
+    ],
+  },
+};
+
+function interpolateCapitalTax(capital: number, points: CapitalTaxPoints): number {
+  const [firstCapital, firstTax] = points[0];
+  // Sous le premier point : taux moyen du premier point.
+  if (capital <= firstCapital) return (capital * firstTax) / firstCapital;
+  for (let i = 1; i < points.length; i++) {
+    const [x0, y0] = points[i - 1];
+    const [x1, y1] = points[i];
+    if (capital <= x1) return y0 + ((capital - x0) / (x1 - x0)) * (y1 - y0);
+  }
+  const [x0, y0] = points[points.length - 2];
+  const [x1, y1] = points[points.length - 1];
+  return y1 + ((capital - x1) * (y1 - y0)) / (x1 - x0);
+}
+
+/**
+ * Valais : taux propre aux prestations en capital, constant jusqu'à
+ * 250'000 CHF puis croissant linéairement jusqu'à 1'000'000 CHF, plafonné
+ * au-delà (canton + commune de Sion : 4,22 % → 8,0 % ; couples : environ
+ * 2 % de moins). Calé sur les montants publiés 2025-2026.
+ */
+function valaisCapitalTax(capital: number, family: boolean): number {
+  const LOW = 0.0422;
+  const HIGH = 0.08;
+  const rate =
+    capital <= 250_000
+      ? LOW
+      : capital >= 1_000_000
+        ? HIGH
+        : LOW + ((capital - 250_000) / 750_000) * (HIGH - LOW);
+  return capital * rate * (family ? 0.98 : 1);
+}
+
+/**
+ * Autres cantons : taux moyen constant (ordre de grandeur, non progressif).
+ * L'avantage d'un retrait échelonné n'y est donc pas chiffré.
  */
 export const CANTON_LUMP_SUM_RATE: Record<string, number> = {
-  GE: 0.062,
-  VD: 0.058,
-  FR: 0.054,
-  NE: 0.06,
-  JU: 0.055,
-  VS: 0.05,
-  ZG: 0.025,
   SZ: 0.03,
   OW: 0.032,
   NW: 0.033,
@@ -433,12 +518,43 @@ export const CANTON_LUMP_SUM_RATE: Record<string, number> = {
 };
 const DEFAULT_LUMP_SUM_RATE = 0.045;
 
+/** Part cantonale + communale de l'impôt sur une prestation en capital. */
+export function cantonalCapitalTax(
+  capital: number,
+  canton: string,
+  status: "single" | "married" | "single_with_children",
+): number {
+  if (capital <= 0) return 0;
+  const family = status !== "single";
+
+  const fraction = CAPITAL_TAX_SCALE_FRACTION[canton];
+  if (fraction) {
+    const ordinary = computeCantonalCommunal({
+      canton,
+      taxableIncome: capital,
+      status,
+      children: 0,
+      confession: "none",
+    });
+    const tax = (ordinary.cantonal + ordinary.communal) / fraction.divisor;
+    return Math.max(tax, capital * (fraction.minRate ?? 0));
+  }
+  if (canton === "VS") return valaisCapitalTax(capital, family);
+
+  const points = CAPITAL_TAX_POINTS[canton];
+  if (points) {
+    return interpolateCapitalTax(capital, family && points.family ? points.family : points.single);
+  }
+  return capital * (CANTON_LUMP_SUM_RATE[canton] ?? DEFAULT_LUMP_SUM_RATE);
+}
+
 /** Impôt unique sur prestation en capital, imposée séparément du revenu.
  *
  * IFD (art. 38 LIFD) : un cinquième du barème ordinaire, appliqué au
  * capital lui-même — aucune déduction (ni cotisations sociales, ni frais
  * professionnels, ni déductions sociales), contrairement à un salaire.
- * Cantonal + communal : taux moyen par canton (CANTON_LUMP_SUM_RATE).
+ * Cantonal + communal : voir cantonalCapitalTax (progressif pour GE, VD,
+ * NE, VS, FR, JU et ZG).
  */
 export function capitalWithdrawalTax(opts: {
   capital: number;
@@ -447,11 +563,10 @@ export function capitalWithdrawalTax(opts: {
 }): { ifd: number; cantonal: number; total: number } {
   if (opts.capital <= 0) return { ifd: 0, cantonal: 0, total: 0 };
   const ifdReduced = computeIFD(opts.capital, opts.status) / 5;
-  const cantonalRate = CANTON_LUMP_SUM_RATE[opts.canton] ?? DEFAULT_LUMP_SUM_RATE;
-  const cantonalApprox = opts.capital * cantonalRate;
+  const cantonal = cantonalCapitalTax(opts.capital, opts.canton, opts.status);
   return {
     ifd: Math.round(ifdReduced),
-    cantonal: Math.round(cantonalApprox),
-    total: Math.round(ifdReduced + cantonalApprox),
+    cantonal: Math.round(cantonal),
+    total: Math.round(ifdReduced + cantonal),
   };
 }
