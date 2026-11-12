@@ -17,8 +17,9 @@ describe("computeCrossBorder GE — barème par défaut sans tenir compte des en
     });
     // Même barème A0 appliqué que le client ait 0 ou 1 enfant par défaut.
     expect(withChild.swissTax).toBe(withoutChild.swissTax);
-    const [, a0Rate] = GE_IS_RATES_2026.A0.find(([income]) => income === 60_000)!;
-    expect(withChild.swissTax).toBe(Math.round((60_000 * a0Rate) / 100));
+    // Barème officiel 2026 : A0 à 60'000 CHF/an = 7.62 %.
+    expect(GE_IS_RATES_2026.A0.length).toBeGreaterThan(10);
+    expect(Math.abs(withChild.swissTax - 60_000 * 0.0762)).toBeLessThan(30);
     expect(withChild.swissTax).toBeGreaterThan(1_000);
   });
 

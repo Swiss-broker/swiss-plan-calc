@@ -18,6 +18,7 @@
 // Interpolation linéaire entre points de référence officiels.
 
 import { estimateSocialContributions } from "./income";
+import { GE_IS_RATES_2026 } from "./ge-source-2026";
 
 export type CrossBorderRegime =
   | "fr_accord_45"
@@ -259,81 +260,11 @@ function numericMarginalRate(taxAt: (gross: number) => number, gross: number): n
   return Math.max(0, Math.round((delta / MARGINAL_STEP_CHF) * 1000) / 10);
 }
 
-// =====================================================================
-// Barèmes IS Genève 2026 — taux effectifs officiels tar26GE
-// [revenu_annuel_CHF, taux_%] — interpolation linéaire
-// =====================================================================
-export const GE_IS_RATES_2026: Record<string, [number, number][]> = {
-  // Source : Barèmes IS GE 2026 officiels (tar26GE) — lecture directe PDF
-  // Points : [revenu_annuel_CHF, taux_%]
+// Barèmes IS Genève 2026 : tables officielles complètes (A0, B0-B5, C0-C5,
+// H1-H5) dans ./ge-source-2026.ts, générées depuis le document « Barèmes
+// 2026 impôt à la source » de l'État de Genève.
+export { GE_IS_RATES_2026 };
 
-  A0: [
-    [29_400, 0], [36_000, 1.82], [48_000, 3.85], [60_000, 5.52],
-    [72_000, 7.14], [96_000, 12.08], [120_000, 15.56], [150_000, 18.03],
-    [200_000, 21.05], [300_000, 26.03],
-  ],
-  A1: [
-    [29_400, 0], [48_000, 0], [60_000, 0.17], [72_000, 0.15],
-    [84_000, 3.54], [96_000, 7.06], [120_000, 10.15], [150_000, 13.01],
-    [200_000, 16.94], [300_000, 22.02],
-  ],
-  A2: [
-    [29_400, 0], [60_000, 0], [72_000, 0], [84_000, 0],
-    [96_000, 2.75], [120_000, 6.12], [150_000, 9.20], [200_000, 13.18],
-    [300_000, 19.00],
-  ],
-  B0: [
-    [29_400, 0], [48_000, 0], [60_000, 2.00], [72_000, 4.36],
-    [84_000, 6.51], [96_000, 9.69], [120_000, 11.03], [150_000, 14.11],
-    [200_000, 17.64], [300_000, 22.83],
-  ],
-  B1: [
-    [29_400, 0], [60_000, 0], [72_000, 0], [84_000, 1.34],
-    [96_000, 4.87], [120_000, 7.83], [150_000, 11.09], [200_000, 15.06],
-    [300_000, 20.44],
-  ],
-  // B2 : RECONSTITUÉ, à remplacer par la lecture du barème officiel dès
-  // qu'elle est disponible. Les valeurs relevées à l'origine (0,39 % à
-  // 120'000, 1,51 % à 200'000) n'étaient manifestement pas celles du barème
-  // B2. Valeur = taux officiel B1 moins l'effet du 2e enfant calculé par le
-  // moteur d'impôt ordinaire genevois (couple, un revenu). Ce moteur
-  // reproduit les barèmes officiels B0 et B1 à 0,3 point près entre
-  // 120'000 et 200'000 CHF, ce qui valide la méthode.
-  B2: [
-    [29_400, 0], [84_000, 0], [96_000, 1.84], [120_000, 4.86],
-    [150_000, 8.32], [200_000, 12.69], [300_000, 18.79],
-  ],
-  C0: [
-    [29_400, 0], [48_000, 0.83], [60_000, 4.56], [72_000, 7.20],
-    [84_000, 9.25], [96_000, 11.08], [120_000, 13.90], [150_000, 16.11],
-    [200_000, 19.21], [300_000, 23.64],
-  ],
-  C1: [
-    [29_400, 0], [48_000, 0], [60_000, 2.29], [72_000, 4.84],
-    [84_000, 7.00], [96_000, 9.13], [120_000, 12.03], [150_000, 14.29],
-    [200_000, 17.72], [300_000, 22.10],
-  ],
-  C2: [
-    [29_400, 0], [48_000, 0], [60_000, 0], [72_000, 2.00],
-    [84_000, 4.59], [96_000, 7.06], [120_000, 9.98], [150_000, 12.32],
-    [200_000, 16.04], [300_000, 20.92],
-  ],
-  H0: [
-    [29_400, 0], [48_000, 0.94], [60_000, 4.02], [72_000, 6.64],
-    [84_000, 8.87], [96_000, 11.08], [120_000, 13.90], [150_000, 16.17],
-    [200_000, 19.21], [300_000, 23.68],
-  ],
-  H1: [
-    [29_400, 0], [60_000, 0], [72_000, 1.34], [84_000, 3.82],
-    [96_000, 6.64], [120_000, 9.76], [150_000, 12.65], [200_000, 16.39],
-    [300_000, 21.23],
-  ],
-  H2: [
-    [29_400, 0], [60_000, 0], [72_000, 0], [84_000, 1.06],
-    [96_000, 4.09], [120_000, 7.46], [150_000, 10.57], [200_000, 14.64],
-    [300_000, 20.15],
-  ],
-};
 const FR_IS_RATES_2026: Record<string, [number, number][]> = {
   // Source : calculette officielle fr.ch — relevés officiels 04/06/2026
   A0: [
@@ -445,9 +376,12 @@ export function interpolateGERate(annualGross: number, scaleKey: string): number
 }
 
 /** Taux IS Genève 2026 (%) pour un barème (lettre A/B/C/H) et un nombre
- *  d'enfants. Tables officielles jusqu'à 2 enfants, prolongées au-delà. */
+ *  d'enfants. Barème officiel jusqu'à 5 enfants. A : toujours A0. H sans
+ *  enfant n'existe pas (retombe sur A0). */
 export function geSourceRate(annualGross: number, letter: string, children: number): number {
-  return rateWithChildren((k) => interpolateGERate(annualGross, k), letter, children, 2);
+  const n = Math.max(0, Math.min(5, Math.floor(children)));
+  if (letter === "A" || (letter === "H" && n === 0)) return interpolateGERate(annualGross, "A0");
+  return interpolateGERate(annualGross, `${letter}${n}`);
 }
 
 /** Taux IS Fribourg 2026 (%) pour un barème et un nombre d'enfants (tables

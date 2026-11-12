@@ -53,7 +53,17 @@ const crossBorderGeInput: TaxGlobalInput = {
 
 describe("computeTaxGlobal — touComparison pour les régimes frontaliers", () => {
   it("expose touComparison (frontalier GE), même quand la TOU n'est pas avantageuse", () => {
-    const result = computeTaxGlobal(crossBorderGeInput);
+    // Sans aucune déduction à faire valoir : la taxation ordinaire ne peut pas
+    // battre la retenue à la source genevoise (barème officiel 2026).
+    const result = computeTaxGlobal({
+      ...crossBorderGeInput,
+      lppBuyback: 0,
+      pillar3aContributions: 0,
+      pillar3bContributions: 0,
+      healthInsurancePremiums: 0,
+      childCareCosts: 0,
+      medicalExpenses: 0,
+    });
     expect(result.regime).toBe("cross_border_ge");
     expect(result.touComparison).toBeDefined();
     expect(result.touComparison!.sourceTax).toBeGreaterThan(0);
