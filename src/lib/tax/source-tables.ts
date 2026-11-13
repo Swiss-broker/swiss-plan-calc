@@ -8,6 +8,7 @@ import { VD_IS_RATES_2026 } from "./vd-source-2026";
 import { FR_IS_RATES_2026 } from "./fr-source-2026";
 import { JU_IS_RATES_2026 } from "./ju-source-2026";
 import { VS_IS_RATES_2025 } from "./vs-source-2025";
+import { NE_IS_RATES_2026 } from "./ne-source-2026";
 
 interface OfficialSourceTable {
   rates: Record<string, [number, number][]>;
@@ -19,6 +20,7 @@ export const OFFICIAL_SOURCE_TABLES: Record<string, OfficialSourceTable> = {
   GE: { rates: GE_IS_RATES_2026, maxChildren: 5 },
   VD: { rates: VD_IS_RATES_2026, maxChildren: 6 },
   FR: { rates: FR_IS_RATES_2026, maxChildren: 9 },
+  NE: { rates: NE_IS_RATES_2026, maxChildren: 8 },
   // Jura : A0 et H1-H8 complets ; B et C seulement jusqu'à 2 enfants.
   JU: { rates: JU_IS_RATES_2026, maxChildren: 8 },
   // Valais : barèmes A et B seulement (édition 2025) ; C et H non fournis.

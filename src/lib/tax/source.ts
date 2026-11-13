@@ -149,7 +149,7 @@ function computeSourceTaxCore(opts: SourceTaxOptions): Omit<SourceTaxResult, "ma
   const official = officialSourceRate(opts.canton, monthly * 12, opts.scale, children);
   if (official !== null) {
     // Barème officiel du canton (source-tables.ts : Genève, Vaud, Fribourg,
-    // Jura, Valais A/B), le même que pour les frontaliers. Pas de supplément ecclésiastique : ces
+    // Neuchâtel, Jura, Valais A/B), le même que pour les frontaliers. Pas de supplément ecclésiastique : ces
     // barèmes sont publiés en une seule version, quelle que soit la confession.
     rate = Math.max(0, official);
   } else if (opts.scale === "C") {

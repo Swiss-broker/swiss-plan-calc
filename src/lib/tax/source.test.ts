@@ -104,10 +104,10 @@ describe("computeSourceTax — enfants à charge", () => {
     }
   });
 
-  it("barème C, cantons sans table propre : même logique que Genève, sur le salaire propre", () => {
-    const ne = computeSourceTax({ monthlyGross: 9_000, spouseMonthlyGross: 9_000, canton: "NE", scale: "C" });
+  it("Valais, barème C (pas de document officiel) : table genevoise ajustée, sur le salaire propre", () => {
+    const vs = computeSourceTax({ monthlyGross: 9_000, spouseMonthlyGross: 9_000, canton: "VS", scale: "C" });
     const ge = computeSourceTax({ monthlyGross: 9_000, canton: "GE", scale: "C" });
-    expect(ne.rate).toBeCloseTo(ge.rate * 0.98, 1);
+    expect(vs.rate).toBeCloseTo(ge.rate * 0.88, 1);
   });
 });
 
