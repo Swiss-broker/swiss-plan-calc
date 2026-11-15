@@ -127,7 +127,8 @@ describe.each(PROFILES)("cohérence entre calculateurs — %s", (_name, b) => {
 
   it("taux marginal : Rente vs capital = fiche client = Fiscal global", () => {
     const fiscalGlobal = computeTaxGlobal(g).marginalRate;
-    expect(toRetirementInput(b).rentMarginalRate).toBeCloseTo(fiscalGlobal, 1);
+    // L'écran Rente vs capital affiche le taux arrondi au dixième.
+    expect(toRetirementInput(b).rentMarginalRate).toBe(Math.round(fiscalGlobal * 10) / 10);
     expect(dashboard.tax?.marginalRate).toBe(fiscalGlobal);
   });
 
