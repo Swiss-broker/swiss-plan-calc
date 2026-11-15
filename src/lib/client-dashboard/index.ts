@@ -262,8 +262,14 @@ function buildPillar3a(
       // France, déduction ignorée) que pour un résident ordinaire — voir
       // computeTaxGlobal(). computeIncomeTax() seul appliquait toujours la
       // règle "résident" quel que soit le régime réel du client.
-      const baseline = computeTaxGlobal({ ...taxInput, pillar3aContributions: 0 });
-      const scenario = computeTaxGlobal({ ...taxInput, pillar3aContributions: current });
+      // Imposés à la source / frontaliers GE : économie chiffrée « après
+      // demande de TOU » (assumeTou), seule situation où le 3a est déduit.
+      const baseline = computeTaxGlobal({ ...taxInput, assumeTou: true, pillar3aContributions: 0 });
+      const scenario = computeTaxGlobal({
+        ...taxInput,
+        assumeTou: true,
+        pillar3aContributions: current,
+      });
       savings = Math.round(baseline.totalTaxCHF - scenario.totalTaxCHF);
     } catch {
       savings = 0;

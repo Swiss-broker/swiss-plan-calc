@@ -201,9 +201,15 @@ function TaxGlobalCalc() {
   // ne pouvait donc pas garantir d'afficher un comparatif fiable, ni même
   // garantir que ce résultat était bien le scénario optimisé final).
   const baselineResult = useMemo(() => computeTaxGlobal(baseline), [baseline]);
+  // « Après » du comparatif : pour un imposé à la source ou un frontalier
+  // genevois, les optimisations ne valent qu'une fois la TOU demandée
+  // (assumeTou). `result` reste la situation actuelle (impôt à la source au
+  // barème de l'employeur), affichée en tête de page ; pour les autres
+  // régimes les deux résultats sont identiques.
+  const optimizedResult = useMemo(() => computeTaxGlobal({ ...form, assumeTou: true }), [form]);
   const taxGlobalCompareRows = useMemo(
-    () => buildTaxGlobalCompareRows(baselineResult, result),
-    [baselineResult, result],
+    () => buildTaxGlobalCompareRows(baselineResult, optimizedResult),
+    [baselineResult, optimizedResult],
   );
   const scenarios = useMemo(() => buildScenarios(form), [form]);
   const childrenImpact = useMemo(() => computeChildrenImpact(form), [form]);
@@ -1509,7 +1515,7 @@ function TaxGlobalCalc() {
       </div>
 
       {/* COMPARATEUR Actuel vs Projeté */}
-      <TaxGlobalCompareCard form={form} result={result} baseline={baseline} />
+      <TaxGlobalCompareCard form={form} result={optimizedResult} baseline={baseline} />
 
       {/* TRANSPARENCE : comment ce résultat est calculé */}
       <TaxGlobalExplanation

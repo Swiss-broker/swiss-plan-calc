@@ -559,7 +559,9 @@ function Pillar3aCalc() {
               >
                 <p className="mb-1 text-sm font-semibold">
                   {savings.beneficial
-                    ? "✓ Avantageux ici — démarche nécessaire pour l'obtenir"
+                    ? savings.taxSavings > 0
+                      ? "✓ Avantageux après demande de TOU — économie chiffrée ci-dessous"
+                      : "✓ Demande de TOU avantageuse pour ce client"
                     : "✗ Pas avantageux ici"}
                 </p>
                 <strong>{savings.regimeLabel}.</strong> {savings.note}

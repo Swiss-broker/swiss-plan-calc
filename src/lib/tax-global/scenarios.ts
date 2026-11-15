@@ -43,12 +43,12 @@ export function buildScenarios(input: TaxGlobalInput): Scenario[] {
   const couple = isCoupleStatus(input.civilStatus);
   const maxPillar3a = couple ? PILLAR_3A_MAX_2026_LPP * 2 : PILLAR_3A_MAX_2026_LPP;
   if (!isFrAccord1983 && input.pillar3aContributions < maxPillar3a) {
-    const r = computeTaxGlobal({ ...input, pillar3aContributions: maxPillar3a });
+    const r = computeTaxGlobal({ ...input, assumeTou: true, pillar3aContributions: maxPillar3a });
     out.push({
       id: "pillar3a_max",
       label: `+3a max (${maxPillar3a.toLocaleString("fr-CH")} CHF)`,
       description: regime === "cross_border_ge"
-        ? "Verser le 3a au plafond (déductible uniquement si TOU activée)"
+        ? "Verser le 3a au plafond, après demande de TOU"
         : "Verser le 3e pilier A au plafond légal",
       result: r,
       deltaVsBaseline: r.totalTaxCHF - baseTotal,
@@ -63,7 +63,7 @@ export function buildScenarios(input: TaxGlobalInput): Scenario[] {
     ? Math.min(20_000, Math.max(0, capacity - input.lppBuyback))
     : 20_000;
   if (!isFrAccord1983 && buybackTrial >= 1_000 && input.lppBuyback < input.lppBuyback + buybackTrial) {
-    const r = computeTaxGlobal({ ...input, lppBuyback: input.lppBuyback + buybackTrial });
+    const r = computeTaxGlobal({ ...input, assumeTou: true, lppBuyback: input.lppBuyback + buybackTrial });
     const capacityLabel = capacity > 0
       ? ` (capacité dispo : ${Math.round(capacity).toLocaleString("fr-CH")} CHF)`
       : ` (montant d'illustration, capacité non renseignée)`;
@@ -71,7 +71,7 @@ export function buildScenarios(input: TaxGlobalInput): Scenario[] {
       id: "lpp_buyback_trial",
       label: `+Rachat LPP ${Math.round(buybackTrial).toLocaleString("fr-CH")} CHF`,
       description: (regime === "cross_border_ge"
-        ? "Rachat LPP supplémentaire (déductible uniquement si TOU activée)"
+        ? "Rachat LPP supplémentaire, après demande de TOU"
         : "Rachat LPP supplémentaire simulé") + capacityLabel,
       result: r,
       deltaVsBaseline: r.totalTaxCHF - baseTotal,
@@ -81,7 +81,7 @@ export function buildScenarios(input: TaxGlobalInput): Scenario[] {
   // ─── Don 5'000 CHF (résident ordinaire + TOU) ───
   if (regime === "resident_ordinary" || regime === "tou") {
     const donTrial = 5_000;
-    const r = computeTaxGlobal({ ...input, donations: input.donations + donTrial });
+    const r = computeTaxGlobal({ ...input, assumeTou: true, donations: input.donations + donTrial });
     out.push({
       id: "donation_5k",
       label: `+Don 5'000 CHF`,
@@ -103,19 +103,22 @@ export function buildScenarios(input: TaxGlobalInput): Scenario[] {
     });
   }
 
-  // ─── TOU explicite si éligibilité quasi-résident ───
+  // ─── Demande de TOU : imposés à la source et frontaliers GE/FR éligibles ───
+  // « Avant » = retenue à la source actuelle ; « après » = taxation ordinaire
+  // avec la situation familiale réelle et les déductions déjà saisies.
   if (
-    regime === "source_taxed" &&
+    baselineResult.touComparison &&
     baselineResult.touEligibility?.eligibleForTOU &&
-    !baselineResult.touComparison?.mandatory
+    !baselineResult.touComparison.mandatory
   ) {
-    const ord = baselineResult.touComparison?.ordinaryTax ?? baseTotal;
+    const r = computeTaxGlobal({ ...input, assumeTou: true });
     out.push({
       id: "tou",
       label: "Demande TOU",
-      description: "Taxation ordinaire ultérieure avec déductions effectives",
-      result: { ...baselineResult, totalTaxCHF: ord },
-      deltaVsBaseline: ord - baseTotal,
+      description:
+        "Taxation ordinaire ultérieure : enfants à charge et déductions pris en compte (à demander avant le 31 mars de l'année suivante)",
+      result: r,
+      deltaVsBaseline: r.totalTaxCHF - baseTotal,
     });
   }
 

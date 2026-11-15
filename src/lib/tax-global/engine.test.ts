@@ -79,6 +79,7 @@ describe("computeTaxGlobal — touComparison pour les régimes frontaliers", () 
   it("bascule sur la TOU quand les déductions deviennent assez importantes", () => {
     const result = computeTaxGlobal({
       ...crossBorderGeInput,
+      assumeTou: true,
       lppBuyback: 30_000,
       pillar3aContributions: 7_258,
     });
@@ -108,9 +109,13 @@ describe("computeTaxGlobal — résident imposé à la source", () => {
   };
 
   it("sous 120'000 CHF : TOU possible sur demande, le moins cher des deux est retenu", () => {
-    const r = computeTaxGlobal({ ...resident, grossSalary: 90_000 });
-    expect(r.touEligibility!.eligibleForTOU).toBe(true);
-    expect(r.touComparison!.mandatory).toBe(false);
+    const now = computeTaxGlobal({ ...resident, grossSalary: 90_000 });
+    expect(now.touEligibility!.eligibleForTOU).toBe(true);
+    expect(now.touComparison!.mandatory).toBe(false);
+    // Situation actuelle : la retenue à la source, quoi qu'il arrive.
+    expect(now.totalTaxCHF).toBe(now.source!.annualTax);
+    // Après demande de TOU : le moins cher des deux.
+    const r = computeTaxGlobal({ ...resident, grossSalary: 90_000, assumeTou: true });
     expect(r.totalTaxCHF).toBe(Math.min(r.source!.annualTax, r.touComparison!.ordinaryTax));
   });
 
@@ -137,5 +142,51 @@ describe("computeTaxGlobal — résident imposé à la source", () => {
     expect(r.swissShareCHF).toBe(0);
     expect(r.foreignShareCHF).toBe(r.totalTaxCHF);
     expect(r.grossIncomeCHF).toBe(130_000);
+  });
+});
+
+describe("computeTaxGlobal — frontalier genevois : avant = impôt à la source, après = TOU", () => {
+  const frontalier: TaxGlobalInput = {
+    ...crossBorderGeInput,
+    grossSalary: 78_000,
+    bonus: 0,
+    children: 2,
+    childrenAges: [4, 7],
+    lppInsuredSalary: undefined,
+  };
+
+  it("situation actuelle : barème A0, les enfants et les déductions ne changent rien", () => {
+    const now = computeTaxGlobal(frontalier);
+    const noChildNoDeduction = computeTaxGlobal({
+      ...frontalier,
+      children: 0,
+      childrenAges: [],
+      lppBuyback: 0,
+      pillar3aContributions: 0,
+      pillar3bContributions: 0,
+      healthInsurancePremiums: 0,
+      childCareCosts: 0,
+      medicalExpenses: 0,
+    });
+    expect(now.totalTaxCHF).toBe(noChildNoDeduction.totalTaxCHF);
+    // Barème officiel genevois A0 à 78'000 CHF/an : environ 10.8 %.
+    expect(now.totalTaxCHF).toBeGreaterThan(8_000);
+    expect(now.totalTaxCHF).toBeLessThan(8_800);
+  });
+
+  it("après demande de TOU : enfants et déductions pris en compte, impôt nettement plus bas", () => {
+    const now = computeTaxGlobal(frontalier);
+    const afterTou = computeTaxGlobal({ ...frontalier, assumeTou: true });
+    expect(afterTou.totalTaxCHF).toBeLessThan(now.totalTaxCHF / 2);
+    expect(afterTou.totalTaxCHF).toBe(now.touComparison!.ordinaryTax);
+  });
+
+  it("un versement 3a supplémentaire réduit encore l'impôt une fois la TOU demandée, pas avant", () => {
+    const base = { ...frontalier, children: 0, childrenAges: [], pillar3aContributions: 0 };
+    const more3a = { ...base, pillar3aContributions: 7_258 };
+    expect(computeTaxGlobal(more3a).totalTaxCHF).toBe(computeTaxGlobal(base).totalTaxCHF);
+    expect(computeTaxGlobal({ ...more3a, assumeTou: true }).totalTaxCHF).toBeLessThan(
+      computeTaxGlobal({ ...base, assumeTou: true }).totalTaxCHF,
+    );
   });
 });

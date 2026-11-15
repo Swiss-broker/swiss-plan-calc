@@ -608,7 +608,9 @@ function LppCalc() {
               >
                 <p className="mb-1 text-sm font-semibold">
                   {regimeAwareBuyback.beneficial
-                    ? "✓ Avantageux ici — démarche nécessaire pour l'obtenir"
+                    ? regimeAwareBuyback.taxSavings > 0
+                      ? "✓ Avantageux après demande de TOU — économie chiffrée ci-dessous"
+                      : "✓ Demande de TOU avantageuse pour ce client"
                     : "✗ Pas avantageux ici"}
                 </p>
                 <strong>{regimeAwareBuyback.regimeLabel}.</strong> {regimeAwareBuyback.note}

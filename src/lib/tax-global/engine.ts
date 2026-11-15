@@ -354,11 +354,19 @@ export function computeTaxGlobal(g: TaxGlobalInput): TaxGlobalResult {
     // déductions, peu importe l'éligibilité TOU. Le courtier veut voir
     // l'effet d'une déduction simulée même hors quasi-résident, la note
     // précise la démarche requise (TOU si éligible, rectification IS sinon).
-    const useOrdinary = touMandatory || touComparison.ordinaryTax < source.annualTax;
+    // Situation actuelle = retenue à la source. La taxation ordinaire n'est
+    // retenue que si elle est obligatoire, ou dans le scénario « après
+    // démarche TOU » (g.assumeTou) quand elle est plus avantageuse.
+    const useOrdinary =
+      touMandatory || (g.assumeTou === true && touComparison.ordinaryTax < source.annualTax);
     const total = useOrdinary ? touComparison.ordinaryTax : source.annualTax;
     if (touMandatory) {
       notes.push(
         `Salaire brut d'au moins ${TOU_MANDATORY_GROSS_THRESHOLD.toLocaleString("fr-CH")} CHF : taxation ordinaire ultérieure obligatoire (art. 89 LIFD). L'impôt à la source reste prélevé sur le salaire (${source.annualTax.toLocaleString("fr-CH")} CHF/an) puis imputé sur l'impôt ordinaire ; toutes les déductions (3e pilier A, rachat LPP, intérêts) s'appliquent sans démarche particulière.`,
+      );
+    } else if (g.assumeTou !== true) {
+      notes.push(
+        `Situation actuelle : retenue à la source au barème de l'employeur, sans déductions${rectification.rectificationApplicable ? " ni enfants à charge (barème A0)" : ""}. ${touComparison.recommendationText}`,
       );
     } else if (useOrdinary && deductionsTotal > 0) {
       if (touEligibility.eligibleForTOU) {
@@ -413,7 +421,9 @@ export function computeTaxGlobal(g: TaxGlobalInput): TaxGlobalResult {
             ? "Affichage : impôt ordinaire (taxation ordinaire ultérieure obligatoire)"
             : useOrdinary
             ? "Affichage : impôt ordinaire avec déductions (plus avantageux)"
-            : "Affichage : impôt à la source (moins coûteux que l'ordinaire ici)",
+            : g.assumeTou === true
+              ? "Affichage : impôt à la source (la taxation ordinaire coûterait plus cher ici)"
+              : "Affichage : impôt à la source (situation actuelle, avant toute demande de TOU)",
           deductionsTotal > 0
             ? `Déductions saisies prises en compte : ${Math.round(deductionsTotal).toLocaleString("fr-CH")} CHF`
             : "Aucune déduction saisie",
@@ -526,7 +536,10 @@ export function computeTaxGlobal(g: TaxGlobalInput): TaxGlobalResult {
       // en agissant au mieux, jamais un chiffre théorique. Le banc
       // d'explication ci-dessus (crossBorderTouComparison) reste visible
       // même quand ce n'est PAS avantageux, avec le pourquoi.
-      if (chDeductionsTotal > 0 && ordinaryCH < crossBorder.swissTax) {
+      // Situation actuelle = impôt à la source (barème appliqué par
+      // l'employeur). L'impôt ordinaire n'est retenu que dans le scénario
+      // « après démarche TOU » (g.assumeTou), quand il est plus avantageux.
+      if (g.assumeTou === true && ordinaryCH < crossBorder.swissTax) {
         const newTotal = ordinaryCH + crossBorder.foreignTax;
         displayedCrossBorder = {
           ...crossBorder,
@@ -538,9 +551,11 @@ export function computeTaxGlobal(g: TaxGlobalInput): TaxGlobalResult {
           marginalRate: crossBorderTouComparison.marginalRate,
         };
       }
-      if (chDeductionsTotal > 0) {
-        cbNotes.push(crossBorderTouComparison.recommendationText);
-      }
+      cbNotes.push(
+        g.assumeTou === true
+          ? crossBorderTouComparison.recommendationText
+          : `Situation actuelle : impôt à la source au barème de l'employeur, sans enfants à charge (personne non mariée) ni déductions. ${crossBorderTouComparison.recommendationText}`,
+      );
     }
     if (det.regime === "cross_border_fr_1983" && chDeductionsTotal > 0) {
       cbNotes.push(

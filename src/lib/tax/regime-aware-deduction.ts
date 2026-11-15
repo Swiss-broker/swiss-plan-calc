@@ -96,8 +96,14 @@ export function computeRegimeAwareDeduction(
   const det = detectRegime(g);
 
   const existing = g[deductionField] || 0;
-  const baseline = computeTaxGlobal({ ...g, [deductionField]: existing });
-  const scenario = computeTaxGlobal({ ...g, [deductionField]: existing + deductionAmount });
+  // Économie chiffrée dans le scénario « après demande de TOU » (assumeTou) :
+  // tant que la retenue à la source s'applique, aucune déduction n'a d'effet.
+  const baseline = computeTaxGlobal({ ...g, assumeTou: true, [deductionField]: existing });
+  const scenario = computeTaxGlobal({
+    ...g,
+    assumeTou: true,
+    [deductionField]: existing + deductionAmount,
+  });
   const taxSavings = Math.round(baseline.totalTaxCHF - scenario.totalTaxCHF);
   const result = {
     taxSavings,
@@ -147,7 +153,9 @@ export function computeRegimeAwareDeduction(
       note: "Imposé à la source avec un salaire brut d'au moins 120 000 CHF : taxation ordinaire ultérieure obligatoire. La déduction s'applique d'office dans la déclaration d'impôt, sans démarche particulière.",
     };
   }
-  const beneficial = taxSavings > 0;
+  // Avantageux dès que la TOU elle-même fait baisser l'impôt (même sans
+  // montant saisi) ou que la déduction testée produit une économie.
+  const beneficial = taxSavings > 0 || tou.recommendation === "tou";
   const deadlineNote = tou.recommendation === "tou"
     ? ` Démarche : demander la TOU auprès du canton avant le 31 mars ${g.taxYear + 1}.`
     : "";
@@ -155,6 +163,13 @@ export function computeRegimeAwareDeduction(
     ...result,
     applicable: "conditional",
     beneficial,
-    note: `${tou.recommendationText}${deadlineNote} Tant que la démarche n'est pas faite, la retenue à la source s'applique sans aucune déduction.`,
+    note:
+      `Aujourd'hui : impôt à la source de CHF ${Math.round(tou.sourceTax).toLocaleString("fr-CH")}/an, sans aucune déduction. ` +
+      `${tou.recommendationText}${deadlineNote} ` +
+      (taxSavings > 0
+        ? `Une fois la TOU demandée, ce versement réduit encore l'impôt de CHF ${taxSavings.toLocaleString("fr-CH")} (chiffre ci-dessous).`
+        : deductionAmount > 0
+          ? "Tant que la démarche n'est pas faite, la retenue à la source s'applique sans aucune déduction."
+          : "Saisissez un montant pour chiffrer l'économie supplémentaire qu'il apporterait une fois la TOU demandée."),
   };
 }

@@ -112,6 +112,21 @@ export interface TaxGlobalInput {
    *  (confirmé ESTV), ignorée pour tout autre canton. */
   rentalCharges?: number;
 
+  /**
+   * Imposés à la source et frontaliers genevois / fribourgeois uniquement.
+   * false (défaut) = SITUATION ACTUELLE : la retenue à la source telle que
+   * l'employeur la prélève (barème A0 pour une personne non mariée, sans
+   * enfants ni déductions), tant qu'aucune démarche n'est faite.
+   * true = APRÈS DÉMARCHE : le client demande la taxation ordinaire
+   * ultérieure (TOU) — enfants et déductions (3e pilier A, rachat LPP,
+   * intérêts…) sont alors pris en compte ; l'impôt ordinaire est retenu s'il
+   * est inférieur à la retenue. Sert à chiffrer toutes les optimisations :
+   * « avant » = impôt à la source, « après » = TOU.
+   * Sans effet pour un résident en taxation ordinaire, un frontalier de
+   * l'accord de 1983, ou quand la TOU est obligatoire (≥ 120'000 CHF).
+   */
+  assumeTou?: boolean;
+
   // === Frontaliers ===
   eurChfRate: number;
   chfToEurRate: number;

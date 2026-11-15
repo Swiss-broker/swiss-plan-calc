@@ -52,3 +52,46 @@ describe("computeRegimeAwareDeduction — frontalier GE, beneficial exposé", ()
     expect(result.taxSavings).toBeGreaterThan(0);
   });
 });
+
+describe("computeRegimeAwareDeduction — frontalier GE avec enfants : la TOU elle-même est avantageuse", () => {
+  const withKids = bundle({
+    gross_annual_salary: 78_000,
+    bonus: 0,
+    children: [
+      { date_of_birth: "2019-05-01", in_household: true },
+      { date_of_birth: "2021-09-12", in_household: true },
+    ],
+  } as unknown as Partial<Client>);
+
+  it("sans montant saisi : bandeau positif (TOU avantageuse), économie du versement à 0, pas de « pas avantageux »", () => {
+    const r = computeRegimeAwareDeduction({
+      bundle: withKids,
+      fallbackTaxInput: { canton: "GE", status: "single", grossSalary: 78_000 },
+      deductionAmount: 0,
+      deductionField: "lppBuyback",
+    });
+    expect(r.applicable).toBe("conditional");
+    expect(r.taxSavings).toBe(0);
+    expect(r.beneficial).toBe(true);
+    expect(r.note).toMatch(/impôt à la source/);
+    expect(r.note).toMatch(/Demander la TOU/);
+  });
+
+  it("avec un versement 3a (1 enfant) : économie supplémentaire chiffrée, une fois la TOU demandée", () => {
+    // Avec 2 enfants l'impôt après TOU est déjà presque nul : un 3a n'y ajoute rien.
+    const oneChild = bundle({
+      gross_annual_salary: 78_000,
+      bonus: 0,
+      children: [{ date_of_birth: "2019-05-01", in_household: true }],
+    } as unknown as Partial<Client>);
+    const r = computeRegimeAwareDeduction({
+      bundle: oneChild,
+      fallbackTaxInput: { canton: "GE", status: "single", grossSalary: 78_000 },
+      deductionAmount: 7_258,
+      deductionField: "pillar3aContributions",
+    });
+    expect(r.beneficial).toBe(true);
+    expect(r.taxSavings).toBeGreaterThan(300);
+    expect(r.note).toMatch(/Une fois la TOU demandée/);
+  });
+});
