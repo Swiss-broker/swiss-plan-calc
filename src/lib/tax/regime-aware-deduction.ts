@@ -35,7 +35,11 @@ export interface RegimeAwareDeductionInput {
   /** Base de calcul ordinaire (canton/statut/salaire/communalMultiplier…) utilisée
    *  quand aucune fiche client n'est liée. */
   fallbackTaxInput: IncomeTaxInput;
-  /** Montant testé (cotisation 3a ou rachat LPP de l'année). */
+  /** Montant ANNUEL TOTAL testé (cotisation 3a de l'année, ou rachat LPP de
+   *  l'année). L'économie est mesurée entre « 0 » et ce montant — pas en
+   *  supplément de ce qui figure déjà sur la fiche client : c'est la même
+   *  définition que Fiscal global et la fiche client, pour qu'un même
+   *  versement affiche la même économie partout. */
   deductionAmount: number;
   deductionField: DeductionField;
 }
@@ -67,11 +71,8 @@ export function computeRegimeAwareDeduction(
   const { bundle, fallbackTaxInput, deductionAmount, deductionField } = input;
 
   if (!bundle) {
-    const baseline = computeIncomeTax(fallbackTaxInput);
-    const scenario = computeIncomeTax({
-      ...fallbackTaxInput,
-      [deductionField]: (fallbackTaxInput[deductionField] ?? 0) + deductionAmount,
-    });
+    const baseline = computeIncomeTax({ ...fallbackTaxInput, [deductionField]: 0 });
+    const scenario = computeIncomeTax({ ...fallbackTaxInput, [deductionField]: deductionAmount });
     const taxSavings = Math.round(baseline.totalTax - scenario.totalTax);
     return {
       taxSavings,
@@ -95,15 +96,10 @@ export function computeRegimeAwareDeduction(
   } as TaxGlobalInput;
   const det = detectRegime(g);
 
-  const existing = g[deductionField] || 0;
   // Économie chiffrée dans le scénario « après demande de TOU » (assumeTou) :
   // tant que la retenue à la source s'applique, aucune déduction n'a d'effet.
-  const baseline = computeTaxGlobal({ ...g, assumeTou: true, [deductionField]: existing });
-  const scenario = computeTaxGlobal({
-    ...g,
-    assumeTou: true,
-    [deductionField]: existing + deductionAmount,
-  });
+  const baseline = computeTaxGlobal({ ...g, assumeTou: true, [deductionField]: 0 });
+  const scenario = computeTaxGlobal({ ...g, assumeTou: true, [deductionField]: deductionAmount });
   const taxSavings = Math.round(baseline.totalTaxCHF - scenario.totalTaxCHF);
   const result = {
     taxSavings,

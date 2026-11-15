@@ -249,10 +249,13 @@ function LppCalc() {
       computeRegimeAwareDeduction({
         bundle,
         fallbackTaxInput: enrichedTaxInput,
-        deductionAmount: actualBuybackCapped,
+        // Rachat d'UNE année (le plan étale le total sur plusieurs années,
+        // chacune avec sa propre déduction) — même montant que celui que
+        // Fiscal global reçoit pour ce client.
+        deductionAmount: buybackPlan.yearlyAmount,
         deductionField: "lppBuyback",
       }),
-    [bundle, enrichedTaxInput, actualBuybackCapped],
+    [bundle, enrichedTaxInput, buybackPlan.yearlyAmount],
   );
 
   // Plan effectivement affiché : si la déduction n'est pas automatiquement
@@ -261,14 +264,32 @@ function LppCalc() {
   // économie réelle possible ("no"), ou on le laisse tel quel en l'assortissant
   // d'une note de condition ("conditional", TOU à demander).
   const effectiveBuybackPlan = useMemo(() => {
-    if (regimeAwareBuyback.applicable !== "no") return buybackPlan;
+    // Sans fiche client liée : estimation en imposition ordinaire à partir
+    // du formulaire (simulateBuybackPlan).
+    if (!bundle) return buybackPlan;
+    // Fiche client liée : l'économie de chaque année vient du MÊME moteur
+    // que Fiscal global (régime réel, enfants, autres déductions de la
+    // fiche) — sinon ce calculateur et Fiscal global affichaient deux
+    // économies différentes pour le même rachat du même client.
+    const yearlySavings = regimeAwareBuyback.taxSavings;
+    const years = buybackPlan.yearly.length;
+    const total = yearlySavings * years;
     return {
       ...buybackPlan,
-      totalTaxSavings: 0,
-      effectiveMarginalRate: 0,
-      yearly: buybackPlan.yearly.map((y) => ({ ...y, taxSavings: 0, effectiveCost: y.amount })),
+      totalTaxSavings: total,
+      effectiveMarginalRate:
+        buybackPlan.yearlyAmount > 0
+          ? Math.round((yearlySavings / buybackPlan.yearlyAmount) * 1000) / 10
+          : 0,
+      averageReturn:
+        buybackPlan.totalBought > 0 ? Math.round((total / buybackPlan.totalBought) * 1000) / 10 : 0,
+      yearly: buybackPlan.yearly.map((y) => ({
+        ...y,
+        taxSavings: yearlySavings,
+        effectiveCost: y.amount - yearlySavings,
+      })),
     };
-  }, [buybackPlan, regimeAwareBuyback.applicable]);
+  }, [bundle, buybackPlan, regimeAwareBuyback.taxSavings]);
 
   // Projection sans rachat, baseline pour la comparaison "Actuel vs Projeté".
   const projectionNoBuyback = useMemo(
