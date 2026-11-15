@@ -11,13 +11,23 @@ const JU: Record<string, number[]> = {
   H2: [2.58, 7.24, 9.64, 12.36, 18.87],
   H3: [0.79, 5.32, 7.77, 10.52, 17.46],
 };
-// Valais, édition 2025 (tranches de 100 CHF/mois se terminant au salaire indiqué).
+// Jura B et C, édition 2026.
+const JU_BC: Record<string, number[]> = {
+  B0: [5.85, 10.2, 12.12, 14.56, 20.55],
+  B3: [0.43, 4.73, 7.15, 9.67, 16.76],
+  C0: [10.71, 14.39, 16.06, 17.98, 23.26],
+  C3: [6.29, 10.39, 12.6, 14.81, 20.73],
+};
+// Valais, édition 2026 (tranches de 100 CHF/mois se terminant au salaire indiqué).
 const VS: Record<string, number[]> = {
-  A0: [7.62, 12.39, 15.12, 18.35, 25.19],
-  B0: [4.05, 7.39, 9.18, 11.36, 20.0],
-  B1: [0.86, 5.03, 7.08, 9.37, 18.23],
-  B2: [0, 3.12, 5.08, 7.53, 16.44],
-  B3: [0, 1.29, 3.24, 5.64, 14.51],
+  A0: [7.38, 11.88, 14.62, 17.81, 24.94],
+  B0: [3.82, 7.04, 8.84, 10.99, 19.73],
+  B2: [0, 2.94, 4.78, 7.22, 16.17],
+  C0: [8.37, 12.62, 14.66, 17.49, 23.1],
+  C1: [6.08, 10.71, 12.91, 15.66, 22.14],
+  C2: [4.07, 8.91, 11.23, 13.98, 21.17],
+  H1: [1.53, 5.43, 7.42, 9.68, 18.64],
+  H2: [0.06, 3.43, 5.38, 7.81, 16.85],
 };
 
 function check(canton: string, table: Record<string, number[]>, halfBracket: number) {
@@ -33,17 +43,20 @@ function check(canton: string, table: Record<string, number[]>, halfBracket: num
   }
 }
 
-describe("barème officiel de l'impôt à la source Jura 2026 (A0, H1-H8)", () => {
+describe("barème officiel de l'impôt à la source Jura 2026", () => {
   check("JU", JU, 25);
+  check("JU", JU_BC, 25);
 });
 
-describe("barème officiel de l'impôt à la source Valais (A, B — édition 2025)", () => {
+describe("barème officiel de l'impôt à la source Valais 2026", () => {
   check("VS", VS, 50);
 
-  it("barèmes C et H valaisans : pas de document, approximation conservée (taux non nul)", () => {
-    expect(officialSourceRate("VS", 120_000, "C", 0)).toBeNull();
-    expect(officialSourceRate("VS", 120_000, "H", 1)).toBeNull();
-    expect(computeSourceTax({ monthlyGross: 10_000, canton: "VS", scale: "C" }).rate).toBeGreaterThan(0);
-    expect(computeSourceTax({ monthlyGross: 10_000, canton: "VS", scale: "H", children: 1 }).rate).toBeGreaterThan(0);
+  it("les six cantons romands ont un barème officiel pour A, B, C et H", () => {
+    for (const canton of ["GE", "VD", "VS", "FR", "NE", "JU"]) {
+      for (const [letter, children] of [["A", 0], ["B", 1], ["C", 2], ["H", 1]] as const) {
+        expect(officialSourceRate(canton, 120_000, letter, children)).not.toBeNull();
+      }
+    }
+    expect(computeSourceTax({ monthlyGross: 10_000, canton: "VS", scale: "C" }).rate).toBeCloseTo(14.66, 0);
   });
 });

@@ -7,7 +7,7 @@ import { GE_IS_RATES_2026 } from "./ge-source-2026";
 import { VD_IS_RATES_2026 } from "./vd-source-2026";
 import { FR_IS_RATES_2026 } from "./fr-source-2026";
 import { JU_IS_RATES_2026 } from "./ju-source-2026";
-import { VS_IS_RATES_2025 } from "./vs-source-2025";
+import { VS_IS_RATES_2026 } from "./vs-source-2026";
 import { NE_IS_RATES_2026 } from "./ne-source-2026";
 
 interface OfficialSourceTable {
@@ -21,10 +21,8 @@ export const OFFICIAL_SOURCE_TABLES: Record<string, OfficialSourceTable> = {
   VD: { rates: VD_IS_RATES_2026, maxChildren: 6 },
   FR: { rates: FR_IS_RATES_2026, maxChildren: 9 },
   NE: { rates: NE_IS_RATES_2026, maxChildren: 8 },
-  // Jura : A0 et H1-H8 complets ; B et C seulement jusqu'à 2 enfants.
   JU: { rates: JU_IS_RATES_2026, maxChildren: 8 },
-  // Valais : barèmes A et B seulement (édition 2025) ; C et H non fournis.
-  VS: { rates: VS_IS_RATES_2025, maxChildren: 6 },
+  VS: { rates: VS_IS_RATES_2026, maxChildren: 6 },
 };
 
 /** Taux (%) lu sur une table [revenu annuel, taux], interpolation linéaire. */
@@ -60,8 +58,8 @@ export function officialSourceRate(
   if (letter === "A" || (letter === "H" && n === 0)) {
     return interpolateRate(table.rates.A0, annualGross);
   }
-  // Barème absent pour ce canton (ex. Valais C et H) : pas de taux officiel.
-  // Sous-indice absent (ex. Jura B3) : dernier sous-indice disponible.
+  // Garde-fou : barème (lettre) absent d'une table → pas de taux officiel ;
+  // sous-indice absent → dernier sous-indice disponible.
   for (let k = n; k >= 0; k--) {
     const points = table.rates[`${letter}${k}`];
     if (points) return interpolateRate(points, annualGross);

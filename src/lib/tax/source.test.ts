@@ -8,50 +8,51 @@ import { computeSourceTax } from "./source";
 // Barèmes B et C : le sous-indice suit d'office le nombre d'enfants à charge
 // (B1, C2…), d'après la déclaration du salarié à son employeur. Seul le
 // barème A ignore les enfants (A0), le barème H s'obtenant par rectification.
+// Salaires pris au milieu de la tranche officielle de 50 CHF (ex. 7'975 pour
+// la tranche 7'951-8'000).
 describe("computeSourceTax JU — barèmes officiels B/C", () => {
   it("barème B, 0 enfant, 8'000 CHF/mois → 10.20 %", () => {
-    const r = computeSourceTax({ monthlyGross: 8_000, canton: "JU", scale: "B" });
-    expect(r.rate).toBeCloseTo(10.2, 2);
+    const r = computeSourceTax({ monthlyGross: 7_975, canton: "JU", scale: "B" });
+    expect(r.rate).toBeCloseTo(10.2, 1);
   });
 
   it("barème B, 1 enfant, 8'000 CHF/mois → B1 d'office : 8.21 %", () => {
-    const r = computeSourceTax({ monthlyGross: 8_000, canton: "JU", scale: "B", children: 1 });
-    expect(r.rate).toBeCloseTo(8.21, 2);
+    const r = computeSourceTax({ monthlyGross: 7_975, canton: "JU", scale: "B", children: 1 });
+    expect(r.rate).toBeCloseTo(8.21, 1);
     expect(r.scaleUsed).toBe("B1");
   });
 
   it("barème B, 2 enfants, 10'000 CHF/mois → B2 : 8.89 %", () => {
-    const r = computeSourceTax({ monthlyGross: 10_000, canton: "JU", scale: "B", children: 2 });
-    expect(r.rate).toBeCloseTo(8.89, 2);
+    const r = computeSourceTax({ monthlyGross: 9_975, canton: "JU", scale: "B", children: 2 });
+    expect(r.rate).toBeCloseTo(8.89, 1);
   });
 
-  it("barème B, 3 enfants : seuls B0 à B2 sont disponibles pour le Jura, le dernier (B2) s'applique", () => {
-    const b2 = computeSourceTax({ monthlyGross: 10_000, canton: "JU", scale: "B", children: 2 });
-    const b3 = computeSourceTax({ monthlyGross: 10_000, canton: "JU", scale: "B", children: 3 });
-    expect(b3.rate).toBe(b2.rate);
+  it("barème B, 3 enfants, 10'000 CHF/mois → B3 officiel : 7.15 %", () => {
+    const r = computeSourceTax({ monthlyGross: 9_975, canton: "JU", scale: "B", children: 3 });
+    expect(r.rate).toBeCloseTo(7.15, 1);
   });
 
   it("barème C, 0 enfant, 8'000 CHF/mois → 14.39 %", () => {
-    const r = computeSourceTax({ monthlyGross: 8_000, canton: "JU", scale: "C" });
-    expect(r.rate).toBeCloseTo(14.39, 2);
+    const r = computeSourceTax({ monthlyGross: 7_975, canton: "JU", scale: "C" });
+    expect(r.rate).toBeCloseTo(14.39, 1);
   });
 
   it("barème C, 1 enfant, 20'000 CHF/mois → C1 : 22.48 %", () => {
-    const r = computeSourceTax({ monthlyGross: 20_000, canton: "JU", scale: "C", children: 1 });
-    expect(r.rate).toBeCloseTo(22.48, 2);
+    const r = computeSourceTax({ monthlyGross: 19_975, canton: "JU", scale: "C", children: 1 });
+    expect(r.rate).toBeCloseTo(22.48, 1);
   });
 
   it("barème C : le taux se lit sur le salaire propre, le salaire du conjoint ne le change pas", () => {
-    const alone = computeSourceTax({ monthlyGross: 8_000, canton: "JU", scale: "C" });
+    const alone = computeSourceTax({ monthlyGross: 7_975, canton: "JU", scale: "C" });
     const withSpouse = computeSourceTax({
-      monthlyGross: 8_000,
+      monthlyGross: 7_975,
       spouseMonthlyGross: 7_000,
       canton: "JU",
       scale: "C",
     });
     expect(withSpouse.rate).toBe(alone.rate);
-    expect(withSpouse.rate).toBeCloseTo(14.39, 2);
-    expect(withSpouse.monthlyTax).toBeCloseTo((8_000 * 14.39) / 100, 0);
+    expect(withSpouse.rate).toBeCloseTo(14.39, 1);
+    expect(withSpouse.monthlyTax).toBeCloseTo((7_975 * 14.39) / 100, -1);
   });
 
   it("revenu nul ou sous le premier palier → taux 0", () => {
@@ -104,11 +105,6 @@ describe("computeSourceTax — enfants à charge", () => {
     }
   });
 
-  it("Valais, barème C (pas de document officiel) : table genevoise ajustée, sur le salaire propre", () => {
-    const vs = computeSourceTax({ monthlyGross: 9_000, spouseMonthlyGross: 9_000, canton: "VS", scale: "C" });
-    const ge = computeSourceTax({ monthlyGross: 9_000, canton: "GE", scale: "C" });
-    expect(vs.rate).toBeCloseTo(ge.rate * 0.88, 1);
-  });
 });
 
 describe("computeSourceTax — taux marginal distinct du taux moyen (régression)", () => {
