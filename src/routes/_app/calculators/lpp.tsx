@@ -632,7 +632,9 @@ function LppCalc() {
                     ? regimeAwareBuyback.taxSavings > 0
                       ? "✓ Avantageux après demande de TOU — économie chiffrée ci-dessous"
                       : "✓ Demande de TOU avantageuse pour ce client"
-                    : "✗ Pas avantageux ici"}
+                    : regimeAwareBuyback.taxSavings > 0
+                      ? "⚠ Économie en TOU, mais la TOU reste plus chère que l'impôt à la source"
+                      : "✗ Pas avantageux ici"}
                 </p>
                 <strong>{regimeAwareBuyback.regimeLabel}.</strong> {regimeAwareBuyback.note}
               </div>

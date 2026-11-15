@@ -417,7 +417,22 @@ export function toRetirementInput(b: ClientBundle) {
   const projectedCapital = numOrUndef(b.pension?.lpp_current_balance);
   // Espérance de vie résiduelle après retraite : 85 - âge retraite (65) = 20 ans par défaut
   const yearsAlive = 20;
+  // Taux marginal : celui que Fiscal global affiche pour ce client (même
+  // moteur, mêmes données de fiche). Une simulation Fiscal global
+  // enregistrée dans le dossier le remplace ensuite (voir retirement.tsx) ;
+  // sans elle, l'écran restait sur 25 % par défaut.
+  let rentMarginalRate: number | undefined;
+  try {
+    const g = {
+      ...createDefaultInput(),
+      ...stripUndefined(toTaxGlobalInput(b) as unknown as Record<string, unknown>),
+    } as TaxGlobalInput;
+    if (g.grossSalary > 0) rentMarginalRate = Math.round(computeTaxGlobal(g).marginalRate * 10) / 10;
+  } catch {
+    rentMarginalRate = undefined;
+  }
   return {
+    rentMarginalRate,
     canton: b.client.canton ?? undefined,
     status: (married ? "married" : "single") as
       | "single"

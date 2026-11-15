@@ -10,6 +10,7 @@ import { computeRegimeAwareDeduction } from "@/lib/tax/regime-aware-deduction";
 import { computeClientDashboard } from "@/lib/client-dashboard";
 import {
   toTaxGlobalInput,
+  toRetirementInput,
   stripUndefined,
   type ClientBundle,
 } from "@/lib/clients/to-calculator-input";
@@ -124,6 +125,12 @@ describe.each(PROFILES)("cohérence entre calculateurs — %s", (_name, b) => {
     expect(dashboard.tax?.annualBurden).toBe(Math.round(computeTaxGlobal(g).totalTaxCHF));
   });
 
+  it("taux marginal : Rente vs capital = fiche client = Fiscal global", () => {
+    const fiscalGlobal = computeTaxGlobal(g).marginalRate;
+    expect(toRetirementInput(b).rentMarginalRate).toBeCloseTo(fiscalGlobal, 1);
+    expect(dashboard.tax?.marginalRate).toBe(fiscalGlobal);
+  });
+
   it("canton actuel du comparateur cantonal = Fiscal global", () => {
     expect(dashboard.cantonCompare?.current.total).toBe(Math.round(computeTaxGlobal(g).totalTaxCHF));
   });
@@ -158,6 +165,29 @@ describe.each(PROFILES)("cohérence entre calculateurs — %s", (_name, b) => {
     }).taxSavings;
     expect(viaLppScreen).toBe(viaTaxGlobal);
     expect(viaLppScreen).toBeGreaterThanOrEqual(0);
+  });
+});
+
+describe("3e pilier A d'un imposé à la source : chiffré comme en TOU, jamais forcé à zéro", () => {
+  it("frontalier GE sans enfant : économie du 3a = impôt ordinaire sans − avec versement", () => {
+    const b = bundle({
+      canton: "GE",
+      permit: "G",
+      country_of_residence: "FR",
+      tax_status: "cross_border_ge",
+      gross_annual_salary: 78_000,
+    });
+    const g = taxGlobalInput(b);
+    const ordinary = (p3a: number) =>
+      computeTaxGlobal({ ...g, pillar3aContributions: p3a }).touComparison!.ordinaryTax;
+    const r = computeRegimeAwareDeduction({
+      bundle: b,
+      fallbackTaxInput: { canton: "GE", status: "single", grossSalary: 78_000 },
+      deductionAmount: 7_258,
+      deductionField: "pillar3aContributions",
+    });
+    expect(r.taxSavings).toBe(Math.round(ordinary(0) - ordinary(7_258)));
+    expect(r.taxSavings).toBeGreaterThan(1_500);
   });
 });
 

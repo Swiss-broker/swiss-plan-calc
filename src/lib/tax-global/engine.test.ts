@@ -108,15 +108,15 @@ describe("computeTaxGlobal — résident imposé à la source", () => {
     lppInsuredSalary: undefined,
   };
 
-  it("sous 120'000 CHF : TOU possible sur demande, le moins cher des deux est retenu", () => {
+  it("sous 120'000 CHF : retenue à la source aujourd'hui, taxation ordinaire après demande de TOU", () => {
     const now = computeTaxGlobal({ ...resident, grossSalary: 90_000 });
     expect(now.touEligibility!.eligibleForTOU).toBe(true);
     expect(now.touComparison!.mandatory).toBe(false);
     // Situation actuelle : la retenue à la source, quoi qu'il arrive.
     expect(now.totalTaxCHF).toBe(now.source!.annualTax);
-    // Après demande de TOU : le moins cher des deux.
+    // Après demande de TOU : la taxation ordinaire, telle quelle.
     const r = computeTaxGlobal({ ...resident, grossSalary: 90_000, assumeTou: true });
-    expect(r.totalTaxCHF).toBe(Math.min(r.source!.annualTax, r.touComparison!.ordinaryTax));
+    expect(r.totalTaxCHF).toBe(r.touComparison!.ordinaryTax);
   });
 
   it("dès 120'000 CHF de salaire brut : taxation ordinaire ultérieure obligatoire, même si elle coûte plus que la retenue", () => {

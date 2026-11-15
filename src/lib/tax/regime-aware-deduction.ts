@@ -149,9 +149,11 @@ export function computeRegimeAwareDeduction(
       note: "Imposé à la source avec un salaire brut d'au moins 120 000 CHF : taxation ordinaire ultérieure obligatoire. La déduction s'applique d'office dans la déclaration d'impôt, sans démarche particulière.",
     };
   }
-  // Avantageux dès que la TOU elle-même fait baisser l'impôt (même sans
-  // montant saisi) ou que la déduction testée produit une économie.
-  const beneficial = taxSavings > 0 || tou.recommendation === "tou";
+  // taxSavings = économie du versement UNE FOIS EN TOU (impôt ordinaire sans
+  // puis avec le versement) — jamais ramenée à zéro au motif que le client
+  // est aujourd'hui imposé à la source. `beneficial` dit si la TOU, versement
+  // compris, fait réellement payer moins que la retenue à la source actuelle.
+  const beneficial = tou.delta < 0;
   const deadlineNote = tou.recommendation === "tou"
     ? ` Démarche : demander la TOU auprès du canton avant le 31 mars ${g.taxYear + 1}.`
     : "";
@@ -163,9 +165,11 @@ export function computeRegimeAwareDeduction(
       `Aujourd'hui : impôt à la source de CHF ${Math.round(tou.sourceTax).toLocaleString("fr-CH")}/an, sans aucune déduction. ` +
       `${tou.recommendationText}${deadlineNote} ` +
       (taxSavings > 0
-        ? `Une fois la TOU demandée, ce versement réduit encore l'impôt de CHF ${taxSavings.toLocaleString("fr-CH")} (chiffre ci-dessous).`
+        ? beneficial
+          ? `Une fois la TOU demandée, ce versement réduit l'impôt de CHF ${taxSavings.toLocaleString("fr-CH")} (chiffre ci-dessous).`
+          : `En TOU, ce versement réduirait l'impôt de CHF ${taxSavings.toLocaleString("fr-CH")} (chiffre ci-dessous), mais la taxation ordinaire resterait plus chère que la retenue à la source : la TOU ne devient intéressante qu'avec davantage de déductions.`
         : deductionAmount > 0
-          ? "Tant que la démarche n'est pas faite, la retenue à la source s'applique sans aucune déduction."
-          : "Saisissez un montant pour chiffrer l'économie supplémentaire qu'il apporterait une fois la TOU demandée."),
+          ? "En TOU, l'impôt de ce client est déjà au plus bas : ce versement n'y ajoute pas d'économie d'impôt."
+          : "Saisissez un montant pour chiffrer l'économie qu'il apporterait une fois la TOU demandée."),
   };
 }

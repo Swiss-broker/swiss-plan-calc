@@ -27,7 +27,7 @@ function bundle(overrides: Partial<Client> = {}): ClientBundle {
 }
 
 describe("computeRegimeAwareDeduction — frontalier GE, beneficial exposé", () => {
-  it("beneficial=false quand la déduction ne bat pas la retenue source (note explicite avec le montant réel)", () => {
+  it("économie du 3a chiffrée en TOU même quand la TOU reste plus chère que la source (beneficial=false, note explicite)", () => {
     const result = computeRegimeAwareDeduction({
       bundle: bundle(),
       fallbackTaxInput: { canton: "GE", status: "single", grossSalary: 65_000 },
@@ -36,8 +36,10 @@ describe("computeRegimeAwareDeduction — frontalier GE, beneficial exposé", ()
     });
     expect(result.applicable).toBe("conditional");
     expect(result.beneficial).toBe(false);
-    expect(result.taxSavings).toBe(0);
+    // L'économie du versement en TOU n'est jamais ramenée à zéro.
+    expect(result.taxSavings).toBeGreaterThan(500);
     expect(result.note).toMatch(/coûterait/);
+    expect(result.note).toMatch(/resterait plus chère/);
   });
 
   it("beneficial=true quand le rachat LPP est assez important pour battre la retenue source", () => {

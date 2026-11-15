@@ -562,7 +562,9 @@ function Pillar3aCalc() {
                     ? savings.taxSavings > 0
                       ? "✓ Avantageux après demande de TOU — économie chiffrée ci-dessous"
                       : "✓ Demande de TOU avantageuse pour ce client"
-                    : "✗ Pas avantageux ici"}
+                    : savings.taxSavings > 0
+                      ? "⚠ Économie en TOU, mais la TOU reste plus chère que l'impôt à la source"
+                      : "✗ Pas avantageux ici"}
                 </p>
                 <strong>{savings.regimeLabel}.</strong> {savings.note}
               </div>
