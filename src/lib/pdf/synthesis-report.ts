@@ -1231,8 +1231,12 @@ function drawSimulationPage(pdf: ReportPdf, entry: HistoryEntry, includeCharts: 
     )
     .slice(0, 4);
   const simpleChartPairRaw = computeSimpleChartPair(entry);
+  // Deux barres identiques (même libellé, même montant, ex. « Genève /
+  // Genève » pour un frontalier) n'apportent rien : pas de graphique.
   const simpleChartPair =
-    simpleChartPairRaw && compareIsFlat && simpleChartPairRaw.left.value === simpleChartPairRaw.right.value
+    simpleChartPairRaw &&
+    simpleChartPairRaw.left.value === simpleChartPairRaw.right.value &&
+    (compareIsFlat || simpleChartPairRaw.left.label === simpleChartPairRaw.right.label)
       ? null
       : simpleChartPairRaw;
   // Un graphique (comparatif ou "simple chart") va-t-il réellement s'afficher
@@ -2067,7 +2071,11 @@ export function buildComment(entry: HistoryEntry): string | null {
         const rate = ((sav / actualBuyback) * 100).toFixed(1).replace(".", ",");
         return `Un rachat de ${formatCHF(actualBuyback)}, étalé sur ${years} an${years > 1 ? "s" : ""}, vous ferait économiser ${formatCHF(sav)} d'impôts au total, soit un retour fiscal moyen de ${rate} % du montant racheté. Concrètement, chaque franc versé dans votre 2e pilier réduit d'autant votre revenu imposable l'année du versement, tout en renforçant votre capital de prévoyance qui sera converti en rente ou retiré à la retraite. Point de vigilance : un rachat LPP bloque tout retrait en capital pendant les 3 années qui suivent (art. 79b al. 3 LPP), à anticiper si un achat immobilier ou un départ à l'étranger est envisagé sur cet horizon.`;
       }
-      return `Votre capital LPP projeté à la retraite s'élève à ${formatCHF(proj)}, sur la base des paramètres saisis (âge, salaire assuré, rendement attendu). Aucun rachat n'a été simulé ici, ou celui-ci ne génère pas d'économie fiscale supplémentaire dans ce scénario ; une capacité de rachat existe peut-être encore, à vérifier sur votre certificat de prévoyance.`;
+      return `Votre capital LPP projeté à la retraite s'élève à ${formatCHF(proj)}, sur la base des paramètres saisis (âge, salaire assuré, rendement attendu). ${
+        num(i.buybackCapacity) > 0
+          ? `Aucun rachat n'a été simulé dans ce scénario : votre capacité de rachat de ${formatCHF(num(i.buybackCapacity))} reste disponible. Un rachat augmente votre capital de retraite et se déduit de votre revenu imposable l'année du versement.`
+          : "Aucun rachat n'a été simulé ici ; une capacité de rachat existe peut-être, à vérifier sur votre certificat de prévoyance."
+      }`;
     }
     case "pillar3a": {
       const sav = num(s.taxSavings);
@@ -2246,7 +2254,7 @@ export function buildComment(entry: HistoryEntry): string | null {
       const bestLabel = str(s.bestScenarioLabel);
       const bestSaving = num(s.bestScenarioSavings);
       const bestTxt =
-        bestLabel && bestSaving > 0
+        bestLabel && bestSaving > 0 && !(s.savingReuse && str(s.bestScenarioId) === "tou")
           ? ` Parmi les pistes testées automatiquement, la plus efficace est « ${bestLabel.replace(/^\+/, "")} » : environ ${formatCHF(bestSaving)} d'impôt en moins.`
           : "";
       const scaleToday = str(s.sourceScaleToday);
@@ -2262,7 +2270,7 @@ export function buildComment(entry: HistoryEntry): string | null {
         const bestTxt = best
           ? ` Placée chaque année pendant ${num(reuse.years)} ans en ${str(best.label)}, elle représente un capital d'environ ${formatCHF(num(best.capitalAtRetirement))} à la retraite${num(best.extraTaxSavingPerYear) > 0 ? `, avec ${formatCHF(num(best.extraTaxSavingPerYear))} d'impôt en moins chaque année en plus` : ""} (rendement indicatif, non garanti).`
           : "";
-        reuseTxt = ` La démarche recommandée (${str(reuse.originLabel) ?? "démarche fiscale"}) ramène l'impôt de ${formatCHF(num(reuse.todayTax))} à ${formatCHF(num(reuse.afterTax))}, soit ${formatCHF(num(reuse.annualSaving))} d'économie par an.${bestTxt}`;
+        reuseTxt = ` La démarche recommandée, ${str(reuse.originLabel) ?? "une démarche fiscale"}, ramène l'impôt de ${formatCHF(num(reuse.todayTax))} à ${formatCHF(num(reuse.afterTax))}, soit ${formatCHF(num(reuse.annualSaving))} d'économie par an.${bestTxt}`;
       }
       return `Votre charge fiscale totale estimée s'élève à ${formatCHF(total)} par an${regimeTxt}, pour un revenu net disponible de ${formatCHF(net)}. Votre taux effectif ressort à ${formatPct(eff)} de votre revenu brut, tandis que votre taux marginal de ${formatPct(marg)} indique la charge fiscale sur le prochain franc que vous gagnez, un repère utile pour évaluer l'intérêt d'une déduction supplémentaire (3a, rachat LPP).${foreignTxt}${scaleTxt}${reuseTxt}${bestTxt}${reusedTxt} Cette estimation se base sur les barèmes 2026 et votre situation déclarée ; elle doit être confirmée par votre déclaration fiscale officielle.`;
     }

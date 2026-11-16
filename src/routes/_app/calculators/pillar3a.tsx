@@ -222,7 +222,9 @@ function Pillar3aCalc() {
     [optimizedSavings.taxSavings],
   );
   const [target3bOverride, setTarget3bOverride] = useState<number | null>(null);
-  const target3bYearly = target3bOverride ?? auto3bTarget;
+  // Le scénario optimisé ne verse jamais moins en 3b que la situation
+  // actuelle (ex. économie du Fiscal global déjà reportée en 3b).
+  const target3bYearly = target3bOverride ?? Math.max(auto3bTarget, form.pillar3bYearly);
 
   const optimizedProjection = useMemo(
     () =>
