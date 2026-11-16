@@ -975,7 +975,7 @@ function TaxGlobalCalc() {
                             <span className="opacity-60">
                               (progressivité uniquement
                               {fxCurrency !== "CHF" && fxAmount > 0
-                                ? ` · ${fxAmount.toLocaleString("fr-CH")} ${fxCurrency}`
+                                ? ` · ${fxAmount.toLocaleString("fr-CH").replace(/[\u202f\u00a0]/g, "'")} ${fxCurrency}`
                                 : ""}
                               )
                             </span>

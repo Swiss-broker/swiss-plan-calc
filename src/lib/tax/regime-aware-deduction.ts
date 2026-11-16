@@ -162,12 +162,12 @@ export function computeRegimeAwareDeduction(
     applicable: "conditional",
     beneficial,
     note:
-      `Aujourd'hui : impôt à la source de CHF ${Math.round(tou.sourceTax).toLocaleString("fr-CH")}/an, sans aucune déduction. ` +
+      `Aujourd'hui : impôt à la source de CHF ${Math.round(tou.sourceTax).toLocaleString("fr-CH").replace(/[\u202f\u00a0]/g, "'")}/an, sans aucune déduction. ` +
       `${tou.recommendationText}${deadlineNote} ` +
       (taxSavings > 0
         ? beneficial
-          ? `Une fois la TOU demandée, ce versement réduit l'impôt de CHF ${taxSavings.toLocaleString("fr-CH")} (chiffre ci-dessous).`
-          : `En TOU, ce versement réduirait l'impôt de CHF ${taxSavings.toLocaleString("fr-CH")} (chiffre ci-dessous), mais la taxation ordinaire resterait plus chère que la retenue à la source : la TOU ne devient intéressante qu'avec davantage de déductions.`
+          ? `Une fois la TOU demandée, ce versement réduit l'impôt de CHF ${taxSavings.toLocaleString("fr-CH").replace(/[\u202f\u00a0]/g, "'")} (chiffre ci-dessous).`
+          : `En TOU, ce versement réduirait l'impôt de CHF ${taxSavings.toLocaleString("fr-CH").replace(/[\u202f\u00a0]/g, "'")} (chiffre ci-dessous), mais la taxation ordinaire resterait plus chère que la retenue à la source : la TOU ne devient intéressante qu'avec davantage de déductions.`
         : deductionAmount > 0
           ? "En TOU, l'impôt de ce client est déjà au plus bas : ce versement n'y ajoute pas d'économie d'impôt."
           : "Saisissez un montant pour chiffrer l'économie qu'il apporterait une fois la TOU demandée."),

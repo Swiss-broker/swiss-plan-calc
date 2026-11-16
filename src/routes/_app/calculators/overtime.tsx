@@ -57,8 +57,8 @@ export const Route = createFileRoute("/_app/calculators/overtime")({
 const fmtEUR = (n: number) =>
   `${Math.round(n).toLocaleString("fr-FR")} €`;
 const fmtCHF = (n: number) =>
-  `${Math.round(n).toLocaleString("fr-CH")} CHF`;
-const fmtH = (n: number) => `${Math.round(n).toLocaleString("fr-CH")} h`;
+  `${Math.round(n).toLocaleString("fr-CH").replace(/[\u202f\u00a0]/g, "'")} CHF`;
+const fmtH = (n: number) => `${Math.round(n).toLocaleString("fr-CH").replace(/[\u202f\u00a0]/g, "'")} h`;
 
 function OvertimeCalc() {
   const { clientId, caseId, simId } = Route.useSearch();

@@ -296,7 +296,7 @@ export function SplitCompareLayout({
             {summary.deltaPercent !== undefined && (
               <SummaryStat
                 label={`Δ ${summary.deltaLabel ?? "Amélioration"}`}
-                value={formatPct(summary.deltaPercent)}
+                value={formatPct(summary.deltaPercent * 100)}
                 tone={summary.deltaPercent >= 0 ? "good" : "bad"}
               />
             )}

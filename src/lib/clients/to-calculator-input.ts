@@ -408,13 +408,11 @@ export function toRetirementInput(b: ClientBundle) {
     b.client.civil_status === "married" ||
     b.client.civil_status === "registered_partnership";
   const age = ageFromDob(b.client.date_of_birth);
-  // Pré-remplissage initial = avoir LPP ACTUEL, pas projeté (malgré le nom
-  // du champ) : retirement.tsx corrige ce chiffre juste après l'hydratation
-  // via un effet séparé qui va chercher la vraie projection à 65 ans
-  // (useConsolidationReferences/lpp-projection.ts) — ce mapper ne fait que
-  // fournir une valeur de départ raisonnable avant que cette projection
-  // n'arrive.
-  const projectedCapital = numOrUndef(b.pension?.lpp_current_balance);
+  // Le capital n'est PAS pré-rempli ici : retirement.tsx le reprend de la
+  // dernière simulation LPP enregistrée, sinon de la projection à 65 ans de
+  // la fiche. Fournir ici l'avoir LPP actuel écrasait parfois cette
+  // projection (selon l'ordre d'arrivée des données) et la comparaison
+  // rente / capital se faisait alors sur l'avoir d'aujourd'hui.
   // Espérance de vie résiduelle après retraite : 85 - âge retraite (65) = 20 ans par défaut
   const yearsAlive = 20;
   // Taux marginal : celui que Fiscal global affiche pour ce client (même
@@ -438,7 +436,6 @@ export function toRetirementInput(b: ClientBundle) {
       | "single"
       | "married"
       | "single_with_children",
-    capital: projectedCapital,
     yearsAlive: 20,
   };
 }

@@ -159,7 +159,7 @@ export function runOptimizer(input: OptimizerInput): Optimization[] {
         id: "lpp-buyback",
         category: "lpp",
         title: buybackYears > 1 ? `Rachat LPP étalé sur ${yearsLabel}` : "Rachat LPP avant la retraite",
-        description: `Vous disposez d'une capacité de rachat de CHF ${capacity.toLocaleString("fr-CH")}. En ${buybackYears > 1 ? `étalant sur ${yearsLabel}` : "le versant cette année"}, vous économisez environ CHF ${plan.totalTaxSavings.toLocaleString("fr-CH")} d'impôts${buybackYears > 1 ? ` (sur ${yearsLabel})` : ""}. Attention : aucun retrait LPP en capital possible dans les 3 ans suivant un rachat${preRetirement ? " — à moins de 3 ans de la retraite, la prestation correspondante devra être prise en rente" : ""}.`,
+        description: `Vous disposez d'une capacité de rachat de CHF ${capacity.toLocaleString("fr-CH").replace(/[\u202f\u00a0]/g, "'")}. En ${buybackYears > 1 ? `étalant sur ${yearsLabel}` : "le versant cette année"}, vous économisez environ CHF ${plan.totalTaxSavings.toLocaleString("fr-CH").replace(/[\u202f\u00a0]/g, "'")} d'impôts${buybackYears > 1 ? ` (sur ${yearsLabel})` : ""}. Attention : aucun retrait LPP en capital possible dans les 3 ans suivant un rachat${preRetirement ? " — à moins de 3 ans de la retraite, la prestation correspondante devra être prise en rente" : ""}.`,
         estimatedSavings: plan.totalTaxSavings,
         priority: plan.totalTaxSavings > 10_000 ? "high" : "medium",
         details: {
@@ -191,8 +191,8 @@ export function runOptimizer(input: OptimizerInput): Optimization[] {
       optimizations.push({
         id: "3a-max",
         category: "3a",
-        title: `Maximiser le 3a (+ CHF ${gap3a.toLocaleString("fr-CH")})`,
-        description: `Vous cotisez actuellement CHF ${current3a.toLocaleString("fr-CH")} sur ${max3a.toLocaleString("fr-CH")} possibles. Atteindre le plafond vous fait économiser environ CHF ${Math.round(savings).toLocaleString("fr-CH")} d'impôts cette année.`,
+        title: `Maximiser le 3a (+ CHF ${gap3a.toLocaleString("fr-CH").replace(/[\u202f\u00a0]/g, "'")})`,
+        description: `Vous cotisez actuellement CHF ${current3a.toLocaleString("fr-CH").replace(/[\u202f\u00a0]/g, "'")} sur ${max3a.toLocaleString("fr-CH").replace(/[\u202f\u00a0]/g, "'")} possibles. Atteindre le plafond vous fait économiser environ CHF ${Math.round(savings).toLocaleString("fr-CH").replace(/[\u202f\u00a0]/g, "'")} d'impôts cette année.`,
         estimatedSavings: Math.round(savings),
         priority: savings > 1_500 ? "high" : "medium",
         details: {
@@ -223,7 +223,7 @@ export function runOptimizer(input: OptimizerInput): Optimization[] {
         id: "3a-staggered",
         category: "withdrawal",
         title: "Fractionner le 3a sur 3 comptes",
-        description: `Avec un capital 3a de CHF ${input.pillar3aBalance!.toLocaleString("fr-CH")}, ouvrir 3 comptes et étaler les retraits sur plusieurs années fiscales économise environ CHF ${stag.savings.toLocaleString("fr-CH")} (${stag.savingsRate} % du capital).`,
+        description: `Avec un capital 3a de CHF ${input.pillar3aBalance!.toLocaleString("fr-CH").replace(/[\u202f\u00a0]/g, "'")}, ouvrir 3 comptes et étaler les retraits sur plusieurs années fiscales économise environ CHF ${stag.savings.toLocaleString("fr-CH").replace(/[\u202f\u00a0]/g, "'")} (${stag.savingsRate} % du capital).`,
         estimatedSavings: stag.savings,
         priority: stag.savings > 5_000 ? "high" : "medium",
         details: {
@@ -255,8 +255,8 @@ export function runOptimizer(input: OptimizerInput): Optimization[] {
       optimizations.push({
         id: "canton-compare",
         category: "canton",
-        title: `Domicile à ${CANTON_SCALES[bestCanton]?.capital ?? bestCanton} : -CHF ${Math.round(bestSavings).toLocaleString("fr-CH")}/an`,
-        description: `Comparé à votre canton actuel (${input.taxInput.canton}), un déménagement vers ${CANTON_SCALES[bestCanton]?.capital ?? bestCanton} (${bestCanton}) réduirait votre charge fiscale annuelle d'environ CHF ${Math.round(bestSavings).toLocaleString("fr-CH")}.`,
+        title: `Domicile à ${CANTON_SCALES[bestCanton]?.capital ?? bestCanton} : -CHF ${Math.round(bestSavings).toLocaleString("fr-CH").replace(/[\u202f\u00a0]/g, "'")}/an`,
+        description: `Comparé à votre canton actuel (${input.taxInput.canton}), un déménagement vers ${CANTON_SCALES[bestCanton]?.capital ?? bestCanton} (${bestCanton}) réduirait votre charge fiscale annuelle d'environ CHF ${Math.round(bestSavings).toLocaleString("fr-CH").replace(/[\u202f\u00a0]/g, "'")}.`,
         estimatedSavings: Math.round(bestSavings),
         priority: bestSavings > 10_000 ? "high" : "low",
         details: {

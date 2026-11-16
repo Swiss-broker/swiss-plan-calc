@@ -96,7 +96,7 @@ export const SCENARIO_PRESETS: ScenarioDef[] = [
     spouseGrossSalary: 0,
   })),
   L("new_child", "Naissance d'un enfant", "Ajout d'un enfant à charge (déduction sociale + barème famille).", "vie", (b) => ({ ...b, children: (b.children ?? 0) + 1 })),
-  L("max_3a", "Versement 3a au plafond", `Cotisation portée à CHF ${PILLAR_3A_MAX_2026_LPP.toLocaleString("fr-CH")} (affilié LPP).`, "prevoyance", (b) => ({ ...b, pillar3aContributions: PILLAR_3A_MAX_2026_LPP })),
+  L("max_3a", "Versement 3a au plafond", `Cotisation portée à CHF ${PILLAR_3A_MAX_2026_LPP.toLocaleString("fr-CH").replace(/[\u202f\u00a0]/g, "'")} (affilié LPP).`, "prevoyance", (b) => ({ ...b, pillar3aContributions: PILLAR_3A_MAX_2026_LPP })),
   L("lpp_buyback_full", "Rachat LPP (lacune complète)", "Versement de la capacité de rachat LPP en une fois.", "prevoyance", (b) => ({ ...b, lppBuyback: Math.max(0, b.lppBuyback ?? 0) })),
   L("retirement_65", "Départ retraite ordinaire", "Salaire à 0, revenu rente AVS+LPP estimé à 60 % du dernier salaire.", "carriere", (b) => {
     const lastSalary = (b.grossSalary ?? 0) + (b.bonus ?? 0);

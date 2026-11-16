@@ -357,9 +357,9 @@ export function computeCrossBorder(input: CrossBorderInput): CrossBorderResult {
     const notes = [
       "Accord franco-suisse de 1983 : salaire imposé uniquement en France. Aucun impôt à la source n'est retenu en Suisse, à condition de remettre chaque année à l'employeur l'attestation de résidence fiscale française (formulaire 2041-AS).",
       "Les 4,5 % de l'accord sont une compensation versée par la France au canton sur la masse salariale : ils ne sont pas prélevés sur le salaire du frontalier.",
-      `Impôt français estimé au barème 2026 : salaire converti en euros, net des cotisations sociales suisses (AVS/AI/APG, AC, AANP, LPP ≈ ${Math.round(fr.socialCHF).toLocaleString("fr-CH")} CHF), déduction forfaitaire de 10 %, quotient familial plafonné.`,
+      `Impôt français estimé au barème 2026 : salaire converti en euros, net des cotisations sociales suisses (AVS/AI/APG, AC, AANP, LPP ≈ ${Math.round(fr.socialCHF).toLocaleString("fr-CH").replace(/[\u202f\u00a0]/g, "'")} CHF), déduction forfaitaire de 10 %, quotient familial plafonné.`,
       hasFrRelief
-        ? `Avantages fiscaux français pris en compte : ${Math.round(fr.reliefCHF).toLocaleString("fr-CH")} CHF (crédit d'impôt garde d'enfants de moins de 6 ans, réduction pour dons).`
+        ? `Avantages fiscaux français pris en compte : ${Math.round(fr.reliefCHF).toLocaleString("fr-CH").replace(/[\u202f\u00a0]/g, "'")} CHF (crédit d'impôt garde d'enfants de moins de 6 ans, réduction pour dons).`
         : "3e pilier A, rachat LPP facultatif, intérêts hypothécaires : pas de déduction côté français. Seuls les frais de garde (enfants de moins de 6 ans) et les dons ouvrent un avantage fiscal en France.",
     ];
     return {

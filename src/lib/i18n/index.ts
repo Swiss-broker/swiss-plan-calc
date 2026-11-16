@@ -32,6 +32,8 @@ export function t(key: string, params?: TranslationParams, fallback?: string): s
   return template.replace(/\{(\w+)\}/g, (_match, name: string) => {
     const value = params[name];
     if (value === undefined || value === null) return `{${name}}`;
+    // Une année s'écrit sans séparateur de milliers (2026, pas 2'026).
+    if (typeof value === "number" && /year|annee/i.test(name)) return String(value);
     return typeof value === "number" ? formatNumberCH(value) : String(value);
   });
 }

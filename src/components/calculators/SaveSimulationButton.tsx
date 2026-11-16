@@ -53,6 +53,14 @@ export function SaveSimulationButton({
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
   const [title, setTitle] = useState(defaultTitle ?? "");
+  // Le titre proposé suit la simulation en cours (canton, âge, montants du
+  // client) tant que le conseiller ne l'a pas modifié lui-même : sans cela,
+  // il restait figé sur les valeurs par défaut du calculateur au chargement
+  // de la page (« Fiscal global GE » pour un client vaudois).
+  const [titleEdited, setTitleEdited] = useState(false);
+  useEffect(() => {
+    if (!titleEdited) setTitle(defaultTitle ?? "");
+  }, [defaultTitle, titleEdited]);
   const [note, setNote] = useState("");
   const [clientId, setClientId] = useState<string>("none");
   const [tagsRaw, setTagsRaw] = useState("");
@@ -123,6 +131,7 @@ export function SaveSimulationButton({
       toast.success(t("save_sim.toast.success"));
       setOpen(false);
       setTitle(defaultTitle ?? "");
+      setTitleEdited(false);
       setNote("");
       setTagsRaw("");
       setManualCaseId("none");
@@ -162,7 +171,10 @@ export function SaveSimulationButton({
             </Label>
             <Input
               value={title}
-              onChange={(e) => setTitle(e.target.value)}
+              onChange={(e) => {
+                setTitle(e.target.value);
+                setTitleEdited(true);
+              }}
               placeholder={defaultTitle ?? t("save_sim.placeholder.title")}
             />
           </div>

@@ -109,7 +109,7 @@ export interface HealthFranceResult {
 }
 
 const fmtEUR = (n: number) => `${Math.round(n).toLocaleString("fr-FR")} EUR`;
-const fmtCHF = (n: number) => `${Math.round(n).toLocaleString("fr-CH")} CHF`;
+const fmtCHF = (n: number) => `${Math.round(n).toLocaleString("fr-CH").replace(/[\u202f\u00a0]/g, "'")} CHF`;
 const fmtPct = (n: number) => `${(n * 100).toFixed(1)}%`;
 
 export function getCmuAbatement(year: number): number {
@@ -216,7 +216,7 @@ export function computeHealthFrance(input: HealthFranceInput): HealthFranceResul
   ];
 
   const lamalBreakdown: BreakdownLine[] = [
-    { label: "Tarif adulte (CHF/mois)", value: `${adultMonthly.toLocaleString("fr-CH")} CHF` },
+    { label: "Tarif adulte (CHF/mois)", value: `${adultMonthly.toLocaleString("fr-CH").replace(/[\u202f\u00a0]/g, "'")} CHF` },
     {
       label: insuredAdults > 1 ? "Primes adultes annuelles (frontalier + conjoint sans activité)" : "Prime adulte annuelle",
       value:
@@ -224,7 +224,7 @@ export function computeHealthFrance(input: HealthFranceInput): HealthFranceResul
           ? `${insuredAdults} × ${adultMonthly} × 12 = ${fmtCHF(lamalAdultAnnualCHF)}`
           : `${adultMonthly} × 12 = ${fmtCHF(lamalAdultAnnualCHF)}`,
     },
-    { label: "Tarif enfant (CHF/mois)", value: `${childMonthly.toLocaleString("fr-CH")} CHF` },
+    { label: "Tarif enfant (CHF/mois)", value: `${childMonthly.toLocaleString("fr-CH").replace(/[\u202f\u00a0]/g, "'")} CHF` },
     {
       label: "Prime enfants annuelle",
       value:

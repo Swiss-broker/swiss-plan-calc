@@ -120,18 +120,18 @@ export function compareTOUvsSource(input: TOUComparisonInput): TOUComparisonResu
     recommendation = "tou";
     recommendationText =
       delta < 0
-        ? `Taxation ordinaire ultérieure obligatoire (salaire brut dès ${TOU_MANDATORY_GROSS_THRESHOLD.toLocaleString("fr-CH")} CHF) : l'impôt ordinaire est inférieur de CHF ${Math.abs(delta).toLocaleString("fr-CH")} à la retenue à la source, la différence est remboursée.`
-        : `Taxation ordinaire ultérieure obligatoire (salaire brut dès ${TOU_MANDATORY_GROSS_THRESHOLD.toLocaleString("fr-CH")} CHF) : l'impôt ordinaire dépasse la retenue à la source de CHF ${delta.toLocaleString("fr-CH")}, un complément sera facturé.`;
+        ? `Taxation ordinaire ultérieure obligatoire (salaire brut dès ${TOU_MANDATORY_GROSS_THRESHOLD.toLocaleString("fr-CH").replace(/[\u202f\u00a0]/g, "'")} CHF) : l'impôt ordinaire est inférieur de CHF ${Math.abs(delta).toLocaleString("fr-CH").replace(/[\u202f\u00a0]/g, "'")} à la retenue à la source, la différence est remboursée.`
+        : `Taxation ordinaire ultérieure obligatoire (salaire brut dès ${TOU_MANDATORY_GROSS_THRESHOLD.toLocaleString("fr-CH").replace(/[\u202f\u00a0]/g, "'")} CHF) : l'impôt ordinaire dépasse la retenue à la source de CHF ${delta.toLocaleString("fr-CH").replace(/[\u202f\u00a0]/g, "'")}, un complément sera facturé.`;
   } else if (!input.eligible) {
     recommendation = "source";
     recommendationText =
       "Non éligible TOU : conserver l'impôt à la source (situation par défaut).";
   } else if (delta < -200) {
     recommendation = "tou";
-    recommendationText = `Demander la TOU : économie estimée CHF ${Math.abs(delta).toLocaleString("fr-CH")} (remboursement par l'administration).`;
+    recommendationText = `Demander la TOU : économie estimée CHF ${Math.abs(delta).toLocaleString("fr-CH").replace(/[\u202f\u00a0]/g, "'")} (remboursement par l'administration).`;
   } else if (delta > 200) {
     recommendation = "source";
-    recommendationText = `Conserver l'IS : la TOU coûterait CHF ${delta.toLocaleString("fr-CH")} de plus (déductions insuffisantes).`;
+    recommendationText = `Conserver l'IS : la TOU coûterait CHF ${delta.toLocaleString("fr-CH").replace(/[\u202f\u00a0]/g, "'")} de plus (déductions insuffisantes).`;
   } else {
     recommendation = "neutral";
     recommendationText = "Écart négligeable : la TOU n'apporte pas de gain significatif cette année.";
@@ -144,7 +144,7 @@ export function compareTOUvsSource(input: TOUComparisonInput): TOUComparisonResu
     ordinary.deductions.realEstate;
   const potentialDeductionsImpact =
     deductionsTotal > 5_000
-      ? `Vos déductions effectives (3a, rachats LPP, intérêts hypothécaires, entretien) totalisent CHF ${deductionsTotal.toLocaleString("fr-CH")}, c'est ce levier qui rend la TOU intéressante.`
+      ? `Vos déductions effectives (3a, rachats LPP, intérêts hypothécaires, entretien) totalisent CHF ${deductionsTotal.toLocaleString("fr-CH").replace(/[\u202f\u00a0]/g, "'")}, c'est ce levier qui rend la TOU intéressante.`
       : "Peu de déductions à faire valoir : la TOU n'apporte pas de gain significatif sans intérêts d'emprunt, rachat LPP ou 3a important.";
 
   return {

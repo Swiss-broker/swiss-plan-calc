@@ -65,7 +65,7 @@ export function buildScenarios(input: TaxGlobalInput): Scenario[] {
     const r = computeTaxGlobal({ ...input, assumeTou: true, pillar3aContributions: maxPillar3a });
     out.push({
       id: "pillar3a_max",
-      label: `+3a max (${maxPillar3a.toLocaleString("fr-CH")} CHF)`,
+      label: `+3a max (${maxPillar3a.toLocaleString("fr-CH").replace(/[\u202f\u00a0]/g, "'")} CHF)`,
       description:
         (touIsSeparateStep
           ? "Verser le 3e pilier A au plafond, après demande de TOU."
@@ -85,11 +85,11 @@ export function buildScenarios(input: TaxGlobalInput): Scenario[] {
   if (!isFrAccord1983 && buybackTrial >= 1_000 && input.lppBuyback < input.lppBuyback + buybackTrial) {
     const r = computeTaxGlobal({ ...input, assumeTou: true, lppBuyback: input.lppBuyback + buybackTrial });
     const capacityLabel = capacity > 0
-      ? ` (capacité dispo : ${Math.round(capacity).toLocaleString("fr-CH")} CHF)`
+      ? ` (capacité dispo : ${Math.round(capacity).toLocaleString("fr-CH").replace(/[\u202f\u00a0]/g, "'")} CHF)`
       : ` (montant d'illustration, capacité non renseignée)`;
     out.push({
       id: "lpp_buyback_trial",
-      label: `+Rachat LPP ${Math.round(buybackTrial).toLocaleString("fr-CH")} CHF`,
+      label: `+Rachat LPP ${Math.round(buybackTrial).toLocaleString("fr-CH").replace(/[\u202f\u00a0]/g, "'")} CHF`,
       description:
         (touIsSeparateStep
           ? "Rachat LPP supplémentaire, après demande de TOU"

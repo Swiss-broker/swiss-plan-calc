@@ -211,7 +211,7 @@ function RetirementCalc() {
                     : t("calc.retirement.caption.capital")}
                 </p>
               </div>
-              <ClientPrefillBadge show={!!prefill?.capital && form.capital === prefill.capital} clientName={client ? `${client.first_name} ${client.last_name}` : undefined} />
+              <ClientPrefillBadge show={!!projectedCapital && form.capital === projectedCapital} clientName={client ? `${client.first_name} ${client.last_name}` : undefined} />
               <div className="space-y-1.5">
                 <Label className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
                   <span>{t("calc.retirement.field.canton")}</span>
@@ -267,7 +267,7 @@ function RetirementCalc() {
                 <NumField label={t("calc.retirement.field.marginal_rate")} value={form.rentMarginalRate} onChange={(v) => set("rentMarginalRate", v)} step={0.5} suffix="%" wikiId="lpp-conversion" wikiTip="Le taux marginal correspond à l'impôt prélevé sur chaque franc supplémentaire de revenu (ici, la rente LPP), en fonction de la situation fiscale globale du client. Estimé depuis sa situation actuelle, ajustez selon vos hypothèses pour la retraite." />
                 <p className="text-[10px] text-muted-foreground">
                   {snapshot
-                    ? `Estimé depuis la dernière simulation (taux moyen ${snapshot.averageRate.toFixed(1)} %, marge sécurité +5 pts). Modifiable.`
+                    ? `Taux marginal repris du Fiscal global enregistré dans ce dossier (taux moyen ${snapshot.averageRate.toFixed(1)} %). Modifiable.`
                     : "Hypothèse standard 25 %. Ajustez selon le profil retraite du client."}
                 </p>
               </div>

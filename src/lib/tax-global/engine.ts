@@ -235,8 +235,8 @@ export function computeTaxGlobal(g: TaxGlobalInput): TaxGlobalResult {
   if (familyAllowancesCHF > 0) {
     notes.push(
       familyAllowancesIncludedInIncome
-        ? `Dont ${familyAllowancesCHF.toLocaleString("fr-CH")} CHF d'allocations familiales : ajoutées au revenu imposable (indépendant, pas de certificat de salaire qui les inclurait déjà).`
-        : `Dont ${familyAllowancesCHF.toLocaleString("fr-CH")} CHF d'allocations familiales, déjà comprises dans le salaire brut saisi (chiffre 1 du certificat de salaire), non rajoutées.`,
+        ? `Dont ${familyAllowancesCHF.toLocaleString("fr-CH").replace(/[\u202f\u00a0]/g, "'")} CHF d'allocations familiales : ajoutées au revenu imposable (indépendant, pas de certificat de salaire qui les inclurait déjà).`
+        : `Dont ${familyAllowancesCHF.toLocaleString("fr-CH").replace(/[\u202f\u00a0]/g, "'")} CHF d'allocations familiales, déjà comprises dans le salaire brut saisi (chiffre 1 du certificat de salaire), non rajoutées.`,
     );
   }
 
@@ -272,7 +272,7 @@ export function computeTaxGlobal(g: TaxGlobalInput): TaxGlobalResult {
       };
       notes.push(
         "Revenu étranger de " +
-          g.foreignIncome.toLocaleString("fr-CH") +
+          g.foreignIncome.toLocaleString("fr-CH").replace(/[\u202f\u00a0]/g, "'") +
           " CHF pris en compte pour la progressivité (art. 7 LIFD). Taux effectif mondial " +
           (worldwideEffectiveRate * 100).toFixed(1) +
           "% appliqué sur le revenu suisse uniquement.",
@@ -431,7 +431,7 @@ export function computeTaxGlobal(g: TaxGlobalInput): TaxGlobalResult {
     const total = useOrdinary ? touComparison.ordinaryTax : source.annualTax;
     if (touMandatory) {
       notes.push(
-        `Salaire brut d'au moins ${TOU_MANDATORY_GROSS_THRESHOLD.toLocaleString("fr-CH")} CHF : taxation ordinaire ultérieure obligatoire (art. 89 LIFD). L'impôt à la source reste prélevé sur le salaire (${source.annualTax.toLocaleString("fr-CH")} CHF/an) puis imputé sur l'impôt ordinaire ; toutes les déductions (3e pilier A, rachat LPP, intérêts) s'appliquent sans démarche particulière.`,
+        `Salaire brut d'au moins ${TOU_MANDATORY_GROSS_THRESHOLD.toLocaleString("fr-CH").replace(/[\u202f\u00a0]/g, "'")} CHF : taxation ordinaire ultérieure obligatoire (art. 89 LIFD). L'impôt à la source reste prélevé sur le salaire (${source.annualTax.toLocaleString("fr-CH").replace(/[\u202f\u00a0]/g, "'")} CHF/an) puis imputé sur l'impôt ordinaire ; toutes les déductions (3e pilier A, rachat LPP, intérêts) s'appliquent sans démarche particulière.`,
       );
     } else if (g.assumeTou !== true) {
       notes.push(
@@ -440,8 +440,8 @@ export function computeTaxGlobal(g: TaxGlobalInput): TaxGlobalResult {
     } else {
       notes.push(
         touComparison.delta < 0
-          ? `Scénario après demande de TOU : taxation ordinaire avec la situation familiale réelle et les déductions saisies, soit CHF ${Math.abs(touComparison.delta).toLocaleString("fr-CH")} de moins que la retenue à la source (${source.annualTax.toLocaleString("fr-CH")} CHF). Demande à déposer avant le 31 mars ${g.taxYear + 1}.`
-          : `Scénario après demande de TOU : la taxation ordinaire coûterait CHF ${touComparison.delta.toLocaleString("fr-CH")} de plus que la retenue à la source (${source.annualTax.toLocaleString("fr-CH")} CHF) — la TOU n'est intéressante qu'avec davantage de déductions.`,
+          ? `Scénario après demande de TOU : taxation ordinaire avec la situation familiale réelle et les déductions saisies, soit CHF ${Math.abs(touComparison.delta).toLocaleString("fr-CH").replace(/[\u202f\u00a0]/g, "'")} de moins que la retenue à la source (${source.annualTax.toLocaleString("fr-CH").replace(/[\u202f\u00a0]/g, "'")} CHF). Demande à déposer avant le 31 mars ${g.taxYear + 1}.`
+          : `Scénario après demande de TOU : la taxation ordinaire coûterait CHF ${touComparison.delta.toLocaleString("fr-CH").replace(/[\u202f\u00a0]/g, "'")} de plus que la retenue à la source (${source.annualTax.toLocaleString("fr-CH").replace(/[\u202f\u00a0]/g, "'")} CHF) — la TOU n'est intéressante qu'avec davantage de déductions.`,
       );
     }
     const gross = computeGrossForRegime(g, det.regime);
@@ -484,7 +484,7 @@ export function computeTaxGlobal(g: TaxGlobalInput): TaxGlobalResult {
             ? "Affichage : impôt ordinaire avec déductions (scénario après demande de TOU)"
             : "Affichage : impôt à la source (situation actuelle, avant toute demande de TOU)",
           deductionsTotal > 0
-            ? `Déductions saisies prises en compte : ${Math.round(deductionsTotal).toLocaleString("fr-CH")} CHF`
+            ? `Déductions saisies prises en compte : ${Math.round(deductionsTotal).toLocaleString("fr-CH").replace(/[\u202f\u00a0]/g, "'")} CHF`
             : "Aucune déduction saisie",
         ],
         limits: [
@@ -637,12 +637,12 @@ export function computeTaxGlobal(g: TaxGlobalInput): TaxGlobalResult {
       cbNotes.push(
         g.assumeTou === true
           ? crossBorderTouComparison.recommendationText
-          : `Situation actuelle : impôt à la source au barème ${cbRectification?.defaultScaleCode ?? "de l'employeur"}, sans déductions${cbRectification?.defaultScaleCode === "A0" && g.children > 0 ? " ni enfants à charge" : ""}. ${cbRectification?.applicable ? `Après rectification du barème (${cbRectification.rectifiedScaleCode}) : CHF ${cbRectification.rectifiedAnnualTax.toLocaleString("fr-CH")}. ` : ""}${crossBorderTouComparison.recommendationText}`,
+          : `Situation actuelle : impôt à la source au barème ${cbRectification?.defaultScaleCode ?? "de l'employeur"}, sans déductions${cbRectification?.defaultScaleCode === "A0" && g.children > 0 ? " ni enfants à charge" : ""}. ${cbRectification?.applicable ? `Après rectification du barème (${cbRectification.rectifiedScaleCode}) : CHF ${cbRectification.rectifiedAnnualTax.toLocaleString("fr-CH").replace(/[\u202f\u00a0]/g, "'")}. ` : ""}${crossBorderTouComparison.recommendationText}`,
       );
     }
     if (det.regime === "cross_border_fr_1983" && chDeductionsTotal > 0) {
       cbNotes.push(
-        `Accord 1983 : imposition exclusive en France. Les déductions CH (3a, rachat LPP, primes LAMal, entretien immobilier CH) NE SONT PAS déductibles, saisie ignorée (${Math.round(chDeductionsTotal).toLocaleString("fr-CH")} CHF). Seuls les frais de garde (enfants de moins de 6 ans) et les dons ouvrent un avantage fiscal en France.`,
+        `Accord 1983 : imposition exclusive en France. Les déductions CH (3a, rachat LPP, primes LAMal, entretien immobilier CH) NE SONT PAS déductibles, saisie ignorée (${Math.round(chDeductionsTotal).toLocaleString("fr-CH").replace(/[\u202f\u00a0]/g, "'")} CHF). Seuls les frais de garde (enfants de moins de 6 ans) et les dons ouvrent un avantage fiscal en France.`,
       );
     }
 
@@ -660,7 +660,7 @@ export function computeTaxGlobal(g: TaxGlobalInput): TaxGlobalResult {
     ) {
       cbNotes.push(
         "Autres revenus suisses (" +
-          g.otherIncome.toLocaleString("fr-CH") +
+          g.otherIncome.toLocaleString("fr-CH").replace(/[\u202f\u00a0]/g, "'") +
           " CHF : dividendes, revenus locatifs suisses) : non soumis à la retenue source mensuelle. Feront l'objet d'une rectification IS en fin d'année, un solde d'impôt supplémentaire sera probablement dû.",
       );
     }
@@ -694,7 +694,7 @@ export function computeTaxGlobal(g: TaxGlobalInput): TaxGlobalResult {
           `Taux EUR/CHF utilisé : ${g.eurChfRate.toFixed(4)} (CHF→EUR dérivé : ${g.chfToEurRate.toFixed(4)})`,
           "Santé : comparaison CMU vs LAMal sur base des primes mensuelles saisies",
           chDeductionsTotal > 0
-            ? `Déductions CH saisies : ${Math.round(chDeductionsTotal).toLocaleString("fr-CH")} CHF, ${det.regime === "cross_border_fr_1983" ? "ignorées (accord 1983)" : "appliquées via TOU/rectification IS"}`
+            ? `Déductions CH saisies : ${Math.round(chDeductionsTotal).toLocaleString("fr-CH").replace(/[\u202f\u00a0]/g, "'")} CHF, ${det.regime === "cross_border_fr_1983" ? "ignorées (accord 1983)" : "appliquées via TOU/rectification IS"}`
             : "Aucune déduction CH saisie",
         ],
         limits: [

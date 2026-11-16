@@ -668,12 +668,12 @@ function Pillar3aCalc() {
                       Au versement actuel
                     </div>
                     <div className="mt-0.5 text-lg font-bold tabular-nums text-foreground">
-                      {(savings.taxSavings * form.yearsToRetirement).toLocaleString("fr-CH")} CHF
+                      {(savings.taxSavings * form.yearsToRetirement).toLocaleString("fr-CH").replace(/[\u202f\u00a0]/g, "'")} CHF
                     </div>
                   </div>
                   <div className="rounded-md border border-success/40 bg-success/10 p-2">
                     <div className="text-[10px] uppercase text-muted-foreground">
-                      Au plafond légal ({max.toLocaleString("fr-CH")} CHF/an)
+                      Au plafond légal ({max.toLocaleString("fr-CH").replace(/[\u202f\u00a0]/g, "'")} CHF/an)
                     </div>
                     <div className="mt-0.5 text-lg font-bold tabular-nums text-success">
                       {(optimizedSavings.taxSavings * form.yearsToRetirement).toLocaleString(
@@ -701,11 +701,11 @@ function Pillar3aCalc() {
       {isMaxed && (
         <div className="rounded-xl border border-success/40 bg-success/5 p-4 text-sm">
           <div className="font-semibold text-success">
-            ✅ Cotisation 3a déjà au maximum légal ({max.toLocaleString("fr-CH")} CHF)
+            ✅ Cotisation 3a déjà au maximum légal ({max.toLocaleString("fr-CH").replace(/[\u202f\u00a0]/g, "'")} CHF)
           </div>
           <p className="mt-1 text-xs text-muted-foreground">
             Leviers d'optimisation restants : <strong>cotiser à un 3B</strong> (assurance-vie /
-            épargne libre, cible {target3bYearly.toLocaleString("fr-CH")} CHF/an) et{" "}
+            épargne libre, cible {target3bYearly.toLocaleString("fr-CH").replace(/[\u202f\u00a0]/g, "'")} CHF/an) et{" "}
             <strong>fractionner les retraits</strong> sur {Math.max(2, form.withdrawalAccounts)}{" "}
             comptes 3a pour réduire l'impôt de sortie.
           </p>
@@ -723,7 +723,7 @@ function Pillar3aCalc() {
             onChange={(v) => setTarget3bOverride(Number(v) || 0)}
           />
           <p className="mt-1 text-[11px] text-muted-foreground">
-            Suggéré automatiquement : <strong>{auto3bTarget.toLocaleString("fr-CH")} CHF/an</strong>{" "}
+            Suggéré automatiquement : <strong>{auto3bTarget.toLocaleString("fr-CH").replace(/[\u202f\u00a0]/g, "'")} CHF/an</strong>{" "}
             (montant de l'économie d'impôt réalisée en maximisant le 3a, réinvesti dans le 3b) .
             Modifiez pour ajuster la projection.
           </p>
@@ -744,8 +744,8 @@ function Pillar3aCalc() {
         title="Actuel vs Projeté, Prévoyance privée totale (3a + 3b)"
         description={
           isMaxed
-            ? `3a déjà au max (${max.toLocaleString("fr-CH")} CHF). Projection = 3b cible (${target3bYearly.toLocaleString("fr-CH")} CHF/an) + retrait fractionné.`
-            : `3a au plafond (${max.toLocaleString("fr-CH")} CHF), 3b cible ${target3bYearly.toLocaleString("fr-CH")} CHF/an et retrait fractionné sur ${Math.max(2, form.withdrawalAccounts)} comptes.`
+            ? `3a déjà au max (${max.toLocaleString("fr-CH").replace(/[\u202f\u00a0]/g, "'")} CHF). Projection = 3b cible (${target3bYearly.toLocaleString("fr-CH").replace(/[\u202f\u00a0]/g, "'")} CHF/an) + retrait fractionné.`
+            : `3a au plafond (${max.toLocaleString("fr-CH").replace(/[\u202f\u00a0]/g, "'")} CHF), 3b cible ${target3bYearly.toLocaleString("fr-CH").replace(/[\u202f\u00a0]/g, "'")} CHF/an et retrait fractionné sur ${Math.max(2, form.withdrawalAccounts)} comptes.`
         }
         legend={
           <>
@@ -775,15 +775,15 @@ function Pillar3aCalc() {
           footnote: (
             <>
               <strong>D'où vient le gain ?</strong> Capital 3a supplémentaire :{" "}
-              {(optimizedProjection.finalBalance - projection.finalBalance).toLocaleString("fr-CH")}{" "}
+              {(optimizedProjection.finalBalance - projection.finalBalance).toLocaleString("fr-CH").replace(/[\u202f\u00a0]/g, "'")}{" "}
               CHF · Capital 3b supplémentaire :{" "}
-              {(optimized3bFinal - current3bFinal).toLocaleString("fr-CH")} CHF · Impôt de sortie en
+              {(optimized3bFinal - current3bFinal).toLocaleString("fr-CH").replace(/[\u202f\u00a0]/g, "'")} CHF · Impôt de sortie en
               plus, capital plus élevé (retrait unique dans les deux cas) :{" "}
               {(
                 taxStaggeredProjected.totalTaxSingle - taxLumpCurrent.totalTaxSingle
-              ).toLocaleString("fr-CH")}{" "}
+              ).toLocaleString("fr-CH").replace(/[\u202f\u00a0]/g, "'")}{" "}
               CHF · Impôt en moins grâce au fractionnement, à capital projeté égal :{" "}
-              {fractioningSavings.toLocaleString("fr-CH")} CHF.
+              {fractioningSavings.toLocaleString("fr-CH").replace(/[\u202f\u00a0]/g, "'")} CHF.
               {isMaxed &&
                 " Votre 3a est déjà au maximum légal → le gain provient uniquement du 3b + du fractionnement des retraits."}
             </>
@@ -835,11 +835,11 @@ function Pillar3aCalc() {
               {t("calc.p3a.final_balance")}
             </p>
             <p className="mt-1 text-4xl font-bold tabular-nums text-primary">
-              {projection.finalBalance.toLocaleString("fr-CH")} CHF
+              {projection.finalBalance.toLocaleString("fr-CH").replace(/[\u202f\u00a0]/g, "'")} CHF
             </p>
             <p className="mt-1 text-[11px] text-muted-foreground">
               dans {form.yearsToRetirement} ans · dont{" "}
-              {projection.totalReturns.toLocaleString("fr-CH")} CHF d'intérêts
+              {projection.totalReturns.toLocaleString("fr-CH").replace(/[\u202f\u00a0]/g, "'")} CHF d'intérêts
             </p>
           </div>
           <div className="mt-3 grid grid-cols-2 gap-3">

@@ -270,7 +270,7 @@ function none(): ExtractedGain {
 }
 
 function formatInt(n: number): string {
-  return Math.round(n).toLocaleString("fr-CH");
+  return Math.round(n).toLocaleString("fr-CH").replace(/[\u202f\u00a0]/g, "'");
 }
 
 export type GainItem = ExtractedGain & { entryId: string; kind: SimulationKind; createdAt: string };

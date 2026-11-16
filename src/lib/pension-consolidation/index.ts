@@ -949,6 +949,9 @@ export function getOptimizedConsolidatedCapitals(
   refs?: ConsolidationReferenceSimulations,
 ): ConsolidatedCapitals {
   const current = getConsolidatedCapitals(b, refs);
+  // Point de départ aligné sur les simulations enregistrées (voir
+  // alignBundleWithSavedSimulations) : sinon l'optimisation est comptée deux fois.
+  b = alignBundleWithSavedSimulations(b, refs);
   const optimizedBundle = buildOptimizedBundle(b);
 
   const liveCurrentLpp = projectClientLPP(b);
@@ -1024,12 +1027,61 @@ export function consolidateOptimizedBenefits(
   b: ClientBundle,
   refs?: ConsolidationReferenceSimulations,
 ): ConsolidatedBenefits {
-  const optimizedBundle = buildOptimizedBundle(b);
+  const base = alignBundleWithSavedSimulations(b, refs);
+  const optimizedBundle = buildOptimizedBundle(base);
   return {
-    retirement: buildRetirement(b, refs, optimizedBundle),
-    disability: buildDisability(b, refs, 100, optimizedBundle),
-    death: buildDeath(b, refs, optimizedBundle),
+    retirement: buildRetirement(base, refs, optimizedBundle),
+    disability: buildDisability(base, refs, 100, optimizedBundle),
+    death: buildDeath(base, refs, optimizedBundle),
   };
+}
+
+/**
+ * Aligne la fiche sur ce que les simulations enregistrées contiennent déjà.
+ * L'écart « optimisé » est un facteur (projection optimisée ÷ projection
+ * actuelle) appliqué au montant de la simulation enregistrée. Si cette
+ * simulation est déjà au plafond 3a (ou inclut déjà des rachats) alors que la
+ * fiche ne l'est pas, le facteur calculé depuis la fiche recomptait
+ * l'optimisation une seconde fois (capital 3a multiplié par six pour un
+ * client passé de 1 200 à 7 258 CHF dans sa simulation).
+ */
+function alignBundleWithSavedSimulations(
+  b: ClientBundle,
+  refs: ConsolidationReferenceSimulations | undefined,
+): ClientBundle {
+  if (!refs) return b;
+  const pension = { ...((b.pension ?? {}) as Record<string, unknown>) };
+  let changed = false;
+
+  const saved3a = Number(
+    (refs.pillar3a?.inputs as Record<string, unknown> | undefined)?.contribution ?? NaN,
+  );
+  if (Number.isFinite(saved3a) && saved3a >= 0) {
+    pension.pillar_3a_annual_contribution = saved3a;
+    changed = true;
+  }
+
+  const savedBuybacks = Number(
+    (refs.lpp?.summary as Record<string, unknown> | undefined)?.totalBuybacks ?? NaN,
+  );
+  if (Number.isFinite(savedBuybacks) && savedBuybacks > 0) {
+    const planned = Array.isArray(pension.lpp_planned_buybacks)
+      ? (pension.lpp_planned_buybacks as Array<{ amount?: number }>)
+      : [];
+    const plannedTotal = planned.reduce((sum, r) => sum + Number(r?.amount ?? 0), 0);
+    if (savedBuybacks > plannedTotal) {
+      pension.lpp_planned_buybacks = [
+        ...planned,
+        {
+          year: new Date().getFullYear(),
+          amount: savedBuybacks - plannedTotal,
+          label: "Rachats de la simulation enregistrée",
+        },
+      ];
+      changed = true;
+    }
+  }
+  return changed ? ({ ...b, pension: pension as ClientBundle["pension"] }) : b;
 }
 
 function buildOptimizedBundle(b: ClientBundle): ClientBundle {
