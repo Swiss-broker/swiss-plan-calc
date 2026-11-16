@@ -350,7 +350,7 @@ function TaxGlobalCalc() {
           </Select>
         </Field>
       </div>
-      <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-3">
+      <div className="mt-3 grid grid-cols-1 gap-3">
         <MoneyTile
           label="Aujourd'hui"
           value={rect.defaultAnnualTax}
