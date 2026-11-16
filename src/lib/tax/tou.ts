@@ -92,6 +92,17 @@ export interface TOUComparisonResult {
   potentialDeductionsImpact: string;
   /** true si la taxation ordinaire ultérieure s'applique d'office. */
   mandatory: boolean;
+  /** Détail de l'impôt ordinaire (TOU), pour montrer d'où vient le total. */
+  ordinaryBreakdown: {
+    taxableIncomeCantonal: number;
+    taxableIncomeIFD: number;
+    ifd: number;
+    cantonal: number;
+    communal: number;
+    church: number;
+    personalTax: number;
+    wealthTax: number;
+  };
 }
 
 /** Compare l'impôt à la source vs TOU (taxation ordinaire post déductions effectives) */
@@ -147,5 +158,15 @@ export function compareTOUvsSource(input: TOUComparisonInput): TOUComparisonResu
     effectiveRateTOU: eRateTOU,
     potentialDeductionsImpact,
     mandatory: !!input.mandatory,
+    ordinaryBreakdown: {
+      taxableIncomeCantonal: ordinary.taxableIncomeCC,
+      taxableIncomeIFD: ordinary.taxableIncomeIFD,
+      ifd: ordinary.ifd,
+      cantonal: ordinary.cantonal,
+      communal: ordinary.communal,
+      church: ordinary.church,
+      personalTax: ordinary.personalTax,
+      wealthTax: ordinary.wealthTax,
+    },
   };
 }

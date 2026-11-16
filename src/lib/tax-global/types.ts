@@ -127,6 +127,20 @@ export interface TaxGlobalInput {
    * l'accord de 1983, ou quand la TOU est obligatoire (≥ 120'000 CHF).
    */
   assumeTou?: boolean;
+  /**
+   * Barème d'impôt à la source appliqué AUJOURD'HUI, choisi par le conseiller
+   * à la place du barème déduit de l'état civil (A non marié, B/C marié).
+   * Ex. « H » si le barème monoparental est déjà appliqué par l'employeur.
+   * undefined = automatique.
+   */
+  sourceScale?: SourceScale;
+  /**
+   * Barème visé APRÈS RECTIFICATION, choisi par le conseiller. Par défaut :
+   * H pour une personne non mariée avec enfant(s) à charge, inchangé sinon.
+   * Ex. « A » quand, dans un couple en concubinage ou après une séparation,
+   * le barème H revient à l'autre parent.
+   */
+  rectifiedSourceScale?: SourceScale;
 
   // === Frontaliers ===
   eurChfRate: number;
@@ -146,6 +160,9 @@ export interface SourceRectificationSummary {
   defaultScale: SourceScale;
   /** Barème réellement attribué à la situation du contribuable, après démarche. */
   rectifiedScale: SourceScale;
+  /** Codes complets avec le nombre d'enfants (ex. "A0" → "H2"). */
+  defaultScaleCode: string;
+  rectifiedScaleCode: string;
   /** true si rectifiedScale diffère de defaultScale : il y a une démarche
    *  concrète à faire, et donc une optimisation à montrer. */
   applicable: boolean;
@@ -166,7 +183,7 @@ export interface TaxGlobalResult {
   crossBorder?: CrossBorderResult;
   touEligibility?: QuasiResidentResult;
   touComparison?: TOUComparisonResult;
-  /** Présent uniquement pour les régimes source_taxed/tou. */
+  /** Régimes source_taxed/tou et frontaliers imposés à la source en Suisse (GE, FR). */
   sourceRectification?: SourceRectificationSummary;
   health?: HealthFranceResult;
 

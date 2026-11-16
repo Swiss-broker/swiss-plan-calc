@@ -13,7 +13,70 @@ import {
 } from "@/lib/tax/tou";
 import { computeHealthFrance } from "@/lib/health-france";
 import { detectRegime, toTaxStatus, toFrenchStatus, isCoupleStatus } from "./profile";
-import type { TaxGlobalInput, TaxGlobalResult, Regime } from "./types";
+import type {
+  TaxGlobalInput,
+  TaxGlobalResult,
+  Regime,
+  SourceRectificationSummary,
+} from "./types";
+import type { SourceScale } from "@/lib/tax/source";
+
+/** Code de barème lisible : A0, B1, C2, H2… Le barème A ne compte jamais
+ *  d'enfant ; un barème H sans enfant n'existe pas (retombe sur A0). */
+function scaleCode(letter: SourceScale, children: number): string {
+  const n = Math.max(0, Math.floor(children || 0));
+  if (letter === "A" || (letter === "H" && n === 0)) return "A0";
+  return `${letter}${n}`;
+}
+
+/**
+ * Barème « avant » (appliqué aujourd'hui) et « après rectification », avec
+ * priorité au choix du conseiller (g.sourceScale / g.rectifiedSourceScale).
+ * Automatique : A (non marié), B (marié, un revenu), C (marié, deux revenus)
+ * aujourd'hui ; après rectification, H pour une personne non mariée avec
+ * enfant(s) à charge, inchangé sinon.
+ */
+function resolveScales(
+  g: TaxGlobalInput,
+  autoScale: SourceScale,
+): { current: SourceScale; rectified: SourceScale; manual: boolean } {
+  const current = g.sourceScale ?? autoScale;
+  const autoRectified: SourceScale = current === "A" && g.children > 0 ? "H" : current;
+  const rectified = g.rectifiedSourceScale ?? autoRectified;
+  return {
+    current,
+    rectified,
+    manual: current !== autoScale || rectified !== autoRectified,
+  };
+}
+
+function rectificationSummary(
+  g: TaxGlobalInput,
+  scales: { current: SourceScale; rectified: SourceScale; manual: boolean },
+  autoReason: string,
+  defaultAnnualTax: number,
+  rectifiedAnnualTax: number,
+): SourceRectificationSummary {
+  const defaultScaleCode = scaleCode(scales.current, g.children);
+  const rectifiedScaleCode = scaleCode(scales.rectified, g.children);
+  const applicable = defaultScaleCode !== rectifiedScaleCode;
+  const reason = !applicable
+    ? ""
+    : scales.manual || !autoReason
+      ? `Barèmes choisis par le conseiller : ${defaultScaleCode} aujourd'hui, ${rectifiedScaleCode} après rectification. La demande de rectification se dépose auprès de l'administration cantonale avant le 31 mars de l'année suivante.`
+      : autoReason;
+  return {
+    defaultScale: scales.current,
+    rectifiedScale: scales.rectified,
+    defaultScaleCode,
+    rectifiedScaleCode,
+    applicable,
+    reason,
+    defaultAnnualTax,
+    rectifiedAnnualTax: applicable ? rectifiedAnnualTax : defaultAnnualTax,
+    delta: applicable ? rectifiedAnnualTax - defaultAnnualTax : 0,
+  };
+}
 
 /** Indépendant (ou activité mixte) : pas de certificat de salaire qui
  *  inclurait déjà les allocations familiales dans un salaire brut — c'est
@@ -261,7 +324,8 @@ export function computeTaxGlobal(g: TaxGlobalInput): TaxGlobalResult {
     // computeSourceTax) ; une personne non mariée reste en A0 et n'obtient
     // le barème H que par rectification (voir plus bas).
     const statusForScale = toTaxStatus(g.civilStatus, 0);
-    const scale = inferSourceScale(statusForScale, couple && g.spouseEmployed);
+    const scales = resolveScales(g, inferSourceScale(statusForScale, couple && g.spouseEmployed));
+    const scale = scales.current;
     const source = computeSourceTax({
       monthlyGross: Math.round((g.grossSalary + g.bonus) / 12),
       spouseMonthlyGross:
@@ -282,26 +346,22 @@ export function computeTaxGlobal(g: TaxGlobalInput): TaxGlobalResult {
       couple && g.spouseEmployed,
       g.children,
     );
-    const rectifiedSource = rectification.rectificationApplicable
-      ? computeSourceTax({
-          monthlyGross: Math.round((g.grossSalary + g.bonus) / 12),
-          spouseMonthlyGross:
-            couple && g.spouseEmployed ? Math.round(g.spouseGrossSalary / 12) : undefined,
-          canton: g.canton,
-          scale: rectification.rectifiedScale,
-          children: g.children,
-          church: g.confession !== "none",
-        })
-      : null;
-    const sourceRectification = {
-      defaultScale: rectification.defaultScale,
-      rectifiedScale: rectification.rectifiedScale,
-      applicable: rectification.rectificationApplicable,
-      reason: rectification.reason,
-      defaultAnnualTax: source.annualTax,
-      rectifiedAnnualTax: rectifiedSource ? rectifiedSource.annualTax : source.annualTax,
-      delta: rectifiedSource ? rectifiedSource.annualTax - source.annualTax : 0,
-    };
+    const rectifiedSource = computeSourceTax({
+      monthlyGross: Math.round((g.grossSalary + g.bonus) / 12),
+      spouseMonthlyGross:
+        couple && g.spouseEmployed ? Math.round(g.spouseGrossSalary / 12) : undefined,
+      canton: g.canton,
+      scale: scales.rectified,
+      children: g.children,
+      church: g.confession !== "none",
+    });
+    const sourceRectification = rectificationSummary(
+      g,
+      scales,
+      rectification.reason,
+      source.annualTax,
+      rectifiedSource.annualTax,
+    );
 
     const swissIncome =
       g.grossSalary + g.bonus + (couple ? g.spouseGrossSalary : 0) + g.otherIncome + g.rentalIncome;
@@ -368,7 +428,7 @@ export function computeTaxGlobal(g: TaxGlobalInput): TaxGlobalResult {
       );
     } else if (g.assumeTou !== true) {
       notes.push(
-        `Situation actuelle : retenue à la source au barème de l'employeur, sans déductions${rectification.rectificationApplicable ? " ni enfants à charge (barème A0)" : ""}. ${touComparison.recommendationText}`,
+        `Situation actuelle : retenue à la source au barème de l'employeur, sans déductions${sourceRectification.defaultScaleCode === "A0" && g.children > 0 ? " ni enfants à charge" : ""} (barème ${sourceRectification.defaultScaleCode}). ${touComparison.recommendationText}`,
       );
     } else {
       notes.push(
@@ -402,7 +462,7 @@ export function computeTaxGlobal(g: TaxGlobalInput): TaxGlobalResult {
       trace: {
         ...baseTrace,
         assumptions: [
-          `Barème IS appliqué : ${source.scaleUsed} (conjoint actif : ${couple && g.spouseEmployed ? "oui" : "non"})${scale === "C" ? ", taux lu sur le salaire propre (le barème C intègre déjà un revenu théorique du conjoint)" : ""}`,
+          `Barème IS appliqué : ${sourceRectification.defaultScaleCode}${g.sourceScale ? " (choisi par le conseiller)" : ""}${sourceRectification.applicable ? `, barème après rectification : ${sourceRectification.rectifiedScaleCode}` : ""} (conjoint actif : ${couple && g.spouseEmployed ? "oui" : "non"})${scale === "C" ? ", taux lu sur le salaire propre (le barème C intègre déjà un revenu théorique du conjoint)" : ""}`,
           "Impôt à la source mensuel × 12 (hors gratifications irrégulières)",
           touMandatory
             ? "Taxation ordinaire ultérieure obligatoire (salaire brut ≥ 120 000 CHF)"
@@ -437,7 +497,7 @@ export function computeTaxGlobal(g: TaxGlobalInput): TaxGlobalResult {
   ) {
     const frStatus = toFrenchStatus(g.civilStatus);
     const couple = isCoupleStatus(g.civilStatus);
-    const crossBorder = computeCrossBorder({
+    const crossBorderInput = {
       workCanton: g.canton,
       grossAnnualSalary: g.grossSalary + g.bonus,
       status: frStatus,
@@ -456,7 +516,31 @@ export function computeTaxGlobal(g: TaxGlobalInput): TaxGlobalResult {
       // hypothécaires n'ouvrent aucune déduction côté français.
       childCareCostsCHF: g.childCareCosts,
       donationsCHF: g.donations,
-    });
+    };
+    const cbScales = resolveScales(
+      g,
+      frStatus === "single" ? "A" : couple && g.spouseEmployed ? "C" : "B",
+    );
+    const crossBorder = computeCrossBorder({ ...crossBorderInput, sourceScale: cbScales.current });
+    // Rectification du barème (ex. A0 → H2), distincte de la TOU : uniquement
+    // là où un impôt à la source suisse est prélevé (Genève, Fribourg).
+    let cbRectification: SourceRectificationSummary | undefined;
+    if (crossBorder.scaleUsed) {
+      const rectified = computeCrossBorder({
+        ...crossBorderInput,
+        sourceScale: cbScales.rectified,
+      });
+      const n = g.children;
+      cbRectification = rectificationSummary(
+        g,
+        cbScales,
+        cbScales.current === "A" && n > 0
+          ? `${n} enfant${n > 1 ? "s" : ""} à charge : l'employeur retient l'impôt au barème A0, sans enfant. Sur demande de rectification auprès de l'administration cantonale (avant le 31 mars de l'année suivante), le barème H${n} (famille monoparentale) s'applique, à condition d'assumer l'essentiel de l'entretien ${n > 1 ? "des enfants" : "de l'enfant"}.`
+          : "",
+        crossBorder.swissTax,
+        rectified.swissTax,
+      );
+    }
 
     // Couche santé : CMU vs LAMal, SÉPARÉE de l'impôt
     const health = computeHealthFrance({
@@ -546,7 +630,7 @@ export function computeTaxGlobal(g: TaxGlobalInput): TaxGlobalResult {
       cbNotes.push(
         g.assumeTou === true
           ? crossBorderTouComparison.recommendationText
-          : `Situation actuelle : impôt à la source au barème de l'employeur, sans enfants à charge (personne non mariée) ni déductions. ${crossBorderTouComparison.recommendationText}`,
+          : `Situation actuelle : impôt à la source au barème ${cbRectification?.defaultScaleCode ?? "de l'employeur"}, sans déductions${cbRectification?.defaultScaleCode === "A0" && g.children > 0 ? " ni enfants à charge" : ""}. ${cbRectification?.applicable ? `Après rectification du barème (${cbRectification.rectifiedScaleCode}) : CHF ${cbRectification.rectifiedAnnualTax.toLocaleString("fr-CH")}. ` : ""}${crossBorderTouComparison.recommendationText}`,
       );
     }
     if (det.regime === "cross_border_fr_1983" && chDeductionsTotal > 0) {
@@ -580,6 +664,7 @@ export function computeTaxGlobal(g: TaxGlobalInput): TaxGlobalResult {
       health,
       touEligibility: crossBorderTouEligibility,
       touComparison: crossBorderTouComparison,
+      sourceRectification: cbRectification,
       totalTaxCHF: totalTax,
       socialChargesCHF: social,
       grossIncomeCHF: gross,
@@ -597,7 +682,7 @@ export function computeTaxGlobal(g: TaxGlobalInput): TaxGlobalResult {
           det.regime === "cross_border_fr_1983"
             ? "Accord franco-suisse 1983 : imposition du salaire en France uniquement, aucune retenue suisse sur le salaire (compensation de 4,5 % versée par la France au canton)"
             : det.regime === "cross_border_ge"
-              ? "IS genevoise prélevée à la source + crédit d'impôt côté France"
+              ? `IS genevoise prélevée à la source au barème ${cbRectification?.defaultScaleCode ?? "A0"}${g.sourceScale ? " (choisi par le conseiller)" : ""}${cbRectification?.applicable ? `, barème après rectification : ${cbRectification.rectifiedScaleCode}` : ""} + crédit d'impôt côté France`
               : "IS canton de travail + imposition pays de résidence (modèle générique)",
           `Taux EUR/CHF utilisé : ${g.eurChfRate.toFixed(4)} (CHF→EUR dérivé : ${g.chfToEurRate.toFixed(4)})`,
           "Santé : comparaison CMU vs LAMal sur base des primes mensuelles saisies",

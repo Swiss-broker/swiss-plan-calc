@@ -740,6 +740,19 @@ export function toTaxGlobalInput(b: ClientBundle) {
     civilStatus,
     spouseEmployed: spouseSalary > 0,
     children: children.length,
+    // Barème enregistré sur la fiche client, repris seulement s'il est
+    // cohérent avec l'état civil : A ou H pour une personne non mariée
+    // (H = barème monoparental déjà obtenu), B ou C pour un couple marié.
+    sourceScale: (() => {
+      const stored = b.client.source_tax_scale as string | null | undefined;
+      const couple = civilStatus === "married" || civilStatus === "registered_partnership";
+      const allowed = couple ? ["B", "C"] : ["A", "H"];
+      // Identique au barème automatique : rien à forcer.
+      const automatic = couple ? (spouseSalary > 0 ? "C" : "B") : "A";
+      return stored && stored !== automatic && allowed.includes(stored)
+        ? (stored as "A" | "B" | "C" | "H")
+        : undefined;
+    })(),
     // Utilisée uniquement par VS (déduction pour enfant dépendante de
     // l'âge, Art. 31 al. 1 let. b LF) — ignorée par les autres cantons.
     childrenAges: children.map(ch => ageFromDob(ch.date_of_birth)),

@@ -319,9 +319,9 @@ export function TaxGlobalExplanation({ form, result, client, reuseProvenance }: 
                   value={Math.round((form.grossSalary + form.bonus) / 12)}
                 />
                 <CalcLine
-                  label={`Barème IS appliqué`}
+                  label={`Barème IS appliqué aujourd'hui`}
                   value={NaN}
-                  text={result.source.scaleUsed ?? "—"}
+                  text={result.sourceRectification?.defaultScaleCode ?? result.source.scaleUsed ?? "—"}
                 />
                 <CalcLine label={`Taux IS (moyen)`} value={NaN} text={`${result.source.rate}%`} />
                 <div className="my-2 border-t" />
@@ -331,14 +331,9 @@ export function TaxGlobalExplanation({ form, result, client, reuseProvenance }: 
                   bold
                   tone="warning"
                 />
-                {result.touComparison && (
-                  <CalcLine
-                    label="Impôt ordinaire si TOU"
-                    value={result.touComparison.ordinaryTax}
-                    text={result.touEligibility?.eligibleForTOU ? "(éligible)" : "(non éligible)"}
-                  />
-                )}
+                <RectifiedLine result={result} />
               </div>
+              <TouBreakdown result={result} canton={form.canton} />
             </Section>
           )}
 
@@ -356,11 +351,19 @@ export function TaxGlobalExplanation({ form, result, client, reuseProvenance }: 
                   text={form.eurChfRate.toFixed(4)}
                 />
                 <div className="my-2 border-t" />
+                {result.sourceRectification && (
+                  <CalcLine
+                    label="Barème IS appliqué aujourd'hui"
+                    value={NaN}
+                    text={result.sourceRectification.defaultScaleCode}
+                  />
+                )}
                 <CalcLine
                   label="Part suisse (IS canton de travail)"
                   value={result.crossBorder.swissTax}
                   text={`${result.crossBorder.swissRate}%`}
                 />
+                <RectifiedLine result={result} />
                 <CalcLine
                   label="Part étrangère (résidu après crédit, estimation)"
                   value={result.crossBorder.foreignTax}
@@ -380,6 +383,7 @@ export function TaxGlobalExplanation({ form, result, client, reuseProvenance }: 
                   />
                 )}
               </div>
+              <TouBreakdown result={result} canton={form.canton} />
             </Section>
           )}
 
@@ -416,6 +420,63 @@ export function TaxGlobalExplanation({ form, result, client, reuseProvenance }: 
         </CollapsibleContent>
       </Collapsible>
     </CalcCard>
+  );
+}
+
+/** Impôt à la source après rectification du barème (ex. A0 → H2). */
+function RectifiedLine({ result }: { result: TaxGlobalResult }) {
+  const r = result.sourceRectification;
+  if (!r?.applicable) return null;
+  return (
+    <CalcLine
+      label={`Après rectification du barème (${r.defaultScaleCode} → ${r.rectifiedScaleCode})`}
+      value={r.rectifiedAnnualTax}
+    />
+  );
+}
+
+/** Détail de la taxation ordinaire (TOU) : d'où vient chaque franc. */
+function TouBreakdown({ result, canton }: { result: TaxGlobalResult; canton: string }) {
+  const tou = result.touComparison;
+  if (!tou?.ordinaryBreakdown) return null;
+  const b = tou.ordinaryBreakdown;
+  return (
+    <div className="mt-3 rounded-md border bg-muted/30 p-3 font-mono text-xs">
+      <div className="mb-2 font-sans text-xs font-semibold">
+        Après demande de TOU : taxation ordinaire, comme un résident
+        {result.touEligibility?.eligibleForTOU ? "" : " (non éligible aujourd'hui)"}
+      </div>
+      <CalcLine
+        label="Revenu net canton, avant déductions pour enfants et couple"
+        value={b.taxableIncomeCantonal}
+      />
+      <CalcLine label="Revenu imposable IFD" value={b.taxableIncomeIFD} />
+      <div className="my-2 border-t" />
+      <CalcLine label="Impôt cantonal" value={b.cantonal} />
+      <CalcLine label="Impôt communal" value={b.communal} />
+      {b.church > 0 && <CalcLine label="Impôt ecclésiastique" value={b.church} />}
+      {b.personalTax > 0 && (
+        <CalcLine
+          label={
+            canton === "GE"
+              ? "Taxe personnelle (forfait genevois dû par tout contribuable)"
+              : "Taxe personnelle"
+          }
+          value={b.personalTax}
+        />
+      )}
+      <CalcLine label="Impôt fédéral direct (IFD)" value={b.ifd} />
+      {b.wealthTax > 0 && <CalcLine label="Impôt sur la fortune" value={b.wealthTax} />}
+      <div className="my-2 border-t" />
+      <CalcLine label="TOTAL impôt ordinaire (TOU)" value={tou.ordinaryTax} bold tone="warning" />
+      <p className="mt-2 font-sans text-[11px] text-muted-foreground">
+        Enfants à charge, situation familiale réelle et déductions saisies sont pris en compte.
+        Au niveau cantonal, la déduction par enfant à charge puis le barème famille (taux lu sur
+        la moitié du revenu pour un couple ou un parent seul) s'appliquent encore sur ce revenu
+        net. Un impôt cantonal ou fédéral à 0 signifie que le revenu restant passe sous le seuil
+        d'imposition.
+      </p>
+    </div>
   );
 }
 

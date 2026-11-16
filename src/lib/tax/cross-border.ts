@@ -36,6 +36,11 @@ export interface CrossBorderInput {
   childrenUnder6?: number;
   spouseEmployed?: boolean;
   spouseGrossSalary?: number;
+  /** Barème d'impôt à la source imposé par le conseiller (A, B, C ou H) à la
+   *  place du barème déduit de l'état civil — ex. barème H déjà obtenu par
+   *  rectification, ou attribué à l'autre parent. Sans effet sous l'accord
+   *  de 1983 (aucune retenue suisse). */
+  sourceScale?: "A" | "B" | "C" | "H";
   /** Cours fiscal : 1 EUR = X CHF (même convention que AFC_ANNUAL_RATES). */
   eurChfRate?: number;
   /** Âge, plan LPP et salaire assuré : servent uniquement à estimer les
@@ -61,6 +66,9 @@ export interface CrossBorderResult {
   totalRate: number;
   netAnnual: number;
   marginalRate: number;
+  /** Code du barème d'impôt à la source appliqué (ex. "A0", "H2"), pour
+   *  Genève et Fribourg. */
+  scaleUsed?: string;
   notes: string[];
   alternative?: {
     regime: CrossBorderRegime;
@@ -293,9 +301,14 @@ function crossBorderScale(
   status: "single" | "married",
   children: number,
   spouseEmployed: boolean,
-): { letter: string; children: number } {
-  if (status === "single") return { letter: "A", children: 0 };
-  return { letter: spouseEmployed ? "C" : "B", children };
+  override?: "A" | "B" | "C" | "H",
+): { letter: string; children: number; code: string } {
+  const letter = override ?? (status === "single" ? "A" : spouseEmployed ? "C" : "B");
+  // A : toujours A0 ; H sans enfant n'existe pas (retombe sur A0).
+  if (letter === "A" || (letter === "H" && children <= 0)) {
+    return { letter: "A", children: 0, code: "A0" };
+  }
+  return { letter, children, code: `${letter}${children}` };
 }
 
 function friburgSourceTax(
@@ -303,8 +316,9 @@ function friburgSourceTax(
   status: "single" | "married",
   children: number,
   spouseEmployed: boolean = false,
+  override?: "A" | "B" | "C" | "H",
 ): number {
-  const scale = crossBorderScale(status, children, spouseEmployed);
+  const scale = crossBorderScale(status, children, spouseEmployed, override);
   const rate = frSourceRate(grossAnnual, scale.letter, scale.children);
   return Math.round((grossAnnual * rate) / 100);
 }
@@ -314,8 +328,9 @@ function genevaSourceTax(
   status: "single" | "married",
   children: number,
   spouseEmployed: boolean = false,
+  override?: "A" | "B" | "C" | "H",
 ): number {
-  const scale = crossBorderScale(status, children, spouseEmployed);
+  const scale = crossBorderScale(status, children, spouseEmployed, override);
   const rate = geSourceRate(grossAnnual, scale.letter, scale.children);
   return Math.round((grossAnnual * rate) / 100);
 }
@@ -365,7 +380,7 @@ export function computeCrossBorder(input: CrossBorderInput): CrossBorderResult {
   // Marié : les enfants sont déjà dans le barème (B1, C2…). Non marié avec
   // enfants : barème A0 par défaut, le barème H se demande par rectification.
   const rectificationNote =
-    children > 0 && input.status === "single"
+    children > 0 && input.status === "single" && !input.sourceScale
       ? [
           `Barème A0 appliqué par défaut, sans ${children > 1 ? "les enfants" : "l'enfant"} à charge : le barème H (famille monoparentale) s'obtient sur demande de rectification auprès de l'administration cantonale, avant le 31 mars de l'année suivante.`,
         ]
@@ -373,8 +388,10 @@ export function computeCrossBorder(input: CrossBorderInput): CrossBorderResult {
 
   if (input.workCanton === "FR") {
     const spouseEmployed = input.spouseEmployed ?? false;
-    const taxAt = (g: number) => friburgSourceTax(g, input.status, children, spouseEmployed);
+    const taxAt = (g: number) =>
+      friburgSourceTax(g, input.status, children, spouseEmployed, input.sourceScale);
     const swissTax = taxAt(gross);
+    const scaleUsed = crossBorderScale(input.status, children, spouseEmployed, input.sourceScale).code;
     return {
       regime: "fr_fribourg",
       regimeLabel: "Fribourg, impôt à la source (barème cantonal FR)",
@@ -386,6 +403,7 @@ export function computeCrossBorder(input: CrossBorderInput): CrossBorderResult {
       totalRate: pct(swissTax, gross),
       netAnnual: Math.round(gross - swissTax),
       marginalRate: numericMarginalRate(taxAt, gross),
+      scaleUsed,
       notes: [
         "Fribourg n'est pas couvert par l'accord franco-suisse de 1983.",
         "L'impôt est prélevé à la source par l'employeur selon le barème cantonal FR ; la France accorde un crédit d'impôt équivalent à l'impôt français sur ce salaire.",
@@ -396,8 +414,10 @@ export function computeCrossBorder(input: CrossBorderInput): CrossBorderResult {
   }
   if (input.workCanton === "GE") {
     const spouseEmployed = input.spouseEmployed ?? false;
-    const taxAt = (g: number) => genevaSourceTax(g, input.status, children, spouseEmployed);
+    const taxAt = (g: number) =>
+      genevaSourceTax(g, input.status, children, spouseEmployed, input.sourceScale);
     const swissTax = taxAt(gross);
+    const scaleUsed = crossBorderScale(input.status, children, spouseEmployed, input.sourceScale).code;
     const total = swissTax;
     // Repère : ce que le même salaire coûterait s'il était imposé en France
     // (régime de l'accord de 1983).
@@ -413,6 +433,7 @@ export function computeCrossBorder(input: CrossBorderInput): CrossBorderResult {
       totalRate: pct(total, gross),
       netAnnual: Math.round(gross - total),
       marginalRate: numericMarginalRate(taxAt, gross),
+      scaleUsed,
       notes: [
         "Genève impose le salaire à la source (accord de 1973, pas l'accord de 1983).",
         "Genève reverse 3,5 % de la masse salariale brute aux départements français de résidence : ce reversement ne change rien à l'impôt du frontalier.",

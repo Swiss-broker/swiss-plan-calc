@@ -284,7 +284,105 @@ function TaxGlobalCalc() {
   const isCouple = form.civilStatus === "married" || form.civilStatus === "registered_partnership";
   const isCohabiting = form.civilStatus === "cohabiting";
   const [guideOpen, setGuideOpen] = useState(false);
-  const [showRectifiedScale, setShowRectifiedScale] = useState(false);
+  // Barèmes d'impôt à la source : celui appliqué aujourd'hui et celui visé
+  // après rectification, modifiables par le conseiller (concubinage,
+  // séparation, garde partagée…), puis la taxation ordinaire (TOU).
+  const rect = result.sourceRectification;
+  const scaleOptions: Array<"A" | "B" | "C" | "H"> = ["A", "B", "C", "H"];
+  const scaleLabels: Record<string, string> = {
+    A: "A, personne seule",
+    B: "B, marié, un seul revenu",
+    C: "C, marié, deux revenus",
+    H: "H, parent avec enfant(s) à charge",
+  };
+  const touTotal = result.touComparison
+    ? result.touComparison.ordinaryTax + (result.crossBorder?.foreignTax ?? 0)
+    : null;
+  const scaleBlock = rect ? (
+    <div className="mt-3 rounded-md border border-amber-500/40 bg-amber-500/5 p-3 text-sm">
+      <div className="mb-2 flex items-center gap-1.5 font-semibold">
+        Barème d'impôt à la source
+        <HelpDot tip="Automatique : barème A0 pour une personne non mariée (même avec des enfants, tant qu'aucune rectification n'est demandée), B ou C avec les enfants pour un couple marié. Après rectification : barème H avec les enfants à charge pour une personne non mariée. Modifiez ces choix pour une situation particulière : en concubinage, le barème H revient au parent qui gagne le plus ; après une séparation avec frais d'entretien partagés, il peut revenir à l'autre parent." />
+      </div>
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <Field label="Barème appliqué aujourd'hui">
+          <Select
+            value={form.sourceScale ?? "auto"}
+            onValueChange={(v) =>
+              set("sourceScale", v === "auto" ? undefined : (v as "A" | "B" | "C" | "H"))
+            }
+          >
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="auto">
+                Automatique{form.sourceScale ? "" : ` (${rect.defaultScaleCode})`}
+              </SelectItem>
+              {scaleOptions.map((o) => (
+                <SelectItem key={o} value={o}>
+                  {scaleLabels[o]}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </Field>
+        <Field label="Barème après rectification">
+          <Select
+            value={form.rectifiedSourceScale ?? "auto"}
+            onValueChange={(v) =>
+              set("rectifiedSourceScale", v === "auto" ? undefined : (v as "A" | "B" | "C" | "H"))
+            }
+          >
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="auto">
+                Automatique{form.rectifiedSourceScale ? "" : ` (${rect.rectifiedScaleCode})`}
+              </SelectItem>
+              {scaleOptions.map((o) => (
+                <SelectItem key={o} value={o}>
+                  {scaleLabels[o]}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </Field>
+      </div>
+      <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-3">
+        <MoneyTile
+          label="Aujourd'hui"
+          value={rect.defaultAnnualTax}
+          hint={`Barème ${rect.defaultScaleCode}`}
+          tip="Impôt à la source annuel retenu par l'employeur au barème indiqué, sans aucune déduction."
+        />
+        <MoneyTile
+          label="Après rectification du barème"
+          value={rect.rectifiedAnnualTax}
+          hint={
+            rect.applicable ? `Barème ${rect.rectifiedScaleCode}` : "Barème inchangé"
+          }
+          tone={rect.delta < 0 ? "success" : undefined}
+          tip="Impôt à la source annuel une fois le barème corrigé auprès de l'administration cantonale. Le client reste imposé à la source : seules la situation familiale et les enfants changent, pas les déductions (3e pilier A, rachat LPP, intérêts)."
+        />
+        {touTotal !== null && (
+          <MoneyTile
+            label="Après demande de TOU"
+            value={touTotal}
+            hint={
+              result.touEligibility?.eligibleForTOU
+                ? "Taxation ordinaire, toutes déductions"
+                : "Non éligible aujourd'hui"
+            }
+            tone={touTotal < rect.defaultAnnualTax ? "success" : undefined}
+            tip="Impôt calculé comme pour un résident : enfants, situation familiale réelle et toutes les déductions saisies (3e pilier A, rachat LPP, intérêts hypothécaires, frais de garde…). C'est la base utilisée pour chiffrer les optimisations dans les autres calculateurs. Le détail figure dans le panneau de transparence."
+          />
+        )}
+      </div>
+      {rect.reason && <p className="mt-2 text-xs text-muted-foreground">{rect.reason}</p>}
+    </div>
+  ) : null;
   const guideSteps: GuideStep[] = [
     { title: t("calc.global.guide.s1.title"), body: t("calc.global.guide.s1.body") },
     {
@@ -1368,53 +1466,7 @@ function TaxGlobalCalc() {
                   )}
                 </div>
               )}
-              {result.sourceRectification?.applicable && (
-                <div className="mt-3 rounded-md border border-amber-500/40 bg-amber-500/5 p-3 text-sm text-amber-900 dark:text-amber-200">
-                  <div className="mb-2 flex items-center gap-2">
-                    <Badge variant="outline">
-                      Barème appliqué par l'employeur : {result.sourceRectification.defaultScale}0
-                    </Badge>
-                    <HelpDot tip="Une personne non mariée reste au barème A0 même avec des enfants à charge : le barème H (famille monoparentale) ne s'obtient que sur demande de rectification auprès de l'administration cantonale, avant le 31 mars de l'année suivante. Pour un couple marié, rien à demander : les enfants sont déjà dans le barème B ou C appliqué par l'employeur." />
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    {result.sourceRectification.reason}
-                  </p>
-                  <Button
-                    type="button"
-                    variant={showRectifiedScale ? "default" : "outline"}
-                    size="sm"
-                    className="mt-2"
-                    onClick={() => setShowRectifiedScale((v) => !v)}
-                  >
-                    {showRectifiedScale
-                      ? "Masquer l'optimisation après rectification"
-                      : "Voir l'optimisation après rectification"}
-                  </Button>
-                  {showRectifiedScale && (
-                    <div className="mt-3 grid grid-cols-2 gap-3 rounded-md border border-border bg-background p-3">
-                      <MoneyTile
-                        label="Avant rectification"
-                        value={result.sourceRectification.defaultAnnualTax}
-                        hint={`Barème ${result.sourceRectification.defaultScale}0`}
-                        tip="Retenue à la source annuelle actuellement appliquée par l'employeur au barème A0, sans les enfants à charge."
-                      />
-                      <MoneyTile
-                        label="Après rectification"
-                        value={result.sourceRectification.rectifiedAnnualTax}
-                        hint={`Barème ${result.sourceRectification.rectifiedScale}`}
-                        tone="success"
-                        tip="Retenue à la source annuelle une fois la démarche de rectification effectuée et le barème correctement attribué à la situation réelle du client."
-                      />
-                      <div className="col-span-2 text-xs text-muted-foreground">
-                        Économie annuelle estimée grâce à la rectification :{" "}
-                        <span className="font-semibold text-success">
-                          {formatCHF(-result.sourceRectification.delta)}
-                        </span>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
+              {scaleBlock}
             </CalcCard>
           )}
 
@@ -1443,6 +1495,7 @@ function TaxGlobalCalc() {
                   }
                 />
               </div>
+              {scaleBlock}
               {result.health && (
                 <div className="mt-3 rounded-md border p-3 text-sm">
                   <div className="flex items-center justify-between">
