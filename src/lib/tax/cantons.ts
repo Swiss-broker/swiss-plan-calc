@@ -966,6 +966,8 @@ export interface CCComputeOptions {
    *  défaut, calibration historique) : comportement inchangé, le taux est
    *  lu directement sur le revenu réel. Ignorée par les autres cantons. */
   vsIndexationPercent?: number;
+  /** Interne : évite la récursion du calcul numérique du taux marginal. */
+  skipMarginalRate?: boolean;
 }
 
 export interface CCComputeResult {
@@ -1290,7 +1292,24 @@ export function computeCantonalCommunal(opts: CCComputeOptions): CCComputeResult
     else break;
   }
   const simpleMarginalRatePercent = simpleMarginalRatePercentOverride ?? marginalBracket.rate;
-  const marginalRate = simpleMarginalRatePercent * calibration * (cantonalMult + communalMult);
+  let marginalRate = simpleMarginalRatePercent * calibration * (cantonalMult + communalMult);
+  if (opts.canton === "VS" && !opts.skipMarginalRate) {
+    // Valais : le communal suit son propre barème à taux moyen (et non un
+    // multiple du cantonal). Le taux marginal se mesure donc sur l'impôt
+    // réel : supplément d'impôt canton + commune + paroisse pour 1'000 CHF
+    // de revenu en plus (1'000 et non 100, le revenu étant arrondi aux
+    // 100 CHF inférieurs).
+    const STEP = 1_000;
+    const up = computeCantonalCommunal({
+      ...opts,
+      taxableIncome: opts.taxableIncome + STEP,
+      skipMarginalRate: true,
+    });
+    marginalRate = Math.max(
+      0,
+      ((up.cantonal + up.communal + up.church - (cantonal + communal + church)) / STEP) * 100,
+    );
+  }
 
   return {
     cantonal: Math.round(cantonal * 100) / 100,

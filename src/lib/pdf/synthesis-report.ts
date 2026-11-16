@@ -1658,6 +1658,34 @@ export function formatMetrics(
       if (has(s.effectiveRate)) out.push({ label: "Taux effectif", value: formatPct(num(s.effectiveRate)) });
       if (has(s.marginalRate)) out.push({ label: "Taux marginal", value: formatPct(num(s.marginalRate)) });
       if (str(s.regimeLabel)) out.push({ label: "Régime fiscal", value: str(s.regimeLabel)! });
+      if (str(s.sourceScaleToday)) {
+        out.push({
+          label: "Barème d'impôt à la source",
+          value: str(s.sourceScaleRectified)
+            ? `${str(s.sourceScaleToday)} aujourd'hui, ${str(s.sourceScaleRectified)} après rectification`
+            : str(s.sourceScaleToday)!,
+        });
+      }
+      if (str(s.sourceScaleRectified) && has(s.taxAfterRectification)) {
+        out.push({ label: "Impôt après rectification du barème", value: num(s.taxAfterRectification) });
+      }
+      if (str(s.sourceScaleToday) && has(s.taxAfterTou)) {
+        out.push({ label: "Impôt après demande de TOU", value: num(s.taxAfterTou) });
+      }
+      {
+        const reuse = s.savingReuse as Record<string, unknown> | undefined;
+        if (reuse && num(reuse.annualSaving) > 0) {
+          out.push({ label: "Économie d'impôt annuelle après démarche", value: num(reuse.annualSaving), tone: "success" });
+          const placements = Array.isArray(reuse.placements) ? (reuse.placements as Array<Record<string, unknown>>) : [];
+          for (const p of placements) {
+            out.push({
+              label: `Placée en ${str(p.label) ?? "placement"} : capital à la retraite`,
+              value: num(p.capitalAtRetirement),
+              tone: p.id === reuse.bestId ? "success" : undefined,
+            });
+          }
+        }
+      }
       break;
     case "income_tax":
     case "source_tax":
@@ -2182,7 +2210,22 @@ export function buildComment(entry: HistoryEntry): string | null {
             return `${label} repris d'une simulation${dateTxt} (${formatCHF(value)}), plutôt que du profil de base du client.`;
           }).join(" ")
         : "";
-      return `Votre charge fiscale totale estimée s'élève à ${formatCHF(total)} par an${regimeTxt}, pour un revenu net disponible de ${formatCHF(net)}. Votre taux effectif ressort à ${formatPct(eff)} de votre revenu brut, tandis que votre taux marginal de ${formatPct(marg)} indique la charge fiscale sur le prochain franc que vous gagnez, un repère utile pour évaluer l'intérêt d'une déduction supplémentaire (3a, rachat LPP).${foreignTxt}${reusedTxt} Cette estimation se base sur les barèmes 2026 et votre situation déclarée ; elle doit être confirmée par votre déclaration fiscale officielle.`;
+      const scaleToday = str(s.sourceScaleToday);
+      const scaleRect = str(s.sourceScaleRectified);
+      const scaleTxt = scaleToday
+        ? ` L'impôt à la source est retenu aujourd'hui au barème ${scaleToday}${scaleRect ? ` ; après rectification auprès de l'administration cantonale, le barème ${scaleRect} s'applique, soit ${formatCHF(num(s.taxAfterRectification))} par an` : ""}.`
+        : "";
+      const reuse = s.savingReuse as Record<string, unknown> | undefined;
+      let reuseTxt = "";
+      if (reuse && num(reuse.annualSaving) > 0) {
+        const placements = Array.isArray(reuse.placements) ? (reuse.placements as Array<Record<string, unknown>>) : [];
+        const best = placements.find((p) => p.id === reuse.bestId);
+        const bestTxt = best
+          ? ` Placée chaque année pendant ${num(reuse.years)} ans en ${str(best.label)}, elle représente un capital d'environ ${formatCHF(num(best.capitalAtRetirement))} à la retraite${num(best.extraTaxSavingPerYear) > 0 ? `, avec ${formatCHF(num(best.extraTaxSavingPerYear))} d'impôt en moins chaque année en plus` : ""} (rendement indicatif, non garanti).`
+          : "";
+        reuseTxt = ` La démarche recommandée (${str(reuse.originLabel) ?? "démarche fiscale"}) ramène l'impôt de ${formatCHF(num(reuse.todayTax))} à ${formatCHF(num(reuse.afterTax))}, soit ${formatCHF(num(reuse.annualSaving))} d'économie par an.${bestTxt}`;
+      }
+      return `Votre charge fiscale totale estimée s'élève à ${formatCHF(total)} par an${regimeTxt}, pour un revenu net disponible de ${formatCHF(net)}. Votre taux effectif ressort à ${formatPct(eff)} de votre revenu brut, tandis que votre taux marginal de ${formatPct(marg)} indique la charge fiscale sur le prochain franc que vous gagnez, un repère utile pour évaluer l'intérêt d'une déduction supplémentaire (3a, rachat LPP).${foreignTxt}${scaleTxt}${reuseTxt}${reusedTxt} Cette estimation se base sur les barèmes 2026 et votre situation déclarée ; elle doit être confirmée par votre déclaration fiscale officielle.`;
     }
     case "cross_border":
     case "tou":

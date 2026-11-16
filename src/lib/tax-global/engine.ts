@@ -180,9 +180,16 @@ export function toIncomeTaxInput(g: TaxGlobalInput): IncomeTaxInput {
     lppBuyback: g.lppBuyback,
     mortgageInterest: g.mortgageInterest,
     realEstateMaintenance: g.realEstateMaintenance,
-    // 3e pilier B : agrégé aux primes d'assurance déductibles (plafond canton/IFD)
+    // 3e pilier B : s'ajoute aux primes d'assurance déductibles, dans la
+    // limite du plafond canton / IFD. Sans primes maladie saisies, le
+    // forfait maximal est déjà retenu (les primes maladie réelles
+    // dépassent presque toujours le plafond) : le 3b ne peut alors rien
+    // ajouter, et surtout ne doit jamais RÉDUIRE la déduction en se
+    // substituant au forfait.
     healthInsurancePremiums:
-      (g.healthInsurancePremiums || 0) + (g.pillar3bContributions || 0) || undefined,
+      (g.healthInsurancePremiums || 0) > 0
+        ? (g.healthInsurancePremiums || 0) + (g.pillar3bContributions || 0)
+        : undefined,
     childCareCosts: g.childCareCosts,
     commutingExpenses: g.commutingExpenses,
     mealExpenses: g.mealExpenses,

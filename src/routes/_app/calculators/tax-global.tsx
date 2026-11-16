@@ -1,4 +1,6 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { SavingReuseCard } from "@/components/calculators/SavingReuseCard";
+import { computeSavingReuse } from "@/lib/tax-global/saving-reuse";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { zodValidator, fallback } from "@tanstack/zod-adapter";
 import { z } from "zod";
@@ -212,6 +214,9 @@ function TaxGlobalCalc() {
     [baselineResult, optimizedResult],
   );
   const scenarios = useMemo(() => buildScenarios(form), [form]);
+  // Économie dégagée par la démarche (rectification ou TOU) et ce qu'elle
+  // rapporte une fois placée : même calcul que dans le calculateur 3e pilier.
+  const savingReuse = useMemo(() => computeSavingReuse(form), [form]);
   const childrenImpact = useMemo(() => computeChildrenImpact(form), [form]);
   const bestScenario = useMemo(() => {
     const savings = scenarios.filter((s) => s.id !== "baseline" && s.deltaVsBaseline < 0);
@@ -1516,6 +1521,20 @@ function TaxGlobalCalc() {
             </CalcCard>
           )}
 
+          <SavingReuseCard
+            reuse={savingReuse}
+            action={
+              <Button asChild variant="outline" size="sm">
+                <Link
+                  to="/calculators/pillar3a"
+                  search={{ clientId, caseId, reinvest: savingReuse.annualSaving }}
+                >
+                  Reporter cette économie dans le 3e pilier A &amp; B
+                </Link>
+              </Button>
+            }
+          />
+
           {/* Pistes d'optimisation — scénarios "et si" testés automatiquement */}
           {scenarios.length > 1 && (
             <CalcCard title="Pistes d'optimisation">
@@ -1595,6 +1614,33 @@ function TaxGlobalCalc() {
             bestScenarioSavings: bestScenario ? Math.round(-bestScenario.deltaVsBaseline) : 0,
             bestScenarioLabel: bestScenario ? bestScenario.label : undefined,
             bestScenarioId: bestScenario ? bestScenario.id : undefined,
+            // Barèmes d'impôt à la source et montants avant / après démarche,
+            // tels qu'affichés à l'écran, repris par le PDF de synthèse.
+            sourceScaleToday: rect?.defaultScaleCode,
+            sourceScaleRectified: rect?.applicable ? rect.rectifiedScaleCode : undefined,
+            taxAfterRectification: rect?.applicable ? rect.rectifiedAnnualTax : undefined,
+            taxAfterTou: touTotal ?? undefined,
+            // Économie d'impôt de la démarche et ce qu'elle rapporte une fois
+            // placée (3a, 3b, épargne) : mêmes chiffres que la carte à l'écran
+            // et que le calculateur 3e pilier.
+            savingReuse:
+              savingReuse.annualSaving > 0
+                ? {
+                    annualSaving: savingReuse.annualSaving,
+                    todayTax: savingReuse.todayTax,
+                    afterTax: savingReuse.afterTax,
+                    originLabel: savingReuse.originLabel,
+                    years: savingReuse.years,
+                    bestId: savingReuse.bestId,
+                    placements: savingReuse.placements.map((p) => ({
+                      id: p.id,
+                      label: p.label,
+                      capitalAtRetirement: p.capitalAtRetirement,
+                      extraTaxSavingPerYear: p.extraTaxSavingPerYear,
+                      netGain: p.netGain,
+                    })),
+                  }
+                : undefined,
             // Snapshot complet de la base "avant" (bouton "Définir comme
             // base"), pour pouvoir restaurer fidèlement le comparatif
             // Avant/Après à la réouverture de cette simulation — sans ça, la

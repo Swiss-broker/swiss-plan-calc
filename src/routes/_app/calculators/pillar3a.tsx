@@ -43,6 +43,15 @@ import { SplitCompareLayout, type SplitRow } from "@/components/calculators/Spli
 import { useT } from "@/contexts/LanguageContext";
 import { CrossCalcImpactBanner } from "@/components/calculators/CrossCalcImpactBanner";
 import { getCommunalMultiplier } from "@/lib/swiss/communal-multipliers";
+import { SavingReuseCard } from "@/components/calculators/SavingReuseCard";
+import {
+  computeSavingReuse,
+  computeSavingReuseFromBundle,
+  type SavingReuse,
+} from "@/lib/tax-global/saving-reuse";
+import { createDefaultInput } from "@/lib/tax-global/profile";
+import { toTaxGlobalInput, stripUndefined } from "@/lib/clients/to-calculator-input";
+import type { TaxGlobalInput } from "@/lib/tax-global/types";
 
 // Rente de vieillesse estimée du 3e pilier = capital final ÷ 25 ans
 // (hypothèse d'espérance de vie retenue après l'âge de la retraite) ÷ 12
@@ -55,6 +64,8 @@ const searchSchema = z.object({
   clientId: fallback(z.string().uuid().optional(), undefined),
   caseId: fallback(z.string().uuid().optional(), undefined),
   simId: fallback(z.string().uuid().optional(), undefined),
+  /** Économie d'impôt annuelle transmise par le Fiscal global (CHF). */
+  reinvest: fallback(z.coerce.number().min(0).max(1_000_000).optional(), undefined),
 });
 
 export const Route = createFileRoute("/_app/calculators/pillar3a")({
@@ -65,7 +76,7 @@ export const Route = createFileRoute("/_app/calculators/pillar3a")({
 
 function Pillar3aCalc() {
   const t = useT();
-  const { clientId, caseId, simId } = Route.useSearch();
+  const { clientId, caseId, simId, reinvest } = Route.useSearch();
   const { client, bundle, prefill } = usePrefillFromClient(clientId, "pillar3a");
   const { inputs: savedInputs, isLoading: loadingSaved } = useLoadSavedSimulation(simId);
   const [form, setForm] = useState({
@@ -398,6 +409,31 @@ function Pillar3aCalc() {
       set("pillar3bYearly", Math.round(savings.taxSavings));
     }
   }, [savings.taxSavings, pillar3bManuallyEdited]);
+  // Économie d'impôt du Fiscal global (rectification du barème ou TOU) à
+  // placer : recalculée depuis le dossier client, ou reprise telle quelle
+  // quand on arrive du Fiscal global avec un montant simulé.
+  const savingReuse = useMemo<SavingReuse | null>(() => {
+    if (!bundle) return null;
+    if (reinvest === undefined) return computeSavingReuseFromBundle(bundle);
+    const g = {
+      ...createDefaultInput(),
+      ...stripUndefined(toTaxGlobalInput(bundle) as unknown as Record<string, unknown>),
+    } as TaxGlobalInput;
+    return computeSavingReuse(g, { annualSavingOverride: reinvest });
+  }, [bundle, reinvest]);
+  const [reuseApplied, setReuseApplied] = useState(false);
+  const applySavingReuse = () => {
+    if (!savingReuse) return;
+    const into3a = Math.min(savingReuse.annualSaving, Math.max(0, max - form.contribution));
+    const into3b = savingReuse.annualSaving - into3a;
+    setPillar3bManuallyEdited(true);
+    setForm((f) => ({
+      ...f,
+      contribution: f.contribution + into3a,
+      pillar3bYearly: f.pillar3bYearly + into3b,
+    }));
+    setReuseApplied(true);
+  };
   const guideSteps: GuideStep[] = [
     { title: t("calc.p3a.step.welcome.t"), body: t("calc.p3a.step.welcome.b") },
     { target: "p3a-contribution", title: t("calc.p3a.step.cap.t"), body: t("calc.p3a.step.cap.b") },
@@ -435,6 +471,24 @@ function Pillar3aCalc() {
       <CrossCalcImpactBanner calculator="pillar3a" clientId={clientId} caseId={caseId} />
 
       {client && <ClientLinkBanner client={client} caseId={caseId} />}
+      {savingReuse && (
+        <SavingReuseCard
+          reuse={savingReuse}
+          title="Économie d'impôt du Fiscal global à placer"
+          action={
+            reuseApplied ? (
+              <p className="text-xs text-success">
+                Économie reportée dans les cotisations ci-dessous (3a jusqu'au plafond, solde en
+                3b).
+              </p>
+            ) : (
+              <Button type="button" size="sm" onClick={applySavingReuse}>
+                Reporter dans les cotisations 3a / 3b
+              </Button>
+            )
+          }
+        />
+      )}
       {simId && loadingSaved && (
         <div className="rounded-lg border border-primary/30 bg-primary/5 p-3 text-sm text-muted-foreground">
           Chargement de la sauvegarde…
