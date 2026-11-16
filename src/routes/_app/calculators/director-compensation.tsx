@@ -603,7 +603,7 @@ function DirectorCompensationCalc() {
               })),
               lppBuyback: lppSnapshot,
             }}
-            defaultTitle={`Dirigeant ${inputs.companyCanton} · profit ${inputs.totalProfit} CHF`}
+            defaultTitle={`Dirigeant ${inputs.companyCanton} · profit ${formatCHF(inputs.totalProfit)}`}
           />
         </div>
       </div>

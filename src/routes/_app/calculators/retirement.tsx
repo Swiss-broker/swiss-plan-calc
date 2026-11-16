@@ -1,3 +1,4 @@
+import { formatCHF } from "@/lib/format";
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Download } from "lucide-react";
@@ -380,7 +381,7 @@ function RetirementCalc() {
             lumpTaxTotal: lumpTax.total,
             recommendation: compare.recommendation,
           }}
-          defaultTitle={`Retraite ${form.canton} · capital ${form.capital}`}
+          defaultTitle={`Retraite ${form.canton} · capital ${formatCHF(form.capital)}`}
           // Empêche de sauvegarder avant que le taux marginal n'ait fini de
           // se reprendre depuis le fiscal global : sans ça, un clic rapide
           // juste après l'ouverture de la page figeait la valeur par défaut

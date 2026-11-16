@@ -544,7 +544,7 @@ function VestedBenefitsCalc() {
               },
             ],
           }}
-          defaultTitle={`Libre passage · ${form.initialBalance} CHF / ${form.yearsToRetirement} ans`}
+          defaultTitle={`Libre passage · ${formatCHF(form.initialBalance)} / ${form.yearsToRetirement} ans`}
         />
       </div>
     </div>

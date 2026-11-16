@@ -314,7 +314,10 @@ export function describeCompareFigures(entry: HistoryEntry): string | null {
   }
   const saved = extractSavedCompareRows(entry);
   if (saved.rows.length > 0) {
-    const r = saved.rows[0];
+    // Première ligne qui change réellement : citer « actuel 22'679, projeté
+    // 22'679 » à côté d'un gain n'a aucun sens pour le client.
+    const r = saved.rows.find((row) => row.current !== row.projected);
+    if (!r) return null;
     return `${r.label}. Actuel : ${formatSplitValue(r.current, r.format)}, projeté : ${formatSplitValue(r.projected, r.format)}.`;
   }
   const derived = buildDerivedComparison(entry);
@@ -446,6 +449,9 @@ export function exportSynthesisReportPdf(args: SynthesisReportArgs): void {
 
   // ---------- PAGE 1 · COVER ----------
   drawCoverPage(pdf, fullName, options.customNote, args.header);
+  // Page de garde en aplat : le pied de page gris et le cartouche blanc du
+  // numéro de page y étaient illisibles.
+  pdf.skipFooterOnPage(1);
 
   // ---------- PAGE 2 · TABLE DES MATIÈRES (placeholder, rempli en fin de génération) ----------
   pdf.newPage();
@@ -512,6 +518,10 @@ export function exportSynthesisReportPdf(args: SynthesisReportArgs): void {
   const drawnPairKinds = new Set<SimulationKind>();
   const drawEntry = (entry: HistoryEntry) => {
     const kind = entry.kind as SimulationKind;
+    // L'instantané « Prestations consolidées » a déjà sa page dédiée
+    // (drawConsolidatedBenefitsPage) : pas de second bloc vide ni de
+    // seconde ligne au sommaire.
+    if ((kind as string) === "consolidated_benefits") return;
     const pair = spreadPairs.get(kind);
     if (pair) {
       if (drawnPairKinds.has(kind)) return; // l'autre moitié de la paire a déjà tout dessiné
@@ -524,9 +534,15 @@ export function exportSynthesisReportPdf(args: SynthesisReportArgs): void {
     }
     pdf.spacer(6);
     const kindLabel = KIND_LABELS[kind] || kind;
-    const title = entry.title?.trim()
-      ? `${kindLabel} : ${entry.title.trim()}`
-      : kindLabel;
+    // Sommaire : le nom du calculateur suffit quand le titre de la
+    // simulation le répète déjà (« Fiscal global : Fiscal global VD… »).
+    const rawTitle = entry.title?.trim() ?? "";
+    const firstWord = kindLabel.split(/[\s:]/)[0].toLowerCase();
+    const title = !rawTitle
+      ? kindLabel
+      : rawTitle.toLowerCase().startsWith(firstWord) || rawTitle.toLowerCase() === kindLabel.toLowerCase()
+        ? rawTitle
+        : `${kindLabel} : ${rawTitle}`;
     toc.push({ title, page: pdf.doc.getCurrentPageInfo().pageNumber });
     drawSimulationPage(pdf, entry, options.includeCharts);
   };
@@ -1198,7 +1214,14 @@ function drawSimulationPage(pdf: ReportPdf, entry: HistoryEntry, includeCharts: 
   // (voir commentaire sur willShowChart).
   const savedRows = extractSavedCompareRows(entry);
   const derivedComparison = savedRows.rows.length === 0 ? buildDerivedComparison(entry) : null;
-  const compareRows = savedRows.rows.length > 0 ? savedRows.rows : (derivedComparison?.rows ?? []);
+  const allCompareRows = savedRows.rows.length > 0 ? savedRows.rows : (derivedComparison?.rows ?? []);
+  // Comparatif sans aucun écart (aucune optimisation saisie dans le
+  // calculateur au moment de la sauvegarde) : deux colonnes identiques et un
+  // graphique à barres jumelles n'apprennent rien au client. On affiche
+  // alors les « Résultats clés » à la place.
+  const compareIsFlat =
+    allCompareRows.length > 0 && allCompareRows.every((r) => r.current === r.projected);
+  const compareRows = compareIsFlat ? [] : allCompareRows;
   const chartRows = compareRows
     .filter(
       (r) =>
@@ -1207,7 +1230,11 @@ function drawSimulationPage(pdf: ReportPdf, entry: HistoryEntry, includeCharts: 
         typeof r.projected === "number",
     )
     .slice(0, 4);
-  const simpleChartPair = computeSimpleChartPair(entry);
+  const simpleChartPairRaw = computeSimpleChartPair(entry);
+  const simpleChartPair =
+    simpleChartPairRaw && compareIsFlat && simpleChartPairRaw.left.value === simpleChartPairRaw.right.value
+      ? null
+      : simpleChartPairRaw;
   // Un graphique (comparatif ou "simple chart") va-t-il réellement s'afficher
   // plus bas sur cette page ? Si oui, "Résultats clés" ne fait que répéter
   // en chiffres bruts ce que le graphique montre déjà visuellement juste
@@ -2057,8 +2084,12 @@ export function buildComment(entry: HistoryEntry): string | null {
       const cheap = str(s.cheapestCanton);
       const ref = str(s.referenceCanton);
       if (!cheap || !ref) return null;
+      const zoug =
+        typeof s.compareProjectedLabel === "string" && /zoug/i.test(s.compareProjectedLabel)
+          ? " Le comparatif ci-dessus prend Zoug comme repère (l'un des cantons les moins imposés de Suisse) ; parmi les cantons romands, le plus avantageux pour votre profil est indiqué ci-après."
+          : "";
       if (sav > 0) {
-        return `À revenu identique, un déménagement de ${cantonName(ref)} vers ${cantonName(cheap)} vous ferait économiser ${formatCHF(sav)} par an sur votre charge fiscale totale, soit ${formatCHF(sav * 10)} cumulés sur 10 ans si votre situation reste stable. Cet écart s'explique par les différences de barèmes cantonaux et de multiplicateurs communaux entre les deux cantons. Point de vigilance : un changement de domicile a des conséquences qui dépassent la seule fiscalité (emploi, scolarité des enfants, distance, coût de la vie local) et mérite une réflexion globale avant toute décision.`;
+        return `${zoug ? zoug.trim() + " " : ""}À revenu identique, un déménagement de ${cantonName(ref)} vers ${cantonName(cheap)} vous ferait économiser ${formatCHF(sav)} par an sur votre charge fiscale totale, soit ${formatCHF(sav * 10)} cumulés sur 10 ans si votre situation reste stable. Cet écart s'explique par les différences de barèmes cantonaux et de multiplicateurs communaux entre les deux cantons. Point de vigilance : un changement de domicile a des conséquences qui dépassent la seule fiscalité (emploi, scolarité des enfants, distance, coût de la vie local) et mérite une réflexion globale avant toute décision.`;
       }
       return `Pour ce profil, le canton de ${cantonName(ref)} ressort déjà comme le plus avantageux ou proche du plus avantageux parmi les cantons comparés (${cantonName(cheap)}) : un changement de domicile n'apporterait pas d'économie fiscale significative dans ce scénario précis.`;
     }
@@ -2073,7 +2104,9 @@ export function buildComment(entry: HistoryEntry): string | null {
           : reco === "lump_sum"
             ? "Le retrait en capital ressort comme l'option la plus avantageuse dans votre scénario, sous réserve d'une gestion disciplinée du capital sur la durée."
             : "Les deux options sont proches en termes de résultat net pour vous, une solution mixte permettant d'équilibrer sécurité et performance.";
-      return `La comparaison oppose la rente viagère (${formatCHF(a)} net par an, versée à vie) au retrait en capital (${formatCHF(l)} net après l'impôt unique sur le capital de prévoyance). ${recoTxt} Ce choix dépend fortement de facteurs qui vous sont propres : votre espérance de vie, l'existence d'un conjoint à protéger, votre tolérance au risque de placement, et votre éventuelle volonté de transmettre le capital restant à vos héritiers, ce que la rente viagère ne permet pas.`;
+      const years = num((entry.inputs as Record<string, unknown> | undefined)?.yearsAlive);
+      const yearsTxt = years > 0 ? ` sur ${years} ans de retraite` : " sur la durée de retraite retenue";
+      return `La comparaison oppose la rente viagère (${formatCHF(a)} nets perçus au total${yearsTxt}, après impôt sur le revenu) au retrait en capital (${formatCHF(l)} de retraits possibles sur la même durée, après l'impôt unique sur le capital et placement du solde). ${recoTxt} Ce choix dépend fortement de facteurs qui vous sont propres : votre espérance de vie, l'existence d'un conjoint à protéger, votre tolérance au risque de placement, et votre éventuelle volonté de transmettre le capital restant à vos héritiers, ce que la rente viagère ne permet pas.`;
     }
     case "director_compensation": {
       const reco = num(s.recommendedDirectorNet);
@@ -2210,6 +2243,12 @@ export function buildComment(entry: HistoryEntry): string | null {
             return `${label} repris d'une simulation${dateTxt} (${formatCHF(value)}), plutôt que du profil de base du client.`;
           }).join(" ")
         : "";
+      const bestLabel = str(s.bestScenarioLabel);
+      const bestSaving = num(s.bestScenarioSavings);
+      const bestTxt =
+        bestLabel && bestSaving > 0
+          ? ` Parmi les pistes testées automatiquement, la plus efficace est « ${bestLabel.replace(/^\+/, "")} » : environ ${formatCHF(bestSaving)} d'impôt en moins.`
+          : "";
       const scaleToday = str(s.sourceScaleToday);
       const scaleRect = str(s.sourceScaleRectified);
       const scaleTxt = scaleToday
@@ -2225,7 +2264,7 @@ export function buildComment(entry: HistoryEntry): string | null {
           : "";
         reuseTxt = ` La démarche recommandée (${str(reuse.originLabel) ?? "démarche fiscale"}) ramène l'impôt de ${formatCHF(num(reuse.todayTax))} à ${formatCHF(num(reuse.afterTax))}, soit ${formatCHF(num(reuse.annualSaving))} d'économie par an.${bestTxt}`;
       }
-      return `Votre charge fiscale totale estimée s'élève à ${formatCHF(total)} par an${regimeTxt}, pour un revenu net disponible de ${formatCHF(net)}. Votre taux effectif ressort à ${formatPct(eff)} de votre revenu brut, tandis que votre taux marginal de ${formatPct(marg)} indique la charge fiscale sur le prochain franc que vous gagnez, un repère utile pour évaluer l'intérêt d'une déduction supplémentaire (3a, rachat LPP).${foreignTxt}${scaleTxt}${reuseTxt}${reusedTxt} Cette estimation se base sur les barèmes 2026 et votre situation déclarée ; elle doit être confirmée par votre déclaration fiscale officielle.`;
+      return `Votre charge fiscale totale estimée s'élève à ${formatCHF(total)} par an${regimeTxt}, pour un revenu net disponible de ${formatCHF(net)}. Votre taux effectif ressort à ${formatPct(eff)} de votre revenu brut, tandis que votre taux marginal de ${formatPct(marg)} indique la charge fiscale sur le prochain franc que vous gagnez, un repère utile pour évaluer l'intérêt d'une déduction supplémentaire (3a, rachat LPP).${foreignTxt}${scaleTxt}${reuseTxt}${bestTxt}${reusedTxt} Cette estimation se base sur les barèmes 2026 et votre situation déclarée ; elle doit être confirmée par votre déclaration fiscale officielle.`;
     }
     case "cross_border":
     case "tou":

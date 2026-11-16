@@ -411,7 +411,7 @@ function HealthInsuranceFranceCalc() {
               cmuToLamalMonthlySavingsCHF: result.cmuToLamalMonthlySavingsCHF,
               cmuToLamalCumulativeSavingsCHF: result.cmuToLamalCumulativeSavingsCHF,
             }}
-            defaultTitle={`Santé frontalier · ${form.civilStatus === "married" ? "Couple" : "Solo"} · ${form.swissGrossSalaryCHF} CHF`}
+            defaultTitle={`Santé frontalier · ${form.civilStatus === "married" ? "Couple" : "Solo"} · ${formatCHF(form.swissGrossSalaryCHF)}`}
           />
         </div>
       </div>

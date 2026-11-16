@@ -173,6 +173,12 @@ const GREEN_BORDER: [number, number, number] = [110, 231, 183];
 
 export class ReportPdf {
   private footerDrawnPages = new Set<number>();
+  /** Pages sans pied de page ni numéro (page de garde en aplat de couleur). */
+  private noFooterPages = new Set<number>();
+  skipFooterOnPage(page: number) {
+    this.noFooterPages.add(page);
+    return this;
+  }
   // Titre de section en attente de dessin (voir section()/ensureSpace() plus
   // bas) : jamais peint tant qu'on ne sait pas si le contenu qui le suit
   // tient sur la page courante, pour ne jamais laisser un titre de chapitre
@@ -1161,6 +1167,7 @@ export class ReportPdf {
     const total = this.doc.getNumberOfPages();
     for (let i = 1; i <= total; i++) {
       this.doc.setPage(i);
+      if (this.noFooterPages.has(i)) continue;
       this.drawFooter();
       this.drawPageNumber();
     }

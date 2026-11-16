@@ -94,15 +94,44 @@ export function SynthesisReportModal({ open, onOpenChange, clientId, entries }: 
   const historyEntries = useMemo(() => entries.filter((e) => !e.case_id), [entries]);
   const hasCaseFilter = cases.length > 0 || historyEntries.length > 0;
 
-  const toggleCase = (id: string) => {
-    setSelected(new Set());
-    setSelectedCaseIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
+  // Présélection : pour les dossiers cochés, la simulation la plus récente
+  // de chaque calculateur (plus celles marquées « Situation actuelle »).
+  // Le conseiller n'a plus à cocher une à une, et les anciennes versions
+  // d'un même calcul ne se retrouvent pas en double dans le PDF.
+  const latestPerKindIds = (caseIds: Set<string>): Set<string> => {
+    const ids = new Set<string>();
+    const seen = new Set<string>();
+    const pool = entries
+      .filter((e) => caseIds.has(e.case_id ?? NO_CASE))
+      .sort((a, b) => b.created_at.localeCompare(a.created_at));
+    for (const e of pool) {
+      const key = `${e.case_id ?? NO_CASE}:${e.kind}`;
+      if (e.is_baseline) ids.add(e.id);
+      if (seen.has(key)) continue;
+      seen.add(key);
+      ids.add(e.id);
+    }
+    return ids;
   };
+
+  const toggleCase = (id: string) => {
+    const next = new Set(selectedCaseIds);
+    if (next.has(id)) next.delete(id);
+    else next.add(id);
+    setSelectedCaseIds(next);
+    setSelected(latestPerKindIds(next));
+  };
+
+  // Un seul dossier possible : il est coché d'office à l'ouverture.
+  useEffect(() => {
+    if (!open) return;
+    const choices = [...cases.map((c) => c.id), ...(historyEntries.length > 0 ? [NO_CASE] : [])];
+    if (choices.length !== 1) return;
+    const only = new Set(choices);
+    setSelectedCaseIds(only);
+    setSelected(latestPerKindIds(only));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, cases, historyEntries.length, entries]);
 
   // Simulations couvertes par les dossiers cochés ci-dessus. Sans filtre de
   // dossier applicable (client sans dossier ni historique), on retombe sur

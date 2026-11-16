@@ -1054,7 +1054,7 @@ function Pillar3aCalc() {
               }),
             ),
           }}
-          defaultTitle={`3a ${form.canton} · ${form.contribution} CHF/an`}
+          defaultTitle={`3a ${form.canton} · ${formatCHF(form.contribution)}/an`}
         />
       </div>
     </div>
