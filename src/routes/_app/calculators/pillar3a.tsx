@@ -413,14 +413,26 @@ function Pillar3aCalc() {
   // placer : recalculée depuis le dossier client, ou reprise telle quelle
   // quand on arrive du Fiscal global avec un montant simulé.
   const savingReuse = useMemo<SavingReuse | null>(() => {
-    if (!bundle) return null;
-    if (reinvest === undefined) return computeSavingReuseFromBundle(bundle);
-    const g = {
-      ...createDefaultInput(),
-      ...stripUndefined(toTaxGlobalInput(bundle) as unknown as Record<string, unknown>),
-    } as TaxGlobalInput;
+    if (bundle && reinvest === undefined) return computeSavingReuseFromBundle(bundle);
+    if (reinvest === undefined) return null;
+    // Montant transmis par le Fiscal global : situation du dossier client
+    // s'il y en a un, sinon celle saisie dans ce calculateur.
+    const g = bundle
+      ? ({
+          ...createDefaultInput(),
+          ...stripUndefined(toTaxGlobalInput(bundle) as unknown as Record<string, unknown>),
+        } as TaxGlobalInput)
+      : ({
+          ...createDefaultInput(),
+          canton: form.canton,
+          civilStatus: form.status === "married" ? "married" : "single",
+          children: form.status === "single_with_children" ? 1 : 0,
+          grossSalary: form.grossSalary,
+          pillar3aContributions: form.contribution,
+          age: form.yearsToRetirement > 0 ? Math.max(18, 65 - form.yearsToRetirement) : 40,
+        } as TaxGlobalInput);
     return computeSavingReuse(g, { annualSavingOverride: reinvest });
-  }, [bundle, reinvest]);
+  }, [bundle, reinvest, form.canton, form.status, form.grossSalary, form.yearsToRetirement]);
   const [reuseApplied, setReuseApplied] = useState(false);
   const applySavingReuse = () => {
     if (!savingReuse) return;

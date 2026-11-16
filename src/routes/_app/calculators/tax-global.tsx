@@ -221,7 +221,11 @@ function TaxGlobalCalc() {
   const bestScenario = useMemo(() => {
     const savings = scenarios.filter((s) => s.id !== "baseline" && s.deltaVsBaseline < 0);
     if (savings.length === 0) return null;
-    return savings.reduce((a, b) => (b.deltaVsBaseline < a.deltaVsBaseline ? b : a));
+    const best = savings.reduce((a, b) => (b.deltaVsBaseline < a.deltaVsBaseline ? b : a));
+    // À économie égale, la demande de TOU seule l'emporte : inutile de
+    // recommander un versement qui n'ajoute rien.
+    const tou = savings.find((s) => s.id === "tou");
+    return tou && tou.deltaVsBaseline <= best.deltaVsBaseline + 1 ? tou : best;
   }, [scenarios]);
   const brokerHeader = useBrokerPdfHeader();
   // ── Conversion devise pour revenus étrangers ──

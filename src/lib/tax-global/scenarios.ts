@@ -5,6 +5,7 @@ import { computeTaxGlobal } from "./engine";
 import { isCoupleStatus } from "./profile";
 import type { TaxGlobalInput, TaxGlobalResult } from "./types";
 import { PILLAR_3A_MAX_2026_LPP } from "@/lib/tax/income";
+import { formatCHF } from "@/lib/format";
 
 export interface Scenario {
   id: string;
@@ -38,6 +39,24 @@ export function buildScenarios(input: TaxGlobalInput): Scenario[] {
     },
   ];
 
+  // Imposés à la source et frontaliers GE/FR : une déduction ne joue qu'après
+  // demande de TOU. On isole donc ce qui revient à la TOU elle-même de ce
+  // que le versement apporte en plus, pour ne pas attribuer au 3e pilier A
+  // ou au rachat une économie qui vient en réalité de la démarche.
+  const touIsSeparateStep =
+    !!baselineResult.touComparison && !baselineResult.touComparison.mandatory;
+  const touOnlyTotal = touIsSeparateStep
+    ? computeTaxGlobal({ ...input, assumeTou: true }).totalTaxCHF
+    : baseTotal;
+  const ownEffect = (scenarioTotal: number) => {
+    if (!touIsSeparateStep) return "";
+    const own = Math.max(0, Math.round(touOnlyTotal - scenarioTotal));
+    const chf = (n: number) => formatCHF(n);
+    return own > 0
+      ? ` Dont ${chf(own)} grâce au versement lui-même, le reste grâce à la TOU.`
+      : " Ici toute l'économie vient de la TOU : le versement n'ajoute rien (impôt déjà au plus bas).";
+  };
+
   // ─── 3a max : seulement utile si le 3a est déductible côté CH ───
   // Frontalier accord 1983 : imposition exclusive en France → 3a CH n'est pas déductible.
   const couple = isCoupleStatus(input.civilStatus);
@@ -47,9 +66,10 @@ export function buildScenarios(input: TaxGlobalInput): Scenario[] {
     out.push({
       id: "pillar3a_max",
       label: `+3a max (${maxPillar3a.toLocaleString("fr-CH")} CHF)`,
-      description: regime === "cross_border_ge"
-        ? "Verser le 3a au plafond, après demande de TOU"
-        : "Verser le 3e pilier A au plafond légal",
+      description:
+        (touIsSeparateStep
+          ? "Verser le 3e pilier A au plafond, après demande de TOU."
+          : "Verser le 3e pilier A au plafond légal") + ownEffect(r.totalTaxCHF),
       result: r,
       deltaVsBaseline: r.totalTaxCHF - baseTotal,
     });
@@ -70,9 +90,13 @@ export function buildScenarios(input: TaxGlobalInput): Scenario[] {
     out.push({
       id: "lpp_buyback_trial",
       label: `+Rachat LPP ${Math.round(buybackTrial).toLocaleString("fr-CH")} CHF`,
-      description: (regime === "cross_border_ge"
-        ? "Rachat LPP supplémentaire, après demande de TOU"
-        : "Rachat LPP supplémentaire simulé") + capacityLabel,
+      description:
+        (touIsSeparateStep
+          ? "Rachat LPP supplémentaire, après demande de TOU"
+          : "Rachat LPP supplémentaire simulé") +
+        capacityLabel +
+        (touIsSeparateStep ? "." : "") +
+        ownEffect(r.totalTaxCHF),
       result: r,
       deltaVsBaseline: r.totalTaxCHF - baseTotal,
     });

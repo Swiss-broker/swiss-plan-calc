@@ -9,6 +9,7 @@ import { createDefaultInput, toTaxStatus } from "./profile";
 import type { TaxGlobalInput } from "./types";
 import { PILLAR_3A_MAX_2026_LPP, PILLAR_3A_MAX_2026_NO_LPP } from "@/lib/tax/income";
 import { capitalWithdrawalTax } from "@/lib/lpp";
+import { formatCHF } from "@/lib/format";
 import {
   toTaxGlobalInput,
   stripUndefined,
@@ -147,7 +148,7 @@ export function computeSavingReuse(
         ),
         note:
           (rest > 0
-            ? `CHF ${a3.toLocaleString("fr-CH")} en 3a (plafond légal atteint), CHF ${rest.toLocaleString("fr-CH")} en 3b. `
+            ? `${formatCHF(a3)} en 3a (plafond légal atteint), ${formatCHF(rest)} en 3b. `
             : "") +
           (extra3a > 0
             ? "Versement 3a déductible du revenu : l'économie d'impôt s'ajoute chaque année. Capital bloqué jusqu'à la retraite (sauf achat du logement, départ de Suisse, mise à son compte), imposé à taux réduit à la sortie."
