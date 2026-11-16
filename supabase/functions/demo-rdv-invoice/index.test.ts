@@ -21,8 +21,8 @@ const profiles: Record<string, { plan: string }> = {
 };
 
 const clients: Record<string, { broker_id: string; first_name: string }> = {
-  "client-of-demo": { broker_id: "broker-demo", first_name: "Jean" },
-  "client-of-other": { broker_id: "broker-other", first_name: "Secret" },
+  "dddddddd-0000-4000-8000-00000000000d": { broker_id: "broker-demo", first_name: "Jean" },
+  "eeeeeeee-0000-4000-8000-00000000000e": { broker_id: "broker-other", first_name: "Secret" },
 };
 
 let insertedInvoices: Record<string, unknown>[] = [];
@@ -55,7 +55,7 @@ beforeEach(() => {
 
 describe("demo-rdv-invoice — réservé aux comptes plan='demo', jamais Stripe", () => {
   it("compte plan='demo' -> facture paid/unlocked/is_demo, aucun appel Stripe", async () => {
-    const req = reqWithAuth("broker-demo", { clientId: "client-of-demo", amountChf: 150 });
+    const req = reqWithAuth("broker-demo", { clientId: "dddddddd-0000-4000-8000-00000000000d", amountChf: 150 });
     const res = await handleDemoRdvInvoiceRequest(req, ENV);
     expect(res.status).toBe(200);
     expect(insertedInvoices[0]).toMatchObject({
@@ -77,7 +77,7 @@ describe("demo-rdv-invoice — réservé aux comptes plan='demo', jamais Stripe"
   });
 
   it("clientId d'un autre courtier -> refusé, pas de facture créée", async () => {
-    const req = reqWithAuth("broker-demo", { clientId: "client-of-other", amountChf: 150 });
+    const req = reqWithAuth("broker-demo", { clientId: "eeeeeeee-0000-4000-8000-00000000000e", amountChf: 150 });
     const res = await handleDemoRdvInvoiceRequest(req, ENV);
     expect(res.status).toBe(500);
     expect(insertedInvoices).toHaveLength(0);

@@ -29,8 +29,8 @@ function reqWithAuth(userId: string | null, body: Record<string, unknown>): Requ
 }
 
 const clients: Record<string, { broker_id: string; email: string | null; first_name: string }> = {
-  "client-A": { broker_id: "broker-A", email: "jean@example.ch", first_name: "Jean" },
-  "client-noemail": { broker_id: "broker-A", email: null, first_name: "Sans-Email" },
+  "aaaaaaaa-0000-4000-8000-00000000000a": { broker_id: "broker-A", email: "jean@example.ch", first_name: "Jean" },
+  "cccccccc-0000-4000-8000-00000000000c": { broker_id: "broker-A", email: null, first_name: "Sans-Email" },
 };
 
 let brevoSent: { to: string; subject: string }[] = [];
@@ -72,7 +72,7 @@ beforeEach(() => {
 
 describe("send-client-email", () => {
   it("envoie bien au client du courtier appelant", async () => {
-    const req = reqWithAuth("broker-A", { clientId: "client-A", subject: "Bonjour", body: "Contenu du message." });
+    const req = reqWithAuth("broker-A", { clientId: "aaaaaaaa-0000-4000-8000-00000000000a", subject: "Bonjour", body: "Contenu du message." });
     const res = await handleSendClientEmailRequest(req, ENV);
     expect(res.status).toBe(200);
     expect(brevoSent).toEqual([{ to: "jean@example.ch", subject: "Bonjour" }]);
@@ -80,7 +80,7 @@ describe("send-client-email", () => {
   });
 
   it("clientId appartenant à un AUTRE courtier -> refus, aucun envoi", async () => {
-    const req = reqWithAuth("broker-B", { clientId: "client-A", subject: "Bonjour", body: "Contenu." });
+    const req = reqWithAuth("broker-B", { clientId: "aaaaaaaa-0000-4000-8000-00000000000a", subject: "Bonjour", body: "Contenu." });
     const res = await handleSendClientEmailRequest(req, ENV);
     expect(res.status).toBe(500);
     const resBody = await res.json();
@@ -89,7 +89,7 @@ describe("send-client-email", () => {
   });
 
   it("client sans adresse e-mail -> refus, aucun envoi", async () => {
-    const req = reqWithAuth("broker-A", { clientId: "client-noemail", subject: "Bonjour", body: "Contenu." });
+    const req = reqWithAuth("broker-A", { clientId: "cccccccc-0000-4000-8000-00000000000c", subject: "Bonjour", body: "Contenu." });
     const res = await handleSendClientEmailRequest(req, ENV);
     expect(res.status).toBe(500);
     const resBody = await res.json();
@@ -98,7 +98,7 @@ describe("send-client-email", () => {
   });
 
   it("sans Authorization -> refus", async () => {
-    const req = reqWithAuth(null, { clientId: "client-A", subject: "Bonjour", body: "Contenu." });
+    const req = reqWithAuth(null, { clientId: "aaaaaaaa-0000-4000-8000-00000000000a", subject: "Bonjour", body: "Contenu." });
     const res = await handleSendClientEmailRequest(req, ENV);
     expect(res.status).toBe(500);
     const resBody = await res.json();
@@ -107,7 +107,7 @@ describe("send-client-email", () => {
   });
 
   it("sujet ou message vide -> refus", async () => {
-    const req = reqWithAuth("broker-A", { clientId: "client-A", subject: "", body: "Contenu." });
+    const req = reqWithAuth("broker-A", { clientId: "aaaaaaaa-0000-4000-8000-00000000000a", subject: "", body: "Contenu." });
     const res = await handleSendClientEmailRequest(req, ENV);
     expect(res.status).toBe(500);
     expect(brevoSent).toHaveLength(0);
@@ -115,7 +115,7 @@ describe("send-client-email", () => {
 
   it("une URL dans le message devient un lien cliquable dans le HTML envoyé", async () => {
     const req = reqWithAuth("broker-A", {
-      clientId: "client-A", subject: "Bonjour",
+      clientId: "aaaaaaaa-0000-4000-8000-00000000000a", subject: "Bonjour",
       body: "Voici le lien : https://checkout.stripe.com/c/pay/cs_test_123. Merci.",
     });
     const res = await handleSendClientEmailRequest(req, ENV);

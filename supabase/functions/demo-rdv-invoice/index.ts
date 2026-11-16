@@ -38,6 +38,9 @@ export async function handleDemoRdvInvoiceRequest(req: Request, env: Env): Promi
   try {
     const { clientId, amountChf } = await req.json();
 
+    if (clientId && !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(clientId))) {
+      throw new Error("Identifiant client invalide.");
+    }
     if (!amountChf) throw new Error("Montant manquant.");
     const amountCentimes = Math.round(amountChf * 100);
     if (amountCentimes < RDV_MIN_CENTIMES) {

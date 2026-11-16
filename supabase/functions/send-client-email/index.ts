@@ -91,6 +91,9 @@ export async function handleSendClientEmailRequest(req: Request, env: Env): Prom
   try {
     const { clientId, subject, body, templateKey } = await req.json();
     if (!clientId || typeof clientId !== "string") throw new Error("Client manquant.");
+    // Seul un UUID est accepté : la valeur part dans l'URL d'une requête
+    // faite avec la clé de service.
+    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(clientId)) throw new Error("Identifiant client invalide.");
     if (!subject || typeof subject !== "string" || !subject.trim()) throw new Error("Objet manquant.");
     if (!body || typeof body !== "string" || !body.trim()) throw new Error("Message vide.");
 

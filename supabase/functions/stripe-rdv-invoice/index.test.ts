@@ -35,8 +35,8 @@ const connectAccounts: Record<string, { stripe_account_id: string; onboarding_co
   };
 
 const clients: Record<string, { broker_id: string; first_name: string; email: string }> = {
-  "client-of-A": { broker_id: "broker-A", first_name: "Jean", email: "jean@x.ch" },
-  "client-of-B": { broker_id: "broker-B", first_name: "Secret", email: "secret@x.ch" },
+  "aaaaaaaa-0000-4000-8000-00000000000a": { broker_id: "broker-A", first_name: "Jean", email: "jean@x.ch" },
+  "bbbbbbbb-0000-4000-8000-00000000000b": { broker_id: "broker-B", first_name: "Secret", email: "secret@x.ch" },
 };
 
 let insertedInvoices: Record<string, unknown>[] = [];
@@ -84,7 +84,7 @@ describe("stripe-rdv-invoice — identité dérivée du JWT + isolation client",
   it("brokerId falsifié dans le body est ignoré : facture émise sur le compte Connect de l'appelant réel", async () => {
     const req = reqWithAuth("broker-A", {
       brokerId: "broker-victime",
-      clientId: "client-of-A",
+      clientId: "aaaaaaaa-0000-4000-8000-00000000000a",
       amountChf: 150,
     });
     const res = await handleStripeRdvInvoiceRequest(req, ENV);
@@ -96,7 +96,7 @@ describe("stripe-rdv-invoice — identité dérivée du JWT + isolation client",
   });
 
   it("un clientId appartenant à un AUTRE courtier est explicitement refusé (pas de fuite de PII, pas de facture créée)", async () => {
-    const req = reqWithAuth("broker-A", { clientId: "client-of-B", amountChf: 150 });
+    const req = reqWithAuth("broker-A", { clientId: "bbbbbbbb-0000-4000-8000-00000000000b", amountChf: 150 });
     const res = await handleStripeRdvInvoiceRequest(req, ENV);
     expect(res.status).toBe(500);
     const body = await res.json();
@@ -176,5 +176,25 @@ describe("stripe-rdv-invoice — minimum 150 CHF et commission par tranches", ()
     expect(metadataInvoiceId).toBeTruthy();
     expect(insertedInvoices[0].id).toBe(metadataInvoiceId);
     expect(insertedInvoices[0].stripe_payment_intent_id).toBeNull();
+  });
+});
+
+describe("stripe-rdv-invoice — identifiant client", () => {
+  it("un clientId qui n'est pas un UUID est refusé avant toute requête", async () => {
+    const { handleStripeRdvInvoiceRequest } = await import("./index.ts");
+    const header = btoa(JSON.stringify({ alg: "none" }));
+    const payload = btoa(JSON.stringify({ sub: "broker-A" }));
+    const req = new Request("https://x/functions/v1/stripe-rdv-invoice", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${header}.${payload}.sig` },
+      body: JSON.stringify({ clientId: "x&broker_id=neq.0", amountChf: 150 }),
+    });
+    const res = await handleStripeRdvInvoiceRequest(req, {
+      supabaseUrl: "https://sb",
+      supabaseKey: "k",
+      stripeKey: "sk",
+    });
+    expect(res.status).toBe(500);
+    expect((await res.json()).error).toContain("Identifiant client invalide");
   });
 });

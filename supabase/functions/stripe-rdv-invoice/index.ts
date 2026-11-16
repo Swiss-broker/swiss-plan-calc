@@ -42,6 +42,12 @@ export async function handleStripeRdvInvoiceRequest(req: Request, env: Env): Pro
       throw new Error("Le montant minimum de facturation est de 150 CHF.");
     }
 
+    // clientId part dans l'URL d'une requête faite avec la clé de service :
+    // seul un UUID est accepté, pour qu'aucun filtre ne puisse y être glissé.
+    if (clientId && !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(clientId))) {
+      throw new Error("Identifiant client invalide.");
+    }
+
     const caller = getCallerFromJwt(req);
     if (!caller) throw new Error("Authentification requise.");
     const brokerId = caller.id;
@@ -134,6 +140,9 @@ export async function handleStripeRdvInvoiceRequest(req: Request, env: Env): Pro
       }).toString(),
     });
     const price = await plRes.json();
+    if (!plRes.ok || !price?.id) {
+      throw new Error(price?.error?.message ?? "Erreur création du tarif Stripe");
+    }
 
     const linkRes = await fetch("https://api.stripe.com/v1/payment_links", {
       method: "POST",
@@ -149,6 +158,14 @@ export async function handleStripeRdvInvoiceRequest(req: Request, env: Env): Pro
         "metadata[broker_id]": brokerId,
         "metadata[client_id]": clientId || "",
         "metadata[invoice_id]": invoiceId,
+        // Mêmes repères sur le paiement lui-même : le filet de sécurité du
+        // webhook (payment_intent.succeeded) retrouve ainsi la facture.
+        "payment_intent_data[metadata][broker_id]": brokerId,
+        "payment_intent_data[metadata][client_id]": clientId || "",
+        "payment_intent_data[metadata][invoice_id]": invoiceId,
+        // Une facture = un seul paiement : le lien se désactive après le
+        // premier règlement (sinon il restait payable plusieurs fois).
+        "restrictions[completed_sessions][limit]": "1",
         "after_completion[type]": "hosted_confirmation",
         "after_completion[hosted_confirmation][custom_message]":
           "Merci pour votre paiement. Votre courtier a été notifié.",
@@ -190,6 +207,19 @@ export async function handleStripeRdvInvoiceRequest(req: Request, env: Env): Pro
     if (!invoiceInsertRes.ok) {
       const errBody = await invoiceInsertRes.text();
       console.error("Erreur insertion rdv_invoices:", invoiceInsertRes.status, errBody);
+      // Sans facture en base, un paiement sur ce lien ne débloquerait rien :
+      // on désactive le lien et on signale l'échec au lieu de le renvoyer.
+      if (paymentLink.id) {
+        await fetch(`https://api.stripe.com/v1/payment_links/${paymentLink.id}`, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${stripeKey}`,
+            "Content-Type": "application/x-www-form-urlencoded",
+          },
+          body: new URLSearchParams({ active: "false" }).toString(),
+        }).catch(() => undefined);
+      }
+      throw new Error("La facture n'a pas pu être enregistrée. Aucun lien de paiement n'a été créé, réessayez.");
     }
 
     return new Response(
