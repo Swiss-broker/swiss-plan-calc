@@ -41,7 +41,8 @@ import {
   type HistoryEntry,
   type SimulationKind,
 } from "@/lib/history/types";
-import { aggregateGains, listDismissedGains, type GainItem } from "@/lib/simulations/extract-gain";
+import { aggregateGains,
+  resolveYearsToRetirement, listDismissedGains, type GainItem } from "@/lib/simulations/extract-gain";
 import { ageFromDob } from "@/lib/clients/types";
 import {
   RDV_MIN_CENTIMES,
@@ -65,6 +66,7 @@ export function SessionSummaryTab({
   clientId,
   clientName,
   clientDateOfBirth,
+  clientGender,
   caseId,
   historique,
 }: {
@@ -74,6 +76,7 @@ export function SessionSummaryTab({
    *  jusqu'à la retraite du client (voir aggregateGains), au lieu d'un
    *  horizon fixe arbitraire identique pour tout le monde. */
   clientDateOfBirth?: string | null;
+  clientGender?: string | null;
   /** Dossier actif (?caseId=xxx) : quand présent, la liste des simulations
    *  est filtrée sur CE dossier uniquement (voir "Ouvrir" dans
    *  ClientCasesTab) — plus de confusion avec les simulations des autres
@@ -343,8 +346,7 @@ export function SessionSummaryTab({
 
   const assignToCase = useAssignSimulationToCase(clientId);
 
-  const clientAge = ageFromDob(clientDateOfBirth);
-  const yearsToRetirement = clientAge !== null ? Math.max(1, 65 - clientAge) : 10;
+  const yearsToRetirement = resolveYearsToRetirement(clientDateOfBirth, clientGender, entries);
   const agg = aggregateGains(entries, yearsToRetirement);
   const dismissedGains = listDismissedGains(entries);
 
@@ -397,7 +399,9 @@ export function SessionSummaryTab({
                 )}
                 <div className="flex items-center justify-between border-t pt-2 text-sm">
                   <span className="text-muted-foreground">
-                    {t("client.session.pre_retirement_gain", { years: agg.yearsToRetirement })}
+                    {agg.yearsToRetirement && agg.totalAnnual > 0
+                      ? t("client.session.pre_retirement_gain", { years: agg.yearsToRetirement })
+                      : "Gains identifiés avant la retraite"}
                   </span>
                   <span className="font-semibold">{formatCHF(agg.preRetirementTotal)}</span>
                 </div>

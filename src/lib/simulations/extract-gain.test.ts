@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { aggregateGains, extractGain, isRedundantGain, projectGainTotal } from "./extract-gain";
+import { aggregateGains, extractGain, isRedundantGain, projectGainTotal, resolveYearsToRetirement } from "./extract-gain";
 import type { HistoryEntry } from "@/lib/history/types";
 
 function entry(overrides: Partial<HistoryEntry>): HistoryEntry {
@@ -155,5 +155,37 @@ describe("libre passage et comparateur d'investissements : même capital, compt�
   it("seul, chacun reste compté", () => {
     expect(isRedundantGain(invest, extractGain(invest), [invest])).toBe(false);
     expect(isRedundantGain(vested, extractGain(vested), [vested])).toBe(false);
+  });
+});
+
+describe("horizon jusqu'à la retraite : jamais un « 10 ans » inventé", () => {
+  const sim = (inputs: Record<string, unknown>) =>
+    ({ id: "s", kind: "vested_benefits", inputs, summary: {}, created_at: "2026-11-17T08:00:00Z" }) as unknown as HistoryEntry;
+  const yearsBefore65 = (dob: string) => {
+    const d = new Date(dob);
+    const now = new Date();
+    let age = now.getFullYear() - d.getFullYear();
+    if (now.getMonth() < d.getMonth() || (now.getMonth() === d.getMonth() && now.getDate() < d.getDate())) age--;
+    return 65 - age;
+  };
+
+  it("avec date de naissance : 65 ans moins l'âge, quelles que soient les simulations", () => {
+    expect(resolveYearsToRetirement("1981-03-14", "male", [sim({ yearsToRetirement: 18 })])).toBe(yearsBefore65("1981-03-14"));
+    expect(resolveYearsToRetirement("1990-05-12", "female", [])).toBe(yearsBefore65("1990-05-12"));
+  });
+
+  it("femme née en 1962 : âge de référence AVS 21 (64,5 ans), au moins 1 an", () => {
+    expect(resolveYearsToRetirement("1962-06-01", "female", [])).toBe(1);
+  });
+
+  it("sans date de naissance : durée saisie dans la simulation", () => {
+    expect(resolveYearsToRetirement(null, "male", [sim({ yearsToRetirement: 18 })])).toBe(18);
+    expect(resolveYearsToRetirement(null, null, [sim({ currentAge: 47, retirementAge: 65 })])).toBe(18);
+  });
+
+  it("sans aucune information : null, et les gains annuels ne sont pas cumulés", () => {
+    expect(resolveYearsToRetirement(null, null, [sim({})])).toBeNull();
+    const agg = aggregateGains([], null);
+    expect(agg.yearsToRetirement).toBeNull();
   });
 });

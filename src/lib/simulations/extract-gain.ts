@@ -1,5 +1,6 @@
 // Extrait le gain chiffrable principal d'une simulation sauvegardée
 // pour alimenter le bloc "Optimisations identifiées" de la fiche client.
+import { getReferenceAge, type Gender } from "@/lib/avs";
 import type { HistoryEntry, SimulationKind } from "@/lib/history/types";
 
 export type GainKind = "one_time" | "annual" | "none";
@@ -391,12 +392,13 @@ export function pickLatestNonDismissed(entries: HistoryEntry[], kind: Simulation
  */
 export function aggregateGains(
   entries: HistoryEntry[],
-  yearsToRetirement: number = GAIN_HORIZON_YEARS_FALLBACK,
+  yearsToRetirement: number | null = null,
 ): {
   items: GainItem[];
   totalOneTime: number;
   totalAnnual: number;
-  yearsToRetirement: number;
+  /** null si l'horizon est inconnu : les gains annuels ne sont alors pas cumulés. */
+  yearsToRetirement: number | null;
   /** Gains cumulés PENDANT la vie active : tous les gains annuels × années
    *  restantes jusqu'à la retraite, + tous les gains ponctuels SAUF celui du
    *  calculateur "Rente vs capital" (voir postRetirementGain ci-dessous). */
@@ -417,7 +419,9 @@ export function aggregateGains(
   // Même formule que "Gain total identifié" dans le PDF (computeTotals +
   // drawGainHighlight) : sans ça, la fiche client et le PDF affichaient deux
   // totaux différents pour la même notion ("gain identifié").
-  const preRetirementTotal = projectGainTotal(preRetirementOneTime, totalAnnual, yearsToRetirement);
+  const preRetirementTotal = yearsToRetirement
+    ? projectGainTotal(preRetirementOneTime, totalAnnual, yearsToRetirement)
+    : preRetirementOneTime;
   const totalProjected = preRetirementTotal + postRetirementGain;
   return {
     items,
@@ -428,6 +432,43 @@ export function aggregateGains(
     postRetirementGain,
     totalProjected,
   };
+}
+
+/**
+ * Années jusqu'à la retraite du client, pour cumuler ses gains annuels.
+ * 1. Âge de la fiche client et âge de référence AVS (65 ans ; 64 à 64,75
+ *    pour une femme née avant 1964, réforme AVS 21).
+ * 2. À défaut, la durée saisie dans les simulations elles-mêmes (la plus
+ *    récente d'abord).
+ * 3. Sinon null : aucune durée n'est inventée (l'ancien repli « 10 ans »
+ *    affichait une période qui ne correspondait à rien).
+ */
+export function resolveYearsToRetirement(
+  dateOfBirth: string | null | undefined,
+  gender: string | null | undefined,
+  entries: HistoryEntry[],
+): number | null {
+  if (dateOfBirth) {
+    const d = new Date(dateOfBirth);
+    if (!Number.isNaN(d.getTime())) {
+      const now = new Date();
+      let age = now.getFullYear() - d.getFullYear();
+      const m = now.getMonth() - d.getMonth();
+      if (m < 0 || (m === 0 && now.getDate() < d.getDate())) age--;
+      const refAge = getReferenceAge(d.getFullYear(), gender as Gender | null | undefined);
+      return Math.max(1, Math.round(refAge - age));
+    }
+  }
+  const sorted = [...entries].sort((a, b) => b.created_at.localeCompare(a.created_at));
+  for (const e of sorted) {
+    const i = (e.inputs ?? {}) as Record<string, unknown>;
+    const ytr = num(i.yearsToRetirement);
+    if (ytr > 0) return Math.round(ytr);
+    const cur = num(i.currentAge);
+    const ret = num(i.retirementAge);
+    if (cur > 0 && ret > cur) return Math.round(ret - cur);
+  }
+  return null;
 }
 
 /** Gains archivés (masqués de la synthèse), pour l'affichage "Restaurer". */

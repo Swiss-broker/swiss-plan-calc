@@ -12,6 +12,7 @@ import {
   LPP_PLAN_LABELS,
 } from "@/lib/swiss/enums";
 import { LEGAL_FORM_LABELS, type Company } from "@/lib/companies/types";
+import { resolveYearsToRetirement } from "@/lib/simulations/extract-gain";
 import { ageFromDob, parseChildren, type Client, type ClientPension, type ClientAssets } from "@/lib/clients/types";
 import {
   extractGain,
@@ -798,10 +799,11 @@ function drawOverviewPage(
   // après : ce chiffre est un teaser, il ne doit jamais diverger de celui
   // détaillé plus loin dans le même dossier.
   const totals = computeTotals(entries);
-  const overviewAge = ageFromDob(client.date_of_birth);
-  const overviewYearsToRetirement = overviewAge !== null ? Math.max(1, 65 - overviewAge) : 10;
+  const overviewYearsToRetirement = resolveYearsToRetirement(client.date_of_birth, client.gender, entries);
   const totalGain =
-    projectGainTotal(totals.oneTime, totals.annual, overviewYearsToRetirement) + totals.postRetirement;
+    (overviewYearsToRetirement
+      ? projectGainTotal(totals.oneTime, totals.annual, overviewYearsToRetirement)
+      : totals.oneTime) + totals.postRetirement;
   if (totalGain > 0) {
     tiles.push({ label: "Gain identifié", value: totalGain, tone: "accent" });
   }
@@ -2083,7 +2085,7 @@ export function buildComment(entry: HistoryEntry): string | null {
       const bal = num(s.finalBalance);
       if (!has(s.taxSavings) && !has(s.finalBalance)) return null;
       if (sav > 0 && c > 0) {
-        return `Votre versement annuel de ${formatCHF(c)} sur le 3e pilier A vous fait économiser ${formatCHF(sav)} d'impôts chaque année, intégralement déductible de votre revenu imposable dans la limite du plafond légal. Sur 10 ans, cette économie représente ${formatCHF(sav * 10)} cumulés, en plus de la constitution d'un capital de prévoyance supplémentaire. Point de vigilance : ce capital reste bloqué jusqu'à 5 ans avant l'âge ordinaire de la retraite, sauf exceptions prévues par la loi (achat de votre résidence principale, départ définitif de Suisse, passage à l'indépendance).`;
+        return `Votre versement annuel de ${formatCHF(c)} sur le 3e pilier A vous fait économiser ${formatCHF(sav)} d'impôts chaque année, intégralement déductible de votre revenu imposable dans la limite du plafond légal. ${num(i.yearsToRetirement) > 0 ? `Jusqu'à la retraite (${num(i.yearsToRetirement)} ans), cette économie représente ${formatCHF(sav * num(i.yearsToRetirement))} cumulés, en plus` : "Cette économie se renouvelle chaque année de versement, en plus"} de la constitution d'un capital de prévoyance supplémentaire. Point de vigilance : ce capital reste bloqué jusqu'à 5 ans avant l'âge ordinaire de la retraite, sauf exceptions prévues par la loi (achat de votre résidence principale, départ définitif de Suisse, passage à l'indépendance).`;
       }
       return `Sur la base d'un versement annuel de ${formatCHF(c)}, votre capital 3a projeté à la retraite atteindrait ${formatCHF(bal)}. Aucune économie fiscale supplémentaire n'a été chiffrée dans ce scénario précis, votre taux marginal d'imposition étant peut-être déjà nul ou très faible sur cette tranche de revenu ; le 3a conserve néanmoins tout son intérêt comme outil d'épargne bloquée à long terme.`;
     }
@@ -2097,7 +2099,7 @@ export function buildComment(entry: HistoryEntry): string | null {
           ? " Le comparatif ci-dessus prend Zoug comme repère (l'un des cantons les moins imposés de Suisse) ; parmi les cantons romands, le plus avantageux pour votre profil est indiqué ci-après."
           : "";
       if (sav > 0) {
-        return `${zoug ? zoug.trim() + " " : ""}À revenu identique, un déménagement de ${cantonName(ref)} vers ${cantonName(cheap)} vous ferait économiser ${formatCHF(sav)} par an sur votre charge fiscale totale, soit ${formatCHF(sav * 10)} cumulés sur 10 ans si votre situation reste stable. Cet écart s'explique par les différences de barèmes cantonaux et de multiplicateurs communaux entre les deux cantons. Point de vigilance : un changement de domicile a des conséquences qui dépassent la seule fiscalité (emploi, scolarité des enfants, distance, coût de la vie local) et mérite une réflexion globale avant toute décision.`;
+        return `${zoug ? zoug.trim() + " " : ""}À revenu identique, un déménagement de ${cantonName(ref)} vers ${cantonName(cheap)} vous ferait économiser ${formatCHF(sav)} par an sur votre charge fiscale totale, tant que votre situation reste stable. Cet écart s'explique par les différences de barèmes cantonaux et de multiplicateurs communaux entre les deux cantons. Point de vigilance : un changement de domicile a des conséquences qui dépassent la seule fiscalité (emploi, scolarité des enfants, distance, coût de la vie local) et mérite une réflexion globale avant toute décision.`;
       }
       return `Pour ce profil, le canton de ${cantonName(ref)} ressort déjà comme le plus avantageux ou proche du plus avantageux parmi les cantons comparés (${cantonName(cheap)}) : un changement de domicile n'apporterait pas d'économie fiscale significative dans ce scénario précis.`;
     }
@@ -2122,7 +2124,7 @@ export function buildComment(entry: HistoryEntry): string | null {
       const gain = has(s.gainAnnual) ? num(s.gainAnnual) : (cur > 0 ? reco - cur : 0);
       if (!has(s.recommendedDirectorNet)) return null;
       if (gain > 0) {
-        return `En ajustant le mix salaire / dividende / réserves à structure de société constante, vous pourriez dégager un gain net annuel de ${formatCHF(gain)}, soit ${formatCHF(gain * 10)} cumulés sur 10 ans. Ce gain provient de l'optimisation des charges sociales et de la fiscalité différenciée entre salaire et dividendes qualifiés. Point de vigilance : toute réduction significative de votre salaire doit rester compatible avec l'usage de la branche, au risque d'une requalification par l'AFC ou l'AVS au titre de la théorie du dividende dissimulé (art. 58 CO).`;
+        return `En ajustant le mix salaire / dividende / réserves à structure de société constante, vous pourriez dégager un gain net annuel de ${formatCHF(gain)}, chaque année où cette répartition est appliquée. Ce gain provient de l'optimisation des charges sociales et de la fiscalité différenciée entre salaire et dividendes qualifiés. Point de vigilance : toute réduction significative de votre salaire doit rester compatible avec l'usage de la branche, au risque d'une requalification par l'AFC ou l'AVS au titre de la théorie du dividende dissimulé (art. 58 CO).`;
       }
       return `La répartition actuelle entre salaire et dividendes ressort déjà comme proche de l'optimum pour ce profil de société : le gain supplémentaire identifié en ajustant le mix salaire / dividende / réserves reste marginal ou nul dans ce scénario précis.`;
     }
@@ -2606,7 +2608,7 @@ function drawComparisonPage(
   // Horizon réel : âge de la fiche client, à défaut la durée saisie dans
   // les simulations elles-mêmes. Jamais de durée inventée : sans aucune
   // des deux, aucune période n'est affichée.
-  const yearsToRetirement = resolveYearsToRetirement(client, orderedEntriesForYears(entries));
+  const yearsToRetirement = resolveYearsToRetirement(client.date_of_birth, client.gender, entries);
   pdf.spacer(4);
   drawGainHighlight(pdf, totals, yearsToRetirement);
 
@@ -2696,26 +2698,6 @@ export function computeTotals(entries: HistoryEntry[]): Totals {
 /** @param yearsToRetirement Années réelles jusqu'à la retraite du client
  *  (ageFromDob), utilisées pour cumuler les gains annuels sur toute la vie
  *  active restante — plus un horizon fixe de 10 ans pour tout le monde. */
-/** Années jusqu'à la retraite : âge de la fiche client, sinon durée saisie
- *  dans les simulations du dossier ; null si aucune n'est connue. */
-function resolveYearsToRetirement(client: Client, entries: HistoryEntry[]): number | null {
-  const age = ageFromDob(client.date_of_birth);
-  if (age !== null) return Math.max(1, 65 - age);
-  for (const e of entries) {
-    const i = (e.inputs ?? {}) as Record<string, unknown>;
-    const ytr = num(i.yearsToRetirement);
-    if (ytr > 0) return Math.round(ytr);
-    const cur = num(i.currentAge);
-    const ret = num(i.retirementAge);
-    if (cur > 0 && ret > cur) return Math.round(ret - cur);
-  }
-  return null;
-}
-
-function orderedEntriesForYears(entries: HistoryEntry[]): HistoryEntry[] {
-  return [...entries].sort((a, b) => b.created_at.localeCompare(a.created_at));
-}
-
 function drawGainHighlight(pdf: ReportPdf, totals: Totals, yearsToRetirement: number | null) {
   // Sans horizon connu, les économies annuelles ne sont pas cumulées : on
   // affiche leur montant annuel, sans multiplier par une durée inventée.

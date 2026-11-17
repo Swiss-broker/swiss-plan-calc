@@ -97,6 +97,7 @@ function HistoriquePage() {
           clientId={clientId}
           clientName={`${client.first_name} ${client.last_name}`.trim()}
           clientDateOfBirth={client.date_of_birth}
+          clientGender={(client as { gender?: string | null }).gender ?? null}
           historique
         />
       </div>
