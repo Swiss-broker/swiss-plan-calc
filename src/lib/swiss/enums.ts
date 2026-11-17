@@ -40,6 +40,7 @@ export const CIVIL_STATUS_LABELS = makeI18nLabels<CivilStatus>("civil_status", {
   divorced: "Divorcé(e)",
   widowed: "Veuf / Veuve",
   separated: "Séparé(e)",
+  cohabiting: "Union libre (concubinage)",
 } as Record<CivilStatus, string>);
 
 // Concubinage : non persisté en DB, libellé exposé via i18n pour le calculateur Global.

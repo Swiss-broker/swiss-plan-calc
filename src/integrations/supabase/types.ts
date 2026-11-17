@@ -2257,6 +2257,7 @@ export type Database = {
         | "divorced"
         | "widowed"
         | "separated"
+        | "cohabiting"
       client_document_category:
         | "attestation_lpp"
         | "fiche_salaire"
@@ -2508,6 +2509,7 @@ export const Constants = {
         "divorced",
         "widowed",
         "separated",
+        "cohabiting",
       ],
       client_document_category: [
         "attestation_lpp",

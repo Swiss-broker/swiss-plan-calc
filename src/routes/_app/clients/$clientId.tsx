@@ -452,46 +452,110 @@ function ClientDetailPage() {
         }
         className="mt-2"
       >
-        <TabsList className="flex h-auto w-full flex-wrap justify-start gap-1 bg-muted p-1">
-          <TabsTrigger value="overview">Synthèse</TabsTrigger>
-          <TabsTrigger value="cases" className="gap-1">
-            <FolderOpen className="h-3.5 w-3.5" />
-            Dossiers
-          </TabsTrigger>
-          <TabsTrigger value="session" className="gap-1">
-            <ClipboardList className="h-3.5 w-3.5" />
-            Synthèse RDV
-          </TabsTrigger>
-          <TabsTrigger value="optimizations" className="gap-1">
-            <Sparkles className="h-3.5 w-3.5" />
-            Optimisations
-            {optimizations.length > 0 && (
-              <Badge variant="default" className="ml-1 h-5 px-1.5 text-[10px]">
-                {optimizations.length}
-              </Badge>
-            )}
-          </TabsTrigger>
-          <TabsTrigger value="fiscal">Fiscalité</TabsTrigger>
-          <TabsTrigger value="pension">Prévoyance</TabsTrigger>
-          <TabsTrigger value="patrimoine">Patrimoine</TabsTrigger>
-          <TabsTrigger value="family">Famille</TabsTrigger>
-          <TabsTrigger value="notes">Notes</TabsTrigger>
-          <TabsTrigger value="ai" className="gap-1">
-          <MessageSquare className="h-3.5 w-3.5" />
-            Conversations IA
-          </TabsTrigger>
-          <TabsTrigger value="documents" className="gap-1">
-            <FolderOpen className="h-3.5 w-3.5" />
-            Documents
-          </TabsTrigger>
-          <TabsTrigger value="emails" className="gap-1">
-            <Mail className="h-3.5 w-3.5" />
-            E-mails
-          </TabsTrigger>
-          <TabsTrigger value="followup" className="gap-1">
-            <ListChecks className="h-3.5 w-3.5" />
-            Suivi RDV
-          </TabsTrigger>
+        {/* Parcours d'un rendez-vous, dans l'ordre où le conseiller le vit.
+            Chaque étape ouvre l'onglet correspondant. */}
+        <ol className="mb-3 grid grid-cols-2 gap-2 text-xs sm:grid-cols-4">
+          {(
+            [
+              ["cases", "1", "Ouvrir un dossier", "Un dossier = un projet du client"],
+              ["cases", "2", "Faire les calculs", "Fiscal global, puis piliers 1, 2, 3"],
+              ["session", "3", "Facturer et générer le PDF", "Onglet Synthèse RDV"],
+              ["followup", "4", "Suivi", "Documents, relances, prochain RDV"],
+            ] as const
+          ).map(([target, n, label, hint]) => {
+            const active = (tab ?? "overview") === target;
+            return (
+              <li key={n}>
+                <button
+                  type="button"
+                  onClick={() =>
+                    navigate({
+                      search: (prev: z.infer<typeof searchSchema>) => ({
+                        ...prev,
+                        tab: target as ClientTab,
+                      }),
+                      replace: true,
+                    })
+                  }
+                  className={`flex w-full items-start gap-2 rounded-lg border p-2 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+                    active
+                      ? "border-primary bg-primary/10"
+                      : "border-border bg-card hover:border-primary/50"
+                  }`}
+                >
+                  <span
+                    className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[11px] font-semibold ${
+                      active ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
+                    }`}
+                  >
+                    {n}
+                  </span>
+                  <span className="min-w-0">
+                    <span className="block font-medium text-foreground">{label}</span>
+                    <span className="block text-muted-foreground">{hint}</span>
+                  </span>
+                </button>
+              </li>
+            );
+          })}
+        </ol>
+
+        {/* Onglets regroupés par usage plutôt qu'une ligne de 13 onglets. */}
+        <TabsList className="flex h-auto w-full flex-wrap items-stretch justify-start gap-x-4 gap-y-2 bg-muted p-2">
+          <div className="flex flex-wrap items-center gap-1">
+            <span className="mr-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+              Rendez-vous
+            </span>
+            <TabsTrigger value="cases" className="gap-1">
+              <FolderOpen className="h-3.5 w-3.5" />
+              Dossiers
+            </TabsTrigger>
+            <TabsTrigger value="session" className="gap-1">
+              <ClipboardList className="h-3.5 w-3.5" />
+              Synthèse RDV
+            </TabsTrigger>
+            <TabsTrigger value="optimizations" className="gap-1">
+              <Sparkles className="h-3.5 w-3.5" />
+              Optimisations
+              {optimizations.length > 0 && (
+                <Badge variant="default" className="ml-1 h-5 px-1.5 text-[10px]">
+                  {optimizations.length}
+                </Badge>
+              )}
+            </TabsTrigger>
+            <TabsTrigger value="followup" className="gap-1">
+              <ListChecks className="h-3.5 w-3.5" />
+              Suivi RDV
+            </TabsTrigger>
+          </div>
+          <div className="flex flex-wrap items-center gap-1">
+            <span className="mr-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+              Fiche
+            </span>
+            <TabsTrigger value="overview">Synthèse</TabsTrigger>
+            <TabsTrigger value="fiscal">Fiscalité</TabsTrigger>
+            <TabsTrigger value="pension">Prévoyance</TabsTrigger>
+            <TabsTrigger value="patrimoine">Patrimoine</TabsTrigger>
+            <TabsTrigger value="family">Famille</TabsTrigger>
+          </div>
+          <div className="flex flex-wrap items-center gap-1">
+            <span className="mr-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+              Échanges
+            </span>
+            <TabsTrigger value="documents" className="gap-1">
+              <FolderOpen className="h-3.5 w-3.5" />
+              Documents
+            </TabsTrigger>
+            <TabsTrigger value="emails" className="gap-1">
+              <Mail className="h-3.5 w-3.5" />
+              E-mails
+            </TabsTrigger>
+            <TabsTrigger value="notes">Notes</TabsTrigger>
+            <TabsTrigger value="ai" className="gap-1">
+              <MessageSquare className="h-3.5 w-3.5" />
+              Conversations IA
+            </TabsTrigger>
+          </div>
         </TabsList>
 
         <TabsContent value="cases" className="mt-4">

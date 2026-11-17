@@ -224,3 +224,24 @@ describe("cohérence — règles par régime", () => {
     );
   });
 });
+
+describe("union libre (concubinage) sur la fiche client", () => {
+  it("imposé comme une personne seule ; avec enfants, barème A0 puis H après rectification", () => {
+    const b = bundle({
+      canton: "GE",
+      permit: "G",
+      country_of_residence: "FR",
+      tax_status: "cross_border_ge",
+      civil_status: "cohabiting",
+      children: KIDS,
+      gross_annual_salary: 78_000,
+    });
+    const g = taxGlobalInput(b);
+    expect(g.civilStatus).toBe("cohabiting");
+    const r = computeTaxGlobal(g);
+    expect(r.sourceRectification?.defaultScaleCode).toBe("A0");
+    expect(r.sourceRectification?.rectifiedScaleCode).toBe("H2");
+    const single = computeTaxGlobal(taxGlobalInput({ ...b, client: { ...b.client, civil_status: "single" } } as ClientBundle));
+    expect(r.totalTaxCHF).toBe(single.totalTaxCHF);
+  });
+});

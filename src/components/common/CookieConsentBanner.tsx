@@ -51,6 +51,30 @@ export function CookieConsentBanner() {
     return () => window.removeEventListener(OPEN_COOKIE_PREFERENCES_EVENT, handleReopen);
   }, []);
 
+  // Tant que le bandeau est affiché, la page réserve sa hauteur en bas :
+  // sinon il recouvre les derniers boutons de la page (« Sauvegarder » des
+  // calculateurs, « Générer la synthèse PDF ») et le conseiller ne peut pas
+  // cliquer dessus sans d'abord répondre au bandeau.
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+    const body = document.body;
+    if (!visible) {
+      body.style.removeProperty("padding-bottom");
+      return;
+    }
+    const el = document.getElementById("cookie-consent-banner");
+    const apply = () => {
+      if (el) body.style.paddingBottom = `${el.offsetHeight}px`;
+    };
+    apply();
+    const ro = typeof ResizeObserver !== "undefined" && el ? new ResizeObserver(apply) : null;
+    if (ro && el) ro.observe(el);
+    return () => {
+      ro?.disconnect();
+      body.style.removeProperty("padding-bottom");
+    };
+  }, [visible]);
+
   function decide(categories: ConsentCategories) {
     const record = saveConsent(categories);
     applyConsent(record, router);
@@ -67,7 +91,10 @@ export function CookieConsentBanner() {
   return (
     <>
       {visible && (
-        <div className="fixed inset-x-0 bottom-0 z-[100] border-t border-border bg-card/95 backdrop-blur-sm shadow-elegant">
+        <div
+          id="cookie-consent-banner"
+          className="fixed inset-x-0 bottom-0 z-[100] border-t border-border bg-card/95 backdrop-blur-sm shadow-elegant"
+        >
           <div className="mx-auto flex max-w-5xl flex-col gap-3 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
             <p className="text-sm text-muted-foreground">
               {t("cookies.banner.desc")}{" "}
