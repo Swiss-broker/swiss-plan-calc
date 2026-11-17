@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { aggregateGains, projectGainTotal } from "./extract-gain";
+import { aggregateGains, extractGain, isRedundantGain, projectGainTotal } from "./extract-gain";
 import type { HistoryEntry } from "@/lib/history/types";
 
 function entry(overrides: Partial<HistoryEntry>): HistoryEntry {
@@ -123,5 +123,37 @@ describe("aggregateGains — scénarios de Fiscal global", () => {
       10,
     );
     expect(r.items).toEqual([]);
+  });
+});
+
+describe("libre passage et comparateur d'investissements : même capital, compté une fois", () => {
+  const mk = (kind: string, summary: Record<string, unknown>, inputs: Record<string, unknown> = {}) =>
+    ({
+      id: kind,
+      kind,
+      title: kind,
+      summary,
+      inputs,
+      created_at: "2026-11-17T08:00:00Z",
+      is_baseline: false,
+      gain_dismissed: false,
+    }) as unknown as HistoryEntry;
+  const vested = mk("vested_benefits", { recommendedFinalBalance: 538_027, securityFinalBalance: 285_990, recommendedStrategy: "dynamic" });
+  const invest = mk("investment_compare", { netDifference: 265_081, winner: "b" }, { a: { name: "Caisse de pension" }, b: { name: "Libre passage" } });
+
+  it("seul le gain le plus élevé des deux est retenu", () => {
+    const peers = [vested, invest];
+    const gV = extractGain(vested);
+    const gI = extractGain(invest);
+    // Cas réel : 252'037 + 265'081 = 517'118 étaient additionnés.
+    expect(gV.amount + gI.amount).toBe(517_118);
+    expect(gI.amount).toBeGreaterThan(gV.amount);
+    expect(isRedundantGain(invest, gI, peers)).toBe(false);
+    expect(isRedundantGain(vested, gV, peers)).toBe(true);
+  });
+
+  it("seul, chacun reste compté", () => {
+    expect(isRedundantGain(invest, extractGain(invest), [invest])).toBe(false);
+    expect(isRedundantGain(vested, extractGain(vested), [vested])).toBe(false);
   });
 });

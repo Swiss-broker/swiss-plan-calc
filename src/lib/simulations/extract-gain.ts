@@ -293,6 +293,23 @@ export function isRedundantGain(
   gain: ExtractedGain,
   peers: HistoryEntry[],
 ): boolean {
+  // Libre passage et comparateur d'investissements chiffrent deux
+  // placements possibles du MÊME capital (ex. 250'000 CHF de libre passage
+  // laissés en caisse ou placés) : le client n'en choisira qu'un. Les
+  // additionner comptait le même argent deux fois. Seul le plus élevé des
+  // deux est retenu (à égalité, celui du libre passage).
+  if (entry.kind === "vested_benefits" || entry.kind === "investment_compare") {
+    if (gain.type === "none") return false;
+    const otherKind = entry.kind === "vested_benefits" ? "investment_compare" : "vested_benefits";
+    return peers.some((p) => {
+      if (p.kind !== otherKind) return false;
+      const other = extractGain(p);
+      if (other.type === "none") return false;
+      return entry.kind === "investment_compare"
+        ? other.amount >= gain.amount
+        : other.amount > gain.amount;
+    });
+  }
   if (entry.kind !== "tax_global" || !gain.scenarioId) return false;
   const dedicated = DEDICATED_KIND_BY_SCENARIO[gain.scenarioId];
   if (!dedicated) return false;
