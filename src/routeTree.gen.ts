@@ -16,6 +16,7 @@ import { Route as AppRouteImport } from './routes/_app'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as SharedTokenRouteImport } from './routes/shared.$token'
 import { Route as OnboardingTokenRouteImport } from './routes/onboarding.$token'
+import { Route as OffreTokenRouteImport } from './routes/offre.$token'
 import { Route as LegalSousTraitantsRouteImport } from './routes/legal/sous-traitants'
 import { Route as LegalNoticeIaRouteImport } from './routes/legal/notice-ia'
 import { Route as LegalMentionsLegalesRouteImport } from './routes/legal/mentions-legales'
@@ -96,6 +97,11 @@ const SharedTokenRoute = SharedTokenRouteImport.update({
 const OnboardingTokenRoute = OnboardingTokenRouteImport.update({
   id: '/onboarding/$token',
   path: '/onboarding/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OffreTokenRoute = OffreTokenRouteImport.update({
+  id: '/offre/$token',
+  path: '/offre/$token',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LegalSousTraitantsRoute = LegalSousTraitantsRouteImport.update({
@@ -369,6 +375,7 @@ export interface FileRoutesByFullPath {
   '/legal/mentions-legales': typeof LegalMentionsLegalesRoute
   '/legal/notice-ia': typeof LegalNoticeIaRoute
   '/legal/sous-traitants': typeof LegalSousTraitantsRoute
+  '/offre/$token': typeof OffreTokenRoute
   '/onboarding/$token': typeof OnboardingTokenRoute
   '/shared/$token': typeof SharedTokenRoute
   '/calculators/avs-ai': typeof AppCalculatorsAvsAiRoute
@@ -422,6 +429,7 @@ export interface FileRoutesByTo {
   '/legal/mentions-legales': typeof LegalMentionsLegalesRoute
   '/legal/notice-ia': typeof LegalNoticeIaRoute
   '/legal/sous-traitants': typeof LegalSousTraitantsRoute
+  '/offre/$token': typeof OffreTokenRoute
   '/onboarding/$token': typeof OnboardingTokenRoute
   '/shared/$token': typeof SharedTokenRoute
   '/calculators/avs-ai': typeof AppCalculatorsAvsAiRoute
@@ -479,6 +487,7 @@ export interface FileRoutesById {
   '/legal/mentions-legales': typeof LegalMentionsLegalesRoute
   '/legal/notice-ia': typeof LegalNoticeIaRoute
   '/legal/sous-traitants': typeof LegalSousTraitantsRoute
+  '/offre/$token': typeof OffreTokenRoute
   '/onboarding/$token': typeof OnboardingTokenRoute
   '/shared/$token': typeof SharedTokenRoute
   '/_app/calculators/avs-ai': typeof AppCalculatorsAvsAiRoute
@@ -536,6 +545,7 @@ export interface FileRouteTypes {
     | '/legal/mentions-legales'
     | '/legal/notice-ia'
     | '/legal/sous-traitants'
+    | '/offre/$token'
     | '/onboarding/$token'
     | '/shared/$token'
     | '/calculators/avs-ai'
@@ -589,6 +599,7 @@ export interface FileRouteTypes {
     | '/legal/mentions-legales'
     | '/legal/notice-ia'
     | '/legal/sous-traitants'
+    | '/offre/$token'
     | '/onboarding/$token'
     | '/shared/$token'
     | '/calculators/avs-ai'
@@ -645,6 +656,7 @@ export interface FileRouteTypes {
     | '/legal/mentions-legales'
     | '/legal/notice-ia'
     | '/legal/sous-traitants'
+    | '/offre/$token'
     | '/onboarding/$token'
     | '/shared/$token'
     | '/_app/calculators/avs-ai'
@@ -693,6 +705,7 @@ export interface RootRouteChildren {
   LegalMentionsLegalesRoute: typeof LegalMentionsLegalesRoute
   LegalNoticeIaRoute: typeof LegalNoticeIaRoute
   LegalSousTraitantsRoute: typeof LegalSousTraitantsRoute
+  OffreTokenRoute: typeof OffreTokenRoute
   OnboardingTokenRoute: typeof OnboardingTokenRoute
   SharedTokenRoute: typeof SharedTokenRoute
 }
@@ -746,6 +759,13 @@ declare module '@tanstack/react-router' {
       path: '/onboarding/$token'
       fullPath: '/onboarding/$token'
       preLoaderRoute: typeof OnboardingTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/offre/$token': {
+      id: '/offre/$token'
+      path: '/offre/$token'
+      fullPath: '/offre/$token'
+      preLoaderRoute: typeof OffreTokenRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/legal/sous-traitants': {
@@ -1213,6 +1233,7 @@ const rootRouteChildren: RootRouteChildren = {
   LegalMentionsLegalesRoute: LegalMentionsLegalesRoute,
   LegalNoticeIaRoute: LegalNoticeIaRoute,
   LegalSousTraitantsRoute: LegalSousTraitantsRoute,
+  OffreTokenRoute: OffreTokenRoute,
   OnboardingTokenRoute: OnboardingTokenRoute,
   SharedTokenRoute: SharedTokenRoute,
 }

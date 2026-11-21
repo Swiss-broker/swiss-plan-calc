@@ -1,6 +1,15 @@
 // supabase/functions/generate-offer/index.ts
-// Génère un lien de paiement Stripe (Checkout Session) pour un lead
-// demo_requests, depuis le panel admin/commercial (swiss-broker-admin).
+// Génère le lien d'offre d'un lead demo_requests, depuis le panel
+// admin/commercial (swiss-broker-admin). Le lien renvoyé pointe vers
+// swissbrokerpro.ch/offre/{token}, valable OFFER_VALIDITY_DAYS jours : à
+// chaque ouverture, open-offer crée une page de paiement Stripe neuve. Une
+// Checkout Session Stripe expire au bout de 24 h, son URL ne doit donc
+// jamais être envoyée telle quelle au prospect.
+import {
+  OFFER_VALIDITY_DAYS,
+  offerCheckoutParams,
+  randomOfferToken,
+} from "../_shared/offer-checkout.ts";
 // Réservé à is_staff() (admin OU commercial) — vérifié côté serveur via
 // admin_users, jamais via une prétention du client.
 export const corsHeaders = {
@@ -160,43 +169,53 @@ export async function handleGenerateOfferRequest(req: Request, env: Env): Promis
       couponId = coupon.id;
     }
 
-    // Checkout Session : demo_request_id passé en metadata, indispensable
-    // pour que le futur webhook de conversion retrouve quel lead a payé.
-    // adaptive_pricing désactivé : tous les clients sont suisses, le Price
-    // Stripe est en CHF, et sans ça Stripe peut convertir l'affichage vers
-    // une autre devise (ex. EUR) selon la localisation détectée côté
-    // navigateur — ce paramètre ne touche que cette session, pas le
-    // réglage global du compte Stripe (stripe-checkout n'est pas affecté).
-    const params: Record<string, string> = {
-      "payment_method_types[0]": "card",
-      mode: "subscription",
-      "line_items[0][price]": cotisationPriceId,
-      "line_items[0][quantity]": "1",
-      "adaptive_pricing[enabled]": "false",
-      customer_email: lead.email,
-      // Page neutre temporaire (Prompt 10) : le client n'a pas encore de
-      // compte à ce stade, /auth ou un espace existant n'a pas de sens
-      // ici. Remplacée par la vraie page d'onboarding au Prompt 11.
-      success_url: `${siteUrl}/paiement-confirme`,
-      cancel_url: `${siteUrl}/`,
-      "metadata[demo_request_id]": demo_request_id,
-      "metadata[generated_by]": callerId,
-      "subscription_data[metadata][demo_request_id]": demo_request_id,
-    };
-    if (couponId) params["discounts[0][coupon]"] = couponId;
-
+    // Vérifie dès maintenant que la page de paiement se crée bien (prix,
+    // coupon, e-mail) : une erreur de configuration doit apparaître au
+    // commercial, pas au prospect qui ouvre le lien. Cette session de
+    // contrôle n'est pas envoyée ; elle expire d'elle-même sous 24 h.
     const sessionRes = await fetch("https://api.stripe.com/v1/checkout/sessions", {
       method: "POST",
       headers: {
         Authorization: `Bearer ${stripeKey}`,
         "Content-Type": "application/x-www-form-urlencoded",
       },
-      body: new URLSearchParams(params).toString(),
+      body: new URLSearchParams(
+        offerCheckoutParams({
+          priceId: cotisationPriceId,
+          leadEmail: lead.email,
+          demoRequestId: demo_request_id,
+          generatedBy: callerId,
+          couponId,
+          siteUrl,
+        }),
+      ).toString(),
     });
     const session = await sessionRes.json();
     if (!sessionRes.ok) {
       return jsonResponse({ error: session.error?.message ?? "Erreur Stripe lors de la création du Checkout Session." }, 500);
     }
+
+    // Offre durable : c'est ce lien-là qui part au prospect.
+    const token = randomOfferToken();
+    const expiresAt = new Date(Date.now() + OFFER_VALIDITY_DAYS * 24 * 60 * 60 * 1000).toISOString();
+    const offerRes = await fetch(`${supabaseUrl}/rest/v1/lead_offers`, {
+      method: "POST",
+      headers: { ...svcHeaders, Prefer: "return=minimal" },
+      body: JSON.stringify({
+        token,
+        demo_request_id,
+        coupon_id: couponId,
+        discount_percent: discountPercent,
+        discount_duration,
+        created_by: callerId,
+        expires_at: expiresAt,
+      }),
+    });
+    if (!offerRes.ok) {
+      console.error("Erreur insertion lead_offers:", offerRes.status, await offerRes.text());
+      return jsonResponse({ error: "L'offre n'a pas pu être enregistrée, réessayez." }, 500);
+    }
+    const offerUrl = `${siteUrl}/offre/${token}`;
 
     // Journalisation best-effort : l'offre est déjà générée à ce stade,
     // une erreur de journalisation ne doit pas faire échouer la réponse.
@@ -214,7 +233,8 @@ export async function handleGenerateOfferRequest(req: Request, env: Env): Promis
             discount_percent: discountPercent,
             coupon_id: couponId,
             checkout_session_id: session.id,
-            checkout_url: session.url,
+            offer_url: offerUrl,
+            offer_expires_at: expiresAt,
             caller_role: callerRole,
           },
         }),
@@ -223,7 +243,7 @@ export async function handleGenerateOfferRequest(req: Request, env: Env): Promis
       console.error("Erreur journalisation admin_actions (offre déjà générée):", logErr);
     }
 
-    return jsonResponse({ url: session.url });
+    return jsonResponse({ url: offerUrl, expiresAt });
   } catch (err) {
     console.error("Erreur generate-offer:", err);
     return jsonResponse({ error: String(err instanceof Error ? err.message : err) }, 400);
