@@ -18,6 +18,7 @@ import {
   BookOpen,
   MessageSquare,
   CalendarDays,
+  Briefcase,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger, SheetTitle, SheetHeader } from "@/components/ui/sheet";
@@ -30,6 +31,7 @@ import { cn } from "@/lib/utils";
 import { ACTIVE_PLANS } from "@/lib/billing/plans";
 import { SubscriptionRequired } from "@/components/billing/SubscriptionRequired";
 import { DemoModeBadge } from "@/components/common/DemoModeBadge";
+import { useCabinet } from "@/hooks/useCabinet";
 // Logo réel du cabinet, remplace l'icône "S" et le texte générés en CSS.
 import logoIcon from "@/assets/logo-icon.png";
 import logoFull from "@/assets/logo-full.png";
@@ -100,6 +102,9 @@ const NAV = [
   { to: "/account", labelKey: "nav.account", icon: UserCircle },
 ] as const;
 
+// Réservé au responsable d'un cabinet, placé juste avant « Mon profil ».
+const CABINET_NAV = { to: "/cabinet", labelKey: "nav.cabinet", icon: Briefcase } as const;
+
 function BrandMark() {
   return (
     <div className="flex items-center gap-2">
@@ -112,9 +117,12 @@ function BrandMark() {
 function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const t = useT();
+  const { role } = useCabinet();
+  const items =
+    role === "patron" ? [...NAV.slice(0, -1), CABINET_NAV, NAV[NAV.length - 1]] : [...NAV];
   return (
     <nav className="flex-1 space-y-1 px-3 py-4">
-      {NAV.map((item) => {
+      {items.map((item) => {
         const active =
           pathname === item.to || (item.to !== "/dashboard" && pathname.startsWith(item.to));
         return (

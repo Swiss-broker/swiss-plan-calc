@@ -43,6 +43,7 @@ export function AttachDirectorDialog({
       let q = supabase
         .from("clients")
         .select("*")
+        .eq("broker_id", user!.id)
         .is("company_id", null)
         .eq("archived", false);
       if (!showAll) q = q.eq("work_status", "director");

@@ -41,10 +41,30 @@ const clients: Record<string, { broker_id: string; first_name: string; email: st
 
 let insertedInvoices: Record<string, unknown>[] = [];
 let paymentLinkRequests: URLSearchParams[] = [];
+let priceRequests: URLSearchParams[] = [];
+
+// Cabinet : broker-A est patron du cabinet « Piliarys », broker-C son
+// collaborateur (sans compte bancaire propre).
+const profiles: Record<string, { first_name: string; last_name: string; cabinet_role: string | null; cabinet_root_id: string | null }> = {
+  "broker-A": { first_name: "James", last_name: "P", cabinet_role: "root_director", cabinet_root_id: "broker-A" },
+  "broker-C": { first_name: "Léa", last_name: "Martin", cabinet_role: "courtier", cabinet_root_id: "broker-A" },
+  "broker-D": { first_name: "Solo", last_name: "Sans banque", cabinet_role: "courtier", cabinet_root_id: "broker-E" },
+};
+const cabinets: Record<string, { name: string }> = { "broker-A": { name: "Piliarys" }, "broker-E": { name: "Sans compte" } };
 
 function mockFetch(input: string | URL | Request, init?: RequestInit): Promise<Response> {
   const url = String(input);
 
+  if (url.includes("/rest/v1/profiles?id=eq.")) {
+    const id = decodeURIComponent(url.match(/id=eq\.([^&]+)/)?.[1] ?? "");
+    const p = profiles[id];
+    return Promise.resolve(new Response(JSON.stringify(p ? [p] : []), { status: 200 }));
+  }
+  if (url.includes("/rest/v1/cabinets?root_id=eq.")) {
+    const id = decodeURIComponent(url.match(/root_id=eq\.([^&]+)/)?.[1] ?? "");
+    const c = cabinets[id];
+    return Promise.resolve(new Response(JSON.stringify(c ? [c] : []), { status: 200 }));
+  }
   if (url.includes("/rest/v1/broker_connect_accounts?broker_id=eq.")) {
     const id = decodeURIComponent(url.match(/broker_id=eq\.([^&]+)/)?.[1] ?? "");
     const acc = connectAccounts[id];
@@ -58,6 +78,7 @@ function mockFetch(input: string | URL | Request, init?: RequestInit): Promise<R
     return Promise.resolve(new Response(JSON.stringify(match), { status: 200 }));
   }
   if (url === "https://api.stripe.com/v1/prices") {
+    priceRequests.push(new URLSearchParams(String(init?.body ?? "")));
     return Promise.resolve(new Response(JSON.stringify({ id: "price_fake" }), { status: 200 }));
   }
   if (url === "https://api.stripe.com/v1/payment_links") {
@@ -77,6 +98,7 @@ function mockFetch(input: string | URL | Request, init?: RequestInit): Promise<R
 beforeEach(() => {
   insertedInvoices = [];
   paymentLinkRequests = [];
+  priceRequests = [];
   vi.stubGlobal("fetch", vi.fn(mockFetch));
 });
 
@@ -196,5 +218,33 @@ describe("stripe-rdv-invoice — identifiant client", () => {
     });
     expect(res.status).toBe(500);
     expect((await res.json()).error).toContain("Identifiant client invalide");
+  });
+
+  it("cabinet : un collaborateur encaisse sur le compte Connect du patron, facture au nom du cabinet", async () => {
+    const res = await handleStripeRdvInvoiceRequest(
+      reqWithAuth("broker-C", { amountChf: 300, description: "Bilan prévoyance" }),
+      ENV,
+    );
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.paidToCabinet).toBe(true);
+    expect(paymentLinkRequests[0].get("transfer_data[destination]")).toBe("acct_A");
+    expect(priceRequests[0].get("product_data[name]")).toBe("Piliarys — Bilan prévoyance (Conseiller : Léa Martin)");
+    expect(insertedInvoices[0].broker_id).toBe("broker-C");
+    expect(insertedInvoices[0].cabinet_root_id).toBe("broker-A");
+  });
+
+  it("cabinet : le patron facture sur son propre compte, facture rattachée au cabinet", async () => {
+    await handleStripeRdvInvoiceRequest(reqWithAuth("broker-A", { amountChf: 300 }), ENV);
+    expect(paymentLinkRequests[0].get("transfer_data[destination]")).toBe("acct_A");
+    expect(insertedInvoices[0].cabinet_root_id).toBe("broker-A");
+    expect(priceRequests[0].get("product_data[name]")).toBe("Piliarys — Conseil en prévoyance");
+  });
+
+  it("cabinet sans compte bancaire : message clair pour le collaborateur, aucun lien créé", async () => {
+    const res = await handleStripeRdvInvoiceRequest(reqWithAuth("broker-D", { amountChf: 300 }), ENV);
+    expect(res.status).toBe(500);
+    expect((await res.json()).error).toMatch(/compte bancaire du cabinet/);
+    expect(paymentLinkRequests).toHaveLength(0);
   });
 });

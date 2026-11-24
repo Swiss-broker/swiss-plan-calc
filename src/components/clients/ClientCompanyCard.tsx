@@ -52,6 +52,7 @@ export function ClientCompanyCard({ clientId, companyId, companyRole }: ClientCo
       const { data, error } = await supabase
         .from("companies")
         .select("id, legal_name, legal_form")
+        .eq("broker_id", user!.id)
         .eq("archived", false)
         .order("legal_name");
       if (error) throw error;

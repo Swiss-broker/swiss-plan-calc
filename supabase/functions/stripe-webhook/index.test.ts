@@ -79,8 +79,11 @@ const profilesByEmail: Record<string, { id: string; plan: string }> = {
   "nouveau@x.ch": { id: "broker-nouveau", plan: "trial" },
   "interne@x.ch": { id: "broker-interne", plan: "internal" },
   "demo@x.ch": { id: "broker-demo", plan: "demo" },
+  "patron@x.ch": { id: "root-1", plan: "active" },
+  "collab@x.ch": { id: "member-2", plan: "active", cabinet_payer: "cabinet" } as { id: string; plan: string },
 };
 let patchedProfiles: Array<{ email: string; body: Record<string, unknown> }> = [];
+let cabinetCalls: Array<{ method: string; url: string; body: Record<string, unknown> }> = [];
 let planEvents: Array<Record<string, unknown>> = [];
 
 function mockFetch(input: string | URL | Request, init?: RequestInit): Promise<Response> {
@@ -95,7 +98,7 @@ function mockFetch(input: string | URL | Request, init?: RequestInit): Promise<R
       }),
     );
   }
-  if (url.includes("/rest/v1/profiles?id=eq.")) {
+  if (url.includes("/rest/v1/profiles?id=eq.") && method === "GET") {
     const id = decodeURIComponent(url.match(/id=eq\.([^&]+)/)?.[1] ?? "");
     const p = profiles[id];
     return Promise.resolve(new Response(JSON.stringify(p ? [p] : []), { status: 200 }));
@@ -122,6 +125,31 @@ function mockFetch(input: string | URL | Request, init?: RequestInit): Promise<R
   if (url.includes("/rest/v1/notifications")) {
     return Promise.resolve(new Response("", { status: 201 }));
   }
+  // ── Cabinet ──
+  if (url.includes("/rest/v1/cabinet_invites") && method === "PATCH") {
+    cabinetCalls.push({ method, url, body: JSON.parse(String(init?.body ?? "{}")) });
+    const ok = url.includes("id=eq.invite-1") && url.includes("status=eq.awaiting_payment");
+    return Promise.resolve(
+      new Response(
+        JSON.stringify(ok ? [{ cabinet_root_id: "root-1", email: "lea@x.ch", first_name: "Léa", payer: "cabinet", token: "t".repeat(64) }] : []),
+        { status: 200 },
+      ),
+    );
+  }
+  if (url.includes("/rest/v1/profiles?cabinet_seat_subscription_id=eq.")) {
+    const sub = decodeURIComponent(url.match(/cabinet_seat_subscription_id=eq\.([^&]+)/)?.[1] ?? "");
+    return Promise.resolve(new Response(JSON.stringify(sub === "sub_seat" ? [{ id: "member-1", plan: "active" }] : []), { status: 200 }));
+  }
+  if (url.includes("/rest/v1/profiles?id=eq.") && method === "PATCH") {
+    cabinetCalls.push({ method, url, body: JSON.parse(String(init?.body ?? "{}")) });
+    return Promise.resolve(new Response(null, { status: 204 }));
+  }
+  if (url.includes("/rest/v1/cabinets?root_id=eq.")) {
+    return Promise.resolve(new Response(JSON.stringify([{ name: "Piliarys" }]), { status: 200 }));
+  }
+  if (url.startsWith("https://api.stripe.com/v1/customers/")) {
+    return Promise.resolve(new Response(JSON.stringify({ email: "patron@x.ch" }), { status: 200 }));
+  }
   if (url === "https://api.brevo.com/v3/smtp/email") {
     const body = JSON.parse(String(init?.body ?? "{}"));
     brevoCalls.push({ to: body.to, htmlContent: body.htmlContent });
@@ -136,6 +164,7 @@ beforeEach(() => {
   frozenCommissionCentimes = null;
   patchedProfiles = [];
   planEvents = [];
+  cabinetCalls = [];
   vi.stubGlobal("fetch", vi.fn(mockFetch));
 });
 
@@ -315,5 +344,67 @@ describe("stripe-webhook — payment_intent.succeeded (filet de sécurité)", ()
     const res = await handleStripeWebhookRequest(await signedStripeRequest(event), ENV);
     expect(res.status).toBe(200);
     expect(patchedInvoices).toHaveLength(0);
+  });
+});
+
+describe("stripe-webhook — sièges payés par un cabinet", () => {
+  const seatMeta = { kind: "cabinet_seat", cabinet_root_id: "root-1", cabinet_invite_id: "invite-1" };
+
+  it("paiement d'un siège : l'invitation devient valable et part au collaborateur, le compte du patron n'est pas touché", async () => {
+    const event = {
+      id: "evt_seat",
+      type: "checkout.session.completed",
+      data: { object: { id: "cs_seat", mode: "subscription", subscription: "sub_seat", customer_email: "patron@x.ch", metadata: seatMeta } },
+    };
+    const res = await handleStripeWebhookRequest(await signedStripeRequest(event), ENV);
+    expect(res.status).toBe(200);
+    expect(patchedProfiles).toHaveLength(0);
+    const invitePatch = cabinetCalls.find((c) => c.url.includes("cabinet_invites"));
+    expect(invitePatch?.body).toMatchObject({ status: "pending", stripe_subscription_item_id: "sub_seat" });
+    expect(brevoCalls).toHaveLength(1);
+    expect(brevoCalls[0].to).toEqual([{ email: "lea@x.ch" }]);
+    expect(brevoCalls[0].htmlContent).toContain("/rejoindre-cabinet/");
+  });
+
+  it("fin d'un siège : seul le collaborateur perd l'accès, jamais le patron", async () => {
+    const event = {
+      id: "evt_seat_end",
+      type: "customer.subscription.deleted",
+      data: { object: { id: "sub_seat", customer: "cus_patron", metadata: seatMeta } },
+    };
+    await handleStripeWebhookRequest(await signedStripeRequest(event), ENV);
+    expect(patchedProfiles).toHaveLength(0);
+    const memberPatch = cabinetCalls.find((c) => c.url.includes("profiles?id=eq.member-1"));
+    expect(memberPatch?.body).toMatchObject({ plan: "expired", cabinet_payer: "self", cabinet_seat_subscription_id: null });
+    expect(planEvents[0]).toMatchObject({ broker_id: "member-1", reason: "cabinet_seat_ended" });
+  });
+
+  it("fin de l'ancien abonnement personnel d'un collaborateur payé par le cabinet : accès conservé", async () => {
+    const event = {
+      id: "evt_own_end",
+      type: "customer.subscription.deleted",
+      data: { object: { id: "sub_own", customer: "cus_collab", metadata: {} } },
+    };
+    vi.stubGlobal(
+      "fetch",
+      vi.fn((input: string | URL | Request, init?: RequestInit) =>
+        String(input).startsWith("https://api.stripe.com/v1/customers/")
+          ? Promise.resolve(new Response(JSON.stringify({ email: "collab@x.ch" }), { status: 200 }))
+          : mockFetch(input, init),
+      ),
+    );
+    await handleStripeWebhookRequest(await signedStripeRequest(event), ENV);
+    expect(patchedProfiles).toHaveLength(0);
+    expect(planEvents).toHaveLength(0);
+  });
+
+  it("une cotisation normale du patron expire toujours normalement", async () => {
+    const event = {
+      id: "evt_patron_end",
+      type: "customer.subscription.deleted",
+      data: { object: { id: "sub_patron", customer: "cus_patron", metadata: { plan: "active" } } },
+    };
+    await handleStripeWebhookRequest(await signedStripeRequest(event), ENV);
+    expect(patchedProfiles).toEqual([{ email: "patron@x.ch", body: { plan: "expired" } }]);
   });
 });

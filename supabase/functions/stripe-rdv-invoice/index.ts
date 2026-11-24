@@ -55,16 +55,41 @@ export async function handleStripeRdvInvoiceRequest(req: Request, env: Env): Pro
     const { supabaseUrl, supabaseKey, stripeKey } = env;
     if (!stripeKey || !supabaseUrl || !supabaseKey) throw new Error("Variables manquantes");
 
-    // Récupérer le compte Connect du courtier
+    // Cabinet : un collaborateur encaisse sur le compte de la société, c'est-à-
+    // dire le compte Connect du patron ; la facture est émise au nom du cabinet.
+    const profileRes = await fetch(
+      `${supabaseUrl}/rest/v1/profiles?id=eq.${brokerId}&select=first_name,last_name,cabinet_role,cabinet_root_id`,
+      { headers: { apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}` } },
+    );
+    const profileRows = profileRes.ok ? await profileRes.json() : [];
+    const me = Array.isArray(profileRows) ? profileRows[0] : null;
+    const cabinetRootId: string | null =
+      me?.cabinet_root_id && (me.cabinet_role === "courtier" || me.cabinet_role === "root_director")
+        ? me.cabinet_root_id
+        : null;
+    const isCollaborator = !!cabinetRootId && cabinetRootId !== brokerId;
+    let cabinetName: string | null = null;
+    if (cabinetRootId) {
+      const cabRes = await fetch(
+        `${supabaseUrl}/rest/v1/cabinets?root_id=eq.${cabinetRootId}&select=name`,
+        { headers: { apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}` } },
+      );
+      const cabRows = cabRes.ok ? await cabRes.json() : [];
+      cabinetName = Array.isArray(cabRows) ? cabRows[0]?.name ?? null : null;
+    }
+    const payeeId = isCollaborator ? cabinetRootId : brokerId;
+
     const accountRes = await fetch(
-      `${supabaseUrl}/rest/v1/broker_connect_accounts?broker_id=eq.${brokerId}&select=stripe_account_id,onboarding_complete`,
+      `${supabaseUrl}/rest/v1/broker_connect_accounts?broker_id=eq.${payeeId}&select=stripe_account_id,onboarding_complete`,
       { headers: { apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}` } },
     );
     const accounts = await accountRes.json();
 
     if (!accounts.length || !accounts[0].onboarding_complete) {
       throw new Error(
-        "Compte bancaire non configuré. Veuillez d'abord connecter votre compte bancaire dans votre profil.",
+        isCollaborator
+          ? "Le compte bancaire du cabinet n'est pas encore configuré. Demandez au responsable du cabinet de le connecter dans son profil."
+          : "Compte bancaire non configuré. Veuillez d'abord connecter votre compte bancaire dans votre profil.",
       );
     }
 
@@ -136,7 +161,11 @@ export async function handleStripeRdvInvoiceRequest(req: Request, env: Env): Pro
       body: new URLSearchParams({
         unit_amount: String(amountCentimes),
         currency: "chf",
-        "product_data[name]": description || "Conseil en prévoyance",
+        "product_data[name]": cabinetName
+          ? `${cabinetName} — ${description || "Conseil en prévoyance"}${
+              isCollaborator ? ` (Conseiller : ${`${me?.first_name ?? ""} ${me?.last_name ?? ""}`.trim()})` : ""
+            }`.slice(0, 250)
+          : description || "Conseil en prévoyance",
       }).toString(),
     });
     const price = await plRes.json();
@@ -168,7 +197,9 @@ export async function handleStripeRdvInvoiceRequest(req: Request, env: Env): Pro
         "restrictions[completed_sessions][limit]": "1",
         "after_completion[type]": "hosted_confirmation",
         "after_completion[hosted_confirmation][custom_message]":
-          "Merci pour votre paiement. Votre courtier a été notifié.",
+          cabinetName
+          ? `Merci pour votre paiement. ${cabinetName} a été notifié.`.slice(0, 500)
+          : "Merci pour votre paiement. Votre courtier a été notifié.",
       }).toString(),
     });
     const paymentLink = await linkRes.json();
@@ -186,6 +217,7 @@ export async function handleStripeRdvInvoiceRequest(req: Request, env: Env): Pro
       body: JSON.stringify({
         id: invoiceId,
         broker_id: brokerId,
+        cabinet_root_id: cabinetRootId,
         client_id: clientId || null,
         amount_chf: amountCentimes,
         // Figée ici une fois pour toutes : si le barème de commission
@@ -228,6 +260,8 @@ export async function handleStripeRdvInvoiceRequest(req: Request, env: Env): Pro
         amountChf,
         commission: applicationFee / 100,
         brokerReceives: (amountCentimes - applicationFee) / 100,
+        paidToCabinet: isCollaborator,
+        cabinetName,
       }),
       {
         headers: { ...corsHeaders, "Content-Type": "application/json" },

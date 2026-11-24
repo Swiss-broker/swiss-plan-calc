@@ -73,6 +73,9 @@ function CalendarPage() {
       const { data, error } = await supabase
         .from("appointments")
         .select("*, client:clients(first_name, last_name, email, phone)")
+        // Agenda personnel : les rendez-vous de l'équipe restent visibles
+        // pour le patron dans les dossiers clients, pas mélangés ici.
+        .eq("broker_id", user!.id)
         .gte("starts_at", startIso)
         .lte("starts_at", endIso)
         .order("starts_at", { ascending: true })

@@ -378,6 +378,7 @@ export type Database = {
       cabinet_invites: {
         Row: {
           accepted_at: string | null
+          accepted_user_id: string | null
           cabinet_root_id: string
           created_at: string
           email: string
@@ -389,11 +390,13 @@ export type Database = {
           payer: string
           role: string
           status: string
+          stripe_checkout_session_id: string | null
           stripe_subscription_item_id: string | null
           token: string
         }
         Insert: {
           accepted_at?: string | null
+          accepted_user_id?: string | null
           cabinet_root_id: string
           created_at?: string
           email: string
@@ -405,11 +408,13 @@ export type Database = {
           payer?: string
           role: string
           status?: string
+          stripe_checkout_session_id?: string | null
           stripe_subscription_item_id?: string | null
           token: string
         }
         Update: {
           accepted_at?: string | null
+          accepted_user_id?: string | null
           cabinet_root_id?: string
           created_at?: string
           email?: string
@@ -421,10 +426,18 @@ export type Database = {
           payer?: string
           role?: string
           status?: string
+          stripe_checkout_session_id?: string | null
           stripe_subscription_item_id?: string | null
           token?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "cabinet_invites_accepted_user_id_fkey"
+            columns: ["accepted_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "cabinet_invites_cabinet_root_id_fkey"
             columns: ["cabinet_root_id"]
@@ -436,6 +449,38 @@ export type Database = {
             foreignKeyName: "cabinet_invites_invited_by_fkey"
             columns: ["invited_by"]
             isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cabinets: {
+        Row: {
+          address: string | null
+          created_at: string
+          name: string
+          root_id: string
+          updated_at: string
+        }
+        Insert: {
+          address?: string | null
+          created_at?: string
+          name: string
+          root_id: string
+          updated_at?: string
+        }
+        Update: {
+          address?: string | null
+          created_at?: string
+          name?: string
+          root_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cabinets_root_id_fkey"
+            columns: ["root_id"]
+            isOneToOne: true
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -1047,10 +1092,13 @@ export type Database = {
           first_name: string
           gender: Database["public"]["Enums"]["gender"] | null
           gross_annual_salary: number | null
-          health_insurance_regime: Database["public"]["Enums"]["health_insurance_regime"] | null
+          health_insurance_regime:
+            | Database["public"]["Enums"]["health_insurance_regime"]
+            | null
           id: string
           income_conversion_rate: number | null
           income_currency: string
+          is_demo: boolean
           last_name: string
           mortgage_interest_conversion_rate: number | null
           mortgage_interest_currency: string
@@ -1100,10 +1148,13 @@ export type Database = {
           first_name: string
           gender?: Database["public"]["Enums"]["gender"] | null
           gross_annual_salary?: number | null
-          health_insurance_regime?: Database["public"]["Enums"]["health_insurance_regime"] | null
+          health_insurance_regime?:
+            | Database["public"]["Enums"]["health_insurance_regime"]
+            | null
           id?: string
           income_conversion_rate?: number | null
           income_currency?: string
+          is_demo?: boolean
           last_name: string
           mortgage_interest_conversion_rate?: number | null
           mortgage_interest_currency?: string
@@ -1153,10 +1204,13 @@ export type Database = {
           first_name?: string
           gender?: Database["public"]["Enums"]["gender"] | null
           gross_annual_salary?: number | null
-          health_insurance_regime?: Database["public"]["Enums"]["health_insurance_regime"] | null
+          health_insurance_regime?:
+            | Database["public"]["Enums"]["health_insurance_regime"]
+            | null
           id?: string
           income_conversion_rate?: number | null
           income_currency?: string
+          is_demo?: boolean
           last_name?: string
           mortgage_interest_conversion_rate?: number | null
           mortgage_interest_currency?: string
@@ -1278,6 +1332,7 @@ export type Database = {
           name: string
           notes: Json
           phone: string | null
+          source: string
           status: string
           updated_at: string
         }
@@ -1295,6 +1350,7 @@ export type Database = {
           name: string
           notes?: Json
           phone?: string | null
+          source?: string
           status?: string
           updated_at?: string
         }
@@ -1312,6 +1368,7 @@ export type Database = {
           name?: string
           notes?: Json
           phone?: string | null
+          source?: string
           status?: string
           updated_at?: string
         }
@@ -1562,8 +1619,11 @@ export type Database = {
           advantages_email_last_sent_at: string | null
           advantages_reminder_last_shown_at: string | null
           brokerage_name: string | null
+          cabinet_joined_at: string | null
+          cabinet_payer: string | null
           cabinet_role: string | null
           cabinet_root_id: string | null
+          cabinet_seat_subscription_id: string | null
           created_at: string
           default_canton: string | null
           email: string
@@ -1589,8 +1649,11 @@ export type Database = {
           advantages_email_last_sent_at?: string | null
           advantages_reminder_last_shown_at?: string | null
           brokerage_name?: string | null
+          cabinet_joined_at?: string | null
+          cabinet_payer?: string | null
           cabinet_role?: string | null
           cabinet_root_id?: string | null
+          cabinet_seat_subscription_id?: string | null
           created_at?: string
           default_canton?: string | null
           email: string
@@ -1616,8 +1679,11 @@ export type Database = {
           advantages_email_last_sent_at?: string | null
           advantages_reminder_last_shown_at?: string | null
           brokerage_name?: string | null
+          cabinet_joined_at?: string | null
+          cabinet_payer?: string | null
           cabinet_role?: string | null
           cabinet_root_id?: string | null
+          cabinet_seat_subscription_id?: string | null
           created_at?: string
           default_canton?: string | null
           email?: string
@@ -1659,6 +1725,7 @@ export type Database = {
         Row: {
           amount_chf: number
           broker_id: string
+          cabinet_root_id: string | null
           client_id: string | null
           commission_centimes: number | null
           created_at: string
@@ -1679,6 +1746,7 @@ export type Database = {
         Insert: {
           amount_chf: number
           broker_id: string
+          cabinet_root_id?: string | null
           client_id?: string | null
           commission_centimes?: number | null
           created_at?: string
@@ -1699,6 +1767,7 @@ export type Database = {
         Update: {
           amount_chf?: number
           broker_id?: string
+          cabinet_root_id?: string | null
           client_id?: string | null
           commission_centimes?: number | null
           created_at?: string
@@ -1717,6 +1786,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "rdv_invoices_cabinet_root_id_fkey"
+            columns: ["cabinet_root_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "rdv_invoices_client_id_fkey"
             columns: ["client_id"]
@@ -2057,6 +2133,7 @@ export type Database = {
         }[]
       }
       bytea_to_text: { Args: { data: string }; Returns: string }
+      cabinet_root_of: { Args: { _uid: string }; Returns: string }
       can_view_broker_appointments: {
         Args: { _owner_id: string; _viewer_id: string }
         Returns: boolean
@@ -2201,6 +2278,10 @@ export type Database = {
         Returns: boolean
       }
       is_admin: { Args: { _uid: string }; Returns: boolean }
+      is_cabinet_patron_of: {
+        Args: { _broker: string; _viewer: string }
+        Returns: boolean
+      }
       is_staff: { Args: { _uid: string }; Returns: boolean }
       register_client_upload: {
         Args: {

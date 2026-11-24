@@ -323,6 +323,13 @@ function ClientDetailPage() {
         </Link>
       </div>
 
+      {user && client.broker_id !== user.id && (
+        <div className="mt-3 rounded-xl border border-primary/20 bg-primary/5 px-4 py-3 text-sm">
+          Dossier suivi par un collaborateur de votre cabinet. Vous le consultez en lecture seule : les modifications
+          se font depuis le compte du conseiller.
+        </div>
+      )}
+
       <div className="mt-3 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <div className="flex items-center gap-3">

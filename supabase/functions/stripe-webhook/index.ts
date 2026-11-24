@@ -1,5 +1,6 @@
 // supabase/functions/stripe-webhook/index.ts
 import { computeCommissionCentimes, computeCommissionBreakdown } from "../_shared/commission.ts";
+import { rest, inviteExpiry, sendCabinetInvite, stopOwnRenewals, stripeGet } from "../_shared/cabinet.ts";
 
 function formatBracketLabel(fromCentimes: number, toCentimes: number | null, rate: number): string {
   const from = (fromCentimes / 100).toLocaleString("fr-CH");
@@ -110,6 +111,7 @@ export type Env = {
   supabaseKey: string;
   webhookSecret: string;
   brevoKey?: string;
+  siteUrl?: string;
 };
 
 export async function handleStripeWebhookRequest(req: Request, env: Env): Promise<Response> {
@@ -118,6 +120,7 @@ export async function handleStripeWebhookRequest(req: Request, env: Env): Promis
   }
   try {
     const { stripeKey, supabaseUrl, supabaseKey, webhookSecret, brevoKey } = env;
+    const siteUrl = env.siteUrl ?? "https://swissbrokerpro.ch";
     if (!stripeKey || !supabaseUrl || !supabaseKey || !webhookSecret) {
       throw new Error("Variables d'environnement manquantes");
     }
@@ -156,7 +159,7 @@ export async function handleStripeWebhookRequest(req: Request, env: Env): Promis
       reason: "checkout_completed" | "subscription_deleted" | "payment_failed",
     ) => {
       const profileRes = await fetch(
-        `${supabaseUrl}/rest/v1/profiles?email=eq.${encodeURIComponent(email)}&select=id,plan`,
+        `${supabaseUrl}/rest/v1/profiles?email=eq.${encodeURIComponent(email)}&select=id,plan,cabinet_payer`,
         { headers: { "apikey": supabaseKey, "Authorization": `Bearer ${supabaseKey}` } },
       );
       const profiles = await profileRes.json();
@@ -174,6 +177,10 @@ export async function handleStripeWebhookRequest(req: Request, env: Env): Promis
       // événement Stripe, pour les mêmes raisons (voir incident du
       // 09.09.2026 cité ci-dessus).
       if (profile.plan === "internal" || profile.plan === "demo") return;
+      // Collaborateur dont la cotisation est payée par son cabinet : la fin
+      // (ou l'échec) de son ANCIEN abonnement personnel ne coupe pas son
+      // accès, couvert par le siège du cabinet (traité à part, plus bas).
+      if (reason !== "checkout_completed" && profile.cabinet_payer === "cabinet") return;
 
       await fetch(
         `${supabaseUrl}/rest/v1/profiles?email=eq.${encodeURIComponent(email)}`,
@@ -208,6 +215,114 @@ export async function handleStripeWebhookRequest(req: Request, env: Env): Promis
         });
       }
     };
+
+    const svc = { supabaseUrl, supabaseKey };
+
+    // ── Sièges payés par un cabinet (metadata kind=cabinet_seat) ──
+    // Le client Stripe de ces abonnements porte l'e-mail du PATRON : ils ne
+    // doivent jamais passer par updatePlan(email), qui toucherait son compte.
+    const endSeat = async (subscriptionId: string, reason: "subscription_deleted" | "payment_failed") => {
+      const r = await rest<Array<{ id: string; plan: string }>>(
+        svc,
+        `profiles?cabinet_seat_subscription_id=eq.${encodeURIComponent(subscriptionId)}&select=id,plan`,
+      );
+      for (const m of r.data ?? []) {
+        if (m.plan === "internal" || m.plan === "demo") continue;
+        await rest(svc, `profiles?id=eq.${m.id}`, {
+          method: "PATCH",
+          prefer: "return=minimal",
+          body:
+            reason === "subscription_deleted"
+              ? { plan: "expired", cabinet_payer: "self", cabinet_seat_subscription_id: null }
+              : { plan: "expired" },
+        });
+        if (m.plan !== "expired") {
+          await rest(svc, "plan_events", {
+            method: "POST",
+            prefer: "return=minimal",
+            body: { broker_id: m.id, previous_plan: m.plan, new_plan: "expired", reason: "cabinet_seat_ended", stripe_event_id: event.id ?? null },
+          });
+        }
+        await createNotification(
+          supabaseUrl, supabaseKey, m.id, "cabinet_seat_ended",
+          "Cotisation à renouveler",
+          "Votre cotisation n'est plus prise en charge par votre cabinet. Réglez-la depuis votre compte pour retrouver l'accès.",
+          "/account?tab=abonnement",
+        );
+      }
+      if (reason === "subscription_deleted") {
+        // Siège payé pour une invitation jamais acceptée.
+        await rest(svc, `cabinet_invites?stripe_subscription_item_id=eq.${encodeURIComponent(subscriptionId)}&status=in.(pending,awaiting_payment)`, {
+          method: "PATCH",
+          prefer: "return=minimal",
+          body: { status: "revoked" },
+        });
+      }
+    };
+
+    const isSeat = (meta: Record<string, string> | undefined | null) => meta?.kind === "cabinet_seat";
+
+    if (event.type === "checkout.session.completed" && isSeat(event.data.object?.metadata)) {
+      const session = event.data.object;
+      const meta = session.metadata as Record<string, string>;
+      const subscriptionId = typeof session.subscription === "string" ? session.subscription : session.subscription?.id;
+      if (meta.cabinet_invite_id) {
+        // Siège payé : l'invitation devient valable et part au collaborateur.
+        const r = await rest<Array<{ cabinet_root_id: string; email: string; first_name: string | null; payer: "cabinet" | "self"; token: string }>>(
+          svc,
+          `cabinet_invites?id=eq.${encodeURIComponent(meta.cabinet_invite_id)}&status=eq.awaiting_payment`,
+          {
+            method: "PATCH",
+            prefer: "return=representation",
+            body: { status: "pending", stripe_subscription_item_id: subscriptionId ?? null, expires_at: inviteExpiry() },
+          },
+        );
+        const invite = r.data?.[0];
+        if (invite) await sendCabinetInvite(svc, brevoKey, siteUrl, invite);
+      } else if (meta.cabinet_member_id) {
+        // Le cabinet reprend la cotisation d'un collaborateur déjà membre.
+        const r = await rest<Array<{ id: string; email: string | null; plan: string; cabinet_root_id: string | null }>>(
+          svc,
+          `profiles?id=eq.${encodeURIComponent(meta.cabinet_member_id)}&select=id,email,plan,cabinet_root_id`,
+        );
+        const m = r.data?.[0];
+        if (m && m.cabinet_root_id === meta.cabinet_root_id) {
+          const nextPlan = m.plan === "internal" || m.plan === "demo" ? m.plan : "active";
+          await rest(svc, `profiles?id=eq.${m.id}`, {
+            method: "PATCH",
+            prefer: "return=minimal",
+            body: { cabinet_payer: "cabinet", cabinet_seat_subscription_id: subscriptionId ?? null, plan: nextPlan },
+          });
+          if (m.email) await stopOwnRenewals(stripeKey, m.email);
+        }
+      }
+      return new Response(JSON.stringify({ received: true }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    if (event.type === "customer.subscription.deleted" && isSeat(event.data.object?.metadata)) {
+      await endSeat(event.data.object.id, "subscription_deleted");
+      return new Response(JSON.stringify({ received: true }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    if (event.type === "invoice.payment_failed") {
+      const inv = event.data.object;
+      const subId = typeof inv.subscription === "string" ? inv.subscription : inv.parent?.subscription_details?.subscription;
+      let subMeta = inv.subscription_details?.metadata ?? inv.parent?.subscription_details?.metadata;
+      if (!subMeta && subId) {
+        const sub = await stripeGet(stripeKey, `subscriptions/${subId}`);
+        subMeta = sub.data?.metadata;
+      }
+      if (subId && isSeat(subMeta)) {
+        await endSeat(subId, "payment_failed");
+        return new Response(JSON.stringify({ received: true }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+    }
 
     if (event.type === "checkout.session.completed") {
       const session = event.data.object;
@@ -262,6 +377,9 @@ export async function handleStripeWebhookRequest(req: Request, env: Env): Promis
         const patchedInvoices = patchRes.ok ? await patchRes.json() : [];
         const frozenCommissionCentimes: number | null =
           patchedInvoices[0]?.commission_centimes ?? null;
+        // Facture d'un collaborateur : l'argent est versé au cabinet (patron).
+        const cabinetRootId: string | null = patchedInvoices[0]?.cabinet_root_id ?? null;
+        const paidToCabinet = !!cabinetRootId && cabinetRootId !== brokerId;
         const commissionCentimes =
           frozenCommissionCentimes ?? computeCommissionCentimes(amountTotal);
         const commission = commissionCentimes / 100;
@@ -295,8 +413,21 @@ export async function handleStripeWebhookRequest(req: Request, env: Env): Promis
             brokerId,
             "payment_received",
             `Paiement reçu — ${amountChf.toFixed(2)} CHF`,
-            `${clientName} a réglé sa consultation. Vous recevrez ${brokerReceives.toFixed(2)} CHF.`,
+            paidToCabinet
+              ? `${clientName} a réglé sa consultation. ${brokerReceives.toFixed(2)} CHF sont versés sur le compte du cabinet.`
+              : `${clientName} a réglé sa consultation. Vous recevrez ${brokerReceives.toFixed(2)} CHF.`,
             `/clients/${clientId}`
+          );
+        }
+        if (paidToCabinet) {
+          await createNotification(
+            supabaseUrl,
+            supabaseKey,
+            cabinetRootId!,
+            "payment_received",
+            `Paiement reçu — ${amountChf.toFixed(2)} CHF`,
+            `${clientName} a réglé sa consultation avec ${broker?.first_name ?? "un collaborateur"}. ${brokerReceives.toFixed(2)} CHF seront versés sur le compte du cabinet.`,
+            "/cabinet",
           );
         }
 
@@ -329,7 +460,7 @@ export async function handleStripeWebhookRequest(req: Request, env: Env): Promis
                   <td style="padding:8px 12px; font-weight:bold;">- ${commission.toFixed(2)} CHF</td>
                 </tr>
                 <tr style="background:#f0fdf4;">
-                  <td style="padding:8px 12px; font-weight:bold;">Vous recevrez</td>
+                  <td style="padding:8px 12px; font-weight:bold;">${paidToCabinet ? "Versé au cabinet" : "Vous recevrez"}</td>
                   <td style="padding:8px 12px; font-weight:bold; color:#0f766e;">${brokerReceives.toFixed(2)} CHF</td>
                 </tr>
               </table>
@@ -429,6 +560,7 @@ if (typeof Deno !== "undefined") {
       supabaseKey: Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
       webhookSecret: Deno.env.get("STRIPE_WEBHOOK_SECRET") ?? "",
       brevoKey: Deno.env.get("BREVO_API_KEY"),
+      siteUrl: Deno.env.get("SITE_URL") ?? "https://swissbrokerpro.ch",
     }),
   );
 }

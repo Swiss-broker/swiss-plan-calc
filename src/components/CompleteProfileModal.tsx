@@ -32,7 +32,7 @@ export function CompleteProfileModal() {
     let cancelled = false;
     (async () => {
       const [{ data: profile }, { data: connect }] = await Promise.all([
-        supabase.from("profiles").select("first_name,last_name").eq("id", user.id).maybeSingle(),
+        supabase.from("profiles").select("first_name,last_name,cabinet_role").eq("id", user.id).maybeSingle(),
         supabase
           .from("broker_connect_accounts")
           .select("onboarding_complete")
@@ -41,7 +41,10 @@ export function CompleteProfileModal() {
       ]);
       if (cancelled) return;
       const identityMissing = !profile?.first_name?.trim() || !profile?.last_name?.trim();
-      const bankMissing = !connect?.onboarding_complete;
+      // Un collaborateur de cabinet n'a pas de compte bancaire à fournir :
+      // ses rendez-vous sont encaissés sur le compte du cabinet.
+      const isCabinetMember = (profile as { cabinet_role?: string | null } | null)?.cabinet_role === "courtier";
+      const bankMissing = !isCabinetMember && !connect?.onboarding_complete;
       setMissing({ identity: identityMissing, bank: bankMissing });
       // Ne s'affiche que si quelque chose manque, et pas si le courtier l'a deja
       // ferme cette session (evite de le harceler a chaque changement de page).

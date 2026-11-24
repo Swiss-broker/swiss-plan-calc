@@ -51,8 +51,16 @@ import { ageFromDob, type Client } from "@/lib/clients/types";
 import { formatCHF } from "@/lib/format";
 import { useT } from "@/contexts/LanguageContext";
 import { tCanton } from "@/lib/i18n";
+import { zodValidator, fallback } from "@tanstack/zod-adapter";
+import { z } from "zod";
+import { useCabinet } from "@/hooks/useCabinet";
+
+// Patron de cabinet : « mine » (ses clients), « all » (toute l'équipe) ou
+// l'identifiant d'un collaborateur.
+const searchSchema = z.object({ conseiller: fallback(z.string().optional(), undefined) });
 
 export const Route = createFileRoute("/_app/clients/")({
+  validateSearch: zodValidator(searchSchema),
   head: () => ({ meta: [{ title: "Clients · SwissBroker Pro" }] }),
   component: ClientsListPage,
 });
@@ -68,6 +76,29 @@ function ClientsListPage() {
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<"active" | "archived">("active");
   const [pendingDelete, setPendingDelete] = useState<Client | null>(null);
+  const { conseiller } = Route.useSearch();
+  const cabinet = useCabinet();
+  const isPatron = cabinet.role === "patron";
+  const advisorFilter = isPatron ? conseiller ?? "mine" : "mine";
+
+  const { data: team = [] } = useQuery({
+    queryKey: ["cabinet-members-mini", user?.id],
+    enabled: !!user && isPatron,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("id,first_name,last_name")
+        .eq("cabinet_root_id", user!.id)
+        .eq("cabinet_role", "courtier")
+        .order("last_name");
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+  const advisorName = (id: string) => {
+    const m = team.find((x) => x.id === id);
+    return m ? `${m.first_name ?? ""} ${m.last_name ?? ""}`.trim() : "Collaborateur";
+  };
 
   const { data: allClients = [], isLoading } = useQuery({
     queryKey: ["clients", user?.id],
@@ -81,8 +112,13 @@ function ClientsListPage() {
       return data as Client[];
     },
   });
-  const clients = allClients.filter(c => filter === "archived" ? c.archived : !c.archived);
-  const createdThisMonth = allClients.filter(c => c.created_at >= startOfMonth).length;
+  // La liste peut contenir les clients de l'équipe (patron) : le quota de
+  // créations ne compte que les siens.
+  const ownClients = allClients.filter((c) => c.broker_id === user?.id);
+  const visibleClients =
+    advisorFilter === "all" ? allClients : advisorFilter === "mine" ? ownClients : allClients.filter((c) => c.broker_id === advisorFilter);
+  const clients = visibleClients.filter(c => filter === "archived" ? c.archived : !c.archived);
+  const createdThisMonth = ownClients.filter(c => c.created_at >= startOfMonth).length;
 
   const archive = useMutation({
     mutationFn: async ({ id, archived }: { id: string; archived: boolean }) => {
@@ -164,12 +200,28 @@ function ClientsListPage() {
             className="pl-9"
           />
         </div>
+        <div className="flex flex-wrap items-center gap-2">
+        {isPatron && (
+          <select
+            value={advisorFilter}
+            onChange={(e) => navigate({ to: "/clients", search: { conseiller: e.target.value === "mine" ? undefined : e.target.value } })}
+            className="h-9 rounded-md border border-input bg-transparent px-2 text-sm"
+            aria-label="Conseiller"
+          >
+            <option value="mine">Mes clients</option>
+            <option value="all">Toute l'équipe</option>
+            {team.map((m) => (
+              <option key={m.id} value={m.id}>{`${m.first_name ?? ""} ${m.last_name ?? ""}`.trim() || "Collaborateur"}</option>
+            ))}
+          </select>
+        )}
         <Tabs value={filter} onValueChange={(v) => setFilter(v as "active" | "archived")}>
           <TabsList>
             <TabsTrigger value="active">{t("clients.tab.active")}</TabsTrigger>
             <TabsTrigger value="archived">{t("clients.tab.archived")}</TabsTrigger>
           </TabsList>
         </Tabs>
+        </div>
       </div>
 
       <div className="mt-6 rounded-2xl border border-border bg-card shadow-card">
@@ -206,6 +258,9 @@ function ClientsListPage() {
                         {age !== null ? t("clients.row.years", { n: age }) : "—"}
                         {c.email ? ` · ${c.email}` : ""}
                       </div>
+                      {c.broker_id !== user?.id && (
+                        <div className="mt-0.5 text-xs text-primary">Conseiller : {advisorName(c.broker_id)}</div>
+                      )}
                     </TableCell>
                     <TableCell className="hidden md:table-cell text-sm text-muted-foreground">
                       {CIVIL_STATUS_LABELS[c.civil_status]}
@@ -223,6 +278,7 @@ function ClientsListPage() {
                       {formatCHF(c.gross_annual_salary)}
                     </TableCell>
                     <TableCell onClick={(e) => e.stopPropagation()}>
+                      {c.broker_id === user?.id && (
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <Button variant="ghost" size="icon" className="h-8 w-8">
@@ -262,6 +318,7 @@ function ClientsListPage() {
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
+                      )}
                     </TableCell>
                   </TableRow>
                 );

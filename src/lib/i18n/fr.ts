@@ -138,6 +138,7 @@ export const fr: Record<string, string> = {
   "nav.clients": "Clients",
   "nav.calendar": "Calendrier",
   "nav.companies": "Sociétés",
+  "nav.cabinet": "Mon cabinet",
   "nav.calculators": "Calculateurs",
   "nav.wiki": "Wiki & formation",
   "nav.history": "Historique",

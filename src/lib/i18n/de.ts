@@ -140,6 +140,7 @@ export const de: Record<string, string> = {
   "nav.clients": "Kunden",
   "nav.calendar": "Kalender",
   "nav.companies": "Unternehmen",
+  "nav.cabinet": "Mein Büro",
   "nav.calculators": "Rechner",
   "nav.wiki": "Wiki & Schulung",
   "nav.history": "Verlauf",

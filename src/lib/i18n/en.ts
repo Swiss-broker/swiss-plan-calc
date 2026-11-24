@@ -139,6 +139,7 @@ export const en: Record<string, string> = {
   "nav.clients": "Clients",
   "nav.calendar": "Calendar",
   "nav.companies": "Companies",
+  "nav.cabinet": "My firm",
   "nav.calculators": "Calculators",
   "nav.wiki": "Wiki & Training",
   "nav.history": "History",

@@ -98,6 +98,7 @@ export function SaveSimulationButton({
       const { data, error } = await supabase
         .from("clients")
         .select("id, first_name, last_name")
+        .eq("broker_id", user!.id)
         .eq("archived", false)
         .order("last_name");
       if (error) throw error;

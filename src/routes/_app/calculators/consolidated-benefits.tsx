@@ -12,6 +12,7 @@ import { useState } from "react";
 import { HeartHandshake } from "lucide-react";
 
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 import { CalcCard } from "@/components/calculators/CalcUI";
 import { ConsolidatedBenefitsCard } from "@/components/clients/ConsolidatedBenefitsCard";
 import { ClientLinkBanner } from "@/components/calculators/ClientLinkBanner";
@@ -45,13 +46,16 @@ export const Route = createFileRoute("/_app/calculators/consolidated-benefits")(
 function ConsolidatedBenefitsCalc() {
   const { clientId, caseId } = Route.useSearch();
   const navigate = Route.useNavigate();
+  const { user } = useAuth();
 
   const { data: clients = [] } = useQuery({
-    queryKey: ["clients-mini-consolidated"],
+    queryKey: ["clients-mini-consolidated", user?.id],
+    enabled: !!user,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("clients")
         .select("id, first_name, last_name")
+        .eq("broker_id", user!.id)
         .eq("archived", false)
         .order("last_name");
       if (error) throw error;

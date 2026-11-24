@@ -87,6 +87,7 @@ function CompaniesListPage() {
       const { data, error } = await supabase
         .from("companies")
         .select("*")
+        .eq("broker_id", user!.id)
         .order("updated_at", { ascending: false });
       if (error) throw error;
       return data as Company[];

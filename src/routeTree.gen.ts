@@ -15,6 +15,7 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AppRouteImport } from './routes/_app'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as SharedTokenRouteImport } from './routes/shared.$token'
+import { Route as RejoindreCabinetTokenRouteImport } from './routes/rejoindre-cabinet.$token'
 import { Route as OnboardingTokenRouteImport } from './routes/onboarding.$token'
 import { Route as LegalSousTraitantsRouteImport } from './routes/legal/sous-traitants'
 import { Route as LegalNoticeIaRouteImport } from './routes/legal/notice-ia'
@@ -32,6 +33,7 @@ import { Route as AppDashboardRouteImport } from './routes/_app/dashboard'
 import { Route as AppCompaniesRouteImport } from './routes/_app/companies'
 import { Route as AppCalendarRouteImport } from './routes/_app/calendar'
 import { Route as AppCalculatorsRouteImport } from './routes/_app/calculators'
+import { Route as AppCabinetRouteImport } from './routes/_app/cabinet'
 import { Route as AppAccountRouteImport } from './routes/_app/account'
 import { Route as AppCompaniesIndexRouteImport } from './routes/_app/companies/index'
 import { Route as AppClientsIndexRouteImport } from './routes/_app/clients/index'
@@ -91,6 +93,11 @@ const IndexRoute = IndexRouteImport.update({
 const SharedTokenRoute = SharedTokenRouteImport.update({
   id: '/shared/$token',
   path: '/shared/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RejoindreCabinetTokenRoute = RejoindreCabinetTokenRouteImport.update({
+  id: '/rejoindre-cabinet/$token',
+  path: '/rejoindre-cabinet/$token',
   getParentRoute: () => rootRouteImport,
 } as any)
 const OnboardingTokenRoute = OnboardingTokenRouteImport.update({
@@ -176,6 +183,11 @@ const AppCalendarRoute = AppCalendarRouteImport.update({
 const AppCalculatorsRoute = AppCalculatorsRouteImport.update({
   id: '/calculators',
   path: '/calculators',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppCabinetRoute = AppCabinetRouteImport.update({
+  id: '/cabinet',
+  path: '/cabinet',
   getParentRoute: () => AppRoute,
 } as any)
 const AppAccountRoute = AppAccountRouteImport.update({
@@ -353,6 +365,7 @@ export interface FileRoutesByFullPath {
   '/paiement-confirme': typeof PaiementConfirmeRoute
   '/reset-password': typeof ResetPasswordRoute
   '/account': typeof AppAccountRoute
+  '/cabinet': typeof AppCabinetRoute
   '/calculators': typeof AppCalculatorsRouteWithChildren
   '/calendar': typeof AppCalendarRoute
   '/companies': typeof AppCompaniesRouteWithChildren
@@ -370,6 +383,7 @@ export interface FileRoutesByFullPath {
   '/legal/notice-ia': typeof LegalNoticeIaRoute
   '/legal/sous-traitants': typeof LegalSousTraitantsRoute
   '/onboarding/$token': typeof OnboardingTokenRoute
+  '/rejoindre-cabinet/$token': typeof RejoindreCabinetTokenRoute
   '/shared/$token': typeof SharedTokenRoute
   '/calculators/avs-ai': typeof AppCalculatorsAvsAiRoute
   '/calculators/budget': typeof AppCalculatorsBudgetRoute
@@ -408,6 +422,7 @@ export interface FileRoutesByTo {
   '/paiement-confirme': typeof PaiementConfirmeRoute
   '/reset-password': typeof ResetPasswordRoute
   '/account': typeof AppAccountRoute
+  '/cabinet': typeof AppCabinetRoute
   '/calendar': typeof AppCalendarRoute
   '/dashboard': typeof AppDashboardRoute
   '/feedback': typeof AppFeedbackRoute
@@ -423,6 +438,7 @@ export interface FileRoutesByTo {
   '/legal/notice-ia': typeof LegalNoticeIaRoute
   '/legal/sous-traitants': typeof LegalSousTraitantsRoute
   '/onboarding/$token': typeof OnboardingTokenRoute
+  '/rejoindre-cabinet/$token': typeof RejoindreCabinetTokenRoute
   '/shared/$token': typeof SharedTokenRoute
   '/calculators/avs-ai': typeof AppCalculatorsAvsAiRoute
   '/calculators/budget': typeof AppCalculatorsBudgetRoute
@@ -463,6 +479,7 @@ export interface FileRoutesById {
   '/paiement-confirme': typeof PaiementConfirmeRoute
   '/reset-password': typeof ResetPasswordRoute
   '/_app/account': typeof AppAccountRoute
+  '/_app/cabinet': typeof AppCabinetRoute
   '/_app/calculators': typeof AppCalculatorsRouteWithChildren
   '/_app/calendar': typeof AppCalendarRoute
   '/_app/companies': typeof AppCompaniesRouteWithChildren
@@ -480,6 +497,7 @@ export interface FileRoutesById {
   '/legal/notice-ia': typeof LegalNoticeIaRoute
   '/legal/sous-traitants': typeof LegalSousTraitantsRoute
   '/onboarding/$token': typeof OnboardingTokenRoute
+  '/rejoindre-cabinet/$token': typeof RejoindreCabinetTokenRoute
   '/shared/$token': typeof SharedTokenRoute
   '/_app/calculators/avs-ai': typeof AppCalculatorsAvsAiRoute
   '/_app/calculators/budget': typeof AppCalculatorsBudgetRoute
@@ -520,6 +538,7 @@ export interface FileRouteTypes {
     | '/paiement-confirme'
     | '/reset-password'
     | '/account'
+    | '/cabinet'
     | '/calculators'
     | '/calendar'
     | '/companies'
@@ -537,6 +556,7 @@ export interface FileRouteTypes {
     | '/legal/notice-ia'
     | '/legal/sous-traitants'
     | '/onboarding/$token'
+    | '/rejoindre-cabinet/$token'
     | '/shared/$token'
     | '/calculators/avs-ai'
     | '/calculators/budget'
@@ -575,6 +595,7 @@ export interface FileRouteTypes {
     | '/paiement-confirme'
     | '/reset-password'
     | '/account'
+    | '/cabinet'
     | '/calendar'
     | '/dashboard'
     | '/feedback'
@@ -590,6 +611,7 @@ export interface FileRouteTypes {
     | '/legal/notice-ia'
     | '/legal/sous-traitants'
     | '/onboarding/$token'
+    | '/rejoindre-cabinet/$token'
     | '/shared/$token'
     | '/calculators/avs-ai'
     | '/calculators/budget'
@@ -629,6 +651,7 @@ export interface FileRouteTypes {
     | '/paiement-confirme'
     | '/reset-password'
     | '/_app/account'
+    | '/_app/cabinet'
     | '/_app/calculators'
     | '/_app/calendar'
     | '/_app/companies'
@@ -646,6 +669,7 @@ export interface FileRouteTypes {
     | '/legal/notice-ia'
     | '/legal/sous-traitants'
     | '/onboarding/$token'
+    | '/rejoindre-cabinet/$token'
     | '/shared/$token'
     | '/_app/calculators/avs-ai'
     | '/_app/calculators/budget'
@@ -694,6 +718,7 @@ export interface RootRouteChildren {
   LegalNoticeIaRoute: typeof LegalNoticeIaRoute
   LegalSousTraitantsRoute: typeof LegalSousTraitantsRoute
   OnboardingTokenRoute: typeof OnboardingTokenRoute
+  RejoindreCabinetTokenRoute: typeof RejoindreCabinetTokenRoute
   SharedTokenRoute: typeof SharedTokenRoute
 }
 
@@ -739,6 +764,13 @@ declare module '@tanstack/react-router' {
       path: '/shared/$token'
       fullPath: '/shared/$token'
       preLoaderRoute: typeof SharedTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/rejoindre-cabinet/$token': {
+      id: '/rejoindre-cabinet/$token'
+      path: '/rejoindre-cabinet/$token'
+      fullPath: '/rejoindre-cabinet/$token'
+      preLoaderRoute: typeof RejoindreCabinetTokenRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/onboarding/$token': {
@@ -858,6 +890,13 @@ declare module '@tanstack/react-router' {
       path: '/calculators'
       fullPath: '/calculators'
       preLoaderRoute: typeof AppCalculatorsRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/cabinet': {
+      id: '/_app/cabinet'
+      path: '/cabinet'
+      fullPath: '/cabinet'
+      preLoaderRoute: typeof AppCabinetRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/account': {
@@ -1152,6 +1191,7 @@ const AppCompaniesRouteWithChildren = AppCompaniesRoute._addFileChildren(
 
 interface AppRouteChildren {
   AppAccountRoute: typeof AppAccountRoute
+  AppCabinetRoute: typeof AppCabinetRoute
   AppCalculatorsRoute: typeof AppCalculatorsRouteWithChildren
   AppCalendarRoute: typeof AppCalendarRoute
   AppCompaniesRoute: typeof AppCompaniesRouteWithChildren
@@ -1170,6 +1210,7 @@ interface AppRouteChildren {
 
 const AppRouteChildren: AppRouteChildren = {
   AppAccountRoute: AppAccountRoute,
+  AppCabinetRoute: AppCabinetRoute,
   AppCalculatorsRoute: AppCalculatorsRouteWithChildren,
   AppCalendarRoute: AppCalendarRoute,
   AppCompaniesRoute: AppCompaniesRouteWithChildren,
@@ -1214,6 +1255,7 @@ const rootRouteChildren: RootRouteChildren = {
   LegalNoticeIaRoute: LegalNoticeIaRoute,
   LegalSousTraitantsRoute: LegalSousTraitantsRoute,
   OnboardingTokenRoute: OnboardingTokenRoute,
+  RejoindreCabinetTokenRoute: RejoindreCabinetTokenRoute,
   SharedTokenRoute: SharedTokenRoute,
 }
 export const routeTree = rootRouteImport

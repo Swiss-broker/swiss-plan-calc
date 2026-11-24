@@ -18,6 +18,9 @@ import { tCanton, t as translate } from "@/lib/i18n";
 import { zodValidator, fallback } from "@tanstack/zod-adapter";
 import { z } from "zod";
 import { WikiHelpLink } from "@/components/wiki/WikiHelpLink";
+import { CabinetCard } from "@/components/account/CabinetCard";
+import { useCabinet } from "@/hooks/useCabinet";
+import { computeCommissionCentimes } from "@/lib/billing/commission";
 
 const searchSchema = z.object({
   tab: fallback(z.string().optional(), undefined),
@@ -119,6 +122,8 @@ function AccountPage() {
   const [sendingReset, setSendingReset] = useState(false);
   const [connectLoading, setConnectLoading] = useState(false);
   const [connectComplete, setConnectComplete] = useState(false);
+  const cabinet = useCabinet();
+  const isCollaborator = cabinet.role === "collaborateur";
 
   // Vérifier si le compte Connect est déjà configuré
   useEffectConnect(() => {
@@ -344,9 +349,19 @@ function AccountPage() {
       {/* Contenu onglet Mon cabinet */}
       {activeTab === "cabinet" && (
         <div className="mt-6 rounded-2xl border border-border bg-card p-6 shadow-card space-y-5">
+          <CabinetCard defaultName={profile.brokerage_name} />
           <div className="space-y-1.5">
             <Label htmlFor="brokerage_name">{t("account.brokerage_name")}</Label>
-            <Input id="brokerage_name" value={profile.brokerage_name} onChange={(e) => setProfile((p) => ({ ...p, brokerage_name: e.target.value }))} />
+            <Input
+              id="brokerage_name"
+              value={cabinet.role ? cabinet.cabinetName ?? profile.brokerage_name : profile.brokerage_name}
+              disabled={!!cabinet.role}
+              className={cabinet.role ? "bg-muted text-muted-foreground" : undefined}
+              onChange={(e) => setProfile((p) => ({ ...p, brokerage_name: e.target.value }))}
+            />
+            {cabinet.role && (
+              <p className="text-xs text-muted-foreground">Nom du cabinet, repris automatiquement sur vos rapports.</p>
+            )}
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="canton">{t("account.default_canton")}</Label>
@@ -400,7 +415,13 @@ function AccountPage() {
 
           <div className="flex justify-end">
             <Button
-              onClick={() => onSave({ brokerage_name: profile.brokerage_name.trim() || null, default_canton: profile.default_canton || null } as Parameters<typeof onSave>[0])}
+              onClick={() =>
+                onSave(
+                  (cabinet.role
+                    ? { default_canton: profile.default_canton || null }
+                    : { brokerage_name: profile.brokerage_name.trim() || null, default_canton: profile.default_canton || null }) as Parameters<typeof onSave>[0],
+                )
+              }
               disabled={saving}
               className="shadow-elegant"
             >
@@ -439,7 +460,12 @@ function AccountPage() {
               </a>
             </div>
           )}
-          {plan !== "expired" && (
+          {isCollaborator && cabinet.payer === "cabinet" && plan !== "expired" && (
+            <div className="rounded-lg border border-primary/20 bg-primary/5 p-4 text-sm">
+              Votre cotisation annuelle est prise en charge par le cabinet {cabinet.cabinetName}.
+            </div>
+          )}
+          {plan !== "expired" && !(isCollaborator && cabinet.payer === "cabinet") && (
             <div className="rounded-lg bg-muted/40 border border-border p-4 flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium">Gérer mon abonnement</p>
@@ -459,7 +485,16 @@ function AccountPage() {
       {/* Contenu onglet Mes paiements */}
       {activeTab === "paiements" && (
         <div className="mt-6 space-y-5">
-          {/* Section IBAN */}
+          {/* Section IBAN : un collaborateur encaisse sur le compte du cabinet */}
+          {isCollaborator ? (
+            <div className="rounded-2xl border border-border bg-card p-6 shadow-card space-y-2">
+              <h2 className="text-base font-semibold">Encaissement de vos rendez-vous</h2>
+              <p className="text-sm text-muted-foreground">
+                Les paiements de vos clients sont versés sur le compte du cabinet {cabinet.cabinetName}. Vous n'avez
+                aucun compte bancaire à connecter.
+              </p>
+            </div>
+          ) : (
           <div className="rounded-2xl border border-border bg-card p-6 shadow-card space-y-4">
             <h2 className="text-base font-semibold">Compte bancaire pour facturation</h2>
             <p className="text-xs text-muted-foreground">
@@ -495,6 +530,7 @@ function AccountPage() {
               </button>
             )}
           </div>
+          )}
 
           {/* Liste des paiements reçus */}
           <PaiementsHistory userId={user?.id ?? ""} />
@@ -636,6 +672,7 @@ function PaiementsHistory({ userId }: { userId: string }) {
   const [invoices, setInvoices] = useState<Array<{
     id: string;
     amount_chf: number;
+    commission_centimes: number | null;
     status: string;
     stripe_payment_link: string | null;
     created_at: string;
@@ -648,7 +685,7 @@ function PaiementsHistory({ userId }: { userId: string }) {
     if (!userId) return;
     supabase
       .from("rdv_invoices")
-      .select("id,amount_chf,status,stripe_payment_link,created_at,client_id")
+      .select("id,amount_chf,commission_centimes,status,stripe_payment_link,created_at,client_id")
       .eq("broker_id", userId)
       .order("created_at", { ascending: false })
       .then(async ({ data }) => {
@@ -675,9 +712,11 @@ function PaiementsHistory({ userId }: { userId: string }) {
   }, [userId]);
 
   const paidInvoices = invoices.filter(inv => inv.status === "paid");
+  // Commission réelle par tranches, figée sur chaque facture (pas 10 % à plat).
   const totalBrut = paidInvoices.reduce((sum, inv) => sum + inv.amount_chf, 0) / 100;
-  const totalNet = totalBrut * 0.9;
-  const totalCommission = totalBrut * 0.1;
+  const totalCommission =
+    paidInvoices.reduce((sum, inv) => sum + (inv.commission_centimes ?? computeCommissionCentimes(inv.amount_chf)), 0) / 100;
+  const totalNet = totalBrut - totalCommission;
 
   return (
     <div className="space-y-4">
