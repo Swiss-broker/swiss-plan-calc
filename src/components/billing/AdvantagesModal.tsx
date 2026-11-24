@@ -57,7 +57,10 @@ export function AdvantagesModal() {
 
   return (
     <Dialog open={open} onOpenChange={(v) => (v ? setOpen(true) : handleClose())}>
-      <DialogContent className="sm:max-w-lg">
+      {/* Largeur un peu plus grande et défilement si l'écran est bas : les deux
+          boutons ne tenaient pas sur une ligne et faisaient déborder la
+          fenêtre (case à cocher et bouton coupés à droite). */}
+      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-xl [&>*]:min-w-0">
         <DialogHeader>
           <DialogTitle>Vos avantages SwissBroker Pro</DialogTitle>
           <DialogDescription>
@@ -65,15 +68,21 @@ export function AdvantagesModal() {
           </DialogDescription>
         </DialogHeader>
         <AdvantagesContent />
-        <label className="flex items-start gap-2 rounded-md border border-border bg-muted/30 p-3 text-sm">
+        <label className="flex min-w-0 cursor-pointer items-start gap-2 rounded-md border border-border bg-muted/30 p-3 text-sm">
           <Checkbox checked={checked} onCheckedChange={(v) => setChecked(Boolean(v))} />
           <span>J'ai déjà eu mon rendez-vous avec l'équipe au sujet de ces avantages</span>
         </label>
-        <DialogFooter className="gap-2 sm:gap-2">
-          <Button variant="outline" onClick={handleClose}>
+        <DialogFooter className="grid grid-cols-1 gap-2 sm:grid-cols-2 sm:space-x-0">
+          <Button
+            variant="outline"
+            onClick={handleClose}
+            className="h-auto min-h-10 whitespace-normal py-2 text-center"
+          >
             Continuer vers mon tableau de bord
           </Button>
-          <Button onClick={handleBook}>Réserver un appel avec l'équipe</Button>
+          <Button onClick={handleBook} className="h-auto min-h-10 whitespace-normal py-2 text-center">
+            Réserver un appel avec l'équipe
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
