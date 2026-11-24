@@ -40,7 +40,6 @@ const leads: Record<
 let sessionParams: URLSearchParams | null = null;
 let couponParams: URLSearchParams | null = null;
 let loggedAction: Record<string, unknown> | null = null;
-let savedOffer: Record<string, unknown> | null = null;
 
 function mockFetch(input: string | URL | Request, init?: RequestInit): Promise<Response> {
   const url = String(input);
@@ -69,10 +68,6 @@ function mockFetch(input: string | URL | Request, init?: RequestInit): Promise<R
       ),
     );
   }
-  if (url.includes("/rest/v1/lead_offers") && method === "POST") {
-    savedOffer = JSON.parse(String(init?.body ?? "{}"));
-    return Promise.resolve(new Response(null, { status: 201 }));
-  }
   if (url.includes("/rest/v1/admin_actions") && method === "POST") {
     loggedAction = JSON.parse(String(init?.body ?? "{}"));
     return Promise.resolve(new Response(null, { status: 201 }));
@@ -84,7 +79,6 @@ beforeEach(() => {
   sessionParams = null;
   couponParams = null;
   loggedAction = null;
-  savedOffer = null;
   vi.stubGlobal("fetch", vi.fn(mockFetch));
 });
 
@@ -97,12 +91,7 @@ describe("generate-offer — cotisation annuelle (plus de choix de plan/période
     const res = await handleGenerateOfferRequest(req, ENV);
     expect(res.status).toBe(200);
     const body = await res.json();
-    // Lien durable vers swissbrokerpro.ch, jamais l'URL Stripe (24 h).
-    expect(body.url).toBe(`https://swissbrokerpro.ch/offre/${savedOffer?.token}`);
-    expect(String(savedOffer?.token)).toMatch(/^[a-z0-9]{32}$/);
-    const days = (new Date(String(body.expiresAt)).getTime() - Date.now()) / 86_400_000;
-    expect(days).toBeGreaterThan(29.9);
-    expect(days).toBeLessThan(30.1);
+    expect(body.url).toBe("https://checkout.stripe.com/session/fake");
     expect(sessionParams?.get("line_items[0][price]")).toBe("price_cotisation_annuelle");
     expect(sessionParams?.get("metadata[plan]")).toBeNull();
   });

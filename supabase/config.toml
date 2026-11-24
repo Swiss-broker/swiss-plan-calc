@@ -72,9 +72,6 @@ verify_jwt = false
 [functions.generate-offer]
 verify_jwt = true
 
-[functions.open-offer]
-verify_jwt = false
-
 [functions.handle-conversion]
 verify_jwt = false
 
