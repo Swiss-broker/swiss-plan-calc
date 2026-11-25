@@ -77,6 +77,7 @@ export function cabinetErrorMessage(code: string | undefined): string {
     case "IS_PATRON": return "Vous êtes déjà responsable d'un cabinet.";
     case "ACCOUNT_EXISTS": return "Un compte existe déjà avec cette adresse : connectez-vous pour rejoindre le cabinet.";
     case "PASSWORD_TOO_SHORT": return "Le mot de passe doit contenir au moins 8 caractères.";
+    case "NOT_MEMBER": return "Vous ne faites partie d'aucun cabinet.";
     case "NOT_PATRON": return "Action réservée au responsable du cabinet.";
     case "TRANSFER_FAILED": return "Le transfert des dossiers a échoué, rien n'a été modifié. Réessayez.";
     case "STRIPE_ERROR": return "Le paiement n'a pas pu être modifié chez Stripe. Réessayez.";

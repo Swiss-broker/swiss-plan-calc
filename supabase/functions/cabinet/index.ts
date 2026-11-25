@@ -214,6 +214,43 @@ async function acceptInvite(env: Env, svc: Svc, invite: Invite, userId: string, 
   await notify(svc, invite.cabinet_root_id, "team_member_joined", "Nouveau collaborateur", `${name} a rejoint votre cabinet.`, "/cabinet");
 }
 
+/**
+ * Départ d'un collaborateur (retiré par le patron ou parti de lui-même) :
+ * ses clients et tous leurs dossiers restent au cabinet (transférés au
+ * patron), son siège payé par le cabinet s'arrête, et il n'encaisse plus
+ * sur le compte du cabinet (plus de cabinet_root_id).
+ */
+async function detachMember(env: Env, svc: Svc, member: Profile, rootId: string) {
+  const transfer = await fetch(`${env.supabaseUrl}/rest/v1/rpc/cabinet_transfer_member_data`, {
+    method: "POST",
+    headers: { apikey: env.supabaseKey, Authorization: `Bearer ${env.supabaseKey}`, "Content-Type": "application/json" },
+    body: JSON.stringify({ _member: member.id, _root: rootId }),
+  });
+  if (!transfer.ok) {
+    console.error("Transfert impossible", transfer.status, await transfer.text());
+    throw new HttpError("TRANSFER_FAILED", 500);
+  }
+  if (member.cabinet_seat_subscription_id && env.stripeKey) {
+    await stripeDelete(env.stripeKey, `subscriptions/${member.cabinet_seat_subscription_id}`);
+  }
+  const nextPlan =
+    member.cabinet_payer === "cabinet" && !PROTECTED_PLANS.has(member.plan) ? "expired" : member.plan;
+  await rest(svc, `profiles?id=eq.${member.id}`, {
+    method: "PATCH",
+    prefer: "return=minimal",
+    body: {
+      cabinet_role: null,
+      cabinet_root_id: null,
+      manager_id: null,
+      cabinet_payer: null,
+      cabinet_seat_subscription_id: null,
+      cabinet_joined_at: null,
+      plan: nextPlan,
+    },
+  });
+  await logPlan(svc, member.id, member.plan, nextPlan, "cabinet_removed");
+}
+
 export async function handleCabinetRequest(req: Request, env: Env): Promise<Response> {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (!env.supabaseUrl || !env.supabaseKey) return json({ error: "CONFIG_MISSING" }, 500);
@@ -316,6 +353,26 @@ export async function handleCabinetRequest(req: Request, env: Env): Promise<Resp
         prefer: "return=minimal",
         body: { brokerage_name: name },
       });
+      return json({ ok: true });
+    }
+
+    // ── Un collaborateur quitte le cabinet de lui-même ──
+    if (action === "leave") {
+      const self = await getProfile(svc, caller.id);
+      if (!self || self.cabinet_role !== "courtier" || !self.cabinet_root_id) {
+        return json({ error: "NOT_MEMBER" }, 409);
+      }
+      const rootId = self.cabinet_root_id;
+      await detachMember(env, svc, self, rootId);
+      const name = `${self.first_name ?? ""} ${self.last_name ?? ""}`.trim() || self.email || "Un collaborateur";
+      await notify(
+        svc,
+        rootId,
+        "cabinet_removed",
+        "Un collaborateur a quitté le cabinet",
+        `${name} a quitté votre cabinet. Ses clients et leurs dossiers sont désormais dans votre liste.`,
+        "/cabinet",
+      );
       return json({ ok: true });
     }
 
@@ -479,34 +536,7 @@ export async function handleCabinetRequest(req: Request, env: Env): Promise<Resp
 
     if (action === "remove") {
       const member = await requireMember(svc, me.id, str(body?.memberId, 40));
-      const transfer = await fetch(`${env.supabaseUrl}/rest/v1/rpc/cabinet_transfer_member_data`, {
-        method: "POST",
-        headers: { apikey: env.supabaseKey, Authorization: `Bearer ${env.supabaseKey}`, "Content-Type": "application/json" },
-        body: JSON.stringify({ _member: member.id, _root: me.id }),
-      });
-      if (!transfer.ok) {
-        console.error("Transfert impossible", transfer.status, await transfer.text());
-        return json({ error: "TRANSFER_FAILED" }, 500);
-      }
-      if (member.cabinet_seat_subscription_id && env.stripeKey) {
-        await stripeDelete(env.stripeKey, `subscriptions/${member.cabinet_seat_subscription_id}`);
-      }
-      const nextPlan =
-        member.cabinet_payer === "cabinet" && !PROTECTED_PLANS.has(member.plan) ? "expired" : member.plan;
-      await rest(svc, `profiles?id=eq.${member.id}`, {
-        method: "PATCH",
-        prefer: "return=minimal",
-        body: {
-          cabinet_role: null,
-          cabinet_root_id: null,
-          manager_id: null,
-          cabinet_payer: null,
-          cabinet_seat_subscription_id: null,
-          cabinet_joined_at: null,
-          plan: nextPlan,
-        },
-      });
-      await logPlan(svc, member.id, member.plan, nextPlan, "cabinet_removed");
+      await detachMember(env, svc, member, me.id);
       await notify(
         svc,
         member.id,

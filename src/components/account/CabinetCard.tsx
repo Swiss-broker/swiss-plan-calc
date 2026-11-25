@@ -2,12 +2,23 @@
 // accéder à la gestion de l'équipe, ou voir le cabinet dont on fait partie.
 import { useState } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
+import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Building2, Loader2, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useCabinet, callCabinet } from "@/hooks/useCabinet";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 export function CabinetCard({ defaultName }: { defaultName: string }) {
   const cabinet = useCabinet();
@@ -16,8 +27,23 @@ export function CabinetCard({ defaultName }: { defaultName: string }) {
   const [name, setName] = useState(defaultName);
   const [address, setAddress] = useState("");
   const [saving, setSaving] = useState(false);
+  const [confirmLeave, setConfirmLeave] = useState(false);
+  const qc = useQueryClient();
 
   if (cabinet.isLoading) return null;
+
+  const onLeave = async () => {
+    setSaving(true);
+    try {
+      await callCabinet("leave");
+      await cabinet.refresh();
+      qc.invalidateQueries();
+      toast.success("Vous avez quitté le cabinet. Vous pouvez désormais travailler en indépendant ou créer votre cabinet.");
+    } catch (e) {
+      toast.error((e as Error).message);
+    }
+    setSaving(false);
+  };
 
   if (cabinet.role === "collaborateur") {
     return (
@@ -34,6 +60,31 @@ export function CabinetCard({ defaultName }: { defaultName: string }) {
           </li>
           <li>Les rapports PDF portent le nom du cabinet.</li>
         </ul>
+        <Button variant="ghost" size="sm" className="mt-3 text-destructive" disabled={saving} onClick={() => setConfirmLeave(true)}>
+          Quitter le cabinet
+        </Button>
+        <AlertDialog open={confirmLeave} onOpenChange={setConfirmLeave}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Quitter le cabinet {cabinet.cabinetName} ?</AlertDialogTitle>
+              <AlertDialogDescription>
+                Les clients que vous suivez appartiennent au cabinet : ils restent chez {cabinet.cabinetName}, avec leurs
+                dossiers, documents et rendez-vous, et disparaissent de votre compte. Vos rendez-vous ne seront plus
+                encaissés sur le compte du cabinet : pour facturer à nouveau, vous devrez connecter votre propre compte
+                bancaire.
+                {cabinet.payer === "cabinet"
+                  ? " Votre cotisation n'est plus prise en charge par le cabinet : vous devrez la régler vous-même pour garder l'accès."
+                  : ""}
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Annuler</AlertDialogCancel>
+              <AlertDialogAction onClick={onLeave} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                Quitter le cabinet
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     );
   }

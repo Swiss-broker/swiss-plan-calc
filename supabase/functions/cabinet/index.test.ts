@@ -248,4 +248,19 @@ describe("cabinet — départ d'un collaborateur", () => {
     expect(String(upd?.body)).toContain("cancel_at_period_end=true");
     expect(profiles.find((p) => p.id === M1)).toMatchObject({ plan: "active", cabinet_payer: "cabinet" });
   });
+
+  it("un collaborateur quitte le cabinet : ses clients restent au cabinet, il n'encaisse plus pour le cabinet", async () => {
+    const res = await call("leave", {}, "tok-marc");
+    expect(res.status).toBe(200);
+    const rpc = calls.find((c) => c.url.includes("/rpc/cabinet_transfer_member_data"));
+    expect(rpc?.body).toEqual({ _member: M1, _root: "root-1" });
+    expect(calls.some((c) => c.method === "DELETE" && c.url.endsWith("/v1/subscriptions/sub_seat_marc"))).toBe(true);
+    expect(profiles.find((p) => p.id === M1)).toMatchObject({ cabinet_role: null, cabinet_root_id: null, cabinet_payer: null, plan: "expired" });
+    // Redevenu indépendant : il peut créer son propre cabinet.
+    expect((await call("create", { name: "Cabinet Marc" }, "tok-marc")).status).toBe(200);
+  });
+
+  it("un courtier indépendant ne peut pas « quitter » un cabinet", async () => {
+    expect((await call("leave", {}, "tok-zoe")).status).toBe(409);
+  });
 });
